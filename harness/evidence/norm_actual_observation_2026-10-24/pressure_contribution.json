@@ -1,0 +1,20 @@
+{
+  "theta_m": {
+    "full_cost_direction": 0.30506959380048193,
+    "direct_RTTOV_P_P_HALF_contribution": -0.046851420798303164,
+    "without_direct_P_P_HALF_K": 0.35192101459878494,
+    "scope": "only direct RTTOV pressure K removed; pressure-mediated T/Q profile changes retained"
+  },
+  "qv": {
+    "full_cost_direction": -0.2936013060648119,
+    "direct_RTTOV_P_P_HALF_contribution": -0.0005019411565603972,
+    "without_direct_P_P_HALF_K": -0.2930993649082515,
+    "scope": "only direct RTTOV pressure K removed; pressure-mediated T/Q profile changes retained"
+  },
+  "mixed": {
+    "full_cost_direction": 0.011468287735670102,
+    "direct_RTTOV_P_P_HALF_contribution": -0.047353361954863546,
+    "without_direct_P_P_HALF_K": 0.05882164969053335,
+    "scope": "only direct RTTOV pressure K removed; pressure-mediated T/Q profile changes retained"
+  }
+}

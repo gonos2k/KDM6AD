@@ -1,0 +1,29 @@
+{
+  "target": [
+    113,
+    76
+  ],
+  "flat_index": 17662,
+  "status": "rejected_no_quality_zero_channel",
+  "RTTOV_quality": [
+    [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  ],
+  "observation_source_usable_channels": 7,
+  "simulated_usable_channels": 0,
+  "do_not_interpret_zero_masked_cost_as_fit": true,
+  "original_masked_value": 0.0,
+  "original_measurement_sha256": "40c2b2167c7cf34b80f5bfcae0528ad661755a111912f9566d475670ee8f2d73",
+  "reason": "RTTOV gas optical-depth regression limit exceeded; native humidity retained unchanged",
+  "reported_layer_pressure_hPa": 61.4771,
+  "reported_humidity_ppmv": 7.7329,
+  "reported_upper_limit_ppmv": 7.689,
+  "log_sha256": "33476fd39e4ca360011ef6ba31508404eb76ecc6f5fd792c9644b4a718dd9421"
+}

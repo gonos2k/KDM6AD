@@ -1,0 +1,216 @@
+"""Project a full-batch state/forcing kernel onto one selected column.
+
+For frozen background ``x0`` and target column ``t``, this adapter implements
+``P_t K E_t``: each forward copies the complete baseline, replaces the target
+state and forcing, runs the full backend batch, and selects the target output.
+JVP and VJP scatter/gather the matching target subspaces, so the backend's
+cross-column coupling remains present in the derivative.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import math
+
+import numpy as np
+
+
+def _array(value, shape, name):
+    if not isinstance(value, np.ndarray) or value.dtype != np.float64:
+        raise TypeError(f"{name} must be a float64 ndarray")
+    if value.shape != shape:
+        raise ValueError(f"{name} must have shape {shape}")
+    if not np.isfinite(value).all():
+        raise ValueError(f"{name} must be finite")
+
+
+def _null_handle(handle):
+    if handle is None:
+        return True
+    return hasattr(handle, "value") and handle.value is None
+
+
+@dataclass
+class BatchTargetHandle:
+    """Owner-bound wrapper for the full backend handle from one forward."""
+
+    _owner: object
+    _inner: object
+    recorded: bool
+    closed: bool = False
+
+
+class BatchTargetKernel:
+    """Expose one column of a frozen ``(12,B,L)/(4,B,L)`` backend.
+
+    ``backend`` follows the ``BatchKernel`` protocol: it has ``forward``,
+    ``jvp``, ``vjp``, ``close`` and full-batch dimensions ``B``/``L``. The
+    current ``BatchKernel`` pins ``dt=20`` inside its C ABI call rather than
+    exposing ``dt``; this adapter therefore records ``dt=20`` by default,
+    and accepts a different ``dt`` only when the backend declares that value.
+    """
+
+    def __init__(self, backend, baseline_state, baseline_forcing, target, *, dt=20.0):
+        for name in ("forward", "jvp", "vjp", "close"):
+            if not callable(getattr(backend, name, None)):
+                raise TypeError(f"backend must provide callable {name}")
+        state = np.asarray(baseline_state)
+        forcing = np.asarray(baseline_forcing)
+        if (
+            state.ndim != 3
+            or state.shape[0] != 12
+            or state.shape[1] <= 0
+            or state.shape[2] <= 0
+        ):
+            raise ValueError(
+                "baseline_state must have shape (12,B,L) with positive B,L"
+            )
+        batch, levels = state.shape[1:]
+        if forcing.ndim != 3 or forcing.shape != (4, batch, levels):
+            raise ValueError(f"baseline_forcing must have shape (4,{batch},{levels})")
+        _array(state, (12, batch, levels), "baseline_state")
+        _array(forcing, (4, batch, levels), "baseline_forcing")
+        if isinstance(target, bool) or not isinstance(target, (int, np.integer)):
+            raise TypeError("target must be an integer batch index")
+        target = int(target)
+        if target < 0 or target >= batch:
+            raise ValueError("target is outside the baseline batch")
+        if hasattr(backend, "B") and backend.B != batch:
+            raise ValueError("backend B differs from baseline batch size")
+        backend_levels = getattr(backend, "L", getattr(backend, "levels", levels))
+        if backend_levels != levels:
+            raise ValueError("backend levels differ from baseline profile length")
+
+        if (
+            isinstance(dt, bool)
+            or not isinstance(dt, (int, float))
+            or not math.isfinite(dt)
+            or dt <= 0
+        ):
+            raise ValueError("dt must be finite and positive")
+        backend_dt = getattr(backend, "dt", 20.0)
+        if float(backend_dt) != float(dt):
+            raise ValueError("dt metadata differs from backend dt")
+
+        self.backend = backend
+        self.batch = batch
+        self.levels = levels
+        self.target = target
+        self.dt = float(dt)
+        self._baseline_state = np.ascontiguousarray(state.copy())
+        self._baseline_forcing = np.ascontiguousarray(forcing.copy())
+        self._baseline_state.flags.writeable = False
+        self._baseline_forcing.flags.writeable = False
+        self._owner = object()
+
+    @property
+    def baseline_state(self):
+        result = self._baseline_state.copy()
+        result.flags.writeable = False
+        return result
+
+    @property
+    def baseline_forcing(self):
+        result = self._baseline_forcing.copy()
+        result.flags.writeable = False
+        return result
+
+    def _validate_pair(self, state, forcing, prefix=""):
+        _array(state, (12, self.levels), f"{prefix}state")
+        _array(forcing, (4, self.levels), f"{prefix}forcing")
+        return np.ascontiguousarray(state), np.ascontiguousarray(forcing)
+
+    def _validate_handle(self, handle, *, require_record):
+        if (
+            not isinstance(handle, BatchTargetHandle)
+            or handle._owner is not self._owner
+        ):
+            raise TypeError("handle was not created by this BatchTargetKernel")
+        if handle.closed:
+            raise ValueError("batch-target handle is closed")
+        if require_record and not handle.recorded:
+            raise ValueError("JVP/VJP require a record=True batch-target handle")
+        return handle
+
+    def _scatter_inputs(self, state, forcing):
+        full_state = self._baseline_state.copy()
+        full_forcing = self._baseline_forcing.copy()
+        full_state[:, self.target, :] = state
+        full_forcing[:, self.target, :] = forcing
+        return np.ascontiguousarray(full_state), np.ascontiguousarray(full_forcing)
+
+    def forward(self, state, forcing, *, joint=True, record=False):
+        if not isinstance(joint, (bool, np.bool_)):
+            raise TypeError("joint must be a boolean")
+        if not joint:
+            raise ValueError(
+                "BatchTargetKernel requires joint=True state/forcing access"
+            )
+        state, forcing = self._validate_pair(state, forcing)
+        full_state, full_forcing = self._scatter_inputs(state, forcing)
+        full_output, inner = self.backend.forward(
+            full_state, full_forcing, record=record
+        )
+        try:
+            _array(full_output, (12, self.batch, self.levels), "full backend output")
+            selected = np.ascontiguousarray(full_output[:, self.target, :].copy())
+            if record and _null_handle(inner):
+                raise RuntimeError("backend did not return a recorded handle")
+            return selected, BatchTargetHandle(self._owner, inner, bool(record))
+        except BaseException:
+            if not _null_handle(inner):
+                self.backend.close(inner)
+            raise
+
+    def jvp(self, handle, dstate, dforcing):
+        h = self._validate_handle(handle, require_record=True)
+        dstate, dforcing = self._validate_pair(dstate, dforcing, prefix="direction ")
+        full_ds = np.zeros_like(self._baseline_state)
+        full_df = np.zeros_like(self._baseline_forcing)
+        full_ds[:, self.target, :] = dstate
+        full_df[:, self.target, :] = dforcing
+        full_tangent = self.backend.jvp(
+            h._inner, np.ascontiguousarray(full_ds), np.ascontiguousarray(full_df)
+        )
+        _array(full_tangent, (12, self.batch, self.levels), "full backend tangent")
+        return np.ascontiguousarray(full_tangent[:, self.target, :].copy())
+
+    def vjp(self, handle, cotangent):
+        h = self._validate_handle(handle, require_record=True)
+        _array(cotangent, (12, self.levels), "cotangent")
+        full_seed = np.zeros_like(self._baseline_state)
+        full_seed[:, self.target, :] = cotangent
+        full_state_adjoint, full_forcing_adjoint = self.backend.vjp(
+            h._inner, np.ascontiguousarray(full_seed)
+        )
+        _array(
+            full_state_adjoint,
+            (12, self.batch, self.levels),
+            "full backend state adjoint",
+        )
+        _array(
+            full_forcing_adjoint,
+            (4, self.batch, self.levels),
+            "full backend forcing adjoint",
+        )
+        return (
+            np.ascontiguousarray(full_state_adjoint[:, self.target, :].copy()),
+            np.ascontiguousarray(full_forcing_adjoint[:, self.target, :].copy()),
+        )
+
+    def close(self, handle=None):
+        if handle is None:
+            return
+        if (
+            not isinstance(handle, BatchTargetHandle)
+            or handle._owner is not self._owner
+        ):
+            raise TypeError("handle was not created by this BatchTargetKernel")
+        if handle.closed:
+            return
+        h = handle
+        try:
+            if not _null_handle(h._inner):
+                self.backend.close(h._inner)
+        finally:
+            h.closed = True

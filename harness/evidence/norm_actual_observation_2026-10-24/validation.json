@@ -1,0 +1,51 @@
+{
+  "schema": "kdm6.norm_actual_observation_validation.v1",
+  "base_main": "230a932d5b8d2d8a68a0bf264e939c2bdd792292",
+  "KDM_forward_calls": {
+    "initial_unit_label_rejection_before_RTTOV": 1,
+    "two_target_feasibility": 2,
+    "exploratory_FD": 19,
+    "final_source_pinned_FD": 19,
+    "total": 41
+  },
+  "RTTOV_calls": {
+    "two_target_feasibility": 2,
+    "exploratory_FD": 19,
+    "final_source_pinned_FD": 19,
+    "total": 40
+  },
+  "primary_final_calls": {
+    "KDM": 19,
+    "RTTOV": 19
+  },
+  "native_host_steps": 0,
+  "optimizations": 0,
+  "whole_domain_repeats": 0,
+  "admitted_targets": [
+    [
+      131,
+      88
+    ]
+  ],
+  "rejected_targets": [
+    [
+      113,
+      76
+    ]
+  ],
+  "final_directions_passed": 3,
+  "individual_epsilon_trials_passed": 9,
+  "scope": "native theta_m/QV/mixed directions only; same fullB512 background and native39levels; qualified derived dry-number coordinates; no unrestricted moments/geometry/full-host/HVP/forecast certificate",
+  "focused_tests": "18 passed (adapter11 + public evidence7), after final API/dot-replay review fixes",
+  "full_harness": "2770 passed,72 skipped,309 deselected in119.13s before the final constructor guard and additional regression test; final focused18 passed; exact-head CI is reported on the PR",
+  "number_payload_original_basis": "unknown_not_migrated",
+  "surface": "target checkpoint skin/near-surface/land/snow, explicit fixed salinity/foam/FASTEM/fetch/emissivity/gases/upper-reference assumptions",
+  "time_navigation": "nominalKOslot00:00,sourceheader00:00:33,modelendpoint00:00:40; per-pixelUTC and independent per-pixelnav unverified",
+  "full_harness_log_sha256": "8c0c7cfd7c365d5af02dd21cdc654e76f652a6cc1a8d6ad773bb7f5acf3093ba",
+  "Green": "Mapped native/KO inputs,106 private source pins,Huber cost,all9 FD ratios and direct pressure-K contributions independently checked; no blocking inconsistency",
+  "public_replay_limit": "Endpoint cloud-fraction and branch-signature arrays were compared by the pinned executed controller but not saved in public FD endpoint records; independent public replay covers BT/cost/masks, not those eligibility components",
+  "Red": "Two issues found and corrected: dt metadata mismatch without backend declaration, and exact NumPy dot reduction replay; original20s experiment arithmetic unaffected",
+  "executed_adapter_sha256": "7a6b2a61851fff37853c2060274f562a45fc3bf822851951596f332f15e71a28",
+  "current_adapter_sha256": "11280e32c7c2ed402f1dbbce29a86ebf567c37d56f5f66d5a4140bfd13b5b12d",
+  "executed_vs_final_adapter": "Only constructor dt validation/docstring changed; original adapter snapshot retained and matches prepared receipt; every executed call used dt20"
+}

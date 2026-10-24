@@ -1,0 +1,417 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Selected-column native norm_actual observation-cost coupling over the frozen B512 endpoint map. Bounded T/Q first-order evidence; one target admitted and one rejected by actual RTTOV quality. No host timestep, optimization, forecast claim or full-domain repeat.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "norm_obs_coupling_experiment",
+      "label": "Selected-column norm_actual native observation-cost coupling",
+      "file_type": "document",
+      "source_file": "docs/NORM_ACTUAL_OBSERVATION_COUPLING.md",
+      "source_location": "H1:Preserve the B512 map through a one-column protocol; H2:Reuse the established observation chain",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "scope": "Two target columns reuse the saved endpoint packet and existing prep, finish, profile, cloud, RTTOV-K and cost maps; only native theta_m/QV/mixed first-order directions are reported."
+    },
+    {
+      "id": "norm_obs_endpoint_packet_and_selected_blocks",
+      "label": "Full native endpoint packet supplies fixed B512 backgrounds and two selected target blocks",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/prepared.json",
+      "source_location": "/source_sha256; /native_targets; /B; /L",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "checkpoint_time": "2025-07-19_00:00:40",
+      "packet_manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "B": 512,
+      "L": 39,
+      "target_blocks": [
+        {
+          "i": 113,
+          "j": 76,
+          "flat_index": 17662,
+          "chunk": 34,
+          "local_column": 254
+        },
+        {
+          "i": 131,
+          "j": 88,
+          "flat_index": 20488,
+          "chunk": 40,
+          "local_column": 8
+        }
+      ],
+      "phase_limit": "Offline endpoint-initialized packet, not a captured target MP_INPUT trace or an actual next-MP call."
+    },
+    {
+      "id": "norm_obs_selected_batch_kernel_adapter",
+      "label": "Selected-column adapter scatters through the full B512 kernel and gathers first-order products",
+      "file_type": "code",
+      "source_file": "harness/batch_target_kernel.py",
+      "source_location": "L43-L193",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "contract": "Forward replaces one target column in frozen state/forcing buffers, runs the full backend batch and returns the selected 39-level output; JVP/VJP scatter sparse target products through the full backend record and gather target adjoints.",
+      "dt_contract": "Backend without dt metadata is bound to20seconds; a different adapter dt requires an explicit equal backend dt; error guard added after executed20s run, old executed adapter archived separately."
+    },
+    {
+      "id": "norm_obs_native_to_cost_operator_chain",
+      "label": "Native prep and B512 KDM feed cleanup, finish, EOS, profile/cloud mapping and real RTTOV cost",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/final_coupling.py.txt",
+      "source_location": "L38-L133",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "stages": [
+        "endpoint checkpoint controls",
+        "native prep",
+        "selected B512 norm_actual K",
+        "derived dry-number conjugation",
+        "cleanup and thermo finish",
+        "post-finish EOS",
+        "native profile and cloud mapping",
+        "pressure-aware RTTOV-K",
+        "KMA BT and Huber cost"
+      ],
+      "RTTOV_pressure_gradients": true,
+      "C_ABI_dimensions": {
+        "im": 1,
+        "kme": 39,
+        "jme": 512
+      }
+    },
+    {
+      "id": "norm_obs_matched_target_observations",
+      "label": "Pinned full-grid KO bundle contains seven supported observations at both native target locations",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/prepared.json",
+      "source_location": "/source_sha256; /native_targets",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "observation_bundle_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_quality": "Seven finite mapped BT observations with source DQF=0 and QC=0 at each target; old (156,21) BT is not reused.",
+      "mapping_limit": "Nearest-pixel mapping is from the pinned helper/header LCC path; independent per-pixel navigation and pixel UTC are not verified."
+    },
+    {
+      "id": "norm_obs_target_surface_and_time_assumptions",
+      "label": "Target checkpoint surface and geometry are overlaid while remaining RTTOV inputs stay explicit assumptions",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H3:Provenance and assumptions",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "target_native_overlays": [
+        "latitude/longitude/elevation",
+        "AMI viewing angles",
+        "checkpoint TSK/T2/Q2",
+        "rotated checkpoint 10-m wind",
+        "land/ice and snow fields"
+      ],
+      "fixed_assumptions": [
+        "salinity",
+        "foam",
+        "FASTEM",
+        "wind fetch",
+        "spectral emissivity",
+        "trace gases",
+        "upper reference"
+      ],
+      "time_status": "Nominal KO slot 00:00; source scene header 00:00:33; model endpoint 00:00:40; pixel UTC unverified.",
+      "endpoint_audit_limit": "Public FD endpoints retain BT/cost/masks; cloud-fraction and branch-signature stability is supported by the pinned executed controller, not independently replayable public endpoint arrays."
+    },
+    {
+      "id": "norm_obs_derived_number_coordinate",
+      "label": "Selected input numbers use a request-bound derived dry coordinate without certifying historical host units",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/number_qualification.json",
+      "source_location": "/schema; /origin; /source_bindings; /original_host_payload_basis",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "origin": "derived_kernel_volume_coordinate",
+      "conversion": "N_dry = N_kernel_volume / rho_native_dry",
+      "original_host_payload_basis": "unknown_not_migrated",
+      "original_host_basis_certified": false,
+      "scope": "Receipt binds the selected baseline request, packet, checkpoint, namelist and coordinates; it does not qualify legacy payload units generally."
+    },
+    {
+      "id": "norm_obs_admitted_13188_cost_result",
+      "label": "Native (131,88) retains seven RTTOV-quality channels and passes bounded T/Q directions",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/native13188_cost.json",
+      "source_location": "/cost; /quality; /mask; /direction_checks",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "flat_index": 20488,
+      "baseline_cost": 135.12287450638345,
+      "quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "directions": [
+        "theta_m",
+        "qv",
+        "mixed"
+      ],
+      "direction_gates": "3/3 directions and 9/9 epsilon trials pass; maximum dot-relative error 2.6017174032002664e-14.",
+      "call_count_final_run": {
+        "KDM": 19,
+        "RTTOV": 19
+      }
+    },
+    {
+      "id": "norm_obs_rejected_11376_cost_attempt",
+      "label": "Native (113,76) is rejected because all RTTOV channels fail the water-vapour coefficient limit",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/rejected11376.json",
+      "source_location": "/status; /reason; /reported_layer_pressure_hPa; /reported_humidity_ppmv; /reported_upper_limit_ppmv",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "flat_index": 17662,
+      "reported_q_ppmv": 7.7329,
+      "reported_pressure_hpa": 61.4771,
+      "coefficient_limit_ppmv": 7.689,
+      "quality": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "interpretation": "All-zero-mask cost 0 is explicitly not a fit. Humidity was not clipped, and the coefficient limit was not relaxed."
+    },
+    {
+      "id": "norm_obs_pressure_k_contribution",
+      "label": "Direct RTTOV P/P_HALF K contributes materially to the mixed cost derivative",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/pressure_contribution.json",
+      "source_location": "/mixed; /theta_m; /qv",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "mixed_full_cost_derivative": 0.011468287735670102,
+      "mixed_direct_pressure_K_contribution": -0.047353361954863546,
+      "mixed_derivative_without_direct_pressure_K": 0.05882164969053335,
+      "scope": "Removes only direct RTTOV pressure K; pressure-mediated changes to T/Q remain. This is a derivative decomposition, not a fit or forecast claim."
+    },
+    {
+      "id": "norm_obs_execution_scope_and_call_accounting",
+      "label": "The final certificate is a 19-call selected-column run, distinct from feasibility and exploratory attempts",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/validation.json",
+      "source_location": "/KDM_forward_calls; /RTTOV_calls; /whole_domain_repeats; /native_host_steps; /scope",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "total_calls_all_attempts": {
+        "KDM": 41,
+        "RTTOV": 40
+      },
+      "final_certificate_calls": {
+        "KDM": 19,
+        "RTTOV": 19
+      },
+      "whole_domain_repeats": 0,
+      "native_host_steps": 0,
+      "optimization": 0,
+      "limits": [
+        "Only T/Q/mixed directions at one admitted target",
+        "No all-moment or geometry derivative",
+        "No full-host/RK, HVP, forecast or optimization certificate",
+        "Original number basis remains unknown"
+      ]
+    },
+    {
+      "id": "norm_obs_pinned_sources_and_artifacts",
+      "label": "Prepared inputs, executed controller and public result artifacts are SHA-pinned",
+      "file_type": "document",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/manifest.json",
+      "source_location": "/source_sha256; /artifact_sha256; /final_controller_sha256",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "source_pin_count": 12,
+      "artifact_pin_count": 12,
+      "private_run_pin_count": 106,
+      "private_run_pin_recheck": "All 106 prepared path hashes matched the source files during Green review."
+    }
+  ],
+  "edges": [
+    {
+      "source": "norm_obs_endpoint_packet_and_selected_blocks",
+      "target": "norm_obs_selected_batch_kernel_adapter",
+      "relation": "provides_frozen_background_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/prepared.json",
+      "source_location": "/source_sha256; /B; /L",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_selected_batch_kernel_adapter",
+      "target": "norm_obs_native_to_cost_operator_chain",
+      "relation": "implements_selected_column_kernel_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/final_coupling.py.txt",
+      "source_location": "L73-L100",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_derived_number_coordinate",
+      "target": "norm_obs_native_to_cost_operator_chain",
+      "relation": "conjugates_selected_kernel_number_operands_with_live_DEN",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/number_qualification.json",
+      "source_location": "/conversion; /rho_source",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_native_to_cost_operator_chain",
+      "target": "norm_obs_admitted_13188_cost_result",
+      "relation": "produces_bounded_first_order_cost_evidence_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/native13188_cost.json",
+      "source_location": "/direction_checks; /cost",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_matched_target_observations",
+      "target": "norm_obs_admitted_13188_cost_result",
+      "relation": "supplies_target_observation_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/native13188_cost.json",
+      "source_location": "/observation_BT_KMA; /mask",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_matched_target_observations",
+      "target": "norm_obs_rejected_11376_cost_attempt",
+      "relation": "supplies_observation_but_not_quality_admission_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/rejected11376.json",
+      "source_location": "/observation_source_usable_channels; /simulated_usable_channels",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_pressure_k_contribution",
+      "target": "norm_obs_admitted_13188_cost_result",
+      "relation": "decomposes_direct_pressure_part_of",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/pressure_contribution.json",
+      "source_location": "/mixed",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_target_surface_and_time_assumptions",
+      "target": "norm_obs_admitted_13188_cost_result",
+      "relation": "bounds_spatial_and_temporal_interpretation_of",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H3:Provenance and assumptions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_target_surface_and_time_assumptions",
+      "target": "norm_obs_rejected_11376_cost_attempt",
+      "relation": "bounds_spatial_and_temporal_interpretation_of",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H3:Provenance and assumptions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_pinned_sources_and_artifacts",
+      "target": "norm_obs_native_to_cost_operator_chain",
+      "relation": "pins_executed_controller_and_inputs_for",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/manifest.json",
+      "source_location": "/source_sha256; /final_controller_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "norm_obs_execution_scope_and_call_accounting",
+      "target": "norm_obs_coupling_experiment",
+      "relation": "bounds_claims_of",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/validation.json",
+      "source_location": "/scope; /KDM_forward_calls; /RTTOV_calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "norm_obs_endpoint_to_cost_lineage",
+      "label": "Pinned endpoint state and observations flow through selected B512 norm_actual KDM to a bounded RTTOV cost result",
+      "nodes": [
+        "norm_obs_endpoint_packet_and_selected_blocks",
+        "norm_obs_selected_batch_kernel_adapter",
+        "norm_obs_derived_number_coordinate",
+        "norm_obs_native_to_cost_operator_chain",
+        "norm_obs_matched_target_observations",
+        "norm_obs_admitted_13188_cost_result",
+        "norm_obs_pinned_sources_and_artifacts"
+      ],
+      "relation": "supports_bounded_selected_column_cost_evidence",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H1:Admitted native(131,88), chunk40 row8",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "norm_obs_admission_and_rejection_pair",
+      "label": "Two spatial targets share the observation bundle but differ in RTTOV quality admission",
+      "nodes": [
+        "norm_obs_matched_target_observations",
+        "norm_obs_admitted_13188_cost_result",
+        "norm_obs_rejected_11376_cost_attempt",
+        "norm_obs_target_surface_and_time_assumptions"
+      ],
+      "relation": "contrasts_quality_admitted_cost_with_coefficient_limit_rejection",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H1:Admitted native(131,88), chunk40 row8; H2:Rejected native(113,76), chunk34 row254",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "norm_obs_pressure_and_scope_boundaries",
+      "label": "Pressure-K decomposition and scope record separate derivative evidence from assimilation or forecast claims",
+      "nodes": [
+        "norm_obs_pressure_k_contribution",
+        "norm_obs_admitted_13188_cost_result",
+        "norm_obs_execution_scope_and_call_accounting",
+        "norm_obs_target_surface_and_time_assumptions"
+      ],
+      "relation": "bounds_interpretation_of_actual_cost_derivatives",
+      "source_file": "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md",
+      "source_location": "H1:Admitted native(131,88), chunk40 row8; H3:Provenance and assumptions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}
