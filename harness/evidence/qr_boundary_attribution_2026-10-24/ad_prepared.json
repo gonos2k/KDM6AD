@@ -1,0 +1,9 @@
+{
+  "controller_sha256": "b5201ad8c320cc090c68022364a003884bf8e903e41008f1efeefede303dbe35",
+  "library_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/qr_boundary_20261024/build_v2/libkdm6_qr_trace.2.0.0.dylib": "c54e0bb1fa3fb22dada099a4ba45d331a4f6652ffc82f62ff41f773422654134",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib": "e412328b7714c6b106268fbd795708aa8434e88338bc9157b8cfe1fffa5315e9"
+  },
+  "forward_calls_planned": 12,
+  "directions": "entry_interior_pairs mixed only; one cotangent; same B512"
+}

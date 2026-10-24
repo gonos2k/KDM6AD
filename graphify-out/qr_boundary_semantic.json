@@ -1,0 +1,327 @@
+{
+  "nodes": [
+    {
+      "id": "qr_main_substep_transfer",
+      "label": "Executed main-QR substep transfer",
+      "file_type": "code",
+      "source_file": "libtorch/src/sedimentation.cpp",
+      "source_location": "L138-L176",
+      "_origin": "semantic",
+      "outflow": "dqr_k=min(falk_qr_k*dtcld/DEND_safe,QR_before)",
+      "arrival": "dqr_above=min(falk_qr_prev*DELZ_above/DELZ_safe*dtcld/DEND_safe,QR_above_post_update)",
+      "state_update": "QR_after=max(QR_before-dqr_k+dqr_above,0)",
+      "falk_carry": "The upper cell's stored entry-state falk is reused; it is not recomputed from the depleted upper reservoir."
+    },
+    {
+      "id": "qr_boundary_observer_overlay",
+      "label": "Private QR boundary observer over the frozen factorial overlay",
+      "file_type": "code",
+      "source_file": "harness/make_rain_boundary_overlay.py",
+      "source_location": "L199-L420",
+      "_origin": "semantic",
+      "base_validation": "All four pinned source TUs are rendered with the current factorial generators and byte-compared with the supplied v6 overlay.",
+      "changed_translation_units": [
+        "libtorch/src/sedimentation.cpp",
+        "libtorch/src/coordinator.cpp"
+      ],
+      "unchanged_translation_units": [
+        "libtorch/src/runtime.cpp",
+        "libtorch/src/sedimentation_conservative.cpp"
+      ],
+      "arithmetic_contract": "Existing top/interior QR expressions remain text-identical; attempts are reconstructed only inside helper-local NoGradGuard."
+    },
+    {
+      "id": "qr_layer_trace",
+      "label": "QR layer trace records source operands and realized changes",
+      "file_type": "code",
+      "source_file": "harness/make_rain_boundary_overlay.py",
+      "source_location": "L29-L138",
+      "_origin": "semantic",
+      "schema": "kdm6.rain_boundary.v1 record=qr_layer",
+      "fields": [
+        "call_index and n",
+        "column and top-first level index",
+        "local mstep and gate",
+        "raw/safe DEND and DELZ, work1/workn",
+        "current and previous stored falk",
+        "QR entry, upper post-update cap operand, and QR after",
+        "reconstructed attempts, direct dqr_k/dqr_above operands, and fall accumulator before/after"
+      ],
+      "top_boundary": "No incoming transfer operand exists; applied departure is observed as QR_before-QR_after and the min(attempt,before) is a separate diagnostic."
+    },
+    {
+      "id": "qr_surface_trace",
+      "label": "QR surface trace preserves fall components and returned outputs",
+      "file_type": "code",
+      "source_file": "harness/make_rain_boundary_overlay.py",
+      "source_location": "L140-L194",
+      "_origin": "semantic",
+      "fields": [
+        "bottom fall_qr/fall_qs/fall_qg/fall_qi",
+        "bottom DELZ and dtcld",
+        "actual returned total, snow/ice subset, and graupel subset"
+      ],
+      "total_semantics": "surface.rain_increment is the source routine's total fall (QR+QS+QG+QI), not a rain-only component."
+    },
+    {
+      "id": "qr_surface_formula",
+      "label": "Surface precipitation uses source-associated accumulated fall rates",
+      "file_type": "code",
+      "source_file": "libtorch/src/sedimentation.cpp",
+      "source_location": "L302-L326",
+      "_origin": "semantic",
+      "total_formula": "max(((fall_qr+fall_qs)+fall_qg)+fall_qi,0)*DELZ/DENR*dtcld*1000",
+      "snow_ice_formula": "max(fall_qs+fall_qi,0)*DELZ/DENR*dtcld*1000",
+      "graupel_formula": "max(fall_qg,0)*DELZ/DENR*dtcld*1000",
+      "qr_only": "Reconstructed from fall_qr for accounting; not a separately returned ABI diagnostic."
+    },
+    {
+      "id": "qr_step_budget",
+      "label": "QR step budget separates actual departure, arrival, and internal interface gaps",
+      "file_type": "code",
+      "source_file": "harness/rain_boundary_budget.py",
+      "source_location": "L44-L113",
+      "_origin": "semantic",
+      "measure": "Fixed request DEND*DELZ",
+      "identity": "DeltaW + actual_bottom_departure + sum(D_k-A_(k+1)) = rounding remainder",
+      "numerics": "Rounded binary64 measure-times-state-delta products are reduced with math.fsum."
+    },
+    {
+      "id": "qr_reported_residual_decomposition",
+      "label": "Reported QR residual splits surface diagnostic excess from internal transfer mismatch",
+      "file_type": "code",
+      "source_file": "harness/rain_boundary_budget.py",
+      "source_location": "L115-L169",
+      "_origin": "semantic",
+      "identity": "DeltaW + P_QR = (P_QR-D_bottom) - sum(D_k-A_(k+1)) + epsilon",
+      "interpretation": "P_QR is reconstructed QR-only surface fallout; it is not the returned total multi-species precipitation."
+    },
+    {
+      "id": "qr_trace_analyzer",
+      "label": "QR trace analyzer admits frozen requests and validates source arithmetic",
+      "file_type": "code",
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L188-L442",
+      "_origin": "semantic",
+      "checks": [
+        "B512/L39 request/response/trace hashes and exact response bytes",
+        "top-first row order, n/call coverage, and per-column gate schedule",
+        "DEND/DELZ against the request and safe floors",
+        "stored falk carry, post-update arrival cap, direct applied operands, QR recurrence, and fallout accumulation",
+        "surface response categories and their source formulas"
+      ]
+    },
+    {
+      "id": "qr_chunk34_positive_witness",
+      "label": "Chunk 34 positive QR residual combines internal loss and diagnostic excess",
+      "file_type": "document",
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Positive witness: two losses with different signs in the reported budget",
+      "_origin": "semantic",
+      "mode": "norm_actual",
+      "column": {
+        "i_1based": 113,
+        "j_1based": 76,
+        "flat_index0": 17662,
+        "batch_row0": 254
+      },
+      "state_change_kg_m2": -0.048937123192133634,
+      "actual_bottom_departure_kg_m2": 0.0449202213885195,
+      "actual_bottom_arrival_kg_m2": 0.06972416693042871,
+      "internal_departure_minus_arrival_kg_m2": 0.004016901803614138,
+      "reported_qr_diagnostic_mm": 0.053995637612914336,
+      "reported_minus_actual_bottom_departure_kg_m2": 0.009075416224394839,
+      "state_plus_qr_diagnostic_kg_m2": 0.005058514420780702,
+      "mechanism": "n3/n4 outflow cap plus nonzero bottom arrival; accumulated falk-based QR diagnostic exceeds realized bottom departure."
+    },
+    {
+      "id": "qr_chunk40_negative_witness",
+      "label": "Chunk 40 negative QR residual is an internal arrival-cap mismatch",
+      "file_type": "document",
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Negative witness: one internal arrival cap",
+      "_origin": "semantic",
+      "mode": "norm_actual",
+      "column": {
+        "i_1based": 131,
+        "j_1based": 88,
+        "flat_index0": 20488,
+        "batch_row0": 8
+      },
+      "local_mstep": 1,
+      "global_mstepmax": 5,
+      "actual_bottom_departure_kg_m2": 0.0,
+      "internal_departure_minus_arrival_kg_m2": 0.18177156930768495,
+      "state_plus_qr_diagnostic_kg_m2": -0.1817715693076849,
+      "mechanism": "At top-first interface 30→31 (native levels 9→8), the stored-falk incoming attempt is capped by the already-updated upper QR reservoir; n2–n5 are gated off locally."
+    },
+    {
+      "id": "qr_observer_noninterference_evidence",
+      "label": "Rain trace observer preserves saved B512 responses and selected first-order products",
+      "file_type": "document",
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Isolated observer and executed path",
+      "_origin": "semantic",
+      "forward_comparisons": 8,
+      "AD_conditions": "frozen v6 control, observer off, observer on across two modes and two B512 chunks",
+      "result": "All compared saved response bytes and selected raw-state/combined/JVP/VJP products match bitwise. This is not a full-Jacobian or unrestricted-gradient certification."
+    },
+    {
+      "id": "qr_attribution_scope_limit",
+      "label": "QR transfer accounting is code-level attribution rather than physical conservation certification",
+      "file_type": "document",
+      "source_file": "docs/QR_BOUNDARY_ATTRIBUTION.md",
+      "source_location": "H2:Fixed-measure identities",
+      "_origin": "semantic",
+      "measure": "Fixed same-call DEND*DELZ; not regional mass, map-area, RK or moving-mass closure.",
+      "surface": "Returned total precipitation overlaps snow/ice and graupel subset diagnostics; QR-only is reconstructed.",
+      "limits": [
+        "No physical conservation proof",
+        "No precip adjoint or HVP",
+        "No new unrestricted-gradient certificate",
+        "No full-host/RK, RTTOV, or forecast-skill result"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "src_coordinator_sedimentation_chain",
+      "target": "src_sedimentation_substep_advection_torch",
+      "relation": "selects_as_legacy_main_substep",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "libtorch/src/coordinator.cpp",
+      "source_location": "L2720-L2784",
+      "weight": 1.0
+    },
+    {
+      "source": "src_coordinator_sedimentation_chain",
+      "target": "src_sedimentation_surface_accumulation_torch",
+      "relation": "passes_accumulated_bottom_fall_rates_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "libtorch/src/coordinator.cpp",
+      "source_location": "L2849-L2863",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_boundary_observer_overlay",
+      "target": "qr_main_substep_transfer",
+      "relation": "instruments_without_replacing_original_qr_updates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/make_rain_boundary_overlay.py",
+      "source_location": "L244-L330",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_boundary_observer_overlay",
+      "target": "qr_surface_trace",
+      "relation": "adds_opt_in_surface_observation",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/make_rain_boundary_overlay.py",
+      "source_location": "L332-L365",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_trace_analyzer",
+      "target": "qr_layer_trace",
+      "relation": "validates_trace_rows_against_frozen_request_and_source",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L188-L377",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_trace_analyzer",
+      "target": "qr_surface_trace",
+      "relation": "checks_returned_surface_values_and_associated_formula",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L377-L458",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_trace_analyzer",
+      "target": "qr_step_budget",
+      "relation": "feeds_validated_applied_transfers_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L498-L583",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_step_budget",
+      "target": "qr_reported_residual_decomposition",
+      "relation": "provides_actual_departure_and_signed_internal_gap_terms_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/rain_boundary_budget.py",
+      "source_location": "L44-L169",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_reported_residual_decomposition",
+      "target": "qr_chunk34_positive_witness",
+      "relation": "accounts_for_positive_witness_as_surface_excess_minus_internal_gap",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Positive witness: two losses with different signs in the reported budget",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_reported_residual_decomposition",
+      "target": "qr_chunk40_negative_witness",
+      "relation": "accounts_for_negative_witness_as_internal_gap_with_zero_surface_departure",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Negative witness: one internal arrival cap",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_observer_noninterference_evidence",
+      "target": "qr_boundary_observer_overlay",
+      "relation": "supports_trace_off_on_forward_and_selected_ad_product_identity_for_recorded_cases",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/qr_boundary_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Isolated observer and executed path",
+      "weight": 1.0
+    },
+    {
+      "source": "qr_attribution_scope_limit",
+      "target": "qr_reported_residual_decomposition",
+      "relation": "bounds_interpretation_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/QR_BOUNDARY_ATTRIBUTION.md",
+      "source_location": "H2:Fixed-measure identities",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "qr_boundary_attribution_chain",
+      "label": "Main QR state update, boundary observer, and fixed-measure transfer accounting",
+      "nodes": [
+        "qr_main_substep_transfer",
+        "qr_boundary_observer_overlay",
+        "qr_step_budget",
+        "qr_reported_residual_decomposition"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "docs/QR_BOUNDARY_ATTRIBUTION.md",
+      "source_location": "H2:Executed quantities"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

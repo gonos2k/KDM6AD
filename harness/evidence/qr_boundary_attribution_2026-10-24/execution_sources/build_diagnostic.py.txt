@@ -1,0 +1,69 @@
+"""Isolated QR instrumentation build: replace only two frozen v6 objects."""
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+import hashlib,json,shlex,shutil,subprocess
+ROOT=Path(__file__).resolve().parent
+REPO=Path('/private/tmp/KDM6AD-qr-boundary-20261024')
+BASE=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/overlay_build_v6/factorial_build/libkdm6.a')
+OLD=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/build')
+BATCH_OBJ=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/batch_tool_build/ice_factorial_batch.o')
+API_OBJ=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/kdm6_c_api.cpp.o')
+BUILD=ROOT/'build_v2';BUILD.mkdir(exist_ok=False)
+def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def publish(path,data):
+ with path.open('x')as stream:json.dump(data,stream,indent=2);stream.write('\n')
+assert sha(BASE)=='0bf2c94d30d66ba5a76767ae526ee5ea89d944a8cc242f95255b20a23bdb8b3a'
+assert sha(API_OBJ)=='a95211b6186982780c1e54bc76dffa1db159bb8f4929679d093f32b5269e95a0'
+flags={}
+for line in (OLD/'CMakeFiles/kdm6.dir/flags.make').read_text().splitlines():
+ if ' = ' in line:
+  key,value=line.split(' = ',1);flags[key]=shlex.split(value)
+inc=flags['CXX_INCLUDES']
+# -I and -isystem are preserved; only the stale public include-root is relocated.
+inc=[('-I'+str(REPO/'libtorch/include')) if token.startswith('-I')and token.endswith('/libtorch/include') else token for token in inc]
+cxx='/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++'
+commands=[]
+for name in ['sedimentation.cpp','coordinator.cpp']:
+ commands.append([cxx,*flags['CXX_DEFINES'],*inc,*flags['CXX_FLAGS'],'-c',str(ROOT/'overlay'/name),'-o',str(BUILD/(name+'.o'))])
+assert '-ffp-contract=off' in flags['CXX_FLAGS']
+inputs=[BASE,BATCH_OBJ,API_OBJ,OLD/'CMakeFiles/kdm6.dir/flags.make',Path(__file__),REPO/'harness/make_rain_boundary_overlay.py',ROOT/'overlay/source_sha256.json']
+inputs += list((ROOT/'overlay').glob('*.cpp'))+list((REPO/'libtorch/include').rglob('*.h'))
+pins={str(p):sha(p)for p in inputs}
+publish(BUILD/'prepared.json',{'source_sha256':pins,'compile_commands':commands,'scope':'Only two instrumented production TUs rebuilt; copied frozen archive, batch object and C API object. No test target assertion flag or operational install change.'})
+def compile_one(cmd):
+ name=Path(cmd[-1]).name
+ with(BUILD/(name+'.log')).open('xb')as log:subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True)
+ return name
+with ThreadPoolExecutor(max_workers=2)as pool:
+ for name in pool.map(compile_one,commands):print('compiled',name,flush=True)
+archive=BUILD/'libkdm6_qr_trace.a';shutil.copyfile(BASE,archive)
+subprocess.run(['/usr/bin/ar','-r',str(archive),str(BUILD/'sedimentation.cpp.o'),str(BUILD/'coordinator.cpp.o')],check=True)
+subprocess.run(['/usr/bin/ranlib',str(archive)],check=True)
+members=subprocess.check_output(['/usr/bin/ar','-t',str(BASE)],text=True).splitlines();after=subprocess.check_output(['/usr/bin/ar','-t',str(archive)],text=True).splitlines()
+assert len(members)==len(set(members)) and set(after)==set(members)
+differences=[]
+for name in members:
+ old=subprocess.check_output(['/usr/bin/ar','-p',str(BASE),name]);new=subprocess.check_output(['/usr/bin/ar','-p',str(archive),name])
+ if old!=new:differences.append(name)
+assert set(differences)=={'sedimentation.cpp.o','coordinator.cpp.o'}
+# Reuse the existing executable and shared-library link recipes with fresh outputs.
+links=[]
+cmd=shlex.split((OLD/'CMakeFiles/kdm6_column_budget.dir/link.txt').read_text())
+for i,value in enumerate(cmd):
+ if value=='CMakeFiles/kdm6_column_budget.dir/tools/kdm6_column_budget.cpp.o':cmd[i]=str(BATCH_OBJ)
+ elif value=='kdm6_column_budget':cmd[i]=str(BUILD/'ice_factorial_qr_trace')
+ elif value=='libkdm6.a':cmd[i]=str(archive)
+links.append(cmd)
+cmd=shlex.split((OLD/'CMakeFiles/kdm6_c.dir/link.txt').read_text())
+for i,value in enumerate(cmd):
+ if value=='CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o':cmd[i]=str(API_OBJ)
+ elif value=='libkdm6_c.2.0.0.dylib':cmd[i]=str(BUILD/'libkdm6_qr_trace.2.0.0.dylib')
+ elif value=='libkdm6.a':cmd[i]=str(archive)
+ elif value.startswith('-Wl,-exported_symbols_list,'):cmd[i]='-Wl,-exported_symbols_list,'+str(REPO/'libtorch/bridge/kdm6_c.exports')
+ elif value=='@rpath/libkdm6_c.2.dylib':cmd[i]='@rpath/libkdm6_qr_trace.2.dylib'
+links.append(cmd)
+for i,cmd in enumerate(links):
+ with(BUILD/f'link_{i}.log').open('xb')as log:subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True)
+assert all(sha(p)==h for p,h in pins.items())
+publish(BUILD/'receipt.json',{'source_sha256':pins,'link_commands':links,'changed_archive_members':differences,'unchanged_archive_members':len(members)-len(differences),'archive_sha256':sha(archive),'batch_tool_sha256':sha(BUILD/'ice_factorial_qr_trace'),'C_API_library_sha256':sha(BUILD/'libkdm6_qr_trace.2.0.0.dylib'),'translation_units_rebuilt':2,'operational_install_changed':False})
+print('build complete',flush=True)

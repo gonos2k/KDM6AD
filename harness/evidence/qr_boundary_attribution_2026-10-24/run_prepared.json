@@ -1,0 +1,17 @@
+{
+  "controller_sha256": "803f23f8e0fd28ae124a3ce44d63e96f53749c36299c7501fe9a46ca52f16954",
+  "tool_sha256": "66b65829c6aa29f82ec41ae14e8c77641e5207872527c3b8ebd475355529533f",
+  "KDM_calls_planned": 8,
+  "B": 512,
+  "L": 39,
+  "modes": [
+    "norm_actual",
+    "raw_actual"
+  ],
+  "chunks": [
+    34,
+    40
+  ],
+  "trace_environment": "KDM6_RAIN_BOUNDARY_TRACE only; previous tracing envs cleared",
+  "scope": "new diagnostic archive, exact same request and physics maps, no host/DA/RTTOV run"
+}

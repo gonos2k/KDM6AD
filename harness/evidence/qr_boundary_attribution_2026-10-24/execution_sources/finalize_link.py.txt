@@ -1,0 +1,44 @@
+from pathlib import Path
+import json,hashlib,subprocess,shlex
+ROOT=Path(__file__).resolve().parent
+REPO=Path('/private/tmp/KDM6AD-qr-boundary-20261024')
+BUILD=ROOT/'build_v2'
+BASE=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/overlay_build_v6/factorial_build/libkdm6.a')
+OLD=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/build')
+BATCH_OBJ=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/batch_tool_build/ice_factorial_batch.o')
+API_OBJ=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/kdm6_c_api.cpp.o')
+archive=BUILD/'libkdm6_qr_trace.a'
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def publish(p,data):
+ with p.open('x')as f:json.dump(data,f,indent=2)
+pins=json.loads((BUILD/'prepared.json').read_text())['source_sha256']
+assert all(sha(p)==h for p,h in pins.items())
+members=subprocess.check_output(['/usr/bin/ar','-t',str(BASE)],text=True).splitlines();after=subprocess.check_output(['/usr/bin/ar','-t',str(archive)],text=True).splitlines()
+assert len(members)==len(set(members)) and set(after)==set(members)
+differences=[]
+for name in members:
+ old=subprocess.check_output(['/usr/bin/ar','-p',str(BASE),name]);new=subprocess.check_output(['/usr/bin/ar','-p',str(archive),name])
+ if old!=new:differences.append(name)
+object_differences=[n for n in differences if n.endswith('.o')]
+assert set(object_differences)=={'sedimentation.cpp.o','coordinator.cpp.o'}
+# Reuse the existing executable and shared-library link recipes with fresh outputs.
+links=[]
+cmd=shlex.split((OLD/'CMakeFiles/kdm6_column_budget.dir/link.txt').read_text())
+for i,value in enumerate(cmd):
+ if value=='CMakeFiles/kdm6_column_budget.dir/tools/kdm6_column_budget.cpp.o':cmd[i]=str(BATCH_OBJ)
+ elif value=='kdm6_column_budget':cmd[i]=str(BUILD/'ice_factorial_qr_trace')
+ elif value=='libkdm6.a':cmd[i]=str(archive)
+links.append(cmd)
+cmd=shlex.split((OLD/'CMakeFiles/kdm6_c.dir/link.txt').read_text())
+for i,value in enumerate(cmd):
+ if value=='CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o':cmd[i]=str(API_OBJ)
+ elif value=='libkdm6_c.2.0.0.dylib':cmd[i]=str(BUILD/'libkdm6_qr_trace.2.0.0.dylib')
+ elif value=='libkdm6.a':cmd[i]=str(archive)
+ elif value.startswith('-Wl,-exported_symbols_list,'):cmd[i]='-Wl,-exported_symbols_list,'+str(REPO/'libtorch/bridge/kdm6_c.exports')
+ elif value=='@rpath/libkdm6_c.2.dylib':cmd[i]='@rpath/libkdm6_qr_trace.2.dylib'
+links.append(cmd)
+for i,cmd in enumerate(links):
+ with(BUILD/f'link_{i}.log').open('xb')as log:subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True)
+assert all(sha(p)==h for p,h in pins.items())
+publish(BUILD/'receipt.json',{'source_sha256':pins,'link_commands':links,'changed_object_members':object_differences,'unchanged_object_members':len([n for n in members if n.endswith('.o')])-len(object_differences),'archive_symbol_index_changed':any(not n.endswith('.o') for n in differences),'archive_sha256':sha(archive),'batch_tool_sha256':sha(BUILD/'ice_factorial_qr_trace'),'C_API_library_sha256':sha(BUILD/'libkdm6_qr_trace.2.0.0.dylib'),'translation_units_rebuilt':2,'operational_install_changed':False})
+print('build complete',flush=True)

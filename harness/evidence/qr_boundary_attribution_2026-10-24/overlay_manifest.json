@@ -1,0 +1,41 @@
+{
+  "base_generator_sha256": "024932962b9d1d648737f8cbc2e0e80dfdc0e7ecd1210b1921842ca12564efc9",
+  "base_overlay": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/overlay_build_v6/overlay",
+  "base_overlay_sha256": {
+    "coordinator.cpp": "373e77cc9f81bd77603c6993a53cd8dfd5e9b3b401da6e102d90bc16028f280e",
+    "runtime.cpp": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b",
+    "sedimentation.cpp": "855f2087a7c5c2bb81debc9bb8a76e7d855dec269d335c2ca9ffdbfe7d6ad104",
+    "sedimentation_conservative.cpp": "c3c63cf65c247921c282fff3c58201e942cc5d5b15d88482359efea259895323"
+  },
+  "factorial_generator_sha256": "cba3ce58fa1732a48650c8f6c662633026db55ab656552d234b8ca07d61cd516",
+  "generator_sha256": "e18fc57dca0adb8473f9443aff2295c9ec3cc8bbed08ec68bc5acc9981477d6b",
+  "operation_contract": "original QR arithmetic expressions and order retained; attempts reconstructed only under helper-local NoGradGuard; dqr_k/dqr_above captured from original operands",
+  "output_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/qr_boundary_20261024/overlay",
+  "overlay_sha256": {
+    "coordinator.cpp": "8c2784a82c6d03e595f003c85f9b58c9c093162a4d024086a340588c34283ce6",
+    "runtime.cpp": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b",
+    "sedimentation.cpp": "7f566bd065b5478a4fe8be9ec9b7da3f2b79fd2ba261cb2a0bc480ebc4505751",
+    "sedimentation_conservative.cpp": "c3c63cf65c247921c282fff3c58201e942cc5d5b15d88482359efea259895323"
+  },
+  "physics_map_changed": false,
+  "record_schemas": [
+    "kdm6.rain_boundary.v1"
+  ],
+  "schema": "kdm6.rain_boundary_overlay.v1",
+  "source_pins": {
+    "coordinator.cpp": "9253e1741cb8926f98fc088c56579a015472ea43b7ef0b365ef2c42bd2660152",
+    "runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "sedimentation.cpp": "1fd41e6dff2f99cf80cf9f318245cb50cb2d107d2f9053f8c65802f6b4037c2a",
+    "sedimentation_conservative.cpp": "53b13bc505b0e46327942b3b4070a541ce04f23f7a37d3b0bf60d731f8659694"
+  },
+  "source_root": "/private/tmp/KDM6AD-qr-boundary-20261024/libtorch",
+  "trace_environment_variable": "KDM6_RAIN_BOUNDARY_TRACE",
+  "translation_units_changed_from_base": [
+    "sedimentation.cpp",
+    "coordinator.cpp"
+  ],
+  "translation_units_identical_to_base": [
+    "runtime.cpp",
+    "sedimentation_conservative.cpp"
+  ]
+}

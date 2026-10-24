@@ -1,0 +1,89 @@
+{
+  "objects": [
+    {
+      "name": "ops.cpp.o",
+      "base_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039",
+      "new_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039",
+      "identical": true
+    },
+    {
+      "name": "slope.cpp.o",
+      "base_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a",
+      "new_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a",
+      "identical": true
+    },
+    {
+      "name": "progb.cpp.o",
+      "base_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b",
+      "new_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b",
+      "identical": true
+    },
+    {
+      "name": "warm.cpp.o",
+      "base_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858",
+      "new_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858",
+      "identical": true
+    },
+    {
+      "name": "satadj.cpp.o",
+      "base_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55",
+      "new_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55",
+      "identical": true
+    },
+    {
+      "name": "cold.cpp.o",
+      "base_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572",
+      "new_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572",
+      "identical": true
+    },
+    {
+      "name": "melt_freeze.cpp.o",
+      "base_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd",
+      "new_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd",
+      "identical": true
+    },
+    {
+      "name": "thermo.cpp.o",
+      "base_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0",
+      "new_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0",
+      "identical": true
+    },
+    {
+      "name": "state.cpp.o",
+      "base_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399",
+      "new_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399",
+      "identical": true
+    },
+    {
+      "name": "cloud_dsd.cpp.o",
+      "base_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9",
+      "new_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9",
+      "identical": true
+    },
+    {
+      "name": "runtime.cpp.o",
+      "base_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898",
+      "new_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898",
+      "identical": true
+    },
+    {
+      "name": "coordinator.cpp.o",
+      "base_sha256": "7b3733f94b2a4280d0a0269e52a37121966a0f0cd1faca370718f91127181ca6",
+      "new_sha256": "23e2cff9e2d164e0c48b3fb76fd6c808fbba3e3020b38a6cdba06c57697f7048",
+      "identical": false
+    },
+    {
+      "name": "sedimentation.cpp.o",
+      "base_sha256": "a1d1e4065d08aad15b089862e08e7f09e393f7f5aaeda33e1e6a5719d0778f0b",
+      "new_sha256": "f3f3e55878a44f5404cc49eda13596eb490c3bf8561843c6c32a381c22a66d6a",
+      "identical": false
+    },
+    {
+      "name": "sedimentation_conservative.cpp.o",
+      "base_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6",
+      "new_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6",
+      "identical": true
+    }
+  ],
+  "symbol_index": "__.SYMDEF intentionally regenerated; excluded from object identity claims"
+}
