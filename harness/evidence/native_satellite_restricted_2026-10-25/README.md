@@ -13,6 +13,10 @@ is independent arithmetic screening, not a new model run. The exact z-only
 NPZ is hash-bound by both specifications. See
 [the execution contract](../../../docs/NATIVE_RESTRICTED_CONFIRMATION.md).
 
-The actual source_v2 forward is in progress. No accepted-update claim is made
-until all 129 actual blocks, fixed support, global cost, state/rate exports,
-figures and provenance checks are complete.
+The actual source_v2 forward completed with `RESTRICTED_UPDATE_ACCEPTED`.
+All 129 blocks preserve the same support; measured J=11.144979224162192
+matches screening exactly and is about 0.0760% below the parent baseline.
+Full native state/rate exports, independent saved-output checks and public
+arithmetic replay are available in [REPORT.md](REPORT.md) and `data/`.
+No host cycle, convergence, forecast skill or physical-budget closure is
+certified by this single post-hoc case.

@@ -1,0 +1,242 @@
+{
+  "actions_this_preflight": {
+    "KDM_calls": 0,
+    "RTTOV_calls": 0,
+    "all_parent_pins_rehashed": true,
+    "build_started": false,
+    "host_calls": 0,
+    "mode_environment_reconstructed": true,
+    "source_copied": false
+  },
+  "authoritative_public_worktree": {
+    "actual_head": "45f6bd8f4842c361f8e619183321a5ee1bb79f49",
+    "branch": "experiment/ko7-restricted-block-confirmation",
+    "expected_main_commit": "45f6bd8f4842c361f8e619183321a5ee1bb79f49",
+    "head_matches_expected": true,
+    "path": "<ISOLATED_WORKTREE>/KDM6AD-restricted-ko7-20261025",
+    "status_lines": [
+      "M harness/native_satellite_objective.py",
+      " M harness/run_native_satellite_case.py",
+      " M harness/summarize_native_satellite_case.py",
+      " M harness/tests/test_native_satellite_objective.py",
+      " M harness/tests/test_run_native_satellite_case.py",
+      "?? harness/evidence/native_satellite_restricted_2026-10-25/",
+      "?? harness/tests/test_export_restricted_tendencies.py"
+    ],
+    "working_tree_clean": false
+  },
+  "available_python": {
+    "executable": "/opt/local/bin/python3",
+    "numpy": "2.2.6",
+    "python_version": "3.10.11",
+    "torch": "2.13.0"
+  },
+  "created_at_utc": "2026-10-24T22:17:45.099772+00:00",
+  "next_call_budget": {
+    "KDM_JVP_calls": 0,
+    "KDM_VJP_calls": 0,
+    "KDM_forward_calls_max": 129,
+    "RTTOV_K_calls": 0,
+    "RTTOV_direct_calls_max": 129,
+    "blocks": 129,
+    "full_domain_columns": 65988,
+    "native_cycles": 0,
+    "native_host_steps": 0
+  },
+  "parent_run": {
+    "accepted_trial": null,
+    "baseline_summary": {
+      "bytes": 44904,
+      "path": "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4/PILOT.json",
+      "sha256": "cc2578a5e346114bbb4fd2653fdb08b4ead9bdc4860f25831d914504ac8a0c4d"
+    },
+    "case_manifest": {
+      "bytes": 5126600,
+      "path": "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4/CASE_MANIFEST.json",
+      "sha256": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d"
+    },
+    "final_status": "COMPLETED_NO_ACCEPTABLE_UPDATE",
+    "final_summary": {
+      "bytes": 681,
+      "path": "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4/FINAL.json",
+      "sha256": "49c9df91e48bb8e1fd33e39eb4bd3f789cc056fb86c05601ae4dfbf3d79fa6fa"
+    },
+    "global_fd_summary": {
+      "bytes": 196004,
+      "path": "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4/FD.json",
+      "sha256": "a310230125b2dc731d31fd203c04ad7721e06a60f017167f0207db81a91a52f0"
+    },
+    "mode_environment_reconstruction": {
+      "child_mode_and_thread_values": {
+        "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+        "KDM6_QR_TRANSPORT": "actual_departure",
+        "MKL_NUM_THREADS": "1",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cleared_trace_variables": [
+        "KDM6_ICE_BOUNDARY_TRACE",
+        "KDM6_RAIN_BOUNDARY_TRACE",
+        "KDM6_ACTUAL_QR_TRACE",
+        "KDM6_SUBSTEP_DUMP",
+        "KDM6_SAME_CALL_BUDGET_TRACE"
+      ],
+      "computed_names": [
+        "KDM6_ICE_FACTORIAL_MODE",
+        "KDM6_QR_TRANSPORT",
+        "MKL_NUM_THREADS",
+        "OMP_DYNAMIC",
+        "OMP_NUM_THREADS",
+        "OMP_THREAD_LIMIT",
+        "OPENBLAS_NUM_THREADS"
+      ],
+      "computed_selected_environment_sha256": "b4a6fa223e4f6ac59b955c4b0cf0c43e648aed77f3fc77d1deb77d2a06440990",
+      "current_shell_mode_variables": {
+        "KDM6_ICE_FACTORIAL_MODE": null,
+        "KDM6_QR_TRANSPORT": null
+      },
+      "experiment": {
+        "batch_columns": 512,
+        "dt_seconds": 20.0,
+        "factorial_mode": "norm_actual",
+        "levels": 39,
+        "qr_transport": "actual_departure"
+      },
+      "matches_parent_runtime": true,
+      "parent_names": [
+        "KDM6_ICE_FACTORIAL_MODE",
+        "KDM6_QR_TRANSPORT",
+        "MKL_NUM_THREADS",
+        "OMP_DYNAMIC",
+        "OMP_NUM_THREADS",
+        "OMP_THREAD_LIMIT",
+        "OPENBLAS_NUM_THREADS"
+      ],
+      "parent_selected_environment_sha256": "b4a6fa223e4f6ac59b955c4b0cf0c43e648aed77f3fc77d1deb77d2a06440990"
+    },
+    "native_cycles": 0,
+    "native_host_steps": 0,
+    "parent_source_pins": {
+      "bytes_hashed": 2873967300,
+      "canonical_pins_sha256": "09d411bc503b876c636bc84e06d539f2a06adea00bc51b4623304c888ac2add7",
+      "changed": [],
+      "changed_count": 0,
+      "checked": 19887,
+      "elapsed_seconds": 2.1815560832619667,
+      "entries": 19887,
+      "missing": [],
+      "missing_count": 0
+    },
+    "processed_columns": 65988,
+    "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+    "runtime_assets": {
+      "base_library": {
+        "exists": true,
+        "matches_parent_pin": false,
+        "parent_pin_sha256": null,
+        "path": "<PRIVATE_ROOT>/host/research_evidence/localized_ice_stage_20261024_c2f9214a/ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib",
+        "pin_status": "not_in_parent_pins",
+        "sha256": "e412328b7714c6b106268fbd795708aa8434e88338bc9157b8cfe1fffa5315e9"
+      },
+      "candidate_build_receipt": {
+        "exists": true,
+        "matches_parent_pin": true,
+        "parent_pin_sha256": "4cc1d0158b686cfa9c07684f37a16d24a843ad456eb5ae9b10f4b343b6aa725d",
+        "path": "<PRIVATE_ROOT>/host/research_evidence/actual_qr_20261024/build_final/receipt.json",
+        "pin_status": "pinned_match",
+        "sha256": "4cc1d0158b686cfa9c07684f37a16d24a843ad456eb5ae9b10f4b343b6aa725d"
+      },
+      "candidate_library": {
+        "exists": true,
+        "matches_parent_pin": true,
+        "parent_pin_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+        "path": "<PRIVATE_ROOT>/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.2.0.0.dylib",
+        "pin_status": "pinned_match",
+        "sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99"
+      },
+      "candidate_overlay_manifest": {
+        "exists": true,
+        "matches_parent_pin": true,
+        "parent_pin_sha256": "69e5c08d1e3d8aa692ac27197be95d5a5cd21c6f2e694f5ff8f284dcfcfa290c",
+        "path": "<PRIVATE_ROOT>/host/research_evidence/actual_qr_20261024/overlay_final/source_sha256.json",
+        "pin_status": "pinned_match",
+        "sha256": "69e5c08d1e3d8aa692ac27197be95d5a5cd21c6f2e694f5ff8f284dcfcfa290c"
+      },
+      "rttov_template_executable": {
+        "exists": true,
+        "matches_parent_pin": true,
+        "parent_pin_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "pin_status": "pinned_match",
+        "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+      }
+    },
+    "runtime_receipt": {
+      "RT_environment_names": [
+        "KDM6_ICE_FACTORIAL_MODE",
+        "KDM6_QR_TRANSPORT",
+        "MKL_NUM_THREADS",
+        "OMP_DYNAMIC",
+        "OMP_NUM_THREADS",
+        "OMP_THREAD_LIMIT",
+        "OPENBLAS_NUM_THREADS"
+      ],
+      "RT_environment_sha256": "b4a6fa223e4f6ac59b955c4b0cf0c43e648aed77f3fc77d1deb77d2a06440990",
+      "machine": "arm64",
+      "numpy": "2.2.6",
+      "platform": "macOS-26.7-arm64-arm-64bit",
+      "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+      "python_executable": "/opt/local/bin/python3",
+      "torch": "2.13.0",
+      "torch_threads": 1
+    },
+    "verified_logical_sources": {
+      "checkpoint": {
+        "actual_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+        "expected_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+        "matches": true,
+        "path": "<PRIVATE_ROOT>/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40"
+      },
+      "finish_reference": {
+        "actual_sha256": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f",
+        "expected_sha256": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f",
+        "matches": true,
+        "path": "<ISOLATED_WORKTREE>/KDM6AD-actual-qr-20261024/harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json"
+      },
+      "observations": {
+        "actual_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+        "expected_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+        "matches": true,
+        "path": "<PRIVATE_ROOT>/host/research_evidence/ko7_model_domain_20261014/INPUTS.npz"
+      },
+      "packet_manifest": {
+        "actual_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+        "expected_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+        "matches": true,
+        "path": "<PRIVATE_ROOT>/host/research_evidence/mp137_ice_factorial_20261023/domain_preparation_fp64_final/manifest.json"
+      },
+      "prep_reference": {
+        "actual_sha256": "583ca2f3ed4904952bef2283f294ccdc01e87e66f25b0d808a30ac726bb1dc80",
+        "expected_sha256": "583ca2f3ed4904952bef2283f294ccdc01e87e66f25b0d808a30ac726bb1dc80",
+        "matches": true,
+        "path": "<ISOLATED_WORKTREE>/KDM6AD-actual-qr-20261024/harness/evidence/native_prep_ad_2026-10-21/native39_prep_ad.json"
+      }
+    }
+  },
+  "plan": {
+    "bytes": 44329,
+    "path": "/Users/yhlee/Downloads/KDM6AD_full_domain_satellite_case_plan_20261024.md",
+    "sha256": "5645d1a2feb5dbe5d671df3ebb9f03e4c8c0b40518eceb5980dd4592ccbba452"
+  },
+  "qualifications": [
+    "Parent source/data pins and listed runtime assets were inspected read-only.",
+    "The shell itself has no mode variables set; the runner context recreates the pinned child mode/thread environment and matches the parent environment hash.",
+    "The public worktree HEAD is the expected commit but has uncommitted restricted-runner edits; this preflight does not certify those edits.",
+    "The base_library reference exists but is not listed in the parent source pin map; the candidate library/build receipt/overlay and RTTOV template are pinned and match."
+  ],
+  "schema": "kdm6ad.native_satellite_restricted_preflight.v1",
+  "scope": "read-only parent-input/runtime preflight; no restricted engine copy or build",
+  "status": "PARENT_PINS_RUNTIME_AND_BASE_COMMIT_VERIFIED"
+}

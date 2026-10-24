@@ -1,0 +1,32 @@
+{
+  "schema": "kdm6.restricted_graph_refresh.v2",
+  "phase": "actual_accepted_full_case",
+  "semantic_files_cached": 15,
+  "semantic_nodes": 17,
+  "semantic_edges": 13,
+  "semantic_hyperedges": 2,
+  "graph_nodes": 22720,
+  "graph_edges": 45319,
+  "source_sha256": {
+    "docs/NATIVE_RESTRICTED_CONFIRMATION.md": "fad501a4a707b654bd6fe8dce795da0b31b32e2ab8b72885ba7ab1dc88f6f819",
+    "harness/evidence/native_satellite_restricted_2026-10-25/FINAL.json": "37a79e4855acd6e23eb96d2b1ca3ec2dbdeff8d26bbc9d7d29aeb91d6ed3d89c",
+    "harness/evidence/native_satellite_restricted_2026-10-25/PUBLIC_ARITHMETIC_REPLAY.json": "874a0b1decfb0e09ca147f339fe582c1676988aee654e2802f2200c612a76353",
+    "harness/evidence/native_satellite_restricted_2026-10-25/README.md": "ad16fc63421e6ceb2ffa4363c9c46fa680c24d55e3e9c4d1bfc987ec6cdf2cae",
+    "harness/evidence/native_satellite_restricted_2026-10-25/REPORT.md": "1b59170b05509381606c1dcc00376eab28e0541ef96ad5008db7e8cc031dd59d",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/execution/CONFIRMATION.json": "ff4be67c40df76d864516b495754f9da746211e183a007def0659fee6413df58",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/execution/FULL_RECONSTRUCTION_AUDIT.json": "091212c29182f821346b780a1c34e60f9e2389c1189f368a43741b3e01293c19",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/original_trial_fail29_crosswalk.json": "4d66c990164d0284522818fefe95989ec35cd311989403e44f2fe1f06f863f52",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/publication_manifest.json": "0e0b45838dcc77b9941be4a52e06d0f7d92645eb56a1e5eb0008f864e34f81bf",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/restricted_block_screen.json": "d636e77504a663d7f6c801a40f743541c499354611744e5304d76c4c2405d644",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/restricted_candidate_sourcebound.json": "2a45cd8269a5c331274c9be0024d3451346c8bf33bec639fdeabe9d7e205d9ed",
+    "harness/evidence/native_satellite_restricted_2026-10-25/data/tendencies/tendency_crosswalk.json": "01ffae64b6d5af8be3c4e87ad59a0c08e9623400409ea2593713cddde4872a76",
+    "harness/run_native_satellite_case.py": "275f9f659a4903937eabb172f07911152f691220ee66e428d242f7adf6ce90cd",
+    "harness/summarize_native_satellite_case.py": "70667d110f0883037cc2416970d002b642551c0233edf4f8b5ba78f5fd5f5e33",
+    "wiki/sources/native-ko7-restricted-confirmation-2026-10-25.md": "7177e08f1dacd9af29309762ff338fc402434cbfd75a6369f4360a7556735f84"
+  },
+  "inherited_extraction_warnings": 486,
+  "graph_sha256": "a568e2a40565b158010b42421ac43aa669daab32f76380d221386eceefe1de69",
+  "semantic_tokens": "unmetered",
+  "raw_reports_in": "graphify-out/",
+  "raw_reports_copied_to_wiki": false
+}

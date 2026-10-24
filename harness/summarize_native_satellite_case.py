@@ -531,6 +531,7 @@ def _check_report_objective(manifest, predicted, observed, support, normalizer, 
 def _plot_maps(output, arrays, nx, ny, *, comparison_name="Final",
                control_name="Input"):
     import matplotlib.pyplot as plt
+    import textwrap
 
     obs = arrays["obs_bt"]
     base, final = arrays["baseline_bt"], arrays["final_bt"]
@@ -592,10 +593,10 @@ def _plot_maps(output, arrays, nx, ny, *, comparison_name="Final",
     tnorm = np.linalg.norm(dtheta, axis=1).reshape(ny, nx)
     qnorm = np.linalg.norm(dqv, axis=1).reshape(ny, nx)
     reasons, counts = np.unique(arrays["reasons"], return_counts=True)
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 7), constrained_layout=True)
     for ax, data, title in (
-        (axes[0], tnorm, f"{control_name} moist-theta increment L2 over 39 levels (K)"),
-        (axes[1], qnorm, f"{control_name} QV increment L2 over 39 levels (kg/kg dry)"),
+        (axes[0], tnorm, f"{control_name} moist-theta increment\nL2 over 39 levels (K)"),
+        (axes[1], qnorm, f"{control_name} QV increment\nL2 over 39 levels (kg/kg dry)"),
     ):
         maximum = float(np.max(data))
         image = ax.imshow(data, origin="lower", cmap="magma", vmin=0, vmax=maximum) if maximum else None
@@ -613,7 +614,9 @@ def _plot_maps(output, arrays, nx, ny, *, comparison_name="Final",
         if image is not None:
             fig.colorbar(image, ax=ax, shrink=0.8)
     axes[2].bar(np.arange(len(reasons)), counts)
-    axes[2].set_xticks(np.arange(len(reasons)), reasons, rotation=70, ha="right")
+    reason_labels = [textwrap.fill(str(value).split(":", 1)[0].split("channels0", 1)[0]
+                                  .strip("_ :").replace("_", " "), 12) for value in reasons]
+    axes[2].set_xticks(np.arange(len(reasons)), reason_labels, fontsize=8)
     axes[2].set_title("Baseline exclusion / status reasons")
     axes[2].set_ylabel("profile count")
     fig.savefig(output / "control_updates_and_reasons.png", dpi=150)

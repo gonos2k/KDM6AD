@@ -1,0 +1,34 @@
+{
+  "schema": "kdm6.actual_restricted_confirmation_launch.v1",
+  "run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "command": [
+    "/opt/local/bin/python3",
+    "-m",
+    "harness.run_native_satellite_case",
+    "--stage",
+    "restricted-confirmation",
+    "--parent-run",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4",
+    "--candidate-json",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_restricted_20261025/plan_recipe_v3_sourcebound/restricted_candidate_sourcebound.json",
+    "--output-root",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_restricted_20261025/RUN_v1",
+    "--workers",
+    "3"
+  ],
+  "source_directory": "<PRIVATE_ROOT>/host/research_evidence/native_satellite_restricted_20261025/source_v2",
+  "source_snapshot_sha256": "3e50c393f32b69588d0b97eb016f657f5201406b5dc966c4453b0f6d0156df93",
+  "preflight_log_sha256": "5d4b62a7d817f8b7ae4b62072e4d0c2ed30e5fb915b6dc1643b68137024b6927",
+  "plan_sha256": "5645d1a2feb5dbe5d671df3ebb9f03e4c8c0b40518eceb5980dd4592ccbba452",
+  "limits": {
+    "KDM_forward": 129,
+    "RTTOV_direct_max": 129,
+    "KDM_JVP": 0,
+    "KDM_VJP": 0,
+    "RTTOV_K": 0,
+    "native_host_calls": 0,
+    "additional_alpha": false,
+    "support_shrink": false
+  },
+  "started_at_UTC": "2026-10-24T22:25:49.330076+00:00"
+}

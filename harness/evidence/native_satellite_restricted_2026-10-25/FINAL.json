@@ -1,0 +1,41 @@
+{
+  "schema": "kdm6.native_satellite_restricted_final.v1",
+  "status": "RESTRICTED_UPDATE_ACCEPTED",
+  "run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "parent_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "blocks": 129,
+  "native_columns": 65988,
+  "globalZ": 381528.0,
+  "actual_objective": {
+    "observation_numerator": 4252119.682871534,
+    "regularization_numerator": 1.950564619163444,
+    "numerator": 4252121.633436153,
+    "Z": 381528.0,
+    "cost": 11.144979224162192
+  },
+  "cost_acceptance": {
+    "decreased": true,
+    "baseline_cost": 11.153458878209252,
+    "trial_cost": 11.144979224162192,
+    "decrease": 0.008479654047059526,
+    "required_decrease": 1.1115345887820926e-10
+  },
+  "call_totals": {
+    "KDM_forward": 129,
+    "KDM_JVP": 0,
+    "KDM_VJP": 0,
+    "RTTOV_K": 0,
+    "RTTOV_K_replayed": 0,
+    "RTTOV_direct": 129
+  },
+  "source_snapshot_sha256": "3e50c393f32b69588d0b97eb016f657f5201406b5dc966c4453b0f6d0156df93",
+  "confirmation_sha256": "23a466d2a3c2f40cfbc901187f50934840b07ba73503c7d3b82c9ed596a91f90",
+  "independent_full_audit_sha256": "a0bad734cc2c835655ff738d11479dc273946c2dbe6c7e1b04c6f42aa12ac757",
+  "publication_manifest_sha256": "0e0b45838dcc77b9941be4a52e06d0f7d92645eb56a1e5eb0008f864e34f81bf",
+  "public_replay_sha256": "874a0b1decfb0e09ca147f339fe582c1676988aee654e2802f2200c612a76353",
+  "publication_artifacts": 50,
+  "artifact_scope": "Full native state/rate arrays, diagrams and source-pinned public arithmetic complete; no host cycle/skill/convergence/physical-budget closure certified.",
+  "native_host_steps": 0,
+  "native_cycles": 0,
+  "parent_result_preserved": true
+}

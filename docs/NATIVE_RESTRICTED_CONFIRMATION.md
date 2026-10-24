@@ -6,6 +6,11 @@ projection. It keeps every baseline observation, weight and the global
 normalizer Z=381,528. The physical operator and original 128×B512+B452
 partition remain unchanged.
 
+The first actual confirmation completed as `RESTRICTED_UPDATE_ACCEPTED`:
+129/129 blocks, unchanged support, J=11.144979224162192 and exact agreement
+with screening. Full state/rate arrays and public replay are linked in
+[the measured report](../harness/evidence/native_satellite_restricted_2026-10-25/REPORT.md).
+
 The union of the three rejected proposals' lost profiles occupies 25 original
 blocks. Both T/Q controls are frozen in those blocks; their observations still
 contribute to the cost. The other 104 blocks retain the original alpha=1
@@ -33,9 +38,9 @@ inputs are bit-identical. Both the alternate hash and this qualification are
 retained in the independent screening audit; no hash tolerance is used.
 
 Saved-array reconstruction gives J=11.144979224162192, versus parent
-11.153458878209252 (about 0.076% lower). This is a screening prediction until
-the new actual 129-block forward completes. It is not an accepted update or
-forecast-skill result.
+11.153458878209252 (about 0.076% lower). The first actual 129-block forward
+confirmed this exact value and accepted the restricted update. Screening and
+actual execution remain separate evidence; neither establishes forecast skill.
 
 ## Execution boundary
 

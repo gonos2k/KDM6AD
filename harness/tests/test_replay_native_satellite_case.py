@@ -9,6 +9,7 @@ import numpy as np
 
 from harness.replay_native_satellite_case import (
     _candidate_finish_numpy,
+    _restricted_initial_qc,
     _restricted_bundle,
     _restricted_objective,
     replay,
@@ -22,6 +23,19 @@ EVIDENCE = (
     / "native_satellite_case_2026-10-25"
     / "data"
 )
+
+
+def test_actual_restricted_publication_cost_support_and_named_rates():
+    from harness.replay_native_satellite_case import replay_restricted_case
+    restricted = EVIDENCE.parents[1] / "native_satellite_restricted_2026-10-25" / "data"
+    result = replay_restricted_case(EVIDENCE, restricted)
+    assert result["status"] == "REPLAY_PASSED"
+    assert result["decision_status"] == "RESTRICTED_UPDATE_ACCEPTED"
+    assert result["restricted_J"] == 11.144979224162192
+    assert result["globalZ"] == 381528
+    assert result["candidate_support_preserved"]
+    assert result["candidate_finish_rates_replayed"]
+    assert result["new_KDM_RTTOV_host_calls"] == 0
 
 
 def test_actual_published_case_cost_controls_and_lost_support():
@@ -138,6 +152,19 @@ def test_restricted_finish_numpy_replay_preserves_ordered_clipping_and_receivers
     assert result["QV_RATE"].tobytes() == (dq / cfg["dt_seconds"]).tobytes()
     assert result["QC_RATE"].tobytes() == ((qc1 - qc0) / cfg["dt_seconds"]).tobytes()
     assert result["T_NEW_AFTER"].tobytes() == (full - cfg["t0_K"]).tobytes()
+
+
+def test_restricted_initial_qc_uses_published_initial_qc_kgkg_name(tmp_path):
+    values = np.arange(6, dtype=np.float64).reshape(2, 3)
+    path = tmp_path / "initial_qc.npz"
+    np.savez_compressed(path, flat_index=np.arange(2), initial_qc_kgkg=values)
+    from harness.replay_native_satellite_case import _arrays
+
+    assert _restricted_initial_qc(_arrays(path), 2, 3).tobytes() == values.tobytes()
+    old_name = tmp_path / "wrong.npz"
+    np.savez_compressed(old_name, flat_index=np.arange(2), qc_before=values)
+    with pytest.raises(ValueError, match="initial_qc_kgkg"):
+        _restricted_initial_qc(_arrays(old_name), 2, 3)
 
 
 def test_restricted_objective_uses_one_normalizer_and_prior_in_same_cost():

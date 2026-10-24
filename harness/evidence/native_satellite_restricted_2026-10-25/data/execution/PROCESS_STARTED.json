@@ -1,0 +1,19 @@
+{
+  "pid": 21632,
+  "run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "command": [
+    "/opt/local/bin/python3",
+    "-m",
+    "harness.run_native_satellite_case",
+    "--stage",
+    "restricted-confirmation",
+    "--parent-run",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_case_20261024/RUN_v4",
+    "--candidate-json",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_restricted_20261025/plan_recipe_v3_sourcebound/restricted_candidate_sourcebound.json",
+    "--output-root",
+    "<PRIVATE_ROOT>/host/research_evidence/native_satellite_restricted_20261025/RUN_v1",
+    "--workers",
+    "3"
+  ]
+}

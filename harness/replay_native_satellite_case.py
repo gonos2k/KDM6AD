@@ -41,6 +41,18 @@ def _arrays(path):
         return {name: archive[name].copy() for name in archive.files}
 
 
+def _restricted_initial_qc(arrays, n, levels):
+    qc = arrays.get("initial_qc_kgkg")
+    _require(
+        isinstance(qc, np.ndarray)
+        and qc.dtype == np.float64
+        and qc.shape == (n, levels)
+        and np.isfinite(qc).all(),
+        "restricted initial_qc artifact requires finite float64 initial_qc_kgkg",
+    )
+    return qc
+
+
 def replay(evidence):
     root = Path(evidence).resolve(strict=True)
     manifest_path = root / "publication_manifest.json"
@@ -616,7 +628,7 @@ def replay_restricted_case(parent_evidence, restricted_evidence):
         "t0_K": cross.get("t0_K"),
         "mp_tend_lim_K_s": cross.get("mp_tend_lim_K_s"),
     }
-    initial_qc_values = initial_qc["qc_before"]
+    initial_qc_values = _restricted_initial_qc(initial_qc, n, levels)
     candidate_qv0 = input_state["qv"]
     candidate_qv1 = candidate_applied_tq["qv_after"]
     baseline_qv1 = baseline_applied_tq["qv_after"]
