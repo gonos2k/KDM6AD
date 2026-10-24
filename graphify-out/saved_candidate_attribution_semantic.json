@@ -1,0 +1,471 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Saved-data-only post-microphysics inventory attribution and saved RTTOV profile-K decomposition for the opt-in actual-QR candidate. No new KDM/RTTOV/host/model calls; endpoint increments are not named-process attribution, and full physical-water closure remains uncertified. Semantic token usage unmetered.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "saved_candidate_attribution_report",
+      "label": "Unified directions, post-micro inventory localization, and profile-K contribution report",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/REPORT.md",
+      "source_location": "H1:Unified directions and saved-data attribution; H2:What the saved K decomposition means; H3:What post_micro decomposition means; H2:New localization from the same saved arrays; H2:Saved observation-coordinate contributions",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "scope": "Reuses the two prior B512\u00d739 blocks and the final native observation result; this follow-up is offline arithmetic only.",
+      "limits": [
+        "no named internal-process rates or causes",
+        "no full physical-water closure",
+        "offline cleanup is separate",
+        "no new host, KDM, RTTOV, DA, or build calls"
+      ]
+    },
+    {
+      "id": "saved_candidate_immutable_history_resolution",
+      "label": "Executed controller and test snapshots resolve immutable historical source pins",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/historical_source_resolution.json",
+      "source_location": "/immutable_manifests; /executed_source_snapshots; /physics_runs_added",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "executed_controller_sha256": "020ea1aecdda76db8c70978ab1f9814e32543e4b6780aaa92c51bb7b98a7de78",
+      "physics_runs_added": 0,
+      "source_attribution": "Historical manifests remain immutable; the archived controller snapshot identifies the earlier executed bytes and is not represented as the current runner."
+    },
+    {
+      "id": "saved_candidate_fixed_global_substep_parser",
+      "label": "Current trace reader names five global substeps while retaining per-column local counts",
+      "file_type": "code",
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L34; L189-L195",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "global_substeps": 5,
+      "local_mstep_selected_rows": {
+        "chunk34_row254": 4,
+        "chunk40_row8": 1
+      },
+      "attribution_limit": "The current parser constant is not retroactively attributed as the executed controller source for the historical four-arm run; immutable execution-era source bytes are archived separately."
+    },
+    {
+      "id": "saved_candidate_qr_block_receipts",
+      "label": "Frozen candidate B512 requests, responses, traces, and stages cover original chunks 34 and 40",
+      "file_type": "document",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/block_execution.json",
+      "source_location": "/calls; /chunk; /shape",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "chunks": [
+        34,
+        40
+      ],
+      "batch_columns": 512,
+      "levels": 39,
+      "model_evaluations_in_saved_execution": 6,
+      "posthoc_analysis_evaluations": 0
+    },
+    {
+      "id": "saved_candidate_actual_departure_map",
+      "label": "Opt-in QR actual-departure map changes main-substep QR state and fall updates only",
+      "file_type": "document",
+      "source_file": "docs/ACTUAL_QR_TRANSPORT.md",
+      "source_location": "H1:QR-only actual-departure research candidate; H2:Applied mass and first-order contract; H2:Deliberate limits",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "mode": "actual_departure under norm_actual; legacy remains default",
+      "number_and_host_scope": "No number-conservation, whole-host/RK, operational-adoption, or forecast certificate."
+    },
+    {
+      "id": "saved_candidate_qr_closure_receipt",
+      "label": "Candidate QR updates pass fixed-measure arithmetic gates and match Python replay",
+      "file_type": "document",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/block_comparison.json",
+      "source_location": "/qr_budget; /oracle_replay; /counts",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "qr_budget_columns_passing": 1024,
+      "oracle_step_outputs_bitwise_equal": true,
+      "max_abs_qr_residual_kg_m2": {
+        "chunk34": 2.0816681711721685e-16,
+        "chunk40": 1.3183898417423734e-16
+      }
+    },
+    {
+      "id": "saved_candidate_postmicro_stage_ledger",
+      "label": "Saved post_sed to post_micro stage ledger computes six-species fixed-measure inventory changes",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_post_micro.py",
+      "source_location": "L1-L7; L24-L36; L88-L145",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "input": "Pinned saved B512 stage arrays and actual request rho*dz, with trace geometry reversed to bottom-first state order.",
+      "primary_reduction": "One flat math.fsum over already-rounded density-depth times species-level increments; regrouped subtotals are diagnostics only.",
+      "endpoint_checks": "Saved state endpoints are checked against candidate request/response and post-sed trace outputs."
+    },
+    {
+      "id": "saved_candidate_postmicro_max_residuals",
+      "label": "Largest absolute post-micro residual columns and dominant native layers",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/34/largest_abs_net_columns/0; /cases/40/largest_abs_net_columns/0",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "measure": "Fixed actual request rho*dz; kg/m\u00b2 per column; layers shown bottom-up, 1-based.",
+      "columns": [
+        {
+          "chunk": 34,
+          "native_ij": [
+            140,
+            76
+          ],
+          "flat_index0": 17689,
+          "net_kg_m2": -7.422008460557849e-07,
+          "dominant_native_levels_1based_bottom_up": [
+            {
+              "level": 19,
+              "net_kg_m2": -4.5135366691218067e-07
+            },
+            {
+              "level": 18,
+              "net_kg_m2": -2.908471800089027e-07
+            }
+          ]
+        },
+        {
+          "chunk": 40,
+          "native_ij": [
+            139,
+            89
+          ],
+          "flat_index0": 20730,
+          "net_kg_m2": -4.1719494005253867e-07,
+          "dominant_native_levels_1based_bottom_up": [
+            {
+              "level": 18,
+              "net_kg_m2": -4.1719493982956074e-07
+            }
+          ]
+        }
+      ],
+      "interpretation": "Endpoint species changes localize the remaining net but do not identify its internal process or cause."
+    },
+    {
+      "id": "saved_candidate_postmicro_species_exchange",
+      "label": "Large opposing species movements nearly cancel at the original QR witness columns",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/34/selected_qr_witness_post_micro_attribution; /cases/40/selected_qr_witness_post_micro_attribution",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "witnesses": [
+        {
+          "chunk": 34,
+          "native_ij": [
+            113,
+            76
+          ],
+          "net_kg_m2": -1.4986462597372343e-15,
+          "gross_abs_species_change_kg_m2": 0.45003748
+        },
+        {
+          "chunk": 40,
+          "native_ij": [
+            131,
+            88
+          ],
+          "net_kg_m2": 1.8232774695662562e-15,
+          "gross_abs_species_change_kg_m2": 0.79541413
+        }
+      ],
+      "interpretation": "Vapor, liquid, and ice inventory cancellation is an endpoint arithmetic summary, not a named conversion-rate attribution."
+    },
+    {
+      "id": "saved_candidate_offline_cleanup_separate",
+      "label": "Saved offline cleanup remains outside the post-micro stage difference",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/34/offline_uniform_cleanup_separate; /cases/40/offline_uniform_cleanup_separate",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "max_abs_column_change_kg_m2": {
+        "chunk34": 6.432500805217109e-06,
+        "chunk40": 7.444309421894932e-06
+      },
+      "combined_with_postmicro": false
+    },
+    {
+      "id": "saved_candidate_live_direction_helper",
+      "label": "Observation controller uses one shared direction-vector helper for its live directions",
+      "file_type": "code",
+      "source_file": "harness/run_native_candidate_observation.py",
+      "source_location": "L285-L305; L916",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "current_runner_sha256": "74b2ce806988761d1e162cd432e271faa4ce4bfac10817a4810e5a70ecb16fa5",
+      "scope": "Direction construction refactor only; saved model inputs, operators, validation criteria, and prior results are unchanged."
+    },
+    {
+      "id": "saved_candidate_direction_archive_replay",
+      "label": "Archived and shared direction construction replay exactly for the three stored vectors",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/direction_replay.json",
+      "source_location": "/old_executed_runner_sha256; /current_runner_sha256; /directions; /KDM_calls; /RTTOV_calls",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "directions": {
+        "theta_m": "bitwise equal",
+        "qv": "bitwise equal",
+        "mixed": "bitwise equal"
+      },
+      "rest_direction": "zero for all three",
+      "KDM_calls": 0,
+      "RTTOV_calls": 0
+    },
+    {
+      "id": "saved_candidate_observation_cost_result",
+      "label": "Single native target actual-QR observation result retains fixed B512 background and saved RTTOV K",
+      "file_type": "document",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/observation_result.json",
+      "source_location": "/target; /library; /direction_checks; /profile_K; /RTTOV_calls; /KDM_forward_calls",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "target_native_ij": [
+        131,
+        88
+      ],
+      "batch_shape": [
+        512,
+        39
+      ],
+      "cost": 135.1228745063671,
+      "directions_and_epsilon_trials": "theta_m, qv, mixed; three epsilon values each passed the saved quality/mask, cloud-fraction, and finish/cleanup eligibility checks",
+      "calls": {
+        "KDM_forward": 19,
+        "RTTOV": 19
+      },
+      "claim_limit": "The cost difference from the prior reference is roundoff-scale, not a fit improvement; candidate QR-cap masks and KDM integer schedules are not certified stable at FD endpoints."
+    },
+    {
+      "id": "saved_candidate_profile_k_contribution_reader",
+      "label": "Saved RTTOV profile-K fields are contracted against each stored native direction tangent",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_profile_contributions.py",
+      "source_location": "L1-L6; L28-L53; L512-L615",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "method": "Binary64 K[field,channel,level]\u00d7profile tangent products, fsum over levels, saved cost-seed contraction, and fsum across channels.",
+      "test_coverage": "Focused tests passed; saved result identity and component/contribution consistency guards are applied.",
+      "interpretation": "Algebraic profile-coordinate terms only; not named KDM-process tendencies or independent native-control experiments.",
+      "public_source_contract": "Historical zero-rest contract resolves public executed final_coupling.py.txt against prepared SHA and original manifest; private host path retained as identity only, not read."
+    },
+    {
+      "id": "saved_candidate_profile_k_contribution_receipt",
+      "label": "Profile-K groups reveal cancellation in mixed direction and center/interface pressure terms",
+      "file_type": "document",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/profile_contributions.json",
+      "source_location": "/candidate_source; /directions; /arithmetic_envelope; /limits",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "grouped_cost_terms_by_direction": {
+        "theta_m": {
+          "T": 1.07217217,
+          "Q": 0.00041673,
+          "direct_P_plus_P_HALF": -0.04685142,
+          "liquid_content_plus_Deff": 0.0,
+          "ice_content_plus_Deff": -0.72066789,
+          "total": 0.30506959
+        },
+        "qv": {
+          "T": -0.0305152,
+          "Q": -0.01704757,
+          "direct_P_plus_P_HALF": -0.00050194,
+          "liquid_content_plus_Deff": 0.0,
+          "ice_content_plus_Deff": -0.2455366,
+          "total": -0.29360131
+        },
+        "mixed": {
+          "T": 1.04165697,
+          "Q": -0.01663084,
+          "direct_P_plus_P_HALF": -0.04735336,
+          "liquid_content_plus_Deff": 0.0,
+          "ice_content_plus_Deff": -0.96620449,
+          "total": 0.01146829
+        }
+      },
+      "cancellation_note": "Mixed T and ice groups oppose strongly; direct center P (-0.21860925) and interface P_HALF (+0.17125589) also partially cancel. Liquid terms are approximately zero in this point/direction set.",
+      "result_source_sha256": "de3059d85177474b0bb808110a05cb848f086644cceff7a19524ed9685df9ede",
+      "claim_limit": "Only total directions have actual FD evidence; profile-coordinate groups are algebraic decomposition, not identifiable process attribution."
+    }
+  ],
+  "edges": [
+    {
+      "source": "saved_candidate_immutable_history_resolution",
+      "target": "saved_candidate_qr_block_receipts",
+      "relation": "binds_execution_era_controller_bytes_for",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/historical_source_resolution.json",
+      "source_location": "/executed_source_snapshots",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_fixed_global_substep_parser",
+      "target": "saved_candidate_qr_block_receipts",
+      "relation": "parses_saved_five_step_trace_with_local_counts",
+      "source_file": "harness/analyze_rain_boundary_trace.py",
+      "source_location": "L34; L189-L195",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_actual_departure_map",
+      "target": "saved_candidate_qr_block_receipts",
+      "relation": "defines_candidate_map_used_by",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/REPORT.md",
+      "source_location": "H2:Derivation, source and actual executions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_qr_block_receipts",
+      "target": "saved_candidate_qr_closure_receipt",
+      "relation": "produces_saved_candidate_trace_and_budget_inputs_for",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/block_comparison.json",
+      "source_location": "/qr_budget; /oracle_replay",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_qr_block_receipts",
+      "target": "saved_candidate_postmicro_stage_ledger",
+      "relation": "supplies_saved_stages_and_forcing_for",
+      "source_file": "harness/analyze_saved_post_micro.py",
+      "source_location": "L24-L36; L88-L145",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_postmicro_stage_ledger",
+      "target": "saved_candidate_postmicro_max_residuals",
+      "relation": "localizes_fixed_measure_column_net_residuals",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/*/largest_abs_net_columns/0",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_postmicro_stage_ledger",
+      "target": "saved_candidate_postmicro_species_exchange",
+      "relation": "summarizes_opposing_endpoint_inventory_changes",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/*/selected_qr_witness_post_micro_attribution",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_postmicro_stage_ledger",
+      "target": "saved_candidate_offline_cleanup_separate",
+      "relation": "keeps_separate_from",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json",
+      "source_location": "/cases/*/offline_uniform_cleanup_separate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_live_direction_helper",
+      "target": "saved_candidate_direction_archive_replay",
+      "relation": "replays_archived_direction_construction",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/direction_replay.json",
+      "source_location": "/directions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_qr_block_receipts",
+      "target": "saved_candidate_observation_cost_result",
+      "relation": "provides_fixed_full_batch_background_for",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/observation_result.json",
+      "source_location": "/experiment; /target",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_observation_cost_result",
+      "target": "saved_candidate_profile_k_contribution_reader",
+      "relation": "supplies_saved_profile_K_and_tangents_to",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/observation_result.json",
+      "source_location": "/profile_K; /direction_checks",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_profile_k_contribution_reader",
+      "target": "saved_candidate_profile_k_contribution_receipt",
+      "relation": "reconstructs_and_checks_profile_coordinate_terms_in",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/profile_contributions.json",
+      "source_location": "/method; /directions; /arithmetic_envelope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "saved_candidate_profile_k_contribution_receipt",
+      "target": "saved_candidate_observation_cost_result",
+      "relation": "decomposes_but_does_not_expand_scope_of",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/REPORT.md",
+      "source_location": "H2:Saved observation-coordinate contributions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "saved_candidate_history_to_qr_and_postmicro_chain",
+      "label": "Immutable historical attribution separates QR-only closure from later post-micro residual and offline cleanup",
+      "nodes": [
+        "saved_candidate_immutable_history_resolution",
+        "saved_candidate_fixed_global_substep_parser",
+        "saved_candidate_qr_block_receipts",
+        "saved_candidate_actual_departure_map",
+        "saved_candidate_qr_closure_receipt",
+        "saved_candidate_postmicro_stage_ledger",
+        "saved_candidate_postmicro_max_residuals",
+        "saved_candidate_offline_cleanup_separate"
+      ],
+      "relation": "bounds_execution_and_budget_interpretation",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/REPORT.md",
+      "source_location": "H1:Unified directions and saved-data attribution; H2:What post_micro decomposition means; H2:New localization from the same saved arrays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "saved_candidate_live_replay_to_profile_cost_decomposition",
+      "label": "Shared live direction helper replays stored vectors, whose native RTTOV profile-K terms decompose the bounded cost derivative",
+      "nodes": [
+        "saved_candidate_live_direction_helper",
+        "saved_candidate_direction_archive_replay",
+        "saved_candidate_observation_cost_result",
+        "saved_candidate_profile_k_contribution_reader",
+        "saved_candidate_profile_k_contribution_receipt"
+      ],
+      "relation": "links_saved_directions_to_algebraic_profile_cost_terms",
+      "source_file": "harness/evidence/saved_candidate_attribution_2026-10-24/REPORT.md",
+      "source_location": "H1:Unified directions and saved-data attribution; H2:What the saved K decomposition means; H2:Saved observation-coordinate contributions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}

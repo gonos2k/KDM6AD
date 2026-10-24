@@ -642,16 +642,6 @@ def _prepare_inputs_impl(
     }
 
 
-def _make_directions(x, experiment):
-    levels = experiment["levels"]
-    k = np.arange(levels, dtype=np.float64)
-    theta = np.zeros_like(x)
-    theta[:levels] = 0.2 * np.sin(0.37 * (k + 1))
-    qv = np.zeros_like(x)
-    qv[levels : 2 * levels] = 0.02 * x[levels : 2 * levels] * np.cos(0.29 * (k + 2))
-    return {"theta_m": theta, "qv": qv, "mixed": theta + qv}
-
-
 def _check_pins(pins):
     changed = [path for path, expected in pins.items() if sha256_file(path) != expected]
     if changed:
@@ -923,11 +913,10 @@ def _verify_case_impl(prepared):
             finally:
                 microphysics.close(trial_record)
 
-        directions = _make_directions(x, experiment)
+        directions = direction_vectors(x, rest, experiment)
         for direction_spec in experiment["directions"]:
             name = direction_spec["name"]
-            dx = directions[name]
-            dr = np.zeros_like(rest)
+            dx, dr = directions[name]
             dy = microphysics.jvp(record, dx, dr)
             jvp_fields = tuple(
                 torch.from_numpy(value.copy())

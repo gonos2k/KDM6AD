@@ -1,0 +1,38 @@
+{
+  "schema": "kdm6.saved_candidate_attribution_manifest.v1",
+  "base_main": "3f3899b474e51d814988a5ac24fbf22cb2c42bba",
+  "new_KDM_calls": 0,
+  "new_RTTOV_calls": 0,
+  "source_sha256": {
+    "harness/run_native_candidate_observation.py": "74b2ce806988761d1e162cd432e271faa4ce4bfac10817a4810e5a70ecb16fa5",
+    "harness/tests/test_run_native_candidate_observation.py": "1c9297ea758f2758a201dc3753c2f6b8275666ad315cfe6bbb5bff9a95fe3e67",
+    "harness/tests/test_actual_qr_evidence.py": "03aed4b38f3944d474f2b15db08a68c230ba82d435cc4a2e0c21a6cf7454fc3c",
+    "harness/tests/test_saved_candidate_attribution_evidence.py": "19d854d31cb03c97597af7d34a536b3ee905171de25932370ef7eb332ab38fb6",
+    "harness/analyze_saved_profile_contributions.py": "4ee2d3cb43da31a0ec12708210e8534d2570d17ec55c9c68b82043f71c9c517e",
+    "harness/tests/test_analyze_saved_profile_contributions.py": "dae572761545409062b56b4b4e187632bb7c9693429369effa02cce4c78f1bc0",
+    "harness/analyze_saved_post_micro.py": "69e147c62ab1e00fa809d9eaa36614f29ccaa7ccff648c43775fc69b544d7cb8",
+    "harness/tests/test_analyze_saved_post_micro.py": "00bf98284cabf4773b6a06ca402622cfbd8401d62e743341f352964f81c931eb"
+  },
+  "input_sha256": {
+    "harness/evidence/actual_qr_transport_2026-10-24/manifest.json": "bff87dba95d4cff3d8209077176a7c1e6cfb8227f7de528155e17a49d3843f90",
+    "harness/evidence/actual_qr_transport_2026-10-24/block_comparison.json": "bd4d81d3c47e77e9810ef2c649773295c345cb2a69091576e686d6e3cbf3f76e",
+    "harness/evidence/actual_qr_transport_2026-10-24/chunk034.npz": "8e0341ab5a296332d176ddd6b9d773210f1d4a066c91081c4aa4e181ce3adf8d",
+    "harness/evidence/actual_qr_transport_2026-10-24/chunk040.npz": "eaf3bb7c001ae8b03ab7d5864c0ee2e3e24c50b9e79ecd47c17303c64ccc16c8",
+    "harness/evidence/actual_qr_transport_2026-10-24/observation_result.json": "de3059d85177474b0bb808110a05cb848f086644cceff7a19524ed9685df9ede",
+    "harness/evidence/norm_actual_observation_2026-10-24/native13188_cost.json": "be46f3350c5c82c781eaea8c93ff75dd7df7f6de3ee35a46d855c6fc684c4712",
+    "harness/evidence/norm_actual_observation_2026-10-24/prepared.json": "bdf1862e7b117d680445159950f5a8fe4a3270de6e4a34d7ea8b6dfc9688c088",
+    "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/final_coupling.py.txt": "20a5f0aa3294a37023c177f26194b8f575994872c52481b71e8ad8c0cdd946e8",
+    "harness/evidence/readable_candidate_tools_2026-10-24/manifest.json": "67de2f9d9b4cf48c4d3cc0ebe08123b23eb17049f185152fb65c243b90abb206",
+    "harness/evidence/norm_actual_observation_2026-10-24/manifest.json": "68db29d36833f6ec87e1fecc86dcbb848f9999222ef66e17d156b57282b2d855"
+  },
+  "artifact_sha256": {
+    "harness/evidence/saved_candidate_attribution_2026-10-24/REPORT.md": "1ba83b8f68ea2a70cec1d103800aca8892b717b3c8673717581f7fda021bb01b",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/direction_replay.json": "d091e505e48ec6420210ea80f5ff85d1dcd180655c39b8ac936259520e3a8fae",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/executed_sources/run_native_candidate_observation.py.txt": "020ea1aecdda76db8c70978ab1f9814e32543e4b6780aaa92c51bb7b98a7de78",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/executed_sources/test_actual_qr_evidence.py.txt": "59291e79057e654fe92ef697c220a02b27108f07fa20f6dc54d03387269799fc",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/historical_source_resolution.json": "35c2d5c9e821e94a36e0c3e2020a5367c9a0a4fb9b1a81769ab955c11f436ab0",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/post_micro_attribution.json": "c429497a042166689eb480f82ab435168a8d56d0aa46bbb29901f595c9227049",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/profile_contributions.json": "b90df2ad48f12d4b254b9ea0e76f71000f27f7b6969213c1478a7921216cc71f",
+    "harness/evidence/saved_candidate_attribution_2026-10-24/validation.json": "d635007aa9bdfbc243323819202a46ab780274c7fa6c2797f36c3e8b3db67bf8"
+  }
+}

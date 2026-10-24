@@ -1,0 +1,18 @@
+{
+  "schema": "kdm6.historical_source_resolution.v1",
+  "immutable_manifests": [
+    "harness/evidence/actual_qr_transport_2026-10-24/manifest.json",
+    "harness/evidence/readable_candidate_tools_2026-10-24/manifest.json"
+  ],
+  "executed_source_snapshots": {
+    "harness/run_native_candidate_observation.py": {
+      "snapshot": "harness/evidence/saved_candidate_attribution_2026-10-24/executed_sources/run_native_candidate_observation.py.txt",
+      "sha256": "020ea1aecdda76db8c70978ab1f9814e32543e4b6780aaa92c51bb7b98a7de78"
+    },
+    "harness/tests/test_actual_qr_evidence.py": {
+      "snapshot": "harness/evidence/saved_candidate_attribution_2026-10-24/executed_sources/test_actual_qr_evidence.py.txt",
+      "sha256": "59291e79057e654fe92ef697c220a02b27108f07fa20f6dc54d03387269799fc"
+    }
+  },
+  "physics_runs_added": 0
+}
