@@ -4,16 +4,16 @@
   "executed_runner_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
   "analysis_producer_sha256": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
   "source_sha256": {
-    "harness/run_domain_ice_factorial.py": "ada402ee4cba14899aadeb7ba7f239eb6318ff8f770b4bb5d571d9543319e0e6",
+    "harness/run_domain_ice_factorial.py": "ed643b74cf8fe1bf1c4bf59c01c2a84dc8159cc712d383b8ec265e8924ded5a9",
     "harness/analyze_domain_ice_factorial.py": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
     "harness/ice_factorial_batch.py": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
     "harness/tests/test_analyze_domain_ice_factorial.py": "5081d6bc806dfba906dfe34f8a5f7b39e1f3fe8c8d75332bde0d171fe57a4370",
-    "harness/tests/test_run_domain_ice_factorial.py": "877dedd336c1f7bd42828da3c135e77d6a4ea38d00e61e1f0f7a11532fd3f919",
+    "harness/tests/test_run_domain_ice_factorial.py": "a794955295d0dacd74dbbddbb928405b5b2e76941e49e1f3eab88fb9feaed68a",
     "harness/tests/test_domain_ice_factorial_evidence.py": "66c4e3b0c8e455988cbb33bd7025f6a9f907313a0d6ba1d148599debdeeda823",
     "harness/tests/test_prepare_ice_factorial_domain.py": "a0f39e1bfa63406fa65bb6c6f0fe7171565e33d696e8d28c5c8595783ce9c8eb",
     "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
     "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a",
-    "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "aedb7d9c31779e5dda22933b42b8bfebbdbf45eb719a45dd7ab58698d8d8088c"
+    "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "5338dfbffb4086c62b5848859a1d1dcfc2b7518564a34d6afac5a2643312e799"
   },
   "artifact_sha256": {
     "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md": "5a26be89111a4f66ac33c8904a414edbeec288eeee881e706999067126fd9b95",
@@ -41,7 +41,7 @@
     "changed_map_AD_certificates": 0,
     "candidate_selected": false
   },
-  "executed_runner_vs_reviewed_source": "Snapshot corresponds to the three later arms. Current runner changes only formatting and local l\u2192levels naming relative to this snapshot. Final analyzer executed hash equals current source and verifies all four arms independently.",
+  "executed_runner_vs_reviewed_source": "Snapshot corresponds to the three later original arms. Current reviewed runner additionally protects CLI report destinations; no new KDM execution is attributed to this changed runner. Historical analyzer/source at original review retained in source_sha256_at_initial_review.",
   "runner_attribution": {
     "snapshot_applies_to": [
       "norm_cap",
@@ -50,5 +50,19 @@
     ],
     "raw_cap": "Prior resource-parser revision; full controller source hash not captured at run start. Same frozen model binary and all source/request/response identities independently verified.",
     "timing": "Per-arm recorded elapsed values from surrounding orchestration, not emitted by archived runner."
-  }
+  },
+  "source_sha256_at_initial_review": {
+    "harness/run_domain_ice_factorial.py": "ada402ee4cba14899aadeb7ba7f239eb6318ff8f770b4bb5d571d9543319e0e6",
+    "harness/analyze_domain_ice_factorial.py": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+    "harness/ice_factorial_batch.py": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
+    "harness/tests/test_analyze_domain_ice_factorial.py": "5081d6bc806dfba906dfe34f8a5f7b39e1f3fe8c8d75332bde0d171fe57a4370",
+    "harness/tests/test_run_domain_ice_factorial.py": "877dedd336c1f7bd42828da3c135e77d6a4ea38d00e61e1f0f7a11532fd3f919",
+    "harness/tests/test_domain_ice_factorial_evidence.py": "66c4e3b0c8e455988cbb33bd7025f6a9f907313a0d6ba1d148599debdeeda823",
+    "harness/tests/test_prepare_ice_factorial_domain.py": "a0f39e1bfa63406fa65bb6c6f0fe7171565e33d696e8d28c5c8595783ce9c8eb",
+    "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+    "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a",
+    "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "aedb7d9c31779e5dda22933b42b8bfebbdbf45eb719a45dd7ab58698d8d8088c"
+  },
+  "initial_review_commit": "5b723a73b74604d0cef621199508e0d1060befdf",
+  "reviewed_source_maintenance": "CLI output-path P2 fix changes current runner/tests/contract documentation only. Initial reviewed source hashes and exact298b executed snapshot are preserved; scientific arrays and physics executable unchanged."
 }

@@ -260,3 +260,256 @@ def test_darwin_time_log_accepts_multiple_spaces_and_requires_all_resources():
     }
     with pytest.raises(GuardError, match="missing required peak_rss_bytes"):
         _parse_time_log("0.27 real 0.12 user 0.08 sys\n")
+
+
+def cli_files(tmp_path, monkeypatch):
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    paths = {
+        role: inputs / name
+        for role, name in (
+            ("manifest", "manifest.json"),
+            ("executable", "tool"),
+            ("chunk", "chunk.npz"),
+        )
+    }
+    for role, path in paths.items():
+        path.write_bytes((role + " sentinel").encode())
+    plan = {
+        "manifest_path": str(paths["manifest"]),
+        "tool_path": str(paths["executable"]),
+        "chunks": [{"source_path": str(paths["chunk"])}],
+        "calls": 0,
+    }
+    calls = []
+
+    def fake_build(*args, **kwargs):
+        calls.append("build")
+        return plan
+
+    def fake_execute(*args, **kwargs):
+        calls.append("execute")
+        return {"calls": 129, "test_double": True}
+
+    monkeypatch.setattr(guarded, "build_plan", fake_build)
+    monkeypatch.setattr(guarded, "execute_plan", fake_execute)
+    args = [
+        "--manifest",
+        str(paths["manifest"]),
+        "--executable",
+        str(paths["executable"]),
+    ]
+    return paths, args, plan, calls
+
+
+@pytest.mark.parametrize("execute", [False, True])
+@pytest.mark.parametrize(
+    "role", ["manifest", "executable", "chunk", "existing_artifact"]
+)
+def test_cli_existing_output_never_overwrites_inputs_or_artifacts(
+    tmp_path, monkeypatch, execute, role
+):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    paths["existing_artifact"] = tmp_path / "earlier.response.bin"
+    paths["existing_artifact"].write_bytes(b"earlier result")
+    before = {name: p.read_bytes() for name, p in paths.items()}
+    if execute:
+        args += ["--execute", "--output-dir", str(tmp_path / "new_run")]
+    with pytest.raises(GuardError, match="already exists"):
+        guarded.main(args + ["--plan-json", str(paths[role])])
+    assert calls == []  # neither plan admission nor workers were started
+    assert {name: p.read_bytes() for name, p in paths.items()} == before
+
+
+@pytest.mark.parametrize("kind", ["hardlink", "symlink", "dangling_symlink"])
+def test_cli_existing_output_alias_is_refused_before_execution(
+    tmp_path, monkeypatch, kind
+):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    alias = tmp_path / "alias.json"
+    if kind == "hardlink":
+        alias.hardlink_to(paths["manifest"])
+    else:
+        alias.symlink_to(
+            paths["manifest"] if kind == "symlink" else tmp_path / "absent"
+        )
+    with pytest.raises(GuardError, match="already exists"):
+        guarded.main(
+            args
+            + [
+                "--execute",
+                "--output-dir",
+                str(tmp_path / "run"),
+                "--plan-json",
+                str(alias),
+            ]
+        )
+    assert calls == []
+    assert paths["manifest"].read_bytes() == b"manifest sentinel"
+    if kind == "dangling_symlink":
+        assert alias.is_symlink() and not alias.exists()
+        assert not (tmp_path / "absent").exists()
+
+
+@pytest.mark.parametrize(
+    "alias", ["direct", "symlink_parent", "case_alias", "ancestor"]
+)
+def test_cli_future_output_collision_is_refused_before_any_worker(
+    tmp_path, monkeypatch, alias
+):
+    _, args, _, calls = cli_files(tmp_path, monkeypatch)
+    run = tmp_path / "run"
+    report = run / "chunk-00000.receipt.json"
+    if alias == "symlink_parent":
+        link = tmp_path / "directory_alias"
+        link.symlink_to(tmp_path, target_is_directory=True)
+        report = link / "run" / "chunk-00000.request.bin"
+    elif alias == "case_alias":
+        report = tmp_path / "RUN" / "chunk-00000.response.bin"
+    elif alias == "ancestor":
+        report, run = tmp_path / "new_parent", tmp_path / "new_parent" / "run"
+    with pytest.raises(GuardError, match="outside the execution output tree"):
+        guarded.main(
+            args + ["--execute", "--output-dir", str(run), "--plan-json", str(report)]
+        )
+    assert calls == [] and not run.exists() and not report.exists()
+
+
+def test_cli_missing_chunk_name_still_cannot_be_used_as_report(tmp_path, monkeypatch):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    paths["chunk"].unlink()
+    with pytest.raises(GuardError, match="protected input"):
+        guarded.main(args + ["--plan-json", str(paths["chunk"])])
+    assert calls == ["build"] and not paths["chunk"].exists()
+
+
+def test_cli_run_directory_cannot_contain_inputs_even_on_resume(tmp_path, monkeypatch):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    with pytest.raises(GuardError, match="overlaps a protected input"):
+        guarded.main(
+            args
+            + ["--execute", "--resume", "--output-dir", str(paths["manifest"].parent)]
+        )
+    assert calls == ["build"]
+    assert paths["executable"].read_bytes() == b"executable sentinel"
+
+
+@pytest.mark.parametrize("execute", [False, True])
+def test_cli_fresh_external_report_publishes_without_changing_inputs(
+    tmp_path, monkeypatch, execute
+):
+    paths, args, plan, calls = cli_files(tmp_path, monkeypatch)
+    before = {name: p.read_bytes() for name, p in paths.items()}
+    report = tmp_path / "reports" / "plan.json"
+    if execute:
+        args += ["--execute", "--output-dir", str(tmp_path / "run")]
+    assert guarded.main(args + ["--plan-json", str(report)]) == 0
+    assert json.loads(report.read_text()) == (
+        {"calls": 129, "test_double": True} if execute else plan
+    )
+    assert calls == (["build", "execute"] if execute else ["build"])
+    assert {name: p.read_bytes() for name, p in paths.items()} == before
+
+
+def test_cli_publication_race_preserves_new_owner_and_cleans_tempfile(
+    tmp_path, monkeypatch
+):
+    _, args, _, calls = cli_files(tmp_path, monkeypatch)
+    report = tmp_path / "report.json"
+    real_link = guarded.os.link
+
+    def racing_link(source, destination):
+        assert Path(destination) == report
+        report.write_bytes(b"new owner created after preflight")
+        real_link(source, destination)
+
+    monkeypatch.setattr(guarded.os, "link", racing_link)
+    with pytest.raises(GuardError, match="output already exists"):
+        guarded.main(
+            args
+            + [
+                "--execute",
+                "--output-dir",
+                str(tmp_path / "run"),
+                "--plan-json",
+                str(report),
+            ]
+        )
+    assert calls == ["build", "execute"]  # only a test double, never KDM
+    assert report.read_bytes() == b"new owner created after preflight"
+    assert not list(tmp_path.glob(".report.json.tmp.*"))
+
+
+def test_cli_report_uses_canonical_parent_after_symlink_is_retargeted(
+    tmp_path, monkeypatch
+):
+    _, args, _, calls = cli_files(tmp_path, monkeypatch)
+    admitted_parent = tmp_path / "admitted_reports"
+    admitted_parent.mkdir()
+    unrelated_parent = tmp_path / "unrelated"
+    unrelated_parent.mkdir()
+    alias = tmp_path / "reports_alias"
+    alias.symlink_to(admitted_parent, target_is_directory=True)
+
+    def retargeting_executor(*args, **kwargs):
+        calls.append("execute")
+        alias.unlink()
+        alias.symlink_to(unrelated_parent, target_is_directory=True)
+        return {"test_double": True}
+
+    monkeypatch.setattr(guarded, "execute_plan", retargeting_executor)
+    assert (
+        guarded.main(
+            args
+            + [
+                "--execute",
+                "--output-dir",
+                str(tmp_path / "run"),
+                "--plan-json",
+                str(alias / "result.json"),
+            ]
+        )
+        == 0
+    )
+    assert json.loads((admitted_parent / "result.json").read_text()) == {
+        "test_double": True
+    }
+    assert not (unrelated_parent / "result.json").exists()
+
+
+def test_cli_report_with_file_parent_is_refused_before_plan_or_execution(
+    tmp_path, monkeypatch
+):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    with pytest.raises(GuardError, match="parent is not a directory"):
+        guarded.main(
+            args
+            + [
+                "--execute",
+                "--output-dir",
+                str(tmp_path / "run"),
+                "--plan-json",
+                str(paths["manifest"] / "report.json"),
+            ]
+        )
+    assert calls == []
+    assert paths["manifest"].read_bytes() == b"manifest sentinel"
+
+
+@pytest.mark.parametrize("role", ["report", "run_dir", "case_alias"])
+def test_cli_missing_source_file_cannot_become_an_output_directory(
+    tmp_path, monkeypatch, role
+):
+    paths, args, _, calls = cli_files(tmp_path, monkeypatch)
+    paths["chunk"].unlink()
+    reserved = paths["chunk"]
+    if role == "case_alias":
+        reserved = reserved.with_name(reserved.name.upper())
+    if role == "run_dir":
+        args += ["--execute", "--output-dir", str(reserved / "run")]
+    else:
+        args += ["--plan-json", str(reserved / "report.json")]
+    with pytest.raises(GuardError, match="protected input"):
+        guarded.main(args)
+    assert calls == ["build"]
+    assert not reserved.exists() and not paths["chunk"].exists()

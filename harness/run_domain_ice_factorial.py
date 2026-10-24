@@ -88,9 +88,51 @@ def _publish_json_noclobber(path: Path, value: dict) -> None:
             os.fsync(stream.fileno())
         os.link(temp, path)
     except FileExistsError as exc:
-        raise GuardError(f"receipt already exists: {path}") from exc
+        raise GuardError(f"output already exists: {path}") from exc
     finally:
         temp.unlink(missing_ok=True)
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    """Conservatively include case aliases on case-sensitive hosts as well."""
+    left_parts = tuple(part.casefold() for part in left.resolve().parts)
+    right_parts = tuple(part.casefold() for part in right.resolve().parts)
+    return (
+        left_parts[: len(right_parts)] == right_parts
+        or right_parts[: len(left_parts)] == left_parts
+    )
+
+
+def _preflight_plan_output(path: Path | None, output_dir: Path | None) -> Path | None:
+    """A CLI report must be a fresh file outside the execution output tree."""
+    if path is None:
+        return
+    if os.path.lexists(path):
+        raise GuardError(f"--plan-json output already exists: {path}")
+    destination = path.resolve()
+    for parent in destination.parents:
+        if os.path.lexists(parent) and not parent.is_dir():
+            raise GuardError(f"--plan-json parent is not a directory: {parent}")
+    if output_dir is not None:
+        if _paths_overlap(destination, output_dir):
+            raise GuardError("--plan-json must be outside the execution output tree")
+    return destination
+
+
+def _preflight_input_paths(
+    path: Path | None, output_dir: Path | None, plan: dict
+) -> None:
+    """Protect input names even if a prepared chunk is currently missing."""
+    sources = [Path(plan["manifest_path"]), Path(plan["tool_path"])]
+    sources.extend(Path(row["source_path"]) for row in plan["chunks"])
+    destination = path.resolve() if path is not None else None
+    run_root = output_dir.resolve() if output_dir is not None else None
+    for source in sources:
+        source = source.resolve()
+        if destination is not None and _paths_overlap(destination, source):
+            raise GuardError("--plan-json overlaps a protected input path")
+        if run_root is not None and _paths_overlap(run_root, source):
+            raise GuardError("execution output directory overlaps a protected input")
 
 
 def _contained_file(base: Path, relative: str) -> Path:
@@ -500,6 +542,9 @@ def main(argv=None):
     )
     ap.add_argument("--plan-json", type=Path)
     args = ap.parse_args(argv)
+    if args.execute and args.output_dir is None:
+        ap.error("--execute requires --output-dir")
+    args.plan_json = _preflight_plan_output(args.plan_json, args.output_dir)
     plan = build_plan(
         args.manifest,
         args.executable,
@@ -509,15 +554,13 @@ def main(argv=None):
         ncmin_land=args.ncmin_land,
         ncmin_sea=args.ncmin_sea,
     )
+    _preflight_input_paths(args.plan_json, args.output_dir, plan)
     if not args.execute:
-        encoded = json.dumps(plan, indent=2, sort_keys=True) + "\n"
         if args.plan_json:
-            args.plan_json.write_text(encoded)
+            _publish_json_noclobber(args.plan_json, plan)
         else:
-            print(encoded, end="")
+            print(json.dumps(plan, indent=2, sort_keys=True))
         return 0
-    if args.output_dir is None:
-        ap.error("--execute requires --output-dir")
     result = execute_plan(
         plan,
         output_dir=args.output_dir,
@@ -525,11 +568,10 @@ def main(argv=None):
         workers=args.workers,
         resume=args.resume,
     )
-    encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.plan_json:
-        args.plan_json.write_text(encoded)
+        _publish_json_noclobber(args.plan_json, result)
     else:
-        print(encoded, end="")
+        print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
