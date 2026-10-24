@@ -234,11 +234,10 @@ def test_uniform_nan_drop_in_k_rejected(tmp_path):
 
 
 def test_bt_huge_exponent_inf_rejected(tmp_path):
-    """A regex-matchable infinity (huge exponent) parses to inf and is caught by
-    the math.isfinite check (the token scan does not see an 'inf' token here)."""
+    """Overflow is rejected during token decoding, before field reshaping."""
     f = tmp_path / "radiance.txt"
     f.write_text("RADIANCE%BT = (\n 1.0E+400 2.0\n)\n" + _QUAL2)
-    with pytest.raises(ValueError, match="RADIANCE%BT has non-finite"):
+    with pytest.raises(ValueError, match=r"non-finite numeric token in RTTOV ASCII block: '1\.0E\+400'"):
         parse_rttov_radiance(f, nchannels=2)
 
 
@@ -246,12 +245,12 @@ def test_quality_huge_exponent_inf_rejected(tmp_path):
     """QUALITY must stay finite even when an overflow exponent parses as inf.
 
     Finite nonzero quality values remain valid unusable markers; only the
-    non-finite value is rejected at the radiance parser boundary.
+    non-finite token is rejected before the quality array is constructed.
     """
     f = tmp_path / "radiance.txt"
     f.write_text("RADIANCE%BT = (\n 300.0 301.0\n)\n"
                  "RADIANCE%QUALITY = (\n 0.0 1e400\n)\n")
-    with pytest.raises(ValueError, match="RADIANCE%QUALITY has non-finite"):
+    with pytest.raises(ValueError, match=r"non-finite numeric token in RTTOV ASCII block: '1e400'"):
         parse_rttov_radiance(f, nchannels=2)
 
 
