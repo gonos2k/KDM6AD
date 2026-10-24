@@ -21,11 +21,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 from pathlib import Path
 from typing import Iterable
 
-_FLOAT_RE = re.compile(r"[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[EeDd][+-]?\d+)?")
+_MANTISSA = r"[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))"
+_FLOAT_RE = re.compile(
+    rf"(?:{_MANTISSA}(?:[EeDd][+-]?\d+)?|{_MANTISSA}[+-]\d{{3,}})"
+)
 _BLOCK_START_RE = re.compile(r"^(?P<key>.+?)\s*=\s*\(\s*$")
 
 
@@ -76,7 +80,20 @@ def _parse_floats(line: str) -> list[float]:
     for token in tokens:
         if _FLOAT_RE.fullmatch(token) is None:
             raise ValueError(f"invalid numeric token in RTTOV ASCII block: {token!r}")
-        values.append(float(token.replace("D", "E").replace("d", "e")))
+        normalized = token.replace("D", "E").replace("d", "e")
+        if "e" not in normalized.lower():
+            # Fortran E-format output with a three-digit exponent and no E
+            # descriptor can be emitted as e.g. 0.138...-101. Only normalize
+            # the unambiguous signed, >=3-digit suffix; shorter arithmetic-like
+            # tokens remain malformed.
+            match = re.fullmatch(rf"(?P<mantissa>{_MANTISSA})(?P<exp>[+-]\d{{3,}})",
+                                 normalized)
+            if match is not None:
+                normalized = match.group("mantissa") + "e" + match.group("exp")
+        value = float(normalized)
+        if not math.isfinite(value):
+            raise ValueError(f"non-finite numeric token in RTTOV ASCII block: {token!r}")
+        values.append(value)
     return values
 
 

@@ -70,3 +70,14 @@ jobs:
       # independent LCC check. Run that test once, inside the complete suite.
       - name: pytest (oracle/, pure-Python subset)
         run: cd oracle && python -m pytest -rs -q
+
+      # The NumPy-only harness job intentionally has no Torch. Exercise the
+      # native batch graph/checkpoint boundaries here, where Torch is mandatory.
+      # These use an independent Torch backend and a mock RTTOV, not private assets.
+      - name: pytest (native batch first-order boundaries)
+        run: python -m pytest -rs -q
+          harness/tests/test_native_batch_microphysics.py
+          harness/tests/test_native_observation_batch.py
+          harness/tests/test_run_native_satellite_case.py
+          harness/tests/test_native_satellite_replay.py
+          harness/tests/test_prepare_native_satellite_case.py

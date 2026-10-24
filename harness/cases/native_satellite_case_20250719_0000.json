@@ -1,0 +1,25 @@
+{
+  "schema": "kdm6.native_satellite_case_request.v1",
+  "settings": {
+    "model_snapshot_time": "2025-07-19_00:00:40",
+    "KO_nominal_slot": "202507190000",
+    "grid": [282, 234, 39],
+    "channels": [10, 11, 12, 13, 14, 15, 16],
+    "chunk_columns": 512,
+    "physics": "norm_actual+actual_departure_QR",
+    "local_physics_dt_seconds": 20,
+    "theta_m_scale_K": 0.2,
+    "qv_relative_scale": 0.02,
+    "regularization_lambda": 1.0,
+    "huber_delta": 1.0,
+    "observation_sigma_K": 1.0,
+    "bias_K": 0.0,
+    "trial_alphas": [1.0, 0.5, 0.25],
+    "model_quality_required": 0,
+    "fixed_baseline_support": true,
+    "native_host_steps": 0
+  },
+  "fd_epsilons": [0.000001, 0.0000003],
+  "rttov_timeout_seconds": 900.0,
+  "paths": {}
+}

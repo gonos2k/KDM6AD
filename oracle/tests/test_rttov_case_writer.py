@@ -14,6 +14,7 @@ RUN here (AD_RTTOV_HOME present).
 """
 import re
 import shutil
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -347,6 +348,183 @@ def _write_pressure_profile(root, p_half, p_full=None):
     if p_full is not None:
         np.savetxt(atm / "p.txt", np.asarray(p_full, dtype=float))
     return atm
+
+
+def _write_minimal_case_fixture(root, p_half, p_full):
+    """Minimal clear-sky case for writer tests; no RTTOV executable is used."""
+    root = Path(root)
+    atm = _write_pressure_profile(root, p_half, p_full)
+    np.savetxt(atm / "t.txt", np.linspace(280.0, 250.0, len(p_half) - 1))
+    np.savetxt(atm / "q.txt", np.linspace(1000.0, 100.0, len(p_half) - 1))
+    (atm / "o3.txt").write_text("fixture-fixed-o3\n")
+    nml = root / "out" / "rttov_test.txt"
+    nml.parent.mkdir(parents=True)
+    nml.write_text(
+        "&rttov_test_nml\n"
+        "  defn%nprofiles = 1\n"
+        "  defn%nchannels = 1\n"
+        "  defn%nlevels = 2\n"
+        "  defn%realprec = 16\n"
+        "  defn%do_k = .TRUE.\n"
+        "  defn%run_gas_units = 2\n"
+        "  defn%opts%config%adk_bt = .TRUE.\n"
+        "  defn%opts%rt_all%solar = .FALSE.\n"
+        "  defn%opts%interpolation%pressure_gradients = .FALSE.\n"
+        "/\n"
+    )
+    return root
+
+
+def _batched_pressure_input(t, q, p_lay, p_half, *, channels=(7, 8)):
+    from kdm6.obs.model_profile_builder import RttovProfileTensors
+    prof = RttovProfileTensors(
+        t_lay=torch.as_tensor(t, dtype=torch.float64),
+        q_lay=torch.as_tensor(q, dtype=torch.float64),
+        p_lay=torch.as_tensor(p_lay, dtype=torch.float64),
+        p_half=torch.as_tensor(p_half, dtype=torch.float64),
+    )
+    cfg = RttovInputConfig(
+        coef_id="native-pressure-test", channels=channels, pressure_gradients=True)
+    return pack_rttov_input(prof, cfg), prof, cfg
+
+
+def test_live_pressure_writer_grows_and_writes_each_native_profile(tmp_path):
+    """B512/7 pressure-gradient output keeps distinct pressure rows per profile."""
+    nprof = 512
+    fixture = _write_minimal_case_fixture(
+        tmp_path / "fixture", p_half=np.array([0.0, 900.0]),
+        p_full=np.array([400.0]))
+    p_half = np.column_stack((np.zeros(nprof), 1000.0 + np.arange(nprof)))
+    p_lay = (100.0 + np.arange(nprof)).reshape(nprof, 1)
+    t = (280.0 + 1.0e-3 * np.arange(nprof)).reshape(nprof, 1)
+    q = np.full((nprof, 1), 250.0)
+    rin, _, _ = _batched_pressure_input(t, q, p_lay, p_half, channels=tuple(range(1, 8)))
+
+    out = tmp_path / "live-pressure-case"
+    write_rttov_case(rin, out, fixture_case_dir=fixture, _lock=False)
+
+    profile_root = out / "in" / "profiles"
+    assert sorted(d.name for d in profile_root.iterdir() if d.is_dir()) == [
+        f"{i:03d}" for i in range(1, nprof + 1)]
+    assert _namelist_counts(out) == (nprof, nprof * 7)
+    assert "pressure_gradients = .TRUE." in (out / "out" / "rttov_test.txt").read_text()
+    channels = (out / "in" / "channels.txt").read_text().splitlines()
+    lprofiles = (out / "in" / "lprofiles.txt").read_text().splitlines()
+    assert len(channels) == nprof and set(channels) == {"1 2 3 4 5 6 7"}
+    assert len(lprofiles) == nprof and lprofiles[0] == "1 1 1 1 1 1 1"
+    assert lprofiles[-1] == "512 512 512 512 512 512 512"
+
+    for index in (0, 255, nprof - 1):
+        atm = profile_root / f"{index + 1:03d}" / "atm"
+        np.testing.assert_array_equal(np.loadtxt(atm / "p.txt"), p_lay[index])
+        np.testing.assert_array_equal(np.loadtxt(atm / "p_half.txt"), p_half[index])
+        np.testing.assert_array_equal(np.loadtxt(atm / "t.txt"), t[index])
+        assert (atm / "o3.txt").read_text() == "fixture-fixed-o3\n"
+    # The source fixture remains a structural template, not a pressure-gradient output.
+    np.testing.assert_array_equal(
+        np.loadtxt(fixture / "in" / "profiles" / "001" / "atm" / "p_half.txt"),
+        [0.0, 900.0])
+    last_half = profile_root / "512" / "atm" / "p_half.txt"
+    with pytest.raises(FileExistsError):
+        write_rttov_case(rin, out, fixture_case_dir=fixture, _lock=False)
+    np.testing.assert_array_equal(np.loadtxt(last_half), p_half[-1])
+
+
+def test_live_pressure_invalid_second_profile_is_rejected_before_staging(tmp_path):
+    """A bad later profile is caught before case copy or profile growth starts."""
+    nprof = 2
+    p_half = np.array([[0.0, 100.0, 500.0], [0.0, 200.0, 600.0]])
+    p_lay = np.array([[50.0, 300.0], [200.0, 400.0]])  # second row touches interface
+    rin, _, _ = _batched_pressure_input(
+        np.full((nprof, 2), 270.0), np.full((nprof, 2), 100.0), p_lay, p_half)
+    out = tmp_path / "must-not-be-staged"
+    with pytest.raises(ValueError, match="matching native interfaces"):
+        write_rttov_case(
+            rin, out, fixture_case_dir=tmp_path / "nonexistent-fixture", _lock=False)
+    assert not out.exists()
+
+
+def test_live_pressure_obs_mock_accepts_per_profile_pressure_k_shapes():
+    """The batched writer's [B,L]/[B,L+1] contract matches the observation K shapes."""
+    import numpy as np
+    from kdm6.obs.rttov_obs_operator import RttovObsOp
+
+    nprof, nch, nlay = 2, 2, 2
+    p_lay = torch.tensor([[100.0, 500.0], [150.0, 650.0]], dtype=torch.float64,
+                         requires_grad=True)
+    p_half = torch.tensor([[0.0, 250.0, 800.0], [0.0, 300.0, 900.0]],
+                          dtype=torch.float64, requires_grad=True)
+    t = torch.full((nprof, nlay), 270.0, dtype=torch.float64)
+    q = torch.full((nprof, nlay), 100.0, dtype=torch.float64)
+    cfg = RttovInputConfig(
+        coef_id="native-pressure-test", channels=(7, 8), pressure_gradients=True)
+    kp = np.arange(1, nprof * nch * nlay + 1, dtype=np.float64).reshape(
+        nprof, nch, nlay)
+    kh = np.arange(1, nprof * nch * (nlay + 1) + 1, dtype=np.float64).reshape(
+        nprof, nch, nlay + 1)
+
+    def run_k(rin):
+        assert rin.profile["P"].shape == (nprof, nlay)
+        assert rin.profile["P_HALF"].shape == (nprof, nlay + 1)
+        np.testing.assert_array_equal(rin.profile["P"], p_lay.detach().numpy())
+        np.testing.assert_array_equal(rin.profile["P_HALF"], p_half.detach().numpy())
+        bt = (np.einsum("pcl,pl->pc", kp, rin.profile["P"])
+              + np.einsum("pcl,pl->pc", kh, rin.profile["P_HALF"]))
+        return bt, {
+            "T": np.zeros((nprof, nch, nlay)),
+            "Q": np.zeros((nprof, nch, nlay)),
+            "P": kp,
+            "P_HALF": kh,
+        }, np.zeros((nprof, nch), dtype=np.int32)
+
+    bt, quality = RttovObsOp.apply(run_k, cfg, t, q, p_lay, p_half)
+    assert bt.shape == (nprof, nch)
+    assert quality.shape == (nprof, nch)
+    weights = torch.tensor([[0.5, -0.25], [0.75, 0.2]], dtype=torch.float64)
+    (bt * weights).sum().backward()
+    assert p_lay.grad.shape == (nprof, nlay)
+    assert p_half.grad.shape == (nprof, nlay + 1)
+    torch.testing.assert_close(
+        p_lay.grad,
+        torch.from_numpy(np.einsum("pcl,pc->pl", kp, weights.numpy())),
+        rtol=0, atol=0)
+    torch.testing.assert_close(
+        p_half.grad,
+        torch.from_numpy(np.einsum("pcl,pc->pl", kh, weights.numpy())),
+        rtol=0, atol=0)
+
+
+def test_fixed_grid_batch_behavior_and_grid_rejection_are_unchanged(tmp_path):
+    """Default batches retain the template pressure grid and reject row-specific grids."""
+    from kdm6.obs.model_profile_builder import RttovProfileTensors
+
+    p_half = np.array([0.0, 100.0, 500.0])
+    p_full = np.array([50.0, 300.0])
+    fixture = _write_minimal_case_fixture(tmp_path / "fixture", p_half, p_full)
+    t = torch.full((2, 2), 270.0, dtype=torch.float64)
+    q = torch.full((2, 2), 100.0, dtype=torch.float64)
+    prof = RttovProfileTensors(
+        t_lay=t, q_lay=q, p_lay=None,
+        p_half=torch.as_tensor(p_half, dtype=torch.float64))
+    fixed_cfg = RttovInputConfig(coef_id="fixed-grid-test", channels=(7, 8))
+    fixed = pack_rttov_input(prof, fixed_cfg)
+    out = tmp_path / "fixed-grid-case"
+    write_rttov_case(fixed, out, fixture_case_dir=fixture, _lock=False)
+    for profile in ("001", "002"):
+        atm = out / "in" / "profiles" / profile / "atm"
+        np.testing.assert_array_equal(np.loadtxt(atm / "p_half.txt"), p_half)
+        np.testing.assert_array_equal(np.loadtxt(atm / "p.txt"), p_full)
+    assert "pressure_gradients = .FALSE." in (out / "out" / "rttov_test.txt").read_text()
+
+    per_profile = np.array([[0.0, 100.0, 500.0], [0.0, 120.0, 600.0]])
+    bad_prof = RttovProfileTensors(
+        t_lay=t, q_lay=q, p_lay=None,
+        p_half=torch.as_tensor(per_profile, dtype=torch.float64))
+    bad = pack_rttov_input(bad_prof, fixed_cfg)
+    rejected = tmp_path / "fixed-grid-mismatch"
+    with pytest.raises(ValueError, match="only defined for a shared-grid batch"):
+        write_rttov_case(bad, rejected, fixture_case_dir=fixture, _lock=False)
+    assert not rejected.exists()
 
 
 def test_native_40_39_explicit_full_pressure_is_authoritative(tmp_path):

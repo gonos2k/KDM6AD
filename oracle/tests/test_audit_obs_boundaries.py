@@ -12,7 +12,10 @@ import torch
 
 from kdm6.da_driver import OsseObsConfig, batched_allsky_bt
 from kdm6.io.frame_reader import derive_delz, derive_p_pii, derive_rho, derive_th
-from kdm6.obs._rttov_reference.rttov_ascii import parse_rttov_ascii_blocks
+from kdm6.obs._rttov_reference.rttov_ascii import (
+    parse_rttov_ascii_blocks,
+    reshape_flat,
+)
 from kdm6.obs.model_profile_builder import RttovProfileConfig, model_to_rttov_tensors
 from kdm6.obs.obs_ingest import ObsPayload, collocate, payload_to_column_obs
 from kdm6.obs.rttov_input_builder import RttovInputConfig
@@ -163,3 +166,35 @@ def test_rttov_ascii_rejects_malformed_token_instead_of_dropping_it(tmp_path):
     path.write_text("RADIANCE%BT = (\n 1.0 2.0 BAD 4.0\n)\n")
     with pytest.raises(ValueError, match="invalid numeric token.*BAD"):
         parse_rttov_ascii_blocks(path)
+
+
+def test_rttov_ascii_parses_fortran_implicit_three_digit_exponents(tmp_path):
+    path = tmp_path / "profiles_k.txt"
+    path.write_text(
+        "PROFILES_K(   1)%T = (\n"
+        " 0.13837815469799052-101 -0.13837815469799052+101\n"
+        " 1.25E+3 -2.5D-2\n)\n"
+    )
+    values = parse_rttov_ascii_blocks(path)["PROFILES_K(   1)%T"]
+    np.testing.assert_array_equal(
+        values,
+        [1.3837815469799052e-102, -1.3837815469799052e100, 1250.0, -0.025],
+    )
+
+
+@pytest.mark.parametrize(
+    "token",
+    ["0.123-10", "1-2", "1.2-abc", "NaN", "Inf", "1.0E+999"],
+)
+def test_rttov_ascii_rejects_short_implicit_exponents_and_nonfinite_values(
+    tmp_path, token
+):
+    path = tmp_path / "radiance.txt"
+    path.write_text(f"RADIANCE%BT = (\n {token}\n)\n")
+    with pytest.raises(ValueError):
+        parse_rttov_ascii_blocks(path)
+
+
+def test_rttov_ascii_reshape_still_rejects_ragged_value_count():
+    with pytest.raises(ValueError, match="cannot reshape 3 values"):
+        reshape_flat([1.0, 2.0, 3.0], 2, 2)
