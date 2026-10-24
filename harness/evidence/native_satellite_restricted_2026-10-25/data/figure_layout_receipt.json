@@ -1,0 +1,10 @@
+{
+  "scope": "Figure layout only. Short category prefixes displayed; exact full strings preserved in source arrays/summary. Zero models.",
+  "producer_source_sha256": "70667d110f0883037cc2416970d002b642551c0233edf4f8b5ba78f5fd5f5e33",
+  "numeric_sources_sha256": {
+    "channel_comparison.npz": "a79a02eefc12dd112b5374843bb1d4be445c95aa72016f3908050d2329acb949",
+    "candidate_input_delta.npz": "b5ecf7e396186377a06623e753e48f4c61f2d67930e1f4bace4b93fbf38818bc"
+  },
+  "original_figure_sha256": "aa30f97becc3e19ce87d30c74af64673a27e5c311d4f0ac6d8122ca2e3b674a5",
+  "replacement_figure_sha256": "f7e5707f426014228b21894adfef8bb9c50956a6ca7472c4fa1081190b1c6e60"
+}

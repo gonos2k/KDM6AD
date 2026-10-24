@@ -14,8 +14,58 @@ from harness.native_satellite_objective import (
     finalize_objective,
     global_normalizer,
     objective_chunk,
+    restrict_control_blocks,
     slice_fixed_support,
 )
+
+
+def test_restricted_step_keeps_original_norm_when_maximum_block_is_frozen():
+    baseline = np.zeros((2, 4, 1), dtype=np.float64)
+    gradient = np.array([10.0, 5.0, 2.0, 1.0] * 2).reshape(2, 4, 1)
+    unit = bounded_control_step(baseline, gradient, np.ones_like(baseline),
+                                np.ones_like(baseline, dtype=bool), 1.0)
+    original = unit["z"].copy()
+    z = restrict_control_blocks(original, np.arange(4), [0], chunk_columns=2)
+    assert np.max(np.abs(z)) == 0.2  # It must not become one after projection.
+    assert not np.any(z[:, :2])
+    assert z[:, 2:].tobytes() == original[:, 2:].tobytes()
+    assert unit["z"].tobytes() == original.tobytes()
+
+
+def test_restricted_blocks_keep_tail_and_full_observation_normalizer():
+    z = np.full((2, 7, 2), 0.25, dtype=np.float64)
+    support = _support(7)
+    old_mask, old_weights = support["m0"].copy(), support["weights"].copy()
+    projected = restrict_control_blocks(z, np.arange(7), [1], chunk_columns=3)
+    assert not np.any(projected[:, 3:6])
+    assert projected[:, 6:].tobytes() == z[:, 6:].tobytes()  # unpadded tail
+    objective = finalize_objective([14.0], support["Z_partial"], projected,
+                                   np.ones_like(z, dtype=bool))
+    assert objective["Z"] == 14.0
+    assert objective["regularization_numerator"] == 0.5 * (2 * 4 * 2) * 0.25**2
+    assert np.array_equal(support["m0"], old_mask)
+    assert np.array_equal(support["weights"], old_weights)
+
+
+@pytest.mark.parametrize("blocks", [[0, 0], [-1], [3], [True]])
+def test_restricted_step_refuses_ambiguous_or_out_of_range_blocks(blocks):
+    with pytest.raises(ValueError, match="frozen_blocks"):
+        restrict_control_blocks(np.zeros((2, 7, 2)), np.arange(7), blocks,
+                                chunk_columns=3)
+
+
+def test_restricted_step_refuses_reordered_native_rows():
+    with pytest.raises(ValueError, match="flat_indices"):
+        restrict_control_blocks(np.zeros((2, 3, 2)), np.array([1, 0, 2]), [0])
+
+
+def test_restricted_projection_preserves_signed_zero_outside_frozen_blocks():
+    direction = -np.zeros((2, 4, 1), dtype=np.float64)
+    direction[:, 3, :] = -0.25
+    projected = restrict_control_blocks(direction, np.arange(4), [0], chunk_columns=2)
+    assert not np.signbit(projected[:, :2]).any()  # Explicit frozen +0.0.
+    assert np.signbit(projected[:, 2]).all()  # Retain the declared d0's -0.0.
+    assert projected[:, 2:].tobytes() == direction[:, 2:].tobytes()
 
 
 def _support(n, *, baseline_bad=None, owner_ids=None, bt=None):

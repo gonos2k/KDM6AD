@@ -1,7 +1,7 @@
 ---
 title: Wiki Log
 type: meta
-date_modified: 2026-10-13
+date_modified: 2026-10-25
 ---
 # Wiki Log
 
@@ -477,3 +477,4 @@ SRF substitution or production algorithm changed.
 - 2026-10-13 KST: Added [[sources/pr421-calibration-dom-review-2026-10-13]]: future shared capture/case preflight binds actual calibration JSON; missing/mutation guards tested. Retained DOM8-stream effective geometry/reflection and common-seven-plus-prior comparison documented without private experiment replay; original PR420 packet preserved.
 
 - 2026-10-25 UTC+09: Added [[sources/native-domain-ko7-bounded-case-2026-10-25]] from the completed 65,988-column KO7 case: global baseline and derivative gates pass; all three actual bounded proposals lose fixed observation support and are rejected. Exact public arithmetic, source/build attribution and bitwise applied-state replay are separate evidence; no accepted update, forecast skill, host cycling or closed physical budgets are claimed. Raw graph reports remain under `graphify-out/`.
+- 2026-10-25 UTC: Added [[sources/native-ko7-restricted-confirmation-2026-10-25]] for a separate post-hoc restricted T/Q candidate: one actual 129-block value-only KDM / direct-RTTOV pass preserved all 381,528 baseline-supported cells and accepted the fixed-cost decrease. Parent PR447's three rejected trials remain unchanged; no host/RK cycle, forecast-skill or closed physical-budget claim is made.

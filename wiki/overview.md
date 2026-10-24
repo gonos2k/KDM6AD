@@ -11,6 +11,14 @@ actual bounded T/Q proposals. Derivative gates pass, but all proposals lose
 fixed observation support and are rejected. The accepted input and final BT
 remain baseline; this is neither convergence nor a host/forecast cycle.
 
+[[sources/native-ko7-restricted-confirmation-2026-10-25]] records one later
+post-hoc alpha=1 control-space projection on the same scene. Its actual
+129-block forward/direct-RTTOV confirmation preserves the original 381,528
+support and lowers the fixed objective by 0.0760%. This is a restricted local
+cost acceptance, not held-out validation, forecast skill or a native host/RK
+cycle; physical water/energy/number closure and legacy number units remain
+unresolved.
+
 [[sources/native-ice-factorial-2026-10-23]] completes the one-column ice-only
 factorial and prepares the full native-grid endpoint packet. At that preparation
 stage, no regional KDM execution was claimed; later four-arm execution is

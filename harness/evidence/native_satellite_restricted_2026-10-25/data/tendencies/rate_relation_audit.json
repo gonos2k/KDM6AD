@@ -1,0 +1,37 @@
+{
+  "baseline": {
+    "H_RATE_relation_source": "existing parent APPLIED_PHYSICS_AUDIT rate_relation_residuals row 0; no missing raw state reconstructed",
+    "H_RATE_relation_max_abs_residual": 0.0,
+    "QV_RATE_relation": {
+      "formula": "(saved native_after_qv - parent block QV)/dt",
+      "bitwise_mismatches": 0,
+      "elements": 2573532,
+      "max_abs_residual": 0.0
+    },
+    "QC_RATE_relation": {
+      "formula": "(saved cloud_qc - parent block state QC)/dt",
+      "bitwise_mismatches": 0,
+      "elements": 2573532,
+      "max_abs_residual": 0.0
+    }
+  },
+  "confirmation": {
+    "H_RATE_QV_RATE_QC_RATE_formula_bitwise_match": [
+      true,
+      true,
+      true
+    ],
+    "elements_per_rate": [
+      2573532,
+      2573532,
+      2573532
+    ],
+    "max_abs_residual_per_rate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "applied_clean_output_gates_passed": true,
+    "candidate_formula": "NumPy f64 replay with source operation order: clip, B, N terms, H/QV/QC rates"
+  }
+}

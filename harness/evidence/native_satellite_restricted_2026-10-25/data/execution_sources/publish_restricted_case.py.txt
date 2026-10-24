@@ -1,0 +1,176 @@
+"""Publish a completed restricted case's saved arrays; no model calls."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+from datetime import datetime, timezone
+
+
+BASE = Path(__file__).resolve().parent
+PARENT = BASE.parent / "native_satellite_case_20261024" / "RUN_v4"
+PUBLIC = Path("/private/tmp/KDM6AD-restricted-ko7-20261025")
+MAX_ARRAY_BYTES = 50 * 1024**2
+
+
+def sha(path):
+    value = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def read(path):
+    return json.loads(Path(path).read_text())
+
+
+def write_json(path, value):
+    with Path(path).open("x") as stream:
+        json.dump(value, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+
+
+def publish(summary_dir, output):
+    summary_dir = Path(summary_dir).resolve(strict=True)
+    output_arg = Path(output).absolute()
+    output = output_arg.resolve()
+    run = BASE / "RUN_v1"
+    confirmation = read(run / "CONFIRMATION.json")
+    summary = read(summary_dir / "summary.json")
+    case = read(run / "CASE_MANIFEST.json")
+    if output_arg.exists() or output_arg.is_symlink():
+        raise FileExistsError("publication must use a fresh output directory")
+    for source in (summary_dir, run, PARENT):
+        if output == source or output in source.parents or source in output.parents:
+            raise ValueError("publication output overlaps a source run/summary")
+    if read(BASE / "PROCESS_EXIT.json")["exit_code"] != 0:
+        raise ValueError("restricted forward process did not exit normally")
+    if (confirmation["status"] not in ("RESTRICTED_UPDATE_ACCEPTED", "RESTRICTED_UPDATE_NOT_ACCEPTED")
+            or confirmation["blocks"] != 129 or confirmation["processed_columns"] != 65988
+            or not confirmation["fixed_support_preserved"]
+            or not confirmation["stitched_B_equal_on_baseline_support"]
+            or summary["status"] != confirmation["status"]
+            or summary["run_id"] != confirmation["run_id"]
+            or summary["actual_objective"] != confirmation["actual_objective"]):
+        raise ValueError("incomplete/inconsistent restricted confirmation and summary")
+    if case["run_id"] != confirmation["run_id"]:
+        raise ValueError("case/confirmation identity differs")
+    all_state_audit = read(run / "FULL_RECONSTRUCTION_AUDIT.json")
+    if not all_state_audit.get("passed"):
+        raise ValueError("all-block independent reconstruction audit has not passed")
+
+    output.mkdir(parents=True, exist_ok=False)
+    private_sources = {}
+
+    def abstract(value):
+        if isinstance(value, dict):
+            return {abstract(key): abstract(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [abstract(item) for item in value]
+        if not isinstance(value, str):
+            return value
+        prefix = str(summary_dir) + "/"
+        if value.startswith(prefix):
+            return value[len(prefix):]
+        return (value.replace("/Users/yhlee/KDM6AD-k/", "<PRIVATE_ROOT>/")
+                     .replace("/private/tmp/", "<ISOLATED_WORKTREE>/"))
+
+    def copy(source, relative):
+        source = Path(source)
+        destination = output / relative
+        if destination.exists() or destination.is_symlink():
+            raise FileExistsError(f"publication path already reserved: {relative}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        private_sources[relative] = {"sha256": sha(source), "bytes": source.stat().st_size}
+        if source.suffix == ".json":
+            write_json(destination, abstract(read(source)))
+        else:
+            with source.open("rb") as incoming, destination.open("xb") as outgoing:
+                shutil.copyfileobj(incoming, outgoing)
+            if sha(destination) != sha(source):
+                raise ValueError(f"copied binary bytes differ: {relative}")
+        if destination.suffix == ".npz" and destination.stat().st_size > MAX_ARRAY_BYTES:
+            raise ValueError(f"array must be split before publication: {relative}")
+
+    for source in sorted(summary_dir.rglob("*")):
+        if source.is_file():
+            relative = source.relative_to(summary_dir).as_posix()
+            fixed = BASE / "FIGURE_FIX_v3" / relative
+            if relative == "control_updates_and_reasons.png" and fixed.is_file():
+                receipt = read(BASE / "FIGURE_FIX_v3/receipt.json")
+                if (sha(source) != receipt["original_figure_sha256"]
+                        or sha(fixed) != receipt["replacement_figure_sha256"]):
+                    raise ValueError("figure-only replacement does not bind original numeric summary")
+                copy(source, "history/original_summary_maps/" + relative)
+                copy(fixed, relative)
+            else:
+                copy(source, relative)
+    copy(BASE / "FIGURE_FIX_v3/receipt.json", "figure_layout_receipt.json")
+    copy(BASE / "FIGURE_FIX_v3/renderer_source.py.txt", "execution_sources/figure_renderer.py.txt")
+    proposal = BASE / "plan_recipe_v3_sourcebound"
+    for name in ("restricted_controls.npz", "restricted_candidate_sourcebound.json",
+                 "restricted_block_screen.json"):
+        copy(proposal / name, name)
+    for name in ("CASE_MANIFEST.json", "CONFIRMATION.json", "FULL_RECONSTRUCTION_AUDIT.json"):
+        copy(run / name, "execution/" + name)
+    for name in ("ACTUAL_CONFIRMATION_REQUEST.json", "SOURCE_SNAPSHOT_v2.json",
+                 "PROCESS_STARTED.json", "PROCESS_EXIT.json", "PREFLIGHT_PARENT_RUN_V4_20261025.json"):
+        copy(BASE / name, "execution/" + name)
+    copy(BASE / "saved_artifact_inventory/fail29_layer_crosswalk.json",
+         "original_trial_fail29_crosswalk.json")
+    for filename in ("run_native_satellite_case.py", "native_satellite_objective.py"):
+        copy(BASE / "source_v2/harness" / filename,
+             "execution_sources/executed_" + filename + ".txt")
+    copy(BASE / "curation_source_v2/harness/summarize_native_satellite_case.py",
+         "execution_sources/curation_summarize_native_satellite_case.py.txt")
+    copy(BASE / "public_replayer_source_v3.py",
+         "execution_sources/curation_replay_native_satellite_case.py.txt")
+    copy(Path(__file__), "execution_sources/publish_restricted_case.py.txt")
+    copy(BASE / "PLAN_INPUT_20261025.md", "source_plan_20261025.md")
+    source_receipt = {
+        "schema": "kdm6.restricted_publication_sources.v1",
+        "run_id": confirmation["run_id"],
+        "executed_engine": "source_v2; exact parent physics plus two runner/objective overlays",
+        "curation_source": "curation_source_v2; saved-array exports/maps/replay only",
+        "figure_correction": "FIGURE_FIX_v3 replaces one layout only; original image retained, all numeric arrays unchanged",
+        "public_replayer": "public_replayer_source_v3; schema key correction only, actual replay passed",
+        "json_derivation": "machine paths abstracted; numerical data/arrays remain unchanged",
+        "private_source_files": private_sources,
+        "new_model_calls": 0,
+    }
+    write_json(output / "publication_sources.json", source_receipt)
+    artifacts = {
+        p.relative_to(output).as_posix(): {"sha256": sha(p), "bytes": p.stat().st_size}
+        for p in sorted(output.rglob("*")) if p.is_file()
+    }
+    manifest = {
+        "schema": "kdm6.native_satellite_restricted_publication.v1",
+        "status": summary["status"], "run_id": summary["run_id"],
+        "parent_run_id": summary["parent_run_id"],
+        "parent_publication_manifest_sha256": case["parent_publication_manifest_sha256"],
+        "created_at_UTC": datetime.now(timezone.utc).isoformat(),
+        "columns": 65988, "blocks": 129, "levels": 39,
+        "accepted": summary["accepted"], "globalZ": summary["globalZ"],
+        "original_parent_status": "COMPLETED_NO_ACCEPTABLE_UPDATE",
+        "model_calls": confirmation["call_totals"],
+        "artifacts": artifacts,
+        "limits": ["Post-hoc restricted one-step offline experiment on the same KO7 scene.",
+                   "No host/RK cycle, forecast skill or convergence certification.",
+                   "Published arithmetic does not re-execute private KDM/RTTOV or authenticate navigation/pixel UTC.",
+                   "Legacy number units and physical-budget closure remain qualified."],
+    }
+    write_json(output / "publication_manifest.json", manifest)
+    print(json.dumps({"status": manifest["status"], "run_id": manifest["run_id"],
+                      "artifacts": len(artifacts), "publication_manifest_sha256": sha(output / "publication_manifest.json")}), flush=True)
+    return manifest
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--summary-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    publish(args.summary_dir, args.output)

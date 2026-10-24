@@ -6,6 +6,7 @@ date_modified: 2026-10-25
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-ko7-restricted-confirmation-2026-10-25]] — One actual 129-block restricted T/Q confirmation preserves fixed support and lowers the declared objective by 0.076%; post-hoc same-scene result, with no forecast/host-cycle or physical-closure claim.
 - [[sources/native-domain-ko7-bounded-case-2026-10-25]] — Completed fixed 65,988-column KO7 case; baseline derivatives pass, all three full-domain proposals lose fixed support and are rejected. No host-cycle or fit-improvement claim.
 - [[sources/applied-snow-graupel-transfer-2026-10-24]] — Actual signed rates balance at three cells; internal QG threshold cleanup accounts for the remaining localized mass sink; no physical correction/default change.
 - [[sources/saved-candidate-attribution-2026-10-24]] — Shared direction helper, public-only saved attribution; post_micro losses localized to new columns/layers, and profile T/ice cancellation explained without new M/H runs.
