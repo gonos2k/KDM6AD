@@ -3,9 +3,11 @@
 Mirrors AD-RTTOV's verified ``rttov_fixture_profile_overlay_writer``: COPY a
 fixture case (the runnable ``in/`` + ``out/`` -- run.sh, env.sh, coef, config,
 gases, surface, geometry, pressure grid) and OVERLAY only ``atm/t.txt`` and
-``atm/q.txt`` with the model's T / Q (RTTOV gas_units=2 ppmv-moist). The model
+``atm/q.txt`` with the model's T / Q (RTTOV gas_units=2 ppmv-moist). By default,
 T/Q ride the FIXTURE's pressure grid (p_half/gases/surface kept), so they must
-match the fixture's layer count (the overlay validates length). The case is
+match the fixture's layer count (the overlay validates length). The opt-in
+``pressure_gradients`` mode writes each profile's native P/P_HALF alongside its
+T/Q rows and enables RTTOV's pressure K. The case is
 trimmed to the RttovInput's nprofiles — or grown to it by replicating the first
 profile dir as a template (T1-5 batching; numbering stays contiguous zero-padded,
 capped by the fixture's digit width). The rttov_test config references inputs by
@@ -794,12 +796,13 @@ def _validate_disjoint_case_paths(out: Path, fixture: Path) -> None:
 
 
 def _live_pressure_rows(rttov_input):
-    """Validate the explicit single-native-column pressure mode, before staging.
+    """Validate explicit live-pressure rows before staging.
 
     Existing callers retain their fixed-grid witness contract. A live-pressure
-    trial instead supplies every centre/interface value; the template's other
-    gas profiles remain fixed on the same layer indices and must have matching
-    lengths. No remapping or unadvertised gas resampling occurs here.
+    trial supplies every native centre/interface row (or one explicitly shared
+    row); the template's other gas profiles remain fixed on the same layer
+    indices and must have matching lengths. No remapping or unadvertised gas
+    resampling occurs here.
     """
     import numpy as np
     enabled = getattr(rttov_input.config, "pressure_gradients", False)
@@ -807,24 +810,31 @@ def _live_pressure_rows(rttov_input):
         raise ValueError("pressure_gradients must be a boolean")
     if not enabled:
         return None
-    if rttov_input.nprofiles != 1:
-        raise ValueError("live-pressure case writing currently supports one native column")
+    nprofiles = int(rttov_input.nprofiles)
+    if nprofiles < 1:
+        raise ValueError("live-pressure case writing requires at least one profile")
     values = []
     for key, size in (("P", rttov_input.nlayers), ("P_HALF", rttov_input.nlayers+1)):
         if key not in rttov_input.profile:
             raise ValueError(f"live-pressure mode requires explicit {key}")
         array = np.asarray(rttov_input.profile[key], dtype=np.float64)
-        if array.shape != (1, size):
-            raise ValueError(f"live-pressure {key} must have shape (1, {size})")
-        row = array[0]
-        if not np.isfinite(row).all() or np.any(np.diff(row) <= 0):
-            raise ValueError(f"live-pressure {key} must be finite and strictly increasing")
-        if (key == "P" and np.any(row <= 0)) or (key == "P_HALF" and np.any(row < 0)):
+        if (array.ndim != 2 or array.shape[1] != size
+                or array.shape[0] not in (1, nprofiles)):
+            raise ValueError(
+                f"live-pressure {key} must have shape (1, {size}) or "
+                f"({nprofiles}, {size}); got {array.shape}")
+        if array.shape[0] == 1 and nprofiles > 1:
+            array = np.broadcast_to(array, (nprofiles, size))
+        if not np.isfinite(array).all() or np.any(np.diff(array, axis=1) <= 0):
+            raise ValueError(
+                f"live-pressure {key} rows must be finite and strictly increasing")
+        if (key == "P" and np.any(array <= 0)) or (key == "P_HALF" and np.any(array < 0)):
             raise ValueError(f"live-pressure {key} has an invalid pressure domain")
-        values.append(row)
+        values.append(array)
     p, ph = values
-    if not np.all((ph[:-1] < p) & (p < ph[1:])):
-        raise ValueError("live-pressure centres must lie strictly inside their native interfaces")
+    if not np.all((ph[:, :-1] < p) & (p < ph[:, 1:])):
+        raise ValueError(
+            "live-pressure centres must lie strictly inside their matching native interfaces")
     return p, ph
 
 
@@ -870,8 +880,10 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     ``rttov_input.config.coef_id`` (coef_id is provenance / config-hash only -- it is
     NOT a coef selector); the caller must point ``fixture_case_dir`` at a case built
     for the intended sensor. RttovInput fields the writer cannot honor are rejected,
-    never silently dropped (surface/geometry, a P_HALF off the fixture grid, or a
-    fixture whose namelist contradicts the forced K/gas-unit contract).
+    never silently dropped. In fixed-grid mode an off-fixture pressure grid is
+    rejected; with ``pressure_gradients=True`` the explicit per-profile P/P_HALF is
+    written instead. Surface/geometry and the fixture's forced K/gas-unit contract
+    remain validated.
     """
     out = Path(out_case_dir)
     if _lock:
@@ -1018,29 +1030,20 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     _guard_k_index_width(nprof, len(rttov_input.config.channels))
     prof_root = out / "in" / "profiles"
     prof_ids = sorted(d.name for d in prof_root.iterdir() if d.is_dir())
+    if not prof_ids:
+        raise ValueError(f"fixture has no profile directories under {prof_root}")
     t_all = rttov_input.profile["T"]
     q_all = rttov_input.profile["Q"]
-    # P_HALF is REQUIRED: the run keeps the fixture's p_half, so P_HALF is the
-    # half-level witness that the model T/Q were built for the fixture grid. Without
-    # it the writer would blindly place possibly-mis-gridded T/Q on the fixture grid
-    # (silent wrong BT). The layer witness is profile["P"] (validated below): RTTOV is
-    # layer-based and reads explicit p.txt when present. The template retains both
-    # pressure files; P_HALF and P are grid witnesses for the overlaid T/Q.
+    # P_HALF is required in both modes. On the fixed-grid path it witnesses that T/Q
+    # were built for the fixture's layer grid. In opt-in live-pressure mode P and
+    # P_HALF are explicitly validated and written per profile below, rather than
+    # compared with the fixture grid.
     ph_all = rttov_input.profile.get("P_HALF")
     if ph_all is None:
         raise ValueError(
             "RttovInput.profile lacks P_HALF -- set cfg.rttov_level_pressure to the "
             "fixture p_half so the writer can verify the model T/Q are on the fixture "
             "grid (the run keeps the fixture p_half; an unverified grid is rejected).")
-    # T1-5 SHARED-GRID BATCH MODE: the fixture's profiles carry DIFFERENT p_half
-    # grids (measured ami/501: 001 tops at 950 hPa, 002 at 1013, 003 at 1100), so a
-    # model batch built on the ONE canonical grid would fail the grid witness on
-    # 002+. When every input P_HALF row is identical (the caller declares one shared
-    # grid), rebuild profiles 002..nprof as copies of the FIRST profile dir — each
-    # then carries the canonical p_half and the fixture-borrowed aux defaults of
-    # profile 001 (t/q always overlaid below; geometry/surface iff cfg gives them).
-    # Per-profile-grid callers (P_HALF rows differ) keep the legacy fixture
-    # profiles untouched.
     import numpy as _np
     _ph_np = _np.asarray(ph_all, dtype=float)
     if _ph_np.ndim == 2 and _ph_np.shape[0] not in (1, nprof):
@@ -1048,8 +1051,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             f"P_HALF has {_ph_np.shape[0]} rows but RttovInput has {nprof} "
             "profiles — provide one row per profile, or a single shared row.")
     if _ph_np.ndim == 2 and _ph_np.shape[0] == 1 and nprof > 1:
-        # single shared row → broadcast so the per-profile overlay/witness below
-        # can index ph_all[p] uniformly (shared-grid batch by construction).
+        # A shared pressure row is broadcast for uniform profile indexing. The
+        # fixed-grid and live-pressure branches below both retain that grid.
         _ph_np = _np.broadcast_to(_ph_np, (nprof, _ph_np.shape[1]))
         ph_all = _ph_np
     shared_grid = nprof >= 2 and _ph_np.ndim == 2 and bool(
@@ -1060,16 +1063,28 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             f"RttovInput has {nprof} profiles but the fixture's profile-dir "
             f"numbering is {width}-digit (max {10 ** width - 1}); chunk the "
             "batch across multiple cases.")
-    if shared_grid:
-        # PER-PROFILE replication decision (Codex DA-stack review DEFECT fix):
-        # identical P_HALF rows alone must NOT wipe fixture profiles — a legacy
-        # caller whose fixture profiles ALREADY carry the caller's grid keeps
-        # them (and their per-profile aux: datetime/angles/skin). A profile is
-        # replaced by the 001 template ONLY when its own p_half does NOT match
-        # the caller's row (it could never pass the grid witness) — i.e. the
-        # caller built for the canonical grid, not for that fixture profile.
-        # Rows matching NEITHER are left untouched: the grid witness below
-        # rejects them loudly (reject-don't-drop, unchanged).
+    if live_pressure is not None:
+        # Native-pressure profiles do not use fixture pressure grids as witnesses.
+        # Grow missing profile directories from the first copied profile's fixed
+        # gas/auxiliary structure; each row's T/Q/P/P_HALF is overlaid below.
+        template = prof_root / prof_ids[0]
+        expected_ids = [str(i).zfill(width) for i in range(1, nprof + 1)]
+        for name in expected_ids:
+            d = prof_root / name
+            if d.exists() and not d.is_dir():
+                raise ValueError(f"fixture profile path is not a directory: {d}")
+            if not d.exists():
+                shutil.copytree(template, d)
+        expected = set(expected_ids)
+        for d in prof_root.iterdir():
+            if d.is_dir() and d.name not in expected:
+                shutil.rmtree(d)
+        prof_ids = expected_ids
+    elif shared_grid:
+        # PER-PROFILE replication decision: identical P_HALF rows alone must not
+        # wipe fixture profiles that already match the caller's grid; retain those
+        # profiles (and their aux data), rebuilding only mismatched rows from the
+        # first profile template. Any remaining off-grid row is rejected below.
         template = prof_root / prof_ids[0]
         for i in range(2, nprof + 1):
             d = prof_root / str(i).zfill(width)
@@ -1095,7 +1110,7 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # pressure. The template's explicit p.txt, when present, remains the pressure
     # source consumed by RTTOV; this input is its witness for the overlaid T/Q.
     pl_all = rttov_input.profile.get("P")
-    if pl_all is not None:
+    if live_pressure is None and pl_all is not None:
         # Same row-count normalization as P_HALF above: the batched builder emits
         # ONE shared layer grid (pack promotes it to a single row) while T/Q carry
         # nprof rows — broadcast so pl_all[p] below indexes uniformly. Mismatched
@@ -1116,8 +1131,10 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
         else:
             # Preserve all native centres/interfaces, including the surface
             # interface whose RTTOV K includes the surface-pressure pullback.
-            (pdir / "atm" / "p.txt").write_text(_format_rttov_vector(live_pressure[0]))
-            (pdir / "atm" / "p_half.txt").write_text(_format_rttov_vector(live_pressure[1]))
+            (pdir / "atm" / "p.txt").write_text(
+                _format_rttov_vector(live_pressure[0][p]))
+            (pdir / "atm" / "p_half.txt").write_text(
+                _format_rttov_vector(live_pressure[1][p]))
         if is_cloud:
             _overlay_cloud(pdir, rttov_input, p, len(t_all[p]))
         if cfg.geometry is not None:                    # per-obs viewing + solar angles

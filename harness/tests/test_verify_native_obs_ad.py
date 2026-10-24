@@ -283,7 +283,7 @@ def _write_observations(path, *, stamp=EXPECTED, scalar_time=False, multi_time=F
 def _load_with_fake_inputs(tmp_path, monkeypatch, *, times=EXPECTED,
                            numeric_times=False, bottom_top=39, audit_slot=SLOT,
                            model_time=EXPECTED, nominal_time=EXPECTED, all_sky=False,
-                           mp_physics=137, use_theta_m=1):
+                           mp_physics=137, use_theta_m=1, i=156, j=21):
     _install_fake_netcdf(monkeypatch, times=times, numeric_times=numeric_times,
                          bottom_top=bottom_top, all_sky=all_sky,
                          mp_physics=mp_physics, use_theta_m=use_theta_m)
@@ -293,11 +293,29 @@ def _load_with_fake_inputs(tmp_path, monkeypatch, *, times=EXPECTED,
     _write_time_audit(audit, audit_slot)
     nml = tmp_path / "namelist.output"
     nml.write_text("&physics\nmp_physics = 137\nuse_theta_m = 1\nncmin_land = 1.0E8\nncmin_sea = 1.0E7\n/\n")
-    return verifier.load_snapshot(tmp_path / "fake.nc", observations, i=156, j=21,
+    return verifier.load_snapshot(tmp_path / "fake.nc", observations, i=i, j=j,
                                   expected_time=model_time,
                                   nominal_time=nominal_time, time_audit=audit,
                                   namelist=nml if all_sky else None,
                                   all_sky=all_sky, levels=39)
+
+
+@pytest.mark.parametrize("i,j", [(1, 1), (234, 1), (1, 282), (234, 282),
+                                  (1, 141), (117, 1), (234, 141), (117, 282)])
+def test_load_snapshot_preserves_outer_edge_columns(tmp_path, monkeypatch, i, j):
+    snapshot = _load_with_fake_inputs(tmp_path, monkeypatch, i=i, j=j)
+    assert snapshot.provenance["native_indices_1based"] == [i, j]
+    assert snapshot.provenance["native_flat_index0"] == (j - 1) * 234 + i - 1
+    assert snapshot.x.shape == (4 * 39 + 1,)
+
+
+@pytest.mark.parametrize("i,j", [(0, 1), (235, 1), (1, 0), (1, 283),
+                                  (True, 1), (1.5, 1)])
+def test_load_snapshot_refuses_indices_outside_native_grid_before_io(tmp_path, i, j):
+    with pytest.raises(ValueError, match="native 234x282x39 grid"):
+        verifier.load_snapshot(tmp_path / "not-opened.nc", tmp_path / "not-opened.npz",
+                               i=i, j=j, expected_time=EXPECTED,
+                               time_audit=tmp_path / "not-opened.json")
 
 
 def test_load_snapshot_accepts_native_char_time_and_39_40_dimensions(tmp_path, monkeypatch):

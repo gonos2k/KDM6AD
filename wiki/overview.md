@@ -1,14 +1,21 @@
 ---
 title: Overview
 type: meta
-date_modified: 2026-07-14
+date_modified: 2026-10-25
 ---
 # Overview
 
+[[sources/native-domain-ko7-bounded-case-2026-10-25]] records the completed
+65,988-column offline KO7 case: one global baseline cost/gradient and three
+actual bounded T/Q proposals. Derivative gates pass, but all proposals lose
+fixed observation support and are rejected. The accepted input and final BT
+remain baseline; this is neither convergence nor a host/forecast cycle.
+
 [[sources/native-ice-factorial-2026-10-23]] completes the one-column ice-only
-factorial and prepares the full native-grid endpoint packet. Numerical ice
-balance improves in the changed maps, but physical kernel closure and map
-selection remain open; no regional KDM execution is claimed.
+factorial and prepares the full native-grid endpoint packet. At that preparation
+stage, no regional KDM execution was claimed; later four-arm execution is
+separately recorded in [[sources/native-domain-ice-factorial-2026-10-23]]. Physical
+kernel closure and operational map selection are distinct from these comparisons.
 
 [[sources/native-ice-boundary-2026-10-23]] fixes diagnostic summation and
 attributes the same-call QI sedimentation loss to measured internal

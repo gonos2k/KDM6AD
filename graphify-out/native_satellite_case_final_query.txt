@@ -1,0 +1,25 @@
+Traversal: BFS depth=2 | Start: ['Completed 65,988-column KO7 case with no acceptable T/Q update'] | 16 nodes found
+
+NODE replay() [src=harness/replay_native_satellite_case.py loc=L39 community=553]
+NODE Completed 65,988-column KO7 case with no acceptable T/Q update [src=harness/evidence/native_satellite_case_2026-10-25/REPORT.md loc=H1; H2:Case and executed map; H2:Spatial coverage and observation support; H2:Global objective and gradient; H2:Three actual bounded proposals; H2:Applied-state replay, scope and call accounting community=454]
+NODE run_trials() [src=harness/run_native_satellite_case.py loc=L826 community=65]
+NODE Hash-pinned v2 publication pack of exact full-domain arrays and diagnostics [src=harness/evidence/native_satellite_case_2026-10-25/data/publication_manifest.json loc=/schema; /run_id; /status; /full_domain_columns; /grid; /artifacts community=454]
+NODE Three full-domain proposals lose frozen support and have invalid null objectives [src=harness/evidence/native_satellite_case_2026-10-25/REPORT.md loc=H2:Three actual bounded proposals community=454]
+NODE Runner verifies full native coverage and evaluates bounded proposals from baseline [src=harness/run_native_satellite_case.py loc=L637-L691; L694-L700; L826-L889; L1043-L1060 community=454]
+NODE Public NumPy replay verifies published arithmetic without private model execution [src=harness/evidence/native_satellite_case_2026-10-25/REPORT.md loc=H2:Public replay and completion evidence community=454]
+NODE Summarizer validates receipts, support and status before full-grid statistics and maps [src=harness/summarize_native_satellite_case.py loc=L594-L675; L851-L915 community=454]
+NODE Baseline source, profile and model-quality support are separately represented [src=harness/evidence/native_satellite_case_2026-10-25/data/summary.json loc=/source_coverage; /baseline_exclusion_reasons; /globalZ community=454]
+NODE Seven-channel maps compare observations and model states on frozen baseline support [src=harness/evidence/native_satellite_case_2026-10-25/data/maps/channel_13.png loc=title; panel labels; shared BT and residual colorbars; frozen-support exclusion note community=454]
+NODE Current wiki synthesis records full-domain completion and bounded rejection [src=wiki/sources/native-domain-ko7-bounded-case-2026-10-25.md loc=H1; L7-L37 community=454]
+NODE Separate baseline-only applied-state replay reproduces saved outputs bitwise [src=harness/evidence/native_satellite_case_2026-10-25/data/applied_physics_audit.json loc=/report; /interpretation community=454]
+NODE Resource audit verifies 516 original baseline and proposal receipts without rerunning models [src=harness/evidence/native_satellite_case_2026-10-25/REPORT.md loc=L212-L225 community=454]
+NODE Raw host number units remain uncertified; optical NC and NI use shared live dry density [src=docs/NATIVE_SATELLITE_CASE.md loc=H2:Number coordinates and exclusions community=454]
+NODE Historical wiki source distinguishes wiring-stage pending gates from the later completed case [src=wiki/sources/kdm6ad-native-satellite-case-2026-10-24.md loc=H1; L29-L37 community=454]
+NODE Protocol for an offline full-domain native MP137 T/Q observation-cost case [src=docs/NATIVE_SATELLITE_CASE.md loc=H1; H2:Fixed case; H2:Number coordinates and exclusions; H2:Streaming objective and derivative; H2:Restart and completion community=454]
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --specifies_completed_experiment_reported_by [EXTRACTED]--> Protocol for an offline full-domain native MP137 T/Q observation-cost case
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --sets_completed_no_acceptable_update_status [EXTRACTED]--> Runner verifies full native coverage and evaluates bounded proposals from baseline
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --summarizes [EXTRACTED]--> Current wiki synthesis records full-domain completion and bounded rejection
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --reports_separate_value_only_replay [EXTRACTED]--> Separate baseline-only applied-state replay reproduces saved outputs bitwise
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --interprets_frozen_support_visualization [EXTRACTED]--> Seven-channel maps compare observations and model states on frozen baseline support
+EDGE Completed 65,988-column KO7 case with no acceptable T/Q update --retains_number_unit_qualification [EXTRACTED]--> Raw host number units remain uncertified; optical NC and NI use shared live dry density
+... (truncated — 0 more nodes cut by ~1500-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

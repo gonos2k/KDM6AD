@@ -1,0 +1,134 @@
+{
+  "KO_center_projection_max_residual_m": 4.6566128730773926e-09,
+  "KO_nearest_col_0based_minmax": [
+    158,
+    741
+  ],
+  "KO_nearest_row_0based_minmax": [
+    98,
+    801
+  ],
+  "case_manifest_sha256": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+  "center_to_pixel_edge_clearance_km": {
+    "east": 317.40582294702085,
+    "north": 197.38694494677148,
+    "south": 197.38870059009082,
+    "west": 317.4061194433509
+  },
+  "distance_metric_contract": "historical ko_distance_m is LCC projected hypot rounded to f32; spherical great-circle distance is separate and does not replace stored inputs",
+  "execution_claim": "Geometry-only source/input coverage; not KDM or RTTOV execution evidence.",
+  "figure_version": 2,
+  "mapped_full_scene_BT_channel": {
+    "ami_channel_id_1based": 13,
+    "channel_slot_0based": 3,
+    "name": "ir105"
+  },
+  "max_nearest_pixel_LCC_distance_m_before_f32_storage": 850.3786778488223,
+  "max_nearest_pixel_spherical_distance_m": 880.3461634515182,
+  "max_stored_nearest_pixel_LCC_distance_m": 850.378662109375,
+  "native_center_count": 65988,
+  "native_centers_outside_actual_pixel_edge_footprint": 0,
+  "nearest_owner_identity": {
+    "audit_sha256": "e7fe8be12f92368387a724f4329721d30f68eda8f6f6e24c0aee2e671d8824c1",
+    "direct_haversine_sample_count": 14,
+    "direct_haversine_samples_all_match": true,
+    "max_nearest_spherical_distance_m": 880.3461634515182,
+    "minimum_second_minus_first_owner_distance_m": 664.8303780124094,
+    "pixel_mismatches": 0,
+    "producer_sha256": "4710dcf6f06c40ac40921ebe50716756786654039c2871858503529de3e15b9b",
+    "quality_used_to_choose_owner": false,
+    "spherical_vs_stored_LCC_distance_difference_m_is_not_a_parity_gate": 29.967501342143237,
+    "stored_distance_dtype": "float32",
+    "unique_recomputed_pixel_owners": 65988,
+    "unique_saved_pixel_owners": 65988
+  },
+  "observation_archive_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+  "original_provider_navigation_certified": false,
+  "outputs_sha256": {
+    "KO_NATIVE_DOMAIN.pdf": "9d89f647a7ff69ee81edd3d3169f6bd10fc36473de11b60c1b09eca87e0c448a",
+    "KO_NATIVE_DOMAIN.png": "63af330400de589a1179afd6899620fd22628d86fb22e717c1662a49bce93ef0"
+  },
+  "pixel_UTC_verified": false,
+  "producer_sha256": "be768908d1afc1a0dea2b7223f761df063ac3f3864f796d724ba7ee281ae0904",
+  "raw_KO_sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+  "receipt_sha256": "1bd4a1850a2a869b71da0f75c94368ba5a5052b609c8dbe0d96942db574f7d0a",
+  "scope": "read-only geometry visualization; no model or RTTOV calls",
+  "spherical_LCC_radius_m_assumption": 6371008.77,
+  "spherical_vs_stored_LCC_max_abs_distance_difference_m": 29.967501342143237,
+  "stored_LCC_distance_f32_exact_matches": 65988,
+  "upstream_distance_definition_provenance": {
+    "preflight_input_bundle_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+    "preflight_sha256": "b3f2bc237c580209b986a3486562dd1757f381b6ef3604a8731185e11d13ff1a",
+    "stored_LCC_distance_definition": "LCC projected nearest-center hypot, stored as binary32.",
+    "stored_LCC_distance_source_line": 398,
+    "upstream_distance_source_excerpt": [
+      {
+        "line": 385,
+        "text": "        px = float(geo[\"pixel_size\"])"
+      },
+      {
+        "line": 386,
+        "text": "        ulx = float(geo[\"upper_left_easting\"])"
+      },
+      {
+        "line": 387,
+        "text": "        uly = float(geo[\"upper_left_northing\"])"
+      },
+      {
+        "line": 388,
+        "text": "        nx, ny = int(geo[\"image_width\"]), int(geo[\"image_height\"])"
+      },
+      {
+        "line": 389,
+        "text": "        col_f = (x - ulx) / px"
+      },
+      {
+        "line": 390,
+        "text": "        row_f = (uly - y) / px"
+      },
+      {
+        "line": 391,
+        "text": "        col = np.rint(col_f).astype(np.int32)"
+      },
+      {
+        "line": 392,
+        "text": "        row = np.rint(row_f).astype(np.int32)"
+      },
+      {
+        "line": 393,
+        "text": "        in_raster = ((row >= 0) & (row < ny) & (col >= 0) & (col < nx))"
+      },
+      {
+        "line": 394,
+        "text": "        if not in_raster.all():"
+      },
+      {
+        "line": 395,
+        "text": "            raise RuntimeError(f\"native centers outside KO raster: {int((~in_raster).sum())}\")"
+      },
+      {
+        "line": 396,
+        "text": "        nearest_x = ulx + px * col"
+      },
+      {
+        "line": 397,
+        "text": "        nearest_y = uly - px * row"
+      },
+      {
+        "line": 398,
+        "text": "        dist = np.hypot(x - nearest_x, y - nearest_y).astype(np.float32)"
+      },
+      {
+        "line": 399,
+        "text": "        flat_index = (row * nx + col).astype(np.int32)"
+      },
+      {
+        "line": 400,
+        "text": "        model_flat_index = np.arange(lat.size, dtype=np.int32).reshape(lat.shape)"
+      }
+    ],
+    "upstream_preparer_sha256": "e84ab2bda2299bf455019bf61ebbe4bea700e914f11bbcf70a5cd6c342093028",
+    "upstream_preparer_source_id": "ko7_model_domain_20261014/code/prepare_ko7_inputs.py"
+  },
+  "upstream_preflight_distance_source_sha256": "e84ab2bda2299bf455019bf61ebbe4bea700e914f11bbcf70a5cd6c342093028"
+}

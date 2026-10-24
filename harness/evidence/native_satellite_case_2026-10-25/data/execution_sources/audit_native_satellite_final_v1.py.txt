@@ -1,0 +1,861 @@
+#!/usr/bin/env python3
+"""Independent receipt, objective, and control audit for a completed KO7 run.
+
+This private evidence helper intentionally imports no KDM6AD production or
+objective functions. It reads completed run artifacts only and makes no model
+or RTTOV calls. A missing FINAL.json is reported as incomplete, never as a
+partial success.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+from io import BytesIO
+import hashlib
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+
+
+NX, NY, LEVELS = 234, 282, 39
+NPROFILES = NX * NY
+NCHANNELS = 7
+CHUNK_SIZE = 512
+NCHUNKS = 129
+EPSILON_VALUES = (1.0e-6, 3.0e-7)
+ALPHAS = (1.0, 0.5, 0.25)
+THETA_SCALE = 0.2
+QV_RELATIVE_SCALE = 0.02
+HUBER_DELTA = 1.0
+SIGMA = 1.0
+BIAS = 0.0
+LAMBDA = 1.0
+ACCEPT_ATOL = 1.0e-10
+ACCEPT_RTOL = 1.0e-12
+DOT_TOL = 1.0e-10
+PILOTS = (0, 34, 40, 128)
+
+
+def _read_json(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read valid JSON: {path}") from exc
+
+
+def _sha_bytes(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha_file(path):
+    h = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _identity(value):
+    text = json.dumps(value, sort_keys=True, allow_nan=False, separators=(",", ":"))
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def _binding(run_id, stage, chunk, *, baseline_sha=None, controls_sha=None):
+    return _identity({
+        "run_id": run_id,
+        "stage": stage,
+        "chunk": chunk,
+        "baseline_sha": baseline_sha,
+        "controls_sha": controls_sha,
+    })
+
+
+def _same(left, right, label):
+    a, b = np.asarray(left), np.asarray(right)
+    if a.shape != b.shape or a.dtype != b.dtype or a.tobytes() != b.tobytes():
+        raise ValueError(f"{label} differs from its independent reconstruction")
+
+
+def _finite_array(value, shape, dtype, label):
+    array = np.asarray(value)
+    if array.shape != shape or array.dtype != dtype:
+        raise ValueError(f"{label} must have shape {shape} and dtype {dtype}")
+    if array.dtype.kind in "fiu" and not np.isfinite(array).all():
+        raise ValueError(f"{label} contains a nonfinite value")
+    return array
+
+
+def _fsum(array):
+    return math.fsum(float(x) for x in np.asarray(array).ravel())
+
+
+def _approx(saved, expected, label, *, rtol=2.0e-12, atol=2.0e-12):
+    saved, expected = float(saved), float(expected)
+    if not math.isfinite(saved) or not math.isfinite(expected):
+        raise ValueError(f"{label} must be finite")
+    if abs(saved - expected) > atol + rtol * max(abs(saved), abs(expected)):
+        raise ValueError(f"{label} differs: saved={saved:.17g}, recomputed={expected:.17g}")
+
+
+def _huber_numerator(bt, obs, mask, weights):
+    bt = np.asarray(bt, dtype=np.float64)
+    obs = np.asarray(obs, dtype=np.float64)
+    mask = np.asarray(mask, dtype=np.bool_)
+    weights = np.asarray(weights, dtype=np.float64)
+    if bt.shape != obs.shape or bt.shape != mask.shape or bt.shape != weights.shape:
+        raise ValueError("BT/observation/mask/weight shapes differ")
+    if not np.isfinite(bt[mask]).all() or not np.isfinite(obs[mask]).all():
+        raise ValueError("objective contains nonfinite BT or observation on fixed support")
+    if not np.isfinite(weights).all() or np.any(weights[~mask] != 0.0) or np.any(weights[mask] <= 0.0):
+        raise ValueError("objective weights do not match fixed support")
+    residual = (bt[mask] - obs[mask] - BIAS) / SIGMA
+    absolute = np.abs(residual)
+    psi = np.where(absolute <= HUBER_DELTA, 0.5 * residual * residual,
+                   HUBER_DELTA * (absolute - 0.5 * HUBER_DELTA))
+    return math.fsum(float(x) for x in weights[mask] * psi)
+
+
+def _check_path_inside(root, value, label):
+    path = Path(value).resolve()
+    if root.resolve() not in path.parents:
+        raise ValueError(f"{label} is outside the run root: {path}")
+    return path
+
+
+def _load_receipt_chunk(root, record, stage, run_id, *, baseline_record=None,
+                        controls_sha=None, array_names=None):
+    index = record.get("chunk_index")
+    if type(index) is not int or not 0 <= index < NCHUNKS:
+        raise ValueError("chunk_index must be an integer in [0, 128]")
+    start = index * CHUNK_SIZE
+    stop = min((index + 1) * CHUNK_SIZE, NPROFILES)
+    if record.get("start") != start or record.get("stop") != stop or record.get("columns") != stop - start:
+        raise ValueError(f"{stage} chunk {index} has wrong native range")
+    folder = root / stage / f"chunk_{index:05d}"
+    receipt_path = folder / "receipt.json"
+    if not receipt_path.is_file():
+        raise ValueError(f"missing completed receipt for {stage} chunk {index}")
+    receipt = _read_json(receipt_path)
+    if receipt != record:
+        raise ValueError(f"manifest and receipt differ for {stage} chunk {index}")
+    baseline_sha = None if baseline_record is None else baseline_record["artifact_sha256"]
+    expected = _binding(run_id, stage, index, baseline_sha=baseline_sha,
+                        controls_sha=controls_sha)
+    if receipt.get("binding") != expected:
+        raise ValueError(f"{stage} chunk {index} receipt binding differs")
+    artifact = _check_path_inside(root, receipt["artifact"], f"{stage} artifact")
+    if artifact.parent.parent.resolve() != folder.resolve() or not artifact.parent.name.startswith("attempt_"):
+        raise ValueError(f"{stage} chunk {index} artifact is outside its attempt folder")
+    encoded = artifact.read_bytes()
+    digest = _sha_bytes(encoded)
+    if digest != receipt.get("artifact_sha256"):
+        raise ValueError(f"{stage} chunk {index} artifact SHA mismatch")
+    with np.load(BytesIO(encoded), allow_pickle=False) as archive:
+        names = archive.files if array_names is None else array_names
+        missing = sorted(set(names) - set(archive.files))
+        if missing:
+            raise ValueError(f"{stage} chunk {index} lacks arrays {missing}")
+        arrays = {name: archive[name].copy() for name in names}
+    flat = arrays.get("flat_index")
+    if flat is None or flat.shape != (stop - start,) or flat.dtype.kind not in "iu":
+        raise ValueError(f"{stage} chunk {index} flat_index shape/type mismatch")
+    if not np.array_equal(flat, np.arange(start, stop, dtype=flat.dtype)):
+        raise ValueError(f"{stage} chunk {index} flat_index range mismatch")
+    return receipt, arrays
+
+
+def _baseline_chunk_checks(receipt, a):
+    start, stop = receipt["start"], receipt["stop"]
+    b = stop - start
+    mat = (b, NCHANNELS)
+    lev = (b, LEVELS)
+    for name in ("obs_bt", "bt"):
+        if a[name].shape != mat or a[name].dtype != np.float64:
+            raise ValueError(f"{name} shape/dtype mismatch")
+    quality = _finite_array(a["quality"], mat, a["quality"].dtype, "quality")
+    if quality.dtype.kind not in "iu":
+        raise ValueError("quality must be an integer array")
+    mask = _finite_array(a["mask"], mat, np.dtype(np.bool_), "mask")
+    source = _finite_array(a["source_eligible"], mat, np.dtype(np.bool_), "source_eligible")
+    profile = _finite_array(a["profile_valid"], (b,), np.dtype(np.bool_), "profile_valid")
+    dqf, qc = a["source_dqf"], a["source_qc"]
+    if dqf.shape != mat or dqf.dtype.kind not in "iu":
+        raise ValueError("source_dqf shape/type mismatch")
+    if qc.shape != mat or qc.dtype.kind not in "iuf" or not np.isfinite(qc).all():
+        raise ValueError("source_qc shape/type/finite check failed")
+    expected_source = (dqf == 0) & (qc == 0) & profile[:, None]
+    if not np.array_equal(source, expected_source):
+        raise ValueError("source_eligible differs from DQF/QC/profile validity")
+    expected_mask = source & (quality == 0)
+    if not np.array_equal(mask, expected_mask):
+        raise ValueError("baseline mask differs from frozen source/profile/model-quality support")
+    weights = _finite_array(a["weights"], mat, np.dtype(np.float64), "weights")
+    if not np.array_equal(weights, mask.astype(np.float64)):
+        raise ValueError("weights are not 1 on m0 and 0 outside m0")
+    if not np.isfinite(a["obs_bt"][mask]).all() or not np.isfinite(a["bt"][mask]).all():
+        raise ValueError("nonfinite observation or BT on baseline support")
+    theta = _finite_array(a["theta_m"], lev, np.dtype(np.float64), "theta_m")
+    qv = _finite_array(a["qv"], lev, np.dtype(np.float64), "qv")
+    if np.any(qv < 0.0):
+        raise ValueError("baseline QV is negative")
+    gt = _finite_array(a["grad_theta_numerator"], lev, np.dtype(np.float64), "grad_theta_numerator")
+    gq = _finite_array(a["grad_qv_numerator"], lev, np.dtype(np.float64), "grad_qv_numerator")
+    active = _finite_array(a["active"], (2, b, LEVELS), np.dtype(np.bool_), "active")
+    admitted = mask.any(axis=1)
+    expected_active = np.stack((np.broadcast_to(admitted[:, None], lev),
+                                np.broadcast_to(admitted[:, None], lev) & (qv > 0.0)))
+    if not np.array_equal(active, expected_active):
+        raise ValueError("active control mask differs from admitted T/Q degrees")
+    for name in ("direction_theta", "direction_qv", "bt_jvp"):
+        if a[name].shape not in (lev, mat) or a[name].dtype != np.float64 or not np.isfinite(a[name]).all():
+            raise ValueError(f"{name} shape/finite check failed")
+    pixel = a["pixel_flat_index"]
+    if pixel.shape != (b,) or pixel.dtype.kind not in "iu":
+        raise ValueError("pixel_flat_index shape/type mismatch")
+    p_row, p_col = a["pixel_row"], a["pixel_col"]
+    if p_row.shape != (b,) or p_col.shape != (b,) or p_row.dtype.kind not in "iu" or p_col.dtype.kind not in "iu":
+        raise ValueError("source pixel row/column metadata mismatch")
+    if not np.array_equal(pixel, p_row * 900 + p_col):
+        raise ValueError("raw source pixel IDs differ from row/column mapping")
+    rows = np.flatnonzero(profile)
+    profile_rows = a["profile_rows"]
+    if profile_rows.dtype.kind not in "iu" or not np.array_equal(profile_rows, rows):
+        raise ValueError("RTTOV selected profile rows differ from profile_valid")
+    rt = receipt.get("RTTOV_receipt")
+    if not isinstance(rt, dict):
+        raise ValueError("baseline chunk lacks RTTOV call receipt")
+    if (rt.get("mode") != "K" or rt.get("baseline_operator") is not True
+            or rt.get("nprofiles") != len(rows)
+            or rt.get("channels") != list(range(10, 17))
+            or rt.get("pressure_gradients") is not True
+            or rt.get("bt_coordinate") != "kma_v3_0"
+            or rt.get("source_flat_indices") != a["flat_index"][rows].tolist()):
+        raise ValueError("RTTOV baseline receipt differs from selected profile ownership")
+    if len(rows) and (rt.get("KMA_profile_counts") != [len(rows)]
+                      or len(rt.get("config_hashes", [])) != 1):
+        raise ValueError("RTTOV baseline K count/config hash is incomplete")
+    numerator = _huber_numerator(a["bt"], a["obs_bt"], mask, weights)
+    _approx(receipt["observation_numerator"], numerator, "chunk observation numerator")
+    zpartial = math.fsum(float(x) for x in weights.ravel())
+    _approx(receipt["Z_partial"], zpartial, "chunk Z_partial")
+    # Independently contract the saved K-profile tangent and native gradient.
+    cot = np.zeros(mat, dtype=np.float64)
+    residual = (a["bt"][mask] - a["obs_bt"][mask]) / SIGMA
+    cot[mask] = weights[mask] * np.clip(residual, -HUBER_DELTA, HUBER_DELTA) / SIGMA
+    lhs = math.fsum(float(x) for x in (cot * a["bt_jvp"]).ravel())
+    rhs = math.fsum(float(x) for x in (gt * a["direction_theta"]).ravel())
+    rhs = math.fsum((rhs, math.fsum(float(x) for x in (gq * a["direction_qv"]).ravel())))
+    dot = receipt["dot"]
+    _approx(dot["lhs"], lhs, "chunk dot lhs")
+    _approx(dot["rhs"], rhs, "chunk dot rhs")
+    err = abs(lhs - rhs) / max(abs(lhs), abs(rhs), 1e-12)
+    _approx(dot["relative_error"], err, "chunk dot relative error")
+    if err > DOT_TOL:
+        raise ValueError("chunk first-order dot check exceeds tolerance")
+    if not bool(receipt["support_preserved"]):
+        raise ValueError("baseline receipt marks support as not preserved")
+    return {
+        "start": start, "stop": stop, "Z_partial": zpartial, "numerator": numerator,
+        "dot_lhs": lhs, "dot_rhs": rhs, "dot_error": err,
+        "source_owner_ids": pixel.copy(),
+        "source_dqf": dqf.copy(), "source_qc": qc.copy(),
+        "theta_m": theta.copy(), "qv": qv.copy(),
+        "grad_theta_numerator": gt.copy(), "grad_qv_numerator": gq.copy(),
+        "active": active.copy(), "direction_theta": a["direction_theta"].copy(),
+        "direction_qv": a["direction_qv"].copy(),
+        "obs_bt": a["obs_bt"].copy(), "bt": a["bt"].copy(),
+        "quality": quality.copy(), "mask": mask.copy(), "weights": weights.copy(),
+        "source_eligible": source.copy(), "profile_valid": profile.copy(),
+    }
+
+
+def _trial_chunk_checks(receipt, a, base, *, stage, run_id, baseline_sha,
+                        controls_sha, check_control_scale=True):
+    b = receipt["stop"] - receipt["start"]
+    mat, lev = (b, NCHANNELS), (b, LEVELS)
+    for name in ("flat_index", "obs_bt", "source_dqf", "source_qc", "source_eligible", "mask", "weights", "active"):
+        if name == "flat_index":
+            expected = np.arange(receipt["start"], receipt["stop"], dtype=a[name].dtype)
+        else:
+            expected = base[name]
+        if not np.array_equal(a[name], expected):
+            raise ValueError(f"trial {stage} changed fixed baseline {name}")
+    if a["mask"].shape != mat or a["weights"].shape != mat:
+        raise ValueError("trial mask/weight shape mismatch")
+    quality = a["quality"]
+    bt = a["bt"]
+    if quality.shape != mat or quality.dtype.kind not in "iu" or bt.shape != mat or bt.dtype != np.float64:
+        raise ValueError("trial quality/BT metadata mismatch")
+    profile_valid = a["profile_valid"]
+    if profile_valid.shape != (b,) or profile_valid.dtype != np.bool_:
+        raise ValueError("trial profile_valid must be bool[chunk]")
+    lost_quality = base["mask"] & (quality != 0)
+    lost_bt = base["mask"] & ~np.isfinite(bt)
+    lost_profile = base["mask"].any(axis=1) & ~profile_valid
+    support_ok = not lost_quality.any() and not lost_bt.any() and not lost_profile.any()
+    if bool(receipt["support_preserved"]) != support_ok:
+        raise ValueError("trial receipt support status differs from its arrays")
+    numerator = None
+    if support_ok:
+        numerator = _huber_numerator(bt, base["obs_bt"], base["mask"], base["weights"])
+        _approx(receipt["observation_numerator"], numerator, f"{stage} chunk numerator")
+    elif receipt["observation_numerator"] is not None:
+        # The production writer may compute a numeric but invalid candidate numerator;
+        # it is intentionally not used to decide or report accepted cost.
+        pass
+    delta_t = _finite_array(a["delta_theta"], lev, np.dtype(np.float64), "delta_theta")
+    delta_q = _finite_array(a["delta_qv"], lev, np.dtype(np.float64), "delta_qv")
+    z = _finite_array(a["z"], (2, b, LEVELS), np.dtype(np.float64), "z")
+    if np.any(z[~base["active"]] != 0.0):
+        raise ValueError("trial z changed frozen control degrees")
+    if check_control_scale:
+        _same(delta_t, THETA_SCALE * z[0], "theta delta/Sz")
+        _same(delta_q, QV_RELATIVE_SCALE * base["qv"] * z[1], "QV delta/Sz")
+    theta, qv = _finite_array(a["theta_m"], lev, np.dtype(np.float64), "trial theta"), \
+        _finite_array(a["qv"], lev, np.dtype(np.float64), "trial qv")
+    _same(theta, base["theta_m"] + delta_t, "trial theta baseline update")
+    _same(qv, base["qv"] + delta_q, "trial qv baseline update")
+    _approx(receipt["Z_partial"], base["Z_partial"], f"{stage} fixed Z_partial")
+    return {"support_preserved": support_ok, "numerator": numerator,
+            "z": z.copy(), "delta_theta": delta_t.copy(), "delta_qv": delta_q.copy(),
+            "profile_valid": profile_valid.copy()}
+
+
+def _load_complete_stage(run_root, manifest_path, stage, run_id, baseline_by_id=None,
+                         controls_sha=None):
+    manifest = _read_json(manifest_path)
+    rows = manifest.get("chunks")
+    if not isinstance(rows, list) or len(rows) != NCHUNKS:
+        raise ValueError(f"{stage} must contain all {NCHUNKS} chunks")
+    ordered = sorted(rows, key=lambda r: r.get("chunk_index", -1))
+    if [r.get("chunk_index") for r in ordered] != list(range(NCHUNKS)):
+        raise ValueError(f"{stage} chunk IDs are missing or duplicated")
+    result = []
+    if baseline_by_id is None:
+        names = (
+            "flat_index", "obs_bt", "bt", "quality", "mask", "weights",
+            "source_eligible", "profile_valid", "source_dqf", "source_qc",
+            "pixel_flat_index", "pixel_row", "pixel_col", "theta_m", "qv",
+            "grad_theta_numerator", "grad_qv_numerator", "active",
+            "direction_theta", "direction_qv", "bt_jvp", "profile_rows",
+        )
+    else:
+        names = (
+            "flat_index", "obs_bt", "bt", "quality", "mask", "weights",
+            "source_eligible", "profile_valid", "source_dqf", "source_qc",
+            "theta_m", "qv", "active", "delta_theta", "delta_qv", "z",
+        )
+    for i, record in enumerate(ordered):
+        expected_start, expected_stop = i * CHUNK_SIZE, min((i + 1) * CHUNK_SIZE, NPROFILES)
+        if record.get("start") != expected_start or record.get("stop") != expected_stop:
+            raise ValueError(f"{stage} chunk {i} range mismatch")
+        baseline_record = None if baseline_by_id is None else baseline_by_id[i]
+        rec, arrays = _load_receipt_chunk(run_root, record, stage, run_id,
+                                          baseline_record=baseline_record,
+                                          controls_sha=controls_sha,
+                                          array_names=names)
+        result.append((rec, arrays))
+    return manifest, result
+
+
+def _load_fd_endpoint(root, record, stage, run_id, baseline_record):
+    index = record.get("chunk_index")
+    if type(index) is not int or index not in PILOTS:
+        raise ValueError("sparse FD endpoint has a nonpilot chunk index")
+    start, stop = index * CHUNK_SIZE, min((index + 1) * CHUNK_SIZE, NPROFILES)
+    if record.get("start") != start or record.get("stop") != stop or record.get("columns") != stop - start:
+        raise ValueError(f"FD endpoint {stage} chunk {index} range mismatch")
+    folder = root / stage / f"chunk_{index:05d}"
+    receipt_path = folder / "receipt.json"
+    if not receipt_path.is_file():
+        raise ValueError(f"missing FD endpoint receipt: {stage} chunk {index}")
+    receipt = _read_json(receipt_path)
+    if receipt != record:
+        raise ValueError(f"FD endpoint manifest/receipt differs: {stage} chunk {index}")
+    artifact = _check_path_inside(root, receipt["artifact"], "FD endpoint artifact")
+    if (artifact.parent.parent.resolve() != folder.resolve()
+            or not artifact.parent.name.startswith("attempt_")
+            or artifact.name != "result.npz"):
+        raise ValueError("FD endpoint artifact is outside its owned attempt")
+    encoded = artifact.read_bytes()
+    if _sha_bytes(encoded) != receipt.get("artifact_sha256"):
+        raise ValueError("FD endpoint artifact hash mismatch")
+    with np.load(BytesIO(encoded), allow_pickle=False) as archive:
+        keys = ("flat_index", "obs_bt", "bt", "quality", "mask", "weights",
+                "source_eligible", "profile_valid", "source_dqf", "source_qc",
+                "theta_m", "qv", "active", "delta_theta", "delta_qv", "z")
+        missing = [name for name in keys if name not in archive]
+        if missing:
+            raise ValueError(f"FD endpoint lacks arrays: {missing}")
+        arrays = {name: archive[name].copy() for name in keys}
+    delta = np.stack((arrays["delta_theta"], arrays["delta_qv"]))
+    controls_sha = hashlib.sha256(delta.tobytes()).hexdigest()
+    expected_binding = _binding(run_id, stage, index,
+        baseline_sha=baseline_record["artifact_sha256"], controls_sha=controls_sha)
+    if receipt.get("binding") != expected_binding:
+        raise ValueError(f"FD endpoint binding differs: {stage} chunk {index}")
+    calls = receipt.get("calls")
+    rt = receipt.get("RTTOV_receipt", {})
+    flags = rt.get("driver_flags", {})
+    if (not isinstance(calls, dict) or calls.get("KDM_forward") != 1
+            or calls.get("KDM_JVP") != 0 or calls.get("KDM_VJP") != 0
+            or calls.get("RTTOV_K", 0) != 0 or calls.get("RTTOV_K_replayed", 0) != 0
+            or calls.get("RTTOV_direct", 0) not in (0, 1)
+            or rt.get("mode") != "direct" or rt.get("baseline_operator") is not False
+            or flags.get("case_do_k") is not False or flags.get("case_do_direct") is not True):
+        raise ValueError(f"FD endpoint {stage} chunk {index} is not a fresh direct-RTTOV call")
+    return receipt, arrays
+
+
+def _audit_sparse_fd(root, fd_gate, case, base, baseline_receipts, global_z):
+    request_eps = case.get("request", {}).get("fd_epsilons")
+    if not isinstance(request_eps, list) or len(request_eps) != 2:
+        raise ValueError("CASE_MANIFEST does not pin two FD epsilons")
+    saved_trials = fd_gate.get("trials")
+    if not isinstance(saved_trials, list) or len(saved_trials) != 2:
+        raise ValueError("FD.json must contain two epsilon trials")
+    epsilons = [float(row["epsilon"]) for row in saved_trials]
+    if epsilons != [float(x) for x in request_eps] or len(set(epsilons)) != 2:
+        raise ValueError("FD epsilon trials differ from the exact saved request")
+    # Sparse probes are defined only on the four original full-B chunks.
+    ad_parts = []
+    for index in PILOTS:
+        row = base[index]
+        dtheta = row["direction_theta"] * row["active"][0]
+        dqv = row["direction_qv"] * row["active"][1]
+        ad_parts.append(_fsum(row["grad_theta_numerator"] * dtheta))
+        ad_parts.append(_fsum(row["grad_qv_numerator"] * dqv))
+    ad_numerator = math.fsum(ad_parts)
+    ad = ad_numerator / global_z
+    outputs = []
+    for fd_row in saved_trials:
+        epsilon = float(fd_row["epsilon"])
+        endpoints = fd_row.get("endpoints")
+        if not isinstance(endpoints, list) or len(endpoints) != 2 * len(PILOTS):
+            raise ValueError(f"FD epsilon {epsilon:g} lacks its 8 endpoint receipts")
+        endpoint_numerators = {1: [], -1: []}
+        eligible = True
+        endpoint_checks = []
+        expected_order = [(1, i) for i in PILOTS] + [(-1, i) for i in PILOTS]
+        for record, (sign, index) in zip(endpoints, expected_order):
+            label = f"fd_eps_{epsilon:g}_{'plus' if sign > 0 else 'minus'}"
+            if record.get("chunk_index") != index:
+                raise ValueError(f"FD endpoint order/index differs at {label}")
+            base_row = base[index]
+            baseline_receipt = baseline_receipts[index]
+            receipt, arrays = _load_fd_endpoint(root, record, label,
+                                                  case["run_id"], baseline_receipt)
+            checked = _trial_chunk_checks(receipt, arrays, base_row, stage=label,
+                run_id=case["run_id"], baseline_sha=baseline_receipt["artifact_sha256"],
+                controls_sha=None, check_control_scale=False)
+            expected_t = sign * epsilon * base_row["direction_theta"] * base_row["active"][0]
+            expected_q = sign * epsilon * base_row["direction_qv"] * base_row["active"][1]
+            _same(arrays["delta_theta"], expected_t, f"{label} theta probe")
+            _same(arrays["delta_qv"], expected_q, f"{label} QV probe")
+            expected_z = np.stack((
+                expected_t / THETA_SCALE,
+                np.divide(expected_q, QV_RELATIVE_SCALE * base_row["qv"],
+                          out=np.zeros_like(expected_q), where=base_row["qv"] > 0.0),
+            ))
+            _same(arrays["z"], expected_z, f"{label} normalized probe")
+            eligible &= checked["support_preserved"] and receipt["observation_numerator"] is not None
+            if np.isfinite(arrays["bt"][base_row["mask"]]).all():
+                observed_numerator = _huber_numerator(
+                    arrays["bt"], base_row["obs_bt"], base_row["mask"], base_row["weights"])
+                _approx(receipt["observation_numerator"], observed_numerator,
+                        f"{label} observation numerator")
+            else:
+                if receipt["observation_numerator"] is not None:
+                    raise ValueError(f"{label} stores a cost numerator with nonfinite fixed-support BT")
+                observed_numerator = None
+            if observed_numerator is not None:
+                prior_numerator = 0.5 * LAMBDA * _fsum(arrays["z"] * arrays["z"])
+                endpoint_numerators[sign].append(math.fsum((observed_numerator, prior_numerator)))
+            endpoint_checks.append({"stage": label, "chunk_index": index,
+                                   "support_preserved": checked["support_preserved"],
+                                   "observation_numerator": observed_numerator})
+        plus = math.fsum(endpoint_numerators[1])
+        minus = math.fsum(endpoint_numerators[-1])
+        fd = (plus - minus) / (2.0 * epsilon * global_z)
+        ratio = abs(fd - ad) / (1.0e-8 + 3.0e-5 * max(abs(fd), abs(ad)))
+        passed = bool(eligible and ratio <= 1.0)
+        _approx(fd_row["AD"], ad, f"FD epsilon {epsilon:g} AD")
+        _approx(fd_row["FD"], fd, f"FD epsilon {epsilon:g} value")
+        _approx(fd_row["tolerance_ratio"], ratio, f"FD epsilon {epsilon:g} tolerance ratio")
+        if bool(fd_row["eligible"]) != bool(eligible) or bool(fd_row["passed"]) != passed:
+            raise ValueError(f"FD epsilon {epsilon:g} eligibility/pass differs from endpoints")
+        outputs.append({"epsilon": epsilon, "AD": ad, "FD": fd,
+                        "tolerance_ratio": ratio, "eligible": bool(eligible),
+                        "passed": passed, "endpoint_count": len(endpoint_checks)})
+    if bool(fd_gate.get("passed")) != any(row["passed"] for row in outputs):
+        raise ValueError("FD.json global pass differs from its epsilon records")
+    return {"passed": any(row["passed"] for row in outputs),
+            "AD": ad, "epsilons": outputs}
+
+
+def audit_final(run_root):
+    root = Path(run_root).resolve(strict=True)
+    final_path = root / "FINAL.json"
+    if not final_path.is_file():
+        partial = sum(1 for _ in (root / "baseline").glob("chunk_*/receipt.json")) \
+            if (root / "baseline").is_dir() else 0
+        return {"status": "INCOMPLETE", "final_present": False,
+                "baseline_completed_receipts": partial, "expected_chunks": NCHUNKS}
+    case = _read_json(root / "CASE_MANIFEST.json")
+    if _identity({k: v for k, v in case.items() if k != "run_id"}) != case.get("run_id"):
+        raise ValueError("CASE_MANIFEST run_id does not bind its contents")
+    expected_settings = {
+        "model_snapshot_time": "2025-07-19_00:00:40",
+        "KO_nominal_slot": "202507190000",
+        "grid": [NY, NX, LEVELS],
+        "channels": list(range(10, 17)),
+        "chunk_columns": CHUNK_SIZE,
+        "physics": "norm_actual+actual_departure_QR",
+        "local_physics_dt_seconds": 20,
+        "theta_m_scale_K": THETA_SCALE,
+        "qv_relative_scale": QV_RELATIVE_SCALE,
+        "regularization_lambda": LAMBDA,
+        "huber_delta": HUBER_DELTA,
+        "observation_sigma_K": SIGMA,
+        "bias_K": BIAS,
+        "trial_alphas": list(ALPHAS),
+        "model_quality_required": 0,
+        "fixed_baseline_support": True,
+        "native_host_steps": 0,
+    }
+    if case.get("request", {}).get("settings") != expected_settings:
+        raise ValueError("CASE_MANIFEST objective/physics settings differ from this audit contract")
+    if case.get("case_preparation", {}).get("grid") != {
+            "nx": NX, "ny": NY, "levels": LEVELS, "columns": NPROFILES}:
+        raise ValueError("case manifest is not the fixed full native grid")
+    pins = case.get("source_pins")
+    if not isinstance(pins, dict) or not pins:
+        raise ValueError("CASE_MANIFEST lacks source pins")
+    for path, digest in pins.items():
+        if _sha_file(path) != digest:
+            raise ValueError(f"pinned source/input changed: {path}")
+    qualification = case["case_preparation"]["observation_qualification"]
+    if qualification.get("unique_pixel_id_count") != NPROFILES:
+        raise ValueError("case preparation does not prove globally unique source pixel owners")
+
+    final = _read_json(final_path)
+    if final.get("status") not in ("COMPLETED_ACCEPTED", "COMPLETED_NO_ACCEPTABLE_UPDATE"):
+        raise ValueError("FINAL status is not a completed objective decision")
+    if final.get("processed_columns") != NPROFILES or final.get("blocks") != NCHUNKS:
+        raise ValueError("FINAL domain coverage metadata is incomplete")
+    if final.get("native_host_steps") != 0 or final.get("native_cycles") != 0:
+        raise ValueError("case unexpectedly claims a host step/cycle")
+
+    run_id = case["run_id"]
+    recovery_manifest = None
+    prep = case["case_preparation"]
+    if prep.get("rttov_replay_manifest"):
+        recovery_path = Path(prep["rttov_replay_manifest"])
+        if _sha_file(recovery_path) != prep.get("rttov_replay_sha256"):
+            raise ValueError("RTTOV recovery manifest hash differs from case pins")
+        recovery_manifest = _read_json(recovery_path)
+        original_manifest = _read_json(recovery_manifest["source_case_manifest"])
+        if recovery_manifest["source_case_manifest_sha256"] != _sha_file(recovery_manifest["source_case_manifest"]):
+            raise ValueError("recovery original run manifest changed")
+        recovery_original_run_id = original_manifest["run_id"]
+    else:
+        recovery_original_run_id = None
+    baseline_manifest, baseline_chunks = _load_complete_stage(
+        root, root / "BASELINE.json", "baseline", run_id)
+    if baseline_manifest.get("full_domain") is not True or baseline_manifest.get("processed_columns") != NPROFILES:
+        raise ValueError("BASELINE is not a full-domain result")
+    if baseline_manifest.get("call_totals", {}).get("KDM_forward") != NCHUNKS:
+        raise ValueError("baseline does not contain one full-B KDM forward per chunk")
+
+    # Keep only objective/control arrays, not the large cached K/profile fields.
+    base = {}
+    pixel_owner = set()
+    partials, numerators, dot_lhs, dot_rhs, dot_errors = [], [], [], [], []
+    call_totals = {}
+    recovered_chunks, new_k_chunks = [], []
+    for receipt, arrays in baseline_chunks:
+        checked = _baseline_chunk_checks(receipt, arrays)
+        i = receipt["chunk_index"]
+        base[i] = checked
+        ids = checked["source_owner_ids"].tolist()
+        if len(set(ids)) != len(ids) or any(value in pixel_owner for value in ids):
+            raise ValueError(f"source pixel owner repeats in chunk {i} or across chunks")
+        pixel_owner.update(ids)
+        partials.append(checked["Z_partial"])
+        numerators.append(checked["numerator"])
+        dot_lhs.append(checked["dot_lhs"])
+        dot_rhs.append(checked["dot_rhs"])
+        dot_errors.append(checked["dot_error"])
+        calls = receipt.get("calls")
+        if not isinstance(calls, dict):
+            raise ValueError(f"baseline chunk {i} lacks call accounting")
+        for name, count in calls.items():
+            if type(count) is not int or count < 0:
+                raise ValueError(f"baseline chunk {i} has invalid {name} call count")
+            call_totals[name] = call_totals.get(name, 0) + count
+        if calls.get("KDM_forward") != 1 or calls.get("KDM_JVP") != 1 or calls.get("KDM_VJP") != 1:
+            raise ValueError(f"baseline chunk {i} lacks one recorded first-order KDM evaluation")
+        if calls.get("RTTOV_direct", 0) != 0:
+            raise ValueError(f"baseline chunk {i} unexpectedly used direct RTTOV")
+        if i in PILOTS:
+            if calls.get("RTTOV_K_replayed") != 1 or calls.get("RTTOV_K") != 0:
+                raise ValueError(f"pilot chunk {i} did not use exactly one preserved K replay")
+            recovery = receipt["RTTOV_receipt"].get("recovery")
+            if (not isinstance(recovery, dict) or recovery_manifest is None
+                    or recovery.get("new_RTTOV_calls") != 0
+                    or recovery.get("recovery_manifest_sha256") != prep.get("rttov_replay_sha256")
+                    or recovery.get("source_original_run_id") != recovery_original_run_id):
+                raise ValueError(f"pilot chunk {i} lacks the designated preserved-K recovery receipt")
+            recovered_chunks.append(i)
+        else:
+            if calls.get("RTTOV_K_replayed", 0) != 0 or calls.get("RTTOV_K", 0) not in (0, 1):
+                raise ValueError(f"nonpilot chunk {i} has invalid K execution accounting")
+            if calls.get("RTTOV_K", 0):
+                new_k_chunks.append(i)
+    if len(pixel_owner) != NPROFILES:
+        raise ValueError("source owner mapping does not cover 65,988 unique pixels")
+    saved_call_totals = baseline_manifest.get("call_totals", {})
+    if saved_call_totals != call_totals:
+        raise ValueError("BASELINE call_totals differ from individually audited receipts")
+    Z = math.fsum(partials)
+    weight_sum = math.fsum(float(x) for i in range(NCHUNKS)
+                           for x in base[i]["weights"].ravel())
+    _approx(Z, weight_sum, "single global Z")
+    if Z <= 0.0:
+        raise ValueError("global fixed support is empty")
+    saved_Z = float(baseline_manifest.get("globalZ", float("nan")))
+    _approx(saved_Z, Z, "baseline globalZ")
+    total_num = math.fsum(numerators)
+    J_obs = total_num / Z
+    baseline_objective = baseline_manifest["objective"]
+    _approx(baseline_objective["J_observation"], J_obs, "baseline J_observation")
+    _approx(baseline_objective["J_background"], 0.0, "baseline J_background")
+    _approx(baseline_objective["J_total"], J_obs, "baseline J_total")
+    lhs, rhs = math.fsum(dot_lhs), math.fsum(dot_rhs)
+    dot_error = abs(lhs - rhs) / max(abs(lhs), abs(rhs), 1e-12)
+    global_dot = baseline_manifest["dot"]
+    _approx(global_dot["lhs"], lhs / Z, "global dot lhs")
+    _approx(global_dot["rhs"], rhs / Z, "global dot rhs")
+    _approx(global_dot["relative_error"], dot_error, "global dot error")
+    if (dot_error > DOT_TOL or max(dot_errors) > DOT_TOL
+            or not global_dot.get("passed", False)):
+        raise ValueError("baseline global/per-chunk dot gate failed")
+    _approx(global_dot.get("max_chunk_relative_error", float("nan")),
+            max(dot_errors), "maximum per-chunk dot error")
+    final_dot = final.get("gradient_verification", {}).get("dot", {})
+    _approx(final_dot.get("lhs", float("nan")), lhs / Z, "FINAL dot lhs")
+    _approx(final_dot.get("rhs", float("nan")), rhs / Z, "FINAL dot rhs")
+    _approx(final_dot.get("relative_error", float("nan")), dot_error, "FINAL dot error")
+    if final_dot.get("passed") is not True:
+        raise ValueError("FINAL does not attest the passing global/per-chunk dot gate")
+
+    # Reconstruct the scaled steepest-descent direction independently.
+    theta = np.concatenate([base[i]["theta_m"] for i in range(NCHUNKS)], axis=0)
+    qv = np.concatenate([base[i]["qv"] for i in range(NCHUNKS)], axis=0)
+    grad_theta = np.concatenate([base[i]["grad_theta_numerator"] for i in range(NCHUNKS)], axis=0) / Z
+    grad_qv = np.concatenate([base[i]["grad_qv_numerator"] for i in range(NCHUNKS)], axis=0) / Z
+    active = np.concatenate([base[i]["active"] for i in range(NCHUNKS)], axis=1)
+    scale = np.stack((np.full_like(theta, THETA_SCALE), QV_RELATIVE_SCALE * qv))
+    gradient = np.stack((grad_theta, grad_qv))
+    scaled_gradient = np.where(active, scale * gradient, 0.0)
+    max_abs = float(np.max(np.abs(scaled_gradient)))
+    direction = np.zeros_like(scaled_gradient)
+    if max_abs > 0.0:
+        direction[active] = -scaled_gradient[active] / max_abs
+
+    fd_path = root / "FD.json"
+    fd_gate = _read_json(fd_path) if fd_path.is_file() else None
+    if fd_gate is None:
+        raise ValueError("final case lacks its saved sparse FD stage")
+    baseline_receipts = {receipt["chunk_index"]: receipt for receipt, _ in baseline_chunks}
+    fd_audit = _audit_sparse_fd(root, fd_gate, case, base, baseline_receipts, Z)
+    if not fd_audit["passed"]:
+        raise ValueError("independently recomputed sparse FD gate does not pass")
+    eps = [row["epsilon"] for row in fd_audit["epsilons"]]
+    if final.get("gradient_verification", {}).get("sparse_FD_passed") is not True:
+        raise ValueError("FINAL does not attest the sparse FD gate")
+
+    baseline_J = J_obs
+    declared_trials = final.get("trials", [])
+    if not isinstance(declared_trials, list):
+        raise ValueError("FINAL trials field must be a list")
+    trial_reports = []
+    trial_alphas = []
+    trial_stages = []
+    accepted_candidates = []
+    max_abs_trial_z = 0.0
+    for trial_name in declared_trials:
+        stage = Path(trial_name).name.removesuffix(".json")
+        stage_path = root / trial_name
+        if stage_path.parent.resolve() != root or not stage_path.is_file():
+            raise ValueError(f"declared trial manifest is missing or outside run: {trial_name}")
+        manifest = _read_json(stage_path)
+        alpha = float(manifest["alpha"])
+        if alpha not in ALPHAS or trial_stages and ALPHAS.index(alpha) <= ALPHAS.index(trial_alphas[-1]):
+            raise ValueError("trial alpha sequence is not a prefix of the fixed descending budget")
+        trial_alphas.append(alpha)
+        trial_stages.append(stage)
+        if manifest.get("globalZ") != Z:
+            raise ValueError("trial changed the single global Z")
+        controls = []
+        trial_nums = []
+        support_all = True
+        trial_profiles = 0
+        for record in sorted(manifest.get("chunks", []), key=lambda item: item.get("chunk_index", -1)):
+            i = record.get("chunk_index")
+            if type(i) is not int or i not in base:
+                raise ValueError(f"trial {stage} references unknown baseline chunk")
+            receipt, arrays = _load_receipt_chunk(
+                root, record, stage, run_id, baseline_record=baseline_chunks[i][0],
+                controls_sha=manifest.get("controls_sha256"))
+            calls = receipt.get("calls")
+            if (not isinstance(calls, dict) or calls.get("KDM_forward") != 1
+                    or calls.get("KDM_JVP") != 0 or calls.get("KDM_VJP") != 0
+                    or calls.get("RTTOV_K", 0) != 0
+                    or calls.get("RTTOV_K_replayed", 0) != 0
+                    or calls.get("RTTOV_direct", 0) not in (0, 1)):
+                raise ValueError(f"trial {stage} chunk {i} did not use one forward and only a fresh direct RTTOV call")
+            rt = receipt.get("RTTOV_receipt", {})
+            flags = rt.get("driver_flags", {})
+            if (rt.get("mode") != "direct" or rt.get("baseline_operator") is not False
+                    or flags.get("case_do_k") is not False
+                    or flags.get("case_do_direct") is not True):
+                raise ValueError(f"trial {stage} chunk {i} was not an actual direct-RTTOV evaluation")
+            checked = _trial_chunk_checks(receipt, arrays, base[i], stage=stage,
+                run_id=run_id, baseline_sha=baseline_chunks[i][0]["artifact_sha256"],
+                controls_sha=manifest.get("controls_sha256"))
+            support_all &= checked["support_preserved"]
+            if checked["numerator"] is not None:
+                trial_nums.append(checked["numerator"])
+            controls.append((i, checked))
+            if checked["z"].size:
+                max_abs_trial_z = max(max_abs_trial_z, float(np.max(np.abs(checked["z"]))))
+            trial_profiles += int(arrays["profile_valid"].sum())
+        if len(controls) != NCHUNKS or [i for i, _ in controls] != list(range(NCHUNKS)):
+            raise ValueError(f"trial {stage} receipt coverage is incomplete")
+        z_global = np.zeros((2, NPROFILES, LEVELS), dtype=np.float64)
+        for i, result in controls:
+            s = slice(base[i]["start"], base[i]["stop"])
+            z_global[:, s, :] = result["z"]
+        controls_sha = hashlib.sha256(np.ascontiguousarray(z_global).tobytes()).hexdigest()
+        if controls_sha != manifest.get("controls_sha256"):
+            raise ValueError(f"trial {stage} global control hash differs")
+        expected_z = alpha * direction
+        if not np.array_equal(z_global, expected_z):
+            raise ValueError(f"trial {stage} is not alpha times the baseline-scaled descent direction")
+        objective_valid = bool(manifest.get("objective_valid"))
+        if objective_valid != support_all:
+            raise ValueError(f"trial {stage} objective_valid differs from support receipts")
+        objective = None
+        decreased = False
+        if objective_valid:
+            observation_numerator = math.fsum(trial_nums)
+            prior_numerator = 0.5 * LAMBDA * _fsum(z_global * z_global)
+            numerator = math.fsum((observation_numerator, prior_numerator))
+            cost = numerator / Z
+            saved = manifest.get("objective")
+            if not isinstance(saved, dict):
+                raise ValueError(f"valid trial {stage} lacks objective record")
+            _approx(saved["observation_numerator"], observation_numerator, f"{stage} observation numerator")
+            _approx(saved["regularization_numerator"], prior_numerator, f"{stage} prior numerator")
+            _approx(saved["numerator"], numerator, f"{stage} total numerator")
+            _approx(saved["Z"], Z, f"{stage} Z")
+            _approx(saved["cost"], cost, f"{stage} total cost")
+            tolerance = ACCEPT_ATOL + ACCEPT_RTOL * abs(baseline_J)
+            decreased = baseline_J - cost > tolerance
+            decision = manifest["acceptance"]
+            if bool(decision.get("decreased")) != decreased or bool(decision.get("accepted")) != decreased:
+                raise ValueError(f"trial {stage} acceptance differs from independent cost test")
+            objective = {"J_observation": observation_numerator / Z,
+                         "J_background": prior_numerator / Z, "J_total": cost,
+                         "required_decrease": tolerance,
+                         "actual_decrease": baseline_J - cost}
+        else:
+            if manifest.get("objective") is not None or manifest.get("acceptance", {}).get("accepted"):
+                raise ValueError(f"invalid trial {stage} claims an objective or acceptance")
+        if decreased:
+            accepted_candidates.append(trial_name)
+        trial_reports.append({"name": trial_name, "alpha": alpha,
+                              "objective_valid": objective_valid,
+                              "support_preserved": support_all,
+                              "profile_valid_columns": trial_profiles,
+                              "objective": objective,
+                              "accepted_by_independent_cost": decreased})
+    expected_decision = accepted_candidates[0] if accepted_candidates else None
+    if final.get("accepted_trial") != expected_decision:
+        raise ValueError("FINAL accepted_trial differs from independent first acceptable trial")
+    if expected_decision:
+        if final.get("status") != "COMPLETED_ACCEPTED" or declared_trials[-1] != expected_decision:
+            raise ValueError("FINAL accepted status/order is inconsistent")
+    else:
+        if final.get("status") != "COMPLETED_NO_ACCEPTABLE_UPDATE":
+            raise ValueError("FINAL claims acceptance without an independently accepted trial")
+        if max_abs > 0.0 and trial_alphas != list(ALPHAS):
+            raise ValueError("no-update final omits one of the fixed three trial alphas")
+        if max_abs == 0.0 and trial_alphas:
+            raise ValueError("zero-gradient no-update final must not run a trial")
+    if trial_alphas != list(ALPHAS[:len(trial_alphas)]):
+        raise ValueError("trial list is not a prefix of the fixed alpha order")
+
+    return {
+        "schema": "kdm6.native_satellite_final_independent_audit.v1",
+        "status": "COMPLETED_AUDITED",
+        "run_root": str(root),
+        "run_id": run_id,
+        "grid": {"nx": NX, "ny": NY, "levels": LEVELS,
+                 "columns": NPROFILES, "chunks": NCHUNKS,
+                 "chunk_shape": "128x512 + 452"},
+        "baseline": {"globalZ": Z, "observation_numerator": total_num,
+                     "J_observation": J_obs, "J_background": 0.0, "J_total": J_obs,
+                     "dot_relative_error": dot_error,
+                     "max_chunk_dot_relative_error": max(dot_errors),
+                     "unique_source_pixel_owners": len(pixel_owner),
+                     "call_totals": call_totals,
+                     "K_replayed_chunks": recovered_chunks,
+                     "new_RTTOV_K_chunks": new_k_chunks},
+        "control": {"max_abs_scaled_gradient": max_abs,
+                    "active_theta_degrees": int(active[0].sum()),
+                    "active_qv_degrees": int(active[1].sum()),
+                    "qv_zero_frozen": bool(np.all(~active[1][qv == 0.0])),
+                    "max_abs_trial_z": max_abs_trial_z},
+        "finite_difference_gate": {
+            **fd_audit,
+            "epsilons": eps,
+            "scope": "independently recomputed sparse four-pilot endpoint costs from saved receipts; no new FD/model calls",
+        },
+        "trials": trial_reports,
+        "accepted_trial": expected_decision,
+        "completion": {"native_host_steps": final["native_host_steps"],
+                       "native_cycles": final["native_cycles"],
+                       "final_json_sha256": _sha_file(final_path)},
+        "limits": ["Independent arithmetic audit of saved receipts only.",
+                   "No KDM, RTTOV, host, forecast, or assimilation calls were made."],
+    }
+
+
+def main(argv=None):
+    evidence = Path(__file__).resolve().parent
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-root", type=Path, default=evidence / "RUN_v4")
+    parser.add_argument("--output-json", type=Path,
+                        default=evidence / "FINAL_OBJECTIVE_AUDIT_v1.json")
+    args = parser.parse_args(argv)
+    result = audit_final(args.run_root)
+    result["audit_source_sha256"] = _sha_file(__file__)
+    output = args.output_json
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"audit output must be new: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("x") as stream:
+        json.dump(result, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+    print(json.dumps({"status": result["status"], "globalZ": result["baseline"]["globalZ"],
+                      "J_baseline": result["baseline"]["J_total"],
+                      "accepted_trial": result["accepted_trial"],
+                      "output": str(output)}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

@@ -69,8 +69,9 @@ def load_snapshot(checkpoint, observations, *, i, j, expected_time, time_audit, 
     """Read the same completed checkpoint for every native model/profile field."""
     import netCDF4
     from harness.native_replay_compare import _read_frame, _decoded_char_frame
-    if levels != 39 or not (1 < i < 234 and 1 < j < 282):
-        raise ValueError("this evidence loader requires an interior column of the native 234x282x39 grid")
+    if (levels != 39 or type(i) is not int or type(j) is not int
+            or not (1 <= i <= 234 and 1 <= j <= 282)):
+        raise ValueError("this evidence loader requires a column of the native 234x282x39 grid")
     i0, j0, index = i-1, j-1, (j-1)*234+i-1
     audit = json.loads(Path(time_audit).read_text())
     nominal_time = expected_time if nominal_time is None else nominal_time

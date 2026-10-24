@@ -1,0 +1,61 @@
+{
+  "scope": "exact executed audit/geometry/continuation producer source bytes; partial/pilot reports do not certify final completion",
+  "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "created_at_UTC": "2026-10-24T15:02:23.408415+00:00",
+  "sources": [
+    {
+      "name": "independent_receipt_audit.py",
+      "sha256": "f08046cf0c4e4c748e4d7224c5839c00dd775ee68e02fc88341f1b40ae6c226b",
+      "reports": [
+        {
+          "report": "RUN_v4/INDEPENDENT_BASELINE_PARTIAL_AUDIT_01.json",
+          "sha256": "079600b6571dd28ac8cd03a4949d172e0f2f15b9a3645434b33aa8aee5166cd0"
+        },
+        {
+          "report": "RUN_v4/INDEPENDENT_BASELINE_PARTIAL_AUDIT_02.json",
+          "sha256": "96487a84efda7ff4bc714ce954e5b27e4113094c22174562393c3e3236aaabf4"
+        }
+      ]
+    },
+    {
+      "name": "audit_native_satellite_final_v1.py",
+      "sha256": "ba6b21fe1c278fa46051c34dbfe37820e85d05f8ed8254cd0a8f5a03038592e6",
+      "reports": [
+        {
+          "report": "PILOT_INDEPENDENT_ARITHMETIC_AUDIT.json",
+          "sha256": "a410c4264c16f5549ddce60ddd0a8249d976e985b2a91a3c9d72263d0e7c08a3"
+        }
+      ]
+    },
+    {
+      "name": "audit_boundary_number_admission.py",
+      "sha256": "46321c972b0927dbff8bbae8af9fff49fef2acfadfd3a00fa18906d3bd896ba8",
+      "reports": [
+        {
+          "report": "RUN_v4/OBSERVED_NEGATIVE_MOMENT_BOUNDARY_AUDIT_01.json",
+          "sha256": "3c80453f508c952bebbe25ed83eeae4b6e6fbb0a1e13ce97af2fb4b74aa6e71d"
+        }
+      ]
+    },
+    {
+      "name": "plot_case_coverage.py",
+      "sha256": "3a1466b806ef046b1f960784d27c8982fbcd2c9433f46336fe091fd09957f3c1",
+      "reports": [
+        {
+          "report": "RUN_v4/COVERAGE_FIGURE/receipt.json",
+          "sha256": "bcdfe54c0f612288c9b696c66c00d79c5b5f3508b27585e84557978b2e518032"
+        }
+      ]
+    },
+    {
+      "name": "continue_case_v4.py",
+      "sha256": "6bdf93fb274c48c0e9df85a409a3f4fef9a8c2ea7ee52541ebf41bf4f59af98c",
+      "reports": [
+        {
+          "report": "RUN_v4/PILOT_FD_BRANCH_STABILITY.json",
+          "sha256": "e41091e25caad6035c87dceeb18b85fe0c1248678951195ee4a15db648ba7fbe"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "KO_nominal_slot": "202507190000",
+  "bias_K": 0.0,
+  "channel_names": [
+    "wv073",
+    "ir087",
+    "ir096",
+    "ir105",
+    "ir112",
+    "ir123",
+    "ir133"
+  ],
+  "channels_1based": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "control_increment_definition": "delta_theta_m and delta_qv are accepted input control increments x_final-x_b; all zero because accepted_trial is None. They are distinct from KDM microphysics before/after state changes and tendencies.",
+  "fd_epsilons": [
+    1e-06,
+    3e-07
+  ],
+  "fixed_baseline_support": true,
+  "fixed_upper_reference_layers": 27,
+  "grid": [
+    282,
+    234,
+    39
+  ],
+  "host_timestep_or_cycle": false,
+  "huber_delta": 1.0,
+  "local_physics_dt_seconds": 20,
+  "model_quality_required": 0,
+  "model_snapshot_time": "2025-07-19_00:00:40",
+  "native_host_steps": 0,
+  "observation_sigma_K": 1.0,
+  "optical_number_coordinate": "raw output divided by the identical live post-finish dry density supplied to the cloud bridge",
+  "physical_number_admission": false,
+  "physics": "norm_actual+actual_departure_QR",
+  "pixel_UTC_verified": false,
+  "provider_original_navigation_certified": false,
+  "qv_relative_scale": 0.02,
+  "raw_host_number_units_certified": false,
+  "regularization_lambda": 1.0,
+  "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "scope_limit": "Offline full-domain first-order T/Q control case; no host step/cycle, no external data, no water/energy/number budget closure claim.",
+  "theta_m_scale_K": 0.2,
+  "trial_alphas": [
+    1.0,
+    0.5,
+    0.25
+  ],
+  "upper_reference_note": "26 fixed complete layers plus one live partial layer at native model top; trace gases are held from the pinned RTTOV template."
+}

@@ -1,0 +1,159 @@
+"""Read-only KO/native-domain figure; no model, RTTOV, or download calls."""
+from pathlib import Path
+import hashlib
+import json
+import math
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import netCDF4
+import numpy as np
+
+BASE = Path(__file__).resolve().parent
+RUN = BASE / "RUN_v4"
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for piece in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            digest.update(piece)
+    return digest.hexdigest()
+
+
+def border(a):
+    return np.concatenate((a[0], a[1:, -1], a[-1, -2::-1], a[-2:0:-1, 0], a[0, :1]))
+
+
+def main():
+    manifest_path = RUN / "CASE_MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text())
+    config = manifest["case_preparation"]
+    raw = next(item for item in config["raw16_channel_inventory"] if item["channel"] == "ir105")
+    source = Path(config["paths"]["observations"])
+    if sha(source) != manifest["source_pins"][str(source)]:
+        raise ValueError("observation archive changed")
+    if sha(raw["path"]) != raw["sha256"]:
+        raise ValueError("raw KO IR105 changed")
+    names = ("native_lat_deg", "native_lon_deg", "ko_lat_deg_full", "ko_lon_deg_full",
+             "ko_nearest_row", "ko_nearest_col", "ko_distance_m")
+    with np.load(source, allow_pickle=False) as archive:
+        fields = {name: archive[name].copy() for name in names}
+        bt = archive["ko_bt"][..., 3].copy()  # saved channel order 10--16: IR105 is slot 3
+        assert list(archive["ko_channel_ids_1based"]) == list(range(10, 17))
+    lat, lon = fields["native_lat_deg"], fields["native_lon_deg"]
+    klat, klon = fields["ko_lat_deg_full"], fields["ko_lon_deg_full"]
+    assert lat.shape == lon.shape == (282, 234)
+    assert klat.shape == klon.shape == bt.shape == (900, 900)
+    with netCDF4.Dataset(raw["path"]) as dataset:
+        attrs = {name: float(dataset.getncattr(name)) for name in (
+            "standard_parallel1", "standard_parallel2", "origin_latitude", "central_meridian",
+            "pixel_size", "upper_left_easting", "upper_left_northing")}
+    radius = 6371008.77
+    p1, p2, p0 = [math.radians(attrs[name]) for name in (
+        "standard_parallel1", "standard_parallel2", "origin_latitude")]
+    n = math.log(math.cos(p1) / math.cos(p2)) / math.log(
+        math.tan(math.pi / 4 + p2 / 2) / math.tan(math.pi / 4 + p1 / 2))
+    f = math.cos(p1) * math.tan(math.pi / 4 + p1 / 2) ** n / n
+    rho0 = radius * f / math.tan(math.pi / 4 + p0 / 2) ** n
+
+    def project(latitude, longitude):
+        # Evaluate the projection in binary64 even when stored model
+        # coordinates are binary32, matching the original input preparer.
+        phi = np.radians(np.asarray(latitude, dtype=np.float64))
+        lam = np.radians(np.asarray(longitude, dtype=np.float64))
+        angle = n * (lam - math.radians(attrs["central_meridian"]))
+        rho = radius * f / np.tan(math.pi / 4 + phi / 2) ** n
+        return rho * np.sin(angle), rho0 - rho * np.cos(angle)
+
+    x, y = project(lat, lon)
+    kx, ky = project(klat, klon)
+    spacing = attrs["pixel_size"]
+    expected_x = attrs["upper_left_easting"] + spacing * np.arange(900)
+    expected_y = attrs["upper_left_northing"] - spacing * np.arange(900)
+    projection_residual = max(float(np.max(abs(kx - expected_x[None, :]))),
+                              float(np.max(abs(ky - expected_y[:, None]))))
+    if projection_residual > 1e-6:
+        raise ValueError("saved KO coordinates do not recover header pixel centers")
+    left, right = expected_x[0] - spacing / 2, expected_x[-1] + spacing / 2
+    bottom, top = expected_y[-1] - spacing / 2, expected_y[0] + spacing / 2
+    inside = (x >= left) & (x <= right) & (y >= bottom) & (y <= top)
+    if not inside.all():
+        raise ValueError("native model center outside raw KO pixel-edge footprint")
+    margins = {"west": float((x - left).min() / 1000), "east": float((right - x).min() / 1000),
+               "south": float((y - bottom).min() / 1000), "north": float((top - y).min() / 1000)}
+    projected_distance = np.hypot(
+        x - expected_x[fields["ko_nearest_col"]],
+        y - expected_y[fields["ko_nearest_row"]],
+    )
+    saved_distance = fields["ko_distance_m"]
+    if not np.array_equal(projected_distance.astype(saved_distance.dtype), saved_distance):
+        raise ValueError("recorded LCC distances do not match the original rounding contract")
+    owner_path = RUN / "KO_NEAREST_OWNER_AUDIT.json"
+    owner = json.loads(owner_path.read_text())
+    if (owner["run_id"] != manifest["run_id"] or owner["passed"] is not True
+            or owner["source_sha256"]["observation_archive"] != sha(source)):
+        raise ValueError("independent nearest-owner audit does not match this case")
+    out = RUN / "COVERAGE_FIGURE_v2"
+    if out.exists() or out.is_symlink():
+        raise FileExistsError(out)
+    out.mkdir()
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11,
+                         "axes.spines.top": False, "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 7.7), constrained_layout=True)
+    blue, orange = "#2463A7", "#C26420"
+    axes[0].plot(border(klon), border(klat), color=blue, lw=2)
+    axes[0].plot(border(lon), border(lat), color=orange, lw=2)
+    axes[0].scatter(lon[::10, ::10], lat[::10, ::10], s=2, color=orange, alpha=.35)
+    axes[0].set(xlabel="Longitude (degrees east)", ylabel="Latitude (degrees north)",
+                title="Actual coordinates: KO and native model centers")
+    axes[0].set_aspect(1 / math.cos(math.radians(38)))
+    axes[0].grid(alpha=.16)
+    im = axes[1].imshow(bt, origin="upper", extent=(left/1000, right/1000, bottom/1000, top/1000),
+                        cmap="cividis", vmin=200, vmax=310, interpolation="nearest", rasterized=True)
+    axes[1].plot(border(x)/1000, border(y)/1000, color="#FFFFFF", lw=4)
+    axes[1].plot(border(x)/1000, border(y)/1000, color=orange, lw=2)
+    axes[1].set(xlabel="KO Lambert easting (km)", ylabel="KO Lambert northing (km)",
+                title="IR105 KMA BT and native model-center outline")
+    axes[1].set_aspect("equal")
+    cb = fig.colorbar(im, ax=axes[1], fraction=.046, pad=.025, shrink=.80)
+    cb.set_label("IR105 KMA-coordinate BT (K)")
+    axes[0].legend(handles=[Line2D([], [], color=blue, lw=2, label="KO outer pixel centers: 900 × 900"),
+                           Line2D([], [], color=orange, lw=2, label="Native outer mass centers: 234 × 282")],
+                   loc="lower left", fontsize=9, framealpha=.95)
+    fig.suptitle("KO nominal 2025-07-19 00:00  |  All 65,988 native centers inside the supplied raster", fontsize=14)
+    fig.supxlabel("Geometry check only: source/model input coverage; not completed model or observation-cost execution.\n"
+                  "LCC matching distance is projected; spherical distances are separately audited. Radius 6,371,008.77 m assumed.\n"
+                  "Original-provider navigation and pixel UTC remain uncertified.", fontsize=9)
+    fig.savefig(out / "KO_NATIVE_DOMAIN.png", dpi=180)
+    fig.savefig(out / "KO_NATIVE_DOMAIN.pdf")
+    plt.close(fig)
+    receipt = {"schema": "kdm6.native_KO_coverage_figure.v2",
+               "scope": "read-only geometry visualization; no model or RTTOV calls",
+               "run_id": manifest["run_id"], "native_centers": int(inside.size),
+               "outside_pixel_edge_footprint": int((~inside).sum()),
+               "minimum_center_to_pixel_edge_clearance_km": margins,
+               "KO_matched_row_minmax_0based": [int(fields["ko_nearest_row"].min()), int(fields["ko_nearest_row"].max())],
+               "KO_matched_col_minmax_0based": [int(fields["ko_nearest_col"].min()), int(fields["ko_nearest_col"].max())],
+               "max_nearest_pixel_LCC_distance_m_before_f32_storage": float(projected_distance.max()),
+               "max_stored_nearest_pixel_LCC_distance_m": float(saved_distance.max()),
+               "stored_LCC_distance_f32_exact_matches": int((projected_distance.astype(saved_distance.dtype) == saved_distance).sum()),
+               "max_nearest_pixel_spherical_distance_m": owner["max_nearest_distance_m_assumed_radius"],
+               "distance_metric_contract": "historical ko_distance_m is LCC projected hypot rounded to f32; spherical great-circle distance is separate and does not replace stored inputs",
+               "nearest_owner_audit_sha256": sha(owner_path),
+               "native_projection_arithmetic": "binary64 operations on exactly promoted stored binary32 coordinates",
+               "prior_figure_preserved": "COVERAGE_FIGURE (native projection used binary32 intermediates; metric was not distinguished)",
+               "KO_center_projection_max_residual_m": projection_residual,
+               "radius_m_assumption": radius, "original_provider_navigation_certified": False,
+               "pixel_UTC_verified": False, "raw_KO_sha256": raw["sha256"],
+               "observation_archive_sha256": sha(source), "case_manifest_sha256": sha(manifest_path),
+               "producer_sha256": sha(__file__), "outputs_sha256": {p.name: sha(p) for p in out.iterdir()}}
+    with (out / "receipt.json").open("x") as stream:
+        json.dump(receipt, stream, indent=2, allow_nan=False)
+    print(json.dumps(receipt, indent=2))
+
+
+if __name__ == "__main__":
+    main()

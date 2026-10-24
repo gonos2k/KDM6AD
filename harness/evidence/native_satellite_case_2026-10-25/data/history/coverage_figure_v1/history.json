@@ -1,0 +1,23 @@
+{
+  "classification": "historical_geometry_figure_not_current_distance_authority",
+  "figure_version": 1,
+  "historical_center_clearance_km_not_current_distance_authority": {
+    "east": 317.405875,
+    "north": 197.386,
+    "south": 197.388,
+    "west": 317.4061875
+  },
+  "historical_max_pixel_distance_m_not_current_distance_authority": 850.378662109375,
+  "limitation": "v1 used lower-precision projection intermediates; use geometry_coverage.json / v2 for distance authority.",
+  "native_centers": 65988,
+  "output_sha256": {
+    "KO_NATIVE_DOMAIN.pdf": "7a635c711a2efdc3a4ed1c92a8f456e906ac0eeb78ace2873e1ae4ddf0c68906",
+    "KO_NATIVE_DOMAIN.png": "a418da46e70f8344605145161378e4aef78649df5bdf4f47d4248efc89bd0174"
+  },
+  "outside_pixel_edge_footprint": 0,
+  "producer_sha256": "3a1466b806ef046b1f960784d27c8982fbcd2c9433f46336fe091fd09957f3c1",
+  "receipt_sha256": "bcdfe54c0f612288c9b696c66c00d79c5b5f3508b27585e84557978b2e518032",
+  "scope": "Input geometry only; original provider navigation and pixel UTC uncertified.",
+  "source_archive_manifest_sha256": "c45b856657bfcf4d3259b8656bb4dc3ca263e1f2b0dc8b616d1d89a078c077db",
+  "source_bytes": "The exact v1 producer bytes remain in the preserved private AUDIT_EXECUTED_SOURCES_v1 archive and are identified there by SHA-256."
+}

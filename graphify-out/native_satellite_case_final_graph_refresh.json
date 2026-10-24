@@ -1,0 +1,28 @@
+{
+  "schema": "kdm6.native_satellite_case_final_graph_refresh.v1",
+  "method": "graphify update . plus agent semantic extraction, cache and verified AST references",
+  "nodes": 22547,
+  "edges": 44994,
+  "semantic_nodes": 16,
+  "semantic_edges": 23,
+  "semantic_hyperedges": 2,
+  "inherited_extraction_warnings": 486,
+  "source_sha256": {
+    "docs/NATIVE_SATELLITE_CASE.md": "d7621857f82c3b8ab58efa212a65293d2d6f19fa1457f7b50694e289c02e5d6a",
+    "harness/evidence/native_satellite_case_2026-10-25/REPORT.md": "100213b8cc6ee53a7d002160fe9fde15b5edaf5769afb79f5234a0b58ba98485",
+    "harness/evidence/native_satellite_case_2026-10-25/data/applied_physics_audit.json": "0d83e91903a8740eb2ec9f241d93f360ee0bc7cd9331f529a3d54909a67a55eb",
+    "harness/evidence/native_satellite_case_2026-10-25/data/maps/channel_13.png": "e3274e79547bfb987ace800b1ad1a89d85da244b43709f694b02fa3e3730f5c4",
+    "harness/evidence/native_satellite_case_2026-10-25/data/publication_manifest.json": "bc67f05376b52f9f11c30f88e83988bcb0772f7701698885c7f5e88ed12355b5",
+    "harness/evidence/native_satellite_case_2026-10-25/data/summary.json": "625400ee13838682e84e65d7f9ba3c64e1fd8e6fe59660a8aaf5a001eeb124e4",
+    "harness/native_satellite_objective.py": "6854e1da18c0e619e8d1d657725ce97756198b3407b12b70486715046e205696",
+    "harness/replay_native_satellite_case.py": "a9cfe38239072ba5584ab518ebf0cd6e78cee8badc2a98c2528214bee9202ec4",
+    "harness/run_native_satellite_case.py": "b3298722416b6f03576d0375a2c7f4d2b87810263680931651e001b738e62ae8",
+    "harness/summarize_native_satellite_case.py": "1ac33224e393ab838d2c7a0c951057d5b8ba42998fea01502cdbac86b9813603",
+    "wiki/sources/kdm6ad-native-satellite-case-2026-10-24.md": "86ef8acc2763988520e8e027130d2c175498a201bfae7523749404590ce52fe5",
+    "wiki/sources/native-domain-ko7-bounded-case-2026-10-25.md": "d40bdaa1b384660317ee6c3d4dc07114121389a7365709fb97dd2f9bc87fb6ac"
+  },
+  "graph_sha256": "b7c3b70729e553c63e26494888b337a5b2021339d6db7bcf1194a3b45ed0cefd",
+  "semantic_tokens": "unmetered",
+  "raw_reports_location": "graphify-out/",
+  "wiki_raw_report_dump": false
+}

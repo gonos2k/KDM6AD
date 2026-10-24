@@ -1,0 +1,367 @@
+"""Fixed-support satellite objective and bounded native-control helpers.
+
+The baseline support is frozen before RTTOV evaluation.  Calls can then be
+processed by chunk: sum each chunk's numerator and divide once by the global
+weighted support count.  The objective contract is fixed to Huber delta=1,
+unit sigma, zero bias, and lambda=1 for the normalized control penalty.
+"""
+
+from __future__ import annotations
+
+import math
+from collections import Counter
+from collections.abc import Hashable, Mapping, Sequence
+
+import numpy as np
+
+
+HUBER_DELTA = 1.0
+SIGMA = 1.0
+BIAS = 0.0
+REGULARIZATION_LAMBDA = 1.0
+COST_ACCEPT_ATOL = 1.0e-10
+COST_ACCEPT_RTOL = 1.0e-12
+ALLOWED_ALPHA = (1.0, 0.5, 0.25)
+
+
+def _matrix(value, name, *, dtype=None):
+    array = np.asarray(value)
+    if array.ndim != 2 or (dtype is not None and array.dtype != dtype):
+        suffix = " binary64" if dtype == np.float64 else ""
+        raise TypeError(f"{name} must be a two-dimensional{suffix} array")
+    return array
+
+
+def _quality(value, name, shape):
+    array = np.asarray(value)
+    if array.shape != shape or array.dtype.kind not in "iu":
+        raise TypeError(f"{name} must be an integer array with shape {shape}")
+    return array
+
+
+def _bool_vector(value, name, size):
+    array = np.asarray(value)
+    if array.shape != (size,) or array.dtype != np.bool_:
+        raise TypeError(f"{name} must be a boolean vector with shape ({size},)")
+    return array
+
+
+def _owner_weights(source_eligible, owner_ids):
+    """Assign pre-RT ownership 1/k for repeated source observations."""
+    batch, channels = source_eligible.shape
+    if owner_ids is None:
+        return np.ones((batch, channels), dtype=np.float64)
+    owners = np.asarray(owner_ids)
+    if owners.shape != source_eligible.shape:
+        raise ValueError("owner_ids shape must match source-quality arrays")
+    weights = np.zeros((batch, channels), dtype=np.float64)
+    for channel in range(channels):
+        indices = np.flatnonzero(source_eligible[:, channel])
+        counts = Counter()
+        for row in indices:
+            owner = owners[row, channel]
+            if not isinstance(owner, Hashable):
+                raise TypeError("eligible owner_ids must be hashable")
+            counts[owner] += 1
+        for row in indices:
+            weights[row, channel] = 1.0 / counts[owners[row, channel]]
+    return weights
+
+
+def build_fixed_support(
+    source_dqf,
+    source_qc,
+    profile_valid,
+    baseline_model_quality,
+    observed_bt,
+    *,
+    owner_ids=None,
+    allow_empty=False,
+):
+    """Freeze pre-RT source eligibility, baseline quality support and weights.
+
+    All quality arrays are profile-by-channel integer flags.  Source eligibility
+    requires both DQF and QC to equal zero.  Profile validity is fixed before
+    RTTOV.  Baseline model support additionally requires ``quality == 0``.
+    A trial may gain model-quality-valid observations; those entries remain
+    excluded because its objective always uses this frozen support.
+
+    Call once for the complete domain before dividing model calls into chunks;
+    this ensures duplicate-owner counts span chunk boundaries.  ``owner_ids``
+    identifies the underlying raw source observation per
+    profile/channel.  Eligible duplicate owners receive weight ``1/k`` based
+    only on pre-RT source eligibility, never on model quality.  Omit it when
+    every mapped source observation is unique.
+    ``allow_empty=True`` is only for an execution block whose local baseline
+    model-quality mask is empty; its zero partial normalizer is combined with
+    other blocks. The full-domain support still needs positive global Z.
+    """
+    dqf = np.asarray(source_dqf)
+    qc = np.asarray(source_qc)
+    if dqf.ndim != 2 or dqf.dtype.kind not in "iu":
+        raise TypeError("source_dqf must be a two-dimensional integer array")
+    shape = dqf.shape
+    if qc.shape != shape or qc.dtype.kind not in "iu":
+        raise TypeError("source_qc must be an integer array matching source_dqf")
+    quality = _quality(baseline_model_quality, "baseline_model_quality", shape)
+    valid_profile = _bool_vector(profile_valid, "profile_valid", shape[0])
+    obs = _matrix(observed_bt, "observed_bt", dtype=np.float64)
+    if obs.shape != shape:
+        raise ValueError("observed_bt shape must match source-quality arrays")
+
+    source_eligible = (dqf == 0) & (qc == 0) & valid_profile[:, None]
+    owner_weight = _owner_weights(source_eligible, owner_ids)
+    if type(allow_empty) is not bool:
+        raise TypeError("allow_empty must be boolean")
+    m0 = source_eligible & (quality == 0)
+    if not m0.any() and not allow_empty:
+        raise ValueError("baseline has no fixed-support satellite observations")
+    if not np.isfinite(obs[m0]).all():
+        raise ValueError("observed_bt must be finite on baseline support")
+    weights = np.where(m0, owner_weight, 0.0)
+    z_partial = math.fsum(float(value) for value in weights.ravel())
+    if not math.isfinite(z_partial) or (z_partial <= 0.0 and not allow_empty):
+        raise ValueError("fixed-support normalizer must be finite and positive")
+    return {
+        "source_eligible": source_eligible,
+        "baseline_model_valid": quality == 0,
+        "profile_valid": valid_profile.copy(),
+        "m0": m0,
+        "owner_weight": owner_weight,
+        "weights": weights,
+        "Z_partial": z_partial,
+    }
+
+
+def check_trial_support(support: Mapping, trial_model_quality, trial_bt):
+    """Reject lost baseline support; leave newly valid entries outside ``m0``."""
+    if not isinstance(support, Mapping) or "m0" not in support:
+        raise TypeError("support must be the mapping returned by build_fixed_support")
+    m0 = np.asarray(support["m0"])
+    if m0.ndim != 2 or m0.dtype != np.bool_:
+        raise TypeError("support.m0 must be a boolean profile-by-channel array")
+    quality = _quality(trial_model_quality, "trial_model_quality", m0.shape)
+    lost = m0 & (quality != 0)
+    if lost.any():
+        rows = np.argwhere(lost)
+        raise ValueError(f"trial loses {len(rows)} baseline-supported observations")
+    bt = _matrix(trial_bt, "trial_bt", dtype=np.float64)
+    if bt.shape != m0.shape:
+        raise ValueError("trial_bt shape must match fixed support")
+    if not np.isfinite(bt[m0]).all():
+        raise ValueError(
+            "trial_bt must be finite on all baseline-supported observations"
+        )
+    return {
+        "m0": m0.copy(),
+        "newly_valid_ignored": int(
+            (np.asarray(support["source_eligible"]) & (quality == 0) & ~m0).sum()
+        ),
+    }
+
+
+def slice_fixed_support(support: Mapping, start: int, stop: int):
+    """Take a row block from globally frozen support for one model/RT call."""
+    if not isinstance(support, Mapping):
+        raise TypeError("support must be the mapping returned by build_fixed_support")
+    m0 = np.asarray(support.get("m0"))
+    if m0.ndim != 2 or m0.dtype != np.bool_:
+        raise TypeError("support.m0 must be a boolean profile-by-channel array")
+    if (
+        type(start) is not int
+        or type(stop) is not int
+        or not (0 <= start < stop <= m0.shape[0])
+    ):
+        raise ValueError("support slice must be a nonempty in-range [start, stop) pair")
+    out = {}
+    for name in (
+        "source_eligible",
+        "baseline_model_valid",
+        "m0",
+        "owner_weight",
+        "weights",
+    ):
+        array = np.asarray(support[name])
+        if array.shape != m0.shape:
+            raise ValueError(f"support.{name} shape differs from m0")
+        out[name] = array[start:stop].copy()
+    profile_valid = np.asarray(support["profile_valid"])
+    if profile_valid.shape != (m0.shape[0],) or profile_valid.dtype != np.bool_:
+        raise ValueError("support.profile_valid must be a boolean vector matching m0")
+    out["profile_valid"] = profile_valid[start:stop].copy()
+    out["Z_partial"] = math.fsum(float(x) for x in out["weights"].ravel())
+    return out
+
+
+def objective_chunk(bt_hat, observed_bt, support):
+    """Return chunk Huber numerator and its unnormalized BT cotangent.
+
+    Unsupported values may be nonfinite and are never read into the residual.
+    This function returns a numerator; the caller uses one global Z after
+    summing all chunk numerators.
+    """
+    if (
+        not isinstance(support, Mapping)
+        or "m0" not in support
+        or "weights" not in support
+    ):
+        raise TypeError("support must be the mapping returned by build_fixed_support")
+    m0 = np.asarray(support["m0"])
+    weights = np.asarray(support["weights"], dtype=np.float64)
+    pred = _matrix(bt_hat, "bt_hat", dtype=np.float64)
+    obs = _matrix(observed_bt, "observed_bt", dtype=np.float64)
+    if (
+        m0.dtype != np.bool_
+        or m0.ndim != 2
+        or pred.shape != m0.shape
+        or obs.shape != m0.shape
+    ):
+        raise ValueError(
+            "BT arrays and boolean fixed support must have matching 2-D shape"
+        )
+    if (
+        weights.shape != m0.shape
+        or not np.isfinite(weights).all()
+        or np.any(weights < 0.0)
+    ):
+        raise ValueError("support weights must be finite, nonnegative, and match m0")
+    if np.any(weights[~m0] != 0.0):
+        raise ValueError("support weights must be zero off m0")
+    if not np.isfinite(pred[m0]).all() or not np.isfinite(obs[m0]).all():
+        raise ValueError("predicted and observed BT must be finite on fixed support")
+    residual = np.zeros(m0.shape, dtype=np.float64)
+    residual[m0] = (pred[m0] - obs[m0] - BIAS) / SIGMA
+    abs_residual = np.abs(residual[m0])
+    huber = np.where(
+        abs_residual <= HUBER_DELTA,
+        0.5 * residual[m0] * residual[m0],
+        HUBER_DELTA * (abs_residual - 0.5 * HUBER_DELTA),
+    )
+    numerator = math.fsum(float(v) for v in (weights[m0] * huber))
+    slope = np.clip(residual[m0], -HUBER_DELTA, HUBER_DELTA) / SIGMA
+    cotangent = np.zeros(m0.shape, dtype=np.float64)
+    cotangent[m0] = weights[m0] * slope
+    if not math.isfinite(numerator) or not np.isfinite(cotangent).all():
+        raise ValueError("nonfinite objective numerator or BT cotangent")
+    return {"numerator": numerator, "bt_cotangent_numerator": cotangent}
+
+
+def global_normalizer(support_blocks: Sequence[Mapping]) -> float:
+    """Sum chunk normalizers once using stable binary64 accumulation."""
+    partials = []
+    for block in support_blocks:
+        value = float(block["Z_partial"])
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError("each Z_partial must be finite and nonnegative")
+        partials.append(value)
+    total = math.fsum(partials)
+    if not math.isfinite(total) or total <= 0.0:
+        raise ValueError("global fixed-support normalizer must be positive")
+    return total
+
+
+def finalize_objective(observation_numerators, normalizer, z, active_mask):
+    """Add one global lambda/2 control penalty and divide the numerator by Z."""
+    z = np.asarray(z, dtype=np.float64)
+    active = np.asarray(active_mask)
+    if z.shape != active.shape or active.dtype != np.bool_:
+        raise ValueError("z and boolean active_mask must have matching shapes")
+    if not np.isfinite(z).all() or np.any(z[~active] != 0.0):
+        raise ValueError("z must be finite and exactly zero in frozen controls")
+    Z = float(normalizer)
+    if not math.isfinite(Z) or Z <= 0.0:
+        raise ValueError("normalizer must be finite and positive")
+    obs_numerator = math.fsum(float(x) for x in observation_numerators)
+    if not math.isfinite(obs_numerator) or obs_numerator < 0.0:
+        raise ValueError("observation numerators must be finite and nonnegative")
+    penalty = 0.5 * REGULARIZATION_LAMBDA * math.fsum(float(x * x) for x in z[active])
+    numerator = math.fsum((obs_numerator, penalty))
+    return {
+        "observation_numerator": obs_numerator,
+        "regularization_numerator": penalty,
+        "numerator": numerator,
+        "Z": Z,
+        "cost": numerator / Z,
+    }
+
+
+def active_control_mask(m0, qv_baseline):
+    """Return active T/Q control degrees for admitted columns; freeze QV==0."""
+    support = np.asarray(m0)
+    qv = np.asarray(qv_baseline, dtype=np.float64)
+    if support.ndim != 2 or support.dtype != np.bool_:
+        raise TypeError("m0 must be a boolean profile-by-channel matrix")
+    if (
+        qv.ndim != 2
+        or qv.shape[0] != support.shape[0]
+        or not np.isfinite(qv).all()
+        or np.any(qv < 0.0)
+    ):
+        raise ValueError(
+            "qv_baseline must be finite, nonnegative, and shaped (profiles, levels)"
+        )
+    admitted = support.any(axis=1)
+    active = np.zeros((2,) + qv.shape, dtype=np.bool_)
+    active[0] = admitted[:, None]
+    active[1] = admitted[:, None] & (qv > 0.0)
+    return active
+
+
+def bounded_control_step(baseline, native_gradient, scale, active_mask, alpha):
+    """Build one normalized steepest-descent trial from the fixed baseline.
+
+    In normalized coordinates ``z``, ``g_z = S*g_native`` and the direction
+    is ``-g_z/max(abs(g_z))``. Frozen controls remain exact zeros. The returned
+    candidate is always ``baseline + alpha*S*direction``; it is not cumulative.
+    """
+    baseline = np.asarray(baseline, dtype=np.float64)
+    gradient = np.asarray(native_gradient, dtype=np.float64)
+    scale = np.asarray(scale, dtype=np.float64)
+    active = np.asarray(active_mask)
+    if not (baseline.shape == gradient.shape == scale.shape == active.shape):
+        raise ValueError("baseline, gradient, scale, and active mask shapes must match")
+    if active.dtype != np.bool_:
+        raise TypeError("active_mask must be boolean")
+    if (
+        not np.isfinite(baseline).all()
+        or not np.isfinite(gradient).all()
+        or not np.isfinite(scale).all()
+        or np.any(scale < 0.0)
+    ):
+        raise ValueError("control arrays must be finite and scale nonnegative")
+    if np.any(scale[active] <= 0.0):
+        raise ValueError("active controls require a positive scale")
+    if type(alpha) not in (int, float) or float(alpha) not in ALLOWED_ALPHA:
+        raise ValueError(f"alpha must be one of {ALLOWED_ALPHA}")
+    scaled_gradient = np.where(active, scale * gradient, 0.0)
+    max_abs = float(np.max(np.abs(scaled_gradient))) if scaled_gradient.size else 0.0
+    direction = np.zeros_like(scaled_gradient)
+    if max_abs > 0.0:
+        direction[active] = -scaled_gradient[active] / max_abs
+    z = float(alpha) * direction
+    candidate = baseline + scale * z
+    if not np.isfinite(candidate).all() or not np.isfinite(z).all():
+        raise ValueError("control trial is nonfinite")
+    return {
+        "scaled_gradient": scaled_gradient,
+        "direction_z": direction,
+        "z": z,
+        "candidate": candidate,
+        "alpha": float(alpha),
+        "max_abs_scaled_gradient": max_abs,
+    }
+
+
+def cost_decreased(baseline_cost, trial_cost):
+    """Apply the fixed numerical acceptance tolerance to two global costs."""
+    base, trial = float(baseline_cost), float(trial_cost)
+    if not math.isfinite(base) or not math.isfinite(trial):
+        raise ValueError("baseline and trial costs must be finite")
+    tolerance = COST_ACCEPT_ATOL + COST_ACCEPT_RTOL * abs(base)
+    return {
+        "decreased": base - trial > tolerance,
+        "baseline_cost": base,
+        "trial_cost": trial,
+        "decrease": base - trial,
+        "required_decrease": tolerance,
+    }

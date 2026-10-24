@@ -1,0 +1,520 @@
+"""Post-completion applied-state replay; one value-only full-B C++ call per block.
+
+Run with the frozen tree first on PYTHONPATH, for example:
+  PYTHONPATH=/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/source_v3 \
+    python3 host/research_evidence/native_satellite_case_20261024/audit_saved_case_physics.py
+
+Requires RUN_v4/FINAL.json. Writes a new, non-overwriting audit directory. It
+does not run RTTOV and does not claim closed mass, energy, or number budgets.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+
+HERE = Path(__file__).resolve().parent
+FROZEN = HERE / "source_v3"
+WATER = ("QV", "QC", "QR", "QI", "QS", "QG")
+SAVED_CLOUD = ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg")
+STATE_FIELDS = ("TH", "QV", "QC", "QR", "QI", "QS", "QG", "NN", "NC", "NI", "NR", "BG")
+MOMENT_GROUPS = ("replay_raw_12", "replay_clean_12", "saved_clean_mass_6",
+                 "saved_clean_cloud")
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for data in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            digest.update(data)
+    return digest.hexdigest()
+
+
+def f64(value):
+    out = np.ascontiguousarray(value, dtype=np.float64)
+    if not np.isfinite(out).all():
+        raise ValueError("nonfinite replay or saved value")
+    return out
+
+
+def same_bits(left, right):
+    a, b = f64(left), f64(right)
+    return a.shape == b.shape and a.tobytes() == b.tobytes()
+
+
+def column_sums(values):
+    values = np.asarray(values, dtype=np.float64)
+    return np.asarray([math.fsum(map(float, row)) for row in values], dtype=np.float64)
+
+
+def weighted_columns(delta, weight):
+    # Each multiplication rounds to binary64 before fsum reduces the levels.
+    product = np.asarray(delta, dtype=np.float64) * np.asarray(weight, dtype=np.float64)[None, :, :]
+    species, batch, _ = product.shape
+    return np.asarray([[math.fsum(map(float, product[s, b])) for b in range(batch)]
+                       for s in range(species)], dtype=np.float64)
+
+
+def bit_gate(actual, saved):
+    return {name: same_bits(actual[name], saved[name]) for name in actual}
+
+
+def _field_moments(names, fields):
+    result = {}
+    for name, values in zip(names, fields):
+        values = f64(values)
+        result[name] = {
+            "finite_count": int(values.size), "minimum": float(values.min()),
+            "maximum": float(values.max()), "negative_count": int(np.count_nonzero(values < 0.0)),
+            "zero_count": int(np.count_nonzero(values == 0.0)),
+        }
+    return result
+
+
+def _pair_counts(qc, nc, qi, ni):
+    return {
+        "QC_positive_NC_nonpositive": int(np.count_nonzero((qc > 0.0) & (nc <= 0.0))),
+        "QI_positive_NI_nonpositive": int(np.count_nonzero((qi > 0.0) & (ni <= 0.0))),
+        "QC_zero_NC_positive": int(np.count_nonzero((qc == 0.0) & (nc > 0.0))),
+        "QI_zero_NI_positive": int(np.count_nonzero((qi == 0.0) & (ni > 0.0))),
+    }
+
+
+def moment_diagnostics(raw, clean, saved):
+    """Summarize replay raw/clean state and saved cleaned cloud outputs only."""
+    saved_cloud = np.stack([f64(saved["cloud_" + name]) for name in SAVED_CLOUD])
+    saved_mass = np.stack((f64(saved["native_after_qv"]), saved_cloud[0], saved_cloud[1],
+                           saved_cloud[2], saved_cloud[3], saved_cloud[4]))
+    return {
+        "number_coordinate": "legacy raw KDM NN/NC/NI/NR/BG values; research coordinates, host units uncertified",
+        "saved_raw_kdm_state_available": False,
+        "replay_raw_12": _field_moments(STATE_FIELDS, raw),
+        "replay_clean_12": _field_moments(STATE_FIELDS, clean),
+        "saved_clean_mass_6": _field_moments(WATER, saved_mass),
+        "saved_clean_cloud": _field_moments(SAVED_CLOUD, saved_cloud),
+        "pair_counts": {
+            "replay_raw": _pair_counts(raw[2], raw[8], raw[4], raw[9]),
+            "replay_clean": _pair_counts(clean[2], clean[8], clean[4], clean[9]),
+            "saved_clean": _pair_counts(saved_cloud[0], saved_cloud[6], saved_cloud[2], saved_cloud[7]),
+        },
+        "interpretation": "diagnostics only; no number repair, process closure, or water/number certification",
+    }
+
+
+def aggregate_moments(chunks):
+    groups = {}
+    for group in MOMENT_GROUPS:
+        names = chunks[0]["moment_diagnostics"][group]
+        groups[group] = {
+            name: {
+                "finite_count": sum(row["moment_diagnostics"][group][name]["finite_count"] for row in chunks),
+                "negative_count": sum(row["moment_diagnostics"][group][name]["negative_count"] for row in chunks),
+                "zero_count": sum(row["moment_diagnostics"][group][name]["zero_count"] for row in chunks),
+                "minimum": min(row["moment_diagnostics"][group][name]["minimum"] for row in chunks),
+                "maximum": max(row["moment_diagnostics"][group][name]["maximum"] for row in chunks),
+            }
+            for name in names
+        }
+    pair_phases = chunks[0]["moment_diagnostics"]["pair_counts"]
+    pairs = {
+        phase: {key: sum(row["moment_diagnostics"]["pair_counts"][phase][key] for row in chunks)
+                for key in values}
+        for phase, values in pair_phases.items()
+    }
+    return {"fields": groups, "pair_counts": pairs}
+
+
+def replay(config, block, saved):
+    import torch
+    from harness.run_native_satellite_case import make_physics, tensor, numpy
+    from harness.native_observation_batch import _optical_cloud_state
+    from oracle.kdm6.native_finish import ThermoState, native_finish
+
+    model = make_physics(config, block)
+    theta = tensor(saved["theta_m"])
+    qv = tensor(saved["qv"])
+    mu, ph, rest = map(tensor, (block["mu"], block["ph"], block["rest"]))
+    with torch.no_grad():
+        prep = model._prep_batch(theta, qv, mu, ph)
+        state = torch.cat((prep.th.unsqueeze(0), qv.unsqueeze(0), rest), dim=0).contiguous()
+        forcing = torch.stack((prep.rho, prep.pii, prep.p, prep.delz), dim=0).contiguous()
+        raw_np, handle = model.kernel.forward(
+            np.ascontiguousarray(state.numpy()), np.ascontiguousarray(forcing.numpy()), record=False
+        )
+        if getattr(handle, "value", None) is not None:
+            raise RuntimeError("value-only C ABI call unexpectedly returned a checkpoint")
+        raw = torch.from_numpy(f64(raw_np))
+        clean = model._clean(raw)
+        before = ThermoState(state[0], state[1], state[2])
+        after = ThermoState(clean[0], clean[1], clean[2])
+        finish = native_finish(before, after, model.finish_config)
+        post = model._prep_batch(finish.t_new_after, clean[1], mu, ph)
+        phi = ph + model._geometry["phb"]
+        actual = {
+            "finish": np.stack([numpy(value) for value in finish]),
+            "native_after_thm_pert": numpy(finish.t_new_after),
+            "native_after_qv": numpy(clean[1]),
+            "native_after_p_center_Pa": numpy(post.p),
+            "native_after_phi_interfaces": numpy(phi),
+            "rho_d": numpy(post.rho),
+        }
+        actual.update({"cloud_" + name: numpy(clean[row])
+                       for row, name in enumerate(SAVED_CLOUD, start=2)})
+        raw_state = f64(raw.numpy())
+        clean_state = f64(clean.numpy())
+        state_np, forcing_np = f64(state.numpy()), f64(forcing.numpy())
+        rho_np = f64(post.rho.numpy())
+        from oracle.kdm6.obs.native_cloud_profile import NativeCloudState
+        optical = _optical_cloud_state(
+            NativeCloudState(clean[2], clean[4], clean[5], raw[8], raw[9]), post.rho
+        )
+        optical_nc, optical_ni = numpy(optical.nc), numpy(optical.ni)
+
+    moments = moment_diagnostics(raw_state, clean_state, saved)
+    gates = bit_gate(actual, saved)
+    gates["raw_NC_is_saved_cloud_NC"] = same_bits(raw_state[8], saved["cloud_nc"])
+    gates["raw_NI_is_saved_cloud_NI"] = same_bits(raw_state[9], saved["cloud_ni"])
+    arrays = {"replay_bit_gates": np.asarray(list(gates.values()), dtype=np.bool_)}
+    result = {"bitwise_gates": gates, "replay_matches_saved": bool(all(gates.values())),
+              "cpp_value_calls": 1, "rttov_calls": 0, "moment_diagnostics": moments}
+    if not result["replay_matches_saved"]:
+        arrays["replay_raw_state"] = raw_state
+        return {**result, "budget_used": False, "arrays": arrays}
+    dt = float(config["finish_configuration"]["dt"])
+    alpha = float(config["finish_configuration"]["alpha"])
+    limit = float(config["finish_configuration"]["mp_tend_lim"]) * dt
+    th_delta = clean_state[0] - state_np[0]
+    clipped = np.clip(th_delta, -limit, limit)
+    qv_delta = clean_state[1] - state_np[1]
+    expected_h = (clipped * (1.0 + alpha * clean_state[1])
+                  + alpha * qv_delta * clean_state[0]) / dt
+    rate_residuals = np.stack((
+        actual["finish"][1] - expected_h,
+        actual["finish"][2] - qv_delta / dt,
+        actual["finish"][3] - (clean_state[2] - state_np[2]) / dt,
+    ))
+    weight = forcing_np[0] * forcing_np[3]
+    water_input, water_raw, water_clean = state_np[1:7], raw_state[1:7], clean_state[1:7]
+    mass = {
+        "raw_minus_input_kg_m2": weighted_columns(water_raw - water_input, weight),
+        "cleanup_minus_raw_kg_m2": weighted_columns(water_clean - water_raw, weight),
+        "applied_minus_input_kg_m2": weighted_columns(water_clean - water_input, weight),
+        "external_control_qv_addition_kg_m2": weighted_columns(
+            (qv - torch.from_numpy(f64(block["qv"]))).numpy()[None, ...], weight
+        )[0],
+    }
+    g = float(config["prep_configuration"]["g"])
+    mu_measure = f64(block["mu"]) / g
+    dry_mass = column_sums(weight)
+    arrays.update({
+        "weights_kg_m2_by_level": weight,
+        "water_raw_minus_input_kg_m2": mass["raw_minus_input_kg_m2"],
+        "water_cleanup_minus_raw_kg_m2": mass["cleanup_minus_raw_kg_m2"],
+        "water_applied_minus_input_kg_m2": mass["applied_minus_input_kg_m2"],
+        "external_control_qv_addition_kg_m2": mass["external_control_qv_addition_kg_m2"],
+        "optical_NC_raw_native_coordinate": raw_state[8],
+        "optical_NI_raw_native_coordinate": raw_state[9],
+        "optical_NC_over_rho_d": optical_nc,
+        "optical_NI_over_rho_d": optical_ni,
+        "rate_relation_residuals": rate_residuals,
+        "dry_mass_DEN_times_DELZ_kg_m2": dry_mass,
+        "dry_mass_MU_over_g_conditional_kg_m2": mu_measure,
+    })
+    def species_summary(name):
+        return {species: math.fsum(map(float, mass[name][row]))
+                for row, species in enumerate(WATER)}
+    return {
+        **result, "budget_used": True,
+        "water_column_totals_kg_m2": {
+            name: species_summary(name) for name in (
+                "raw_minus_input_kg_m2", "cleanup_minus_raw_kg_m2", "applied_minus_input_kg_m2"
+            )
+        },
+        "external_control_qv_addition_total_kg_m2": math.fsum(
+            map(float, mass["external_control_qv_addition_kg_m2"])
+        ),
+        "dry_mass_measure": {
+            "DEN_times_DELZ_total_kg_m2": math.fsum(map(float, dry_mass)),
+            "MU_over_g_total_kg_m2_conditional": math.fsum(map(float, mu_measure)),
+            "max_abs_difference_kg_m2_conditional": float(np.max(np.abs(dry_mass - mu_measure))),
+        },
+        "rate_relations": {
+            "fields": ["H_RATE", "QV_RATE", "QC_RATE"],
+            "max_abs_residual": list(map(float, np.max(np.abs(rate_residuals), axis=(1, 2)))),
+        },
+        "optical_number": {
+            "basis": "research volume-coordinate raw NC/NI divided by same post-finish rho_d",
+            "host_number_units_certified": False,
+            "NC_over_rho_d_minmax": [float(optical_nc.min()), float(optical_nc.max())],
+            "NI_over_rho_d_minmax": [float(optical_ni.min()), float(optical_ni.max())],
+        },
+        "arrays": arrays,
+    }
+
+
+def _pinned_imports(modules):
+    snapshot = json.loads((HERE / "SOURCE_SNAPSHOT_v3.json").read_text())
+    for module in modules:
+        if FROZEN not in Path(module.__file__).resolve().parents:
+            raise RuntimeError(f"source module resolved outside frozen source_v3: {module.__name__}")
+        rel = Path(module.__file__).resolve().relative_to(FROZEN).as_posix()
+        expected = snapshot["source_sha256"].get(rel)
+        if expected is None or sha(module.__file__) != expected:
+            raise ValueError(f"frozen source differs from SOURCE_SNAPSHOT_v3: {rel}")
+    return modules
+
+
+def prepare_runtime_imports():
+    paths = os.environ.get("PYTHONPATH", "").split(os.pathsep)
+    if str(FROZEN) not in paths:
+        raise RuntimeError(f"set PYTHONPATH explicitly to frozen source: {FROZEN}")
+    sys.path.insert(0, str(FROZEN))
+    # These modules do not import Torch or load the candidate library.
+    import harness.run_native_candidate_observation as candidate
+    import harness.run_native_satellite_case as runner
+    import oracle.kdm6.obs.rttov_runner as rttov_runner
+    return _pinned_imports((candidate, runner, rttov_runner))
+
+
+def prepare_physics_imports():
+    import harness.native_batch_microphysics as batch
+    import harness.native_observation_batch as observation
+    import harness.prepare_native_satellite_case as preparation
+    import oracle.kdm6.native_finish as finish
+    import oracle.kdm6.native_prep as prep
+    return _pinned_imports((batch, observation, preparation, finish, prep))
+
+
+def physical_contract(manifest):
+    config = manifest["case_preparation"]
+    experiment = config["experiment"]
+    request = manifest["request"]["settings"]
+    checks = {
+        "factorial_mode": experiment.get("factorial_mode") == "norm_actual",
+        "qr_transport": experiment.get("qr_transport") == "actual_departure",
+        "requested_physics": request.get("physics") == "norm_actual+actual_departure_QR",
+        "batch_columns": experiment.get("batch_columns") == request.get("chunk_columns") == 512,
+        "levels": experiment.get("levels") == config["grid"].get("levels") == 39,
+        "dt_seconds": experiment.get("dt_seconds") == manifest.get("local_physics_dt_seconds") == 20.0,
+    }
+    if not all(checks.values()):
+        raise ValueError(f"saved physical runtime selectors differ from the case contract: {checks}")
+    return experiment, checks
+
+
+def runtime_receipt(manifest, experiment, runtime_modules, torch):
+    candidate, runner, rttov_runner = runtime_modules
+    child_env = rttov_runner._child_env()
+    prefixes = ("OMP_", "MKL_", "OPENBLAS_", "VECLIB_", "DYLD_", "LD_",
+                "GFORTRAN_", "RTTOV_", "AD_RTTOV_", "KDM6_")
+    observed = {key: value for key, value in child_env.items()
+                if key.startswith(prefixes)}
+    expected_values = {
+        "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+        "KDM6_QR_TRANSPORT": "actual_departure",
+        "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1", "OPENBLAS_NUM_THREADS": "1",
+        "OMP_DYNAMIC": "FALSE",
+    }
+    trace_vars = ("KDM6_ICE_BOUNDARY_TRACE", "KDM6_RAIN_BOUNDARY_TRACE",
+                  "KDM6_ACTUAL_QR_TRACE", "KDM6_SUBSTEP_DUMP",
+                  "KDM6_SAME_CALL_BUDGET_TRACE")
+    expected_runtime = manifest["runtime"]
+    env_names = sorted(observed)
+    env_hash = runner.identity(observed)
+    fixed_match = all(observed.get(key) == value for key, value in expected_values.items())
+    traces_clear = all(key not in os.environ for key in trace_vars)
+    env_receipt = {
+        "fixed_nonsecret_values": expected_values,
+        "trace_variables_cleared": list(trace_vars),
+        "all_trace_variables_cleared": traces_clear,
+        "observed_environment_names": env_names,
+        "manifest_environment_names": expected_runtime["RT_environment_names"],
+        "environment_names_match": env_names == expected_runtime["RT_environment_names"],
+        "observed_environment_sha256": env_hash,
+        "manifest_environment_sha256": expected_runtime["RT_environment_sha256"],
+        "environment_sha256_match": env_hash == expected_runtime["RT_environment_sha256"],
+        "torch_threads": torch.get_num_threads(),
+        "manifest_torch_threads": expected_runtime["torch_threads"],
+    }
+    env_receipt["torch_threads_match"] = env_receipt["torch_threads"] == env_receipt["manifest_torch_threads"] == 1
+    if not (fixed_match and traces_clear and env_receipt["environment_names_match"]
+            and env_receipt["environment_sha256_match"] and env_receipt["torch_threads_match"]):
+        raise ValueError(f"effective replay environment differs from saved runtime: {env_receipt}")
+
+    library = Path(manifest["case_preparation"]["paths"]["candidate_library"]).resolve()
+    expected_library = manifest["source_pins"].get(str(library))
+    actual_library = sha(library)
+    library_receipt = {"path": str(library), "actual_sha256": actual_library,
+                       "manifest_sha256": expected_library,
+                       "matches_manifest": expected_library == actual_library}
+    if not library_receipt["matches_manifest"]:
+        raise ValueError("candidate library hash differs from CASE_MANIFEST source pins")
+    return {"physical_selectors": experiment, "physical_checks": physical_contract(manifest)[1],
+            "environment": env_receipt, "candidate_library": library_receipt}
+
+
+def phase_from_summary(run_dir, summary_path):
+    """Resolve the artifact-owned phase folder from its 129 saved receipts."""
+    run_dir = Path(run_dir).resolve()
+    summary_path = Path(summary_path).resolve()
+    if summary_path.parent != run_dir or not summary_path.is_file():
+        raise ValueError("phase summary must be a saved manifest in the run root")
+    summary = json.loads(summary_path.read_text())
+    if summary.get("full_domain") is not True or len(summary.get("chunks", ())) != 129:
+        raise ValueError(f"{summary_path.name} is not a complete full-domain phase manifest")
+    receipts = {}
+    folders = set()
+    for item in summary["chunks"]:
+        index = item.get("chunk_index")
+        if type(index) is not int or index not in range(129) or index in receipts:
+            raise ValueError("phase manifest has duplicate or invalid chunk indices")
+        artifact = Path(item["artifact"]).resolve()
+        parts = artifact.relative_to(run_dir).parts
+        if (len(parts) != 4 or parts[1] != f"chunk_{index:05d}"
+                or not parts[2].startswith("attempt_") or parts[3] != "result.npz"):
+            raise ValueError("phase manifest artifact path does not bind its chunk folder")
+        folders.add(parts[0])
+        receipts[index] = item
+    if len(receipts) != 129 or len(folders) != 1:
+        raise ValueError("phase manifest receipts do not resolve to one complete phase folder")
+    return folders.pop(), receipts, sha(summary_path)
+
+
+def run(run_dir, output_dir):
+    run_dir = Path(run_dir).resolve()
+    runtime_modules = prepare_runtime_imports()
+    candidate, runner, rttov_runner = runtime_modules
+    manifest_path, final_path = run_dir / "CASE_MANIFEST.json", run_dir / "FINAL.json"
+    if not manifest_path.is_file() or not final_path.is_file():
+        raise FileNotFoundError("post-completion audit requires CASE_MANIFEST.json and FINAL.json")
+    manifest, final = json.loads(manifest_path.read_text()), json.loads(final_path.read_text())
+    if final.get("status") not in ("COMPLETED_ACCEPTED", "COMPLETED_NO_ACCEPTABLE_UPDATE"):
+        raise ValueError("RUN FINAL status is not completed")
+    config = manifest["case_preparation"]
+    if float(config["finish_configuration"]["dt"]) != 20.0:
+        raise ValueError("saved case is not the fixed 20-second KDM map")
+    experiment, physical_checks = physical_contract(manifest)
+    phases = [phase_from_summary(run_dir, run_dir / "BASELINE.json")]
+    if final.get("accepted_trial"):
+        trial_file = Path(final["accepted_trial"])
+        if trial_file.is_absolute() or len(trial_file.parts) != 1:
+            raise ValueError("accepted_trial must name a root-level saved trial manifest")
+        trial_path = run_dir / trial_file
+        trial_manifest = json.loads(trial_path.read_text())
+        if trial_manifest.get("acceptance", {}).get("accepted") is not True:
+            raise ValueError("FINAL accepted_trial does not point to an accepted trial manifest")
+        phases.append(phase_from_summary(run_dir, trial_path))
+    output_dir = output_dir.resolve()
+    if output_dir.exists() or output_dir.is_symlink():
+        raise FileExistsError(f"audit output already exists: {output_dir}")
+    with candidate._runtime_environment(experiment):
+        import torch
+        previous_threads = torch.get_num_threads()
+        torch.set_num_threads(1)
+        try:
+            modules = prepare_physics_imports()
+            runtime = runtime_receipt(manifest, experiment, runtime_modules, torch)
+            batch, observation, preparation, finish, prep = modules
+            output_dir.mkdir(parents=True, exist_ok=False)
+            source_snapshot = HERE / "SOURCE_SNAPSHOT_v3.json"
+            source_hashes = {
+                "case_manifest_sha256": sha(manifest_path), "final_sha256": sha(final_path),
+                "source_snapshot_sha256": sha(source_snapshot),
+                "candidate_library_sha256": runtime["candidate_library"]["actual_sha256"],
+                "checkpoint_sha256": sha(config["paths"]["checkpoint"]),
+                "namelist_sha256": sha(config["paths"]["namelist"]),
+                "audit_producer_sha256": sha(__file__),
+                "source_module_sha256": {
+                    Path(module.__file__).resolve().relative_to(FROZEN).as_posix(): sha(module.__file__)
+                    for module in (*runtime_modules, *modules)
+                },
+            }
+            phase_summaries = []
+            for phase, manifest_receipts, manifest_sha in phases:
+                receipts = []
+                chunk_ids = [int(p.name.split("_")[-1]) for p in sorted((run_dir / phase).glob("chunk_*"))]
+                if chunk_ids != list(range(129)):
+                    raise ValueError(f"phase {phase} does not contain all 129 original blocks")
+                for index in chunk_ids:
+                    folder = run_dir / phase / f"chunk_{index:05d}"
+                    receipt_path = folder / "receipt.json"
+                    receipt = json.loads(receipt_path.read_text())
+                    expected = manifest_receipts[index]
+                    if any(receipt.get(key) != expected.get(key)
+                           for key in ("chunk_index", "binding", "artifact", "artifact_sha256")):
+                        raise ValueError(f"phase {phase} chunk {index} differs from saved manifest receipt")
+                    artifact = Path(receipt["artifact"]).resolve()
+                    if artifact.parent.parent.resolve() != folder.resolve() or sha(artifact) != receipt["artifact_sha256"]:
+                        raise ValueError(f"phase {phase} chunk {index} artifact binding differs")
+                    block = preparation.load_case_block(config, index)
+                    with np.load(artifact, allow_pickle=False) as archive:
+                        saved = {name: np.array(archive[name], copy=True) for name in archive.files}
+                    if saved["theta_m"].shape != (block["B"], block["L"]):
+                        raise ValueError("saved theta_m shape differs from full-B source block")
+                    replayed = replay(config, block, saved)
+                    columns_path = output_dir / f"{phase}_chunk_{index:05d}.npz"
+                    np.savez_compressed(columns_path, **replayed.pop("arrays"))
+                    packet_entry = config["packet_manifest"]["chunks"][index]
+                    receipts.append({
+                        "chunk_index": index, "columns": int(block["B"]),
+                        "saved_receipt_sha256": sha(receipt_path),
+                        "saved_artifact_sha256": receipt["artifact_sha256"],
+                        "saved_binding": receipt["binding"],
+                        "source_packet_sha256": packet_entry["sha256"],
+                        "current_theta_qv_sha256": hashlib.sha256(
+                            saved["theta_m"].tobytes() + saved["qv"].tobytes()).hexdigest(),
+                        "replay_npz": str(columns_path), "replay_npz_sha256": sha(columns_path),
+                        **replayed,
+                    })
+                phase_summaries.append({
+                    "phase": phase, "manifest_sha256": manifest_sha, "blocks": len(receipts),
+                    "cpp_value_call_count": sum(r["cpp_value_calls"] for r in receipts),
+                    "RTTOV_call_count": 0,
+                    "all_replay_bit_gates_passed": all(r["replay_matches_saved"] for r in receipts),
+                    "budgeted_blocks": sum(r["replay_matches_saved"] for r in receipts),
+                    "moment_diagnostics": aggregate_moments(receipts),
+                    "chunks": receipts,
+                })
+            result = {
+                "schema": "kdm6.native_satellite_applied_physics_audit.v1",
+                "run_id": manifest["run_id"], "phases": phase_summaries,
+                "runtime_replay": runtime,
+                "source_hashes": source_hashes,
+                "limits": {
+                    "weights": "actual replay-call f64 DEN*DELZ; per-level product rounded f64 then math.fsum",
+                    "precipitation": "not captured here; water closure not certified",
+                    "energy_number_process_attribution": "not certified",
+                    "dry_mass": "MU/g comparison is conditional on that native mass convention",
+                    "number": "NC/NI over the same post-finish rho_d is a research volume-coordinate; host units are not certified",
+                    "optical": "same source_v3 _optical_cloud_state helper; no RTTOV call",
+                },
+            }
+            (output_dir / "ledger.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+            return result
+        finally:
+            torch.set_num_threads(previous_threads)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-dir", type=Path, default=HERE / "RUN_v4")
+    parser.add_argument("--output", type=Path, default=None)
+    args = parser.parse_args()
+    run_dir = args.run_dir.resolve()
+    output = args.output or run_dir / "APPLIED_PHYSICS_AUDIT"
+    result = run(run_dir, output)
+    print(json.dumps({"output": str(Path(output).resolve()), "phases": [
+        {k: phase[k] for k in ("phase", "blocks", "cpp_value_call_count", "all_replay_bit_gates_passed")}
+        for phase in result["phases"]]}, indent=2))
+
+
+if __name__ == "__main__":
+    main()
