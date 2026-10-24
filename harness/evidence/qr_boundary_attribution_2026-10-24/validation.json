@@ -1,0 +1,40 @@
+{
+  "schema": "kdm6.qr_boundary_validation.v1",
+  "base_main": "230a932d5b8d2d8a68a0bf264e939c2bdd792292",
+  "original_reviewed_tree": "cb59d26199a8101ea63853e5e52aee388dd4bfe1",
+  "KDM_calls": {
+    "forward_off_on": 8,
+    "fresh_process_first_order_A_B_C": 12,
+    "analysis_added": 0,
+    "total": 20
+  },
+  "native_host_steps": 0,
+  "RTTOV_calls": 0,
+  "whole_domain_repeats": 0,
+  "two_private_translation_units_rebuilt": [
+    "coordinator.cpp",
+    "sedimentation.cpp"
+  ],
+  "unchanged_object_members": 12,
+  "symbol_index_regenerated": true,
+  "original_QR_arithmetic_text_preserved": true,
+  "physics_or_default_changed": false,
+  "operational_install_changed": false,
+  "focused": "29 passed",
+  "full_harness": "2782 passed,72 skipped,309 deselected in122.28s, isolated Python3.12/NumPy2.4.6/pytest9.1.1/netCDF4 1.7.4, optionalTorch/privatehost unavailable",
+  "Green": "Executed source transfer/surface expressions,positive and negative witness decomposition,orientation and attribution limits independently checked; no blocking inconsistency",
+  "Red": "Signed transfer identities, actual departure/arrival versus bottom net depletion, exact surface order and both witnesses independently reviewed; post-sed snapshot comparison added",
+  "build_development_notes": [
+    "Initial include-path token lost -I and compiler invocation failed before model evaluation; corrected in frozen v2 script.",
+    "Archive byte check initially included __.SYMDEF; final check separates regenerated symbol index and compares all14 object members. No recompilation was needed after that assertion."
+  ],
+  "scope_limits": [
+    "Fixed request DEND*DELZ code measure, not host/RK mass or regional area.",
+    "QR-only surface component is reconstructed; returned total contains all species.",
+    "A/B/C comparison covers one mixed tangent/cotangent percase, not a whole-Jacobian certificate.",
+    "No physical corrective map, new full-host/RTTOV/HVP or unrestricted derivative adoption."
+  ],
+  "analyzer_added_calls": 0,
+  "independent_post_sed_reference": "Last QR step matches all4 prior B512 post_sed snapshots bitwise; native orientation reversed explicitly",
+  "full_harness_log_sha256": "5f04de6ec073bd2349c19ee3d950e49fad4ff69b299acfdcf1e3895697bc3a04"
+}

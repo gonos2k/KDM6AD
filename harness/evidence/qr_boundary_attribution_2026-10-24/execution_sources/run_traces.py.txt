@@ -1,0 +1,38 @@
+"""Exact original B512 QR instrumentation comparison, four case pairs."""
+from pathlib import Path
+import hashlib,json,subprocess,time
+from harness.ice_factorial_batch import _child_environment,unpack_response
+from harness.run_domain_ice_factorial import _parse_time_log
+ROOT=Path(__file__).resolve().parent
+PRIOR=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a')
+BUILD=ROOT/'build_v2';tool=BUILD/'ice_factorial_qr_trace'
+RUNS=ROOT/'runs';RUNS.mkdir(exist_ok=False)
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def publish(p,data):
+ with p.open('x')as f:json.dump(data,f,indent=2,allow_nan=False);f.write('\n')
+build=json.loads((BUILD/'receipt.json').read_text());expected_tool=build['batch_tool_sha256'];self_hash=sha(__file__)
+publish(ROOT/'run_prepared.json',{'controller_sha256':self_hash,'tool_sha256':expected_tool,'KDM_calls_planned':8,'B':512,'L':39,'modes':['norm_actual','raw_actual'],'chunks':[34,40],'trace_environment':'KDM6_RAIN_BOUNDARY_TRACE only; previous tracing envs cleared','scope':'new diagnostic archive, exact same request and physics maps, no host/DA/RTTOV run'})
+receipts=[]
+for mode in ['norm_actual','raw_actual']:
+ for index in [34,40]:
+  original=PRIOR/f'{mode}_chunk{index:03d}';old=json.loads((original/'receipt.json').read_text());request=(original/'request.bin').read_bytes()
+  assert hashlib.sha256(request).hexdigest()==old['request_sha256']
+  for label in ['off','on']:
+   case=RUNS/f'{mode}_chunk{index:03d}_{label}';case.mkdir(exist_ok=False)
+   with(case/'request.bin').open('xb')as f:f.write(request)
+   env=_child_environment(mode);env.pop('KDM6_RAIN_BOUNDARY_TRACE',None)
+   if label=='on':env['KDM6_RAIN_BOUNDARY_TRACE']=str(case/'trace')
+   assert sha(tool)==expected_tool
+   start=time.monotonic()
+   with(case/'resource.log').open('xb')as log:process=subprocess.run(['/usr/bin/time','-l',str(tool),'--input',str(case/'request.bin'),'--output',str(case/'response.bin')],env=env,stdout=log,stderr=subprocess.STDOUT)
+   elapsed=time.monotonic()-start
+   assert process.returncode==0,(mode,index,label)
+   assert sha(tool)==expected_tool and sha(case/'response.bin')==old['response_sha256'],'diagnostic build changed frozen response'
+   unpack_response((case/'response.bin').read_bytes())
+   trace_files=list(case.glob('trace.*.tsv'))
+   assert (len(trace_files)==2 if label=='on' else not trace_files)
+   item={'mode':mode,'batch_index':index,'trace':label,'B':512,'L':39,'request_sha256':old['request_sha256'],'response_sha256':old['response_sha256'],'prior_tool_sha256':old['tool_sha256'],'tool_sha256':expected_tool,'controller_sha256':self_hash,'source_chunk_sha256':old['source_chunk_sha256'],'manifest_sha256':old['manifest_sha256'],'frozen_response_bitwise_equal':True,'KDM_calls':1,'wall_seconds':elapsed,'resources':_parse_time_log((case/'resource.log').read_text()),'trace_files':{p.name:{'sha256':sha(p),'bytes':p.stat().st_size}for p in trace_files},'log_sha256':sha(case/'resource.log')}
+   publish(case/'receipt.json',item);receipts.append(item)
+   print(json.dumps({'mode':mode,'chunk':index,'trace':label,'same_frozen_response':True,'wall':elapsed,'tracebytes':sum(x['bytes']for x in item['trace_files'].values())}),flush=True)
+assert sha(__file__)==self_hash
+publish(ROOT/'execution.json',{'controller_sha256':self_hash,'KDM_calls':len(receipts),'host_steps':0,'RTTOV_calls':0,'receipts':receipts})

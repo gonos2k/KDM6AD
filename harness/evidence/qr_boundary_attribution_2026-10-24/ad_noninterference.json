@@ -1,0 +1,62 @@
+{
+  "KDM_forward_calls": 12,
+  "scope": "selected first-order products and values across frozen v6 control/new instrumented-off/new instrumented-on; both variants separately",
+  "cases": [
+    {
+      "mode": "norm_actual",
+      "chunk": 34,
+      "products_equal_A_B_C": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      }
+    },
+    {
+      "mode": "norm_actual",
+      "chunk": 40,
+      "products_equal_A_B_C": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      }
+    },
+    {
+      "mode": "raw_actual",
+      "chunk": 34,
+      "products_equal_A_B_C": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      }
+    },
+    {
+      "mode": "raw_actual",
+      "chunk": 40,
+      "products_equal_A_B_C": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      }
+    }
+  ]
+}
