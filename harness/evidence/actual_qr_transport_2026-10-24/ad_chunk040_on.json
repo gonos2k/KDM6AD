@@ -1,0 +1,48 @@
+{
+  "mode": "norm_actual",
+  "chunk": 40,
+  "condition": "on",
+  "B": 512,
+  "L": 39,
+  "KDM_forward_calls": 1,
+  "controller_sha256": "9314bedd7d6aa25393ac896b70dfddae638cede13944bfdc261f9b4f4bcfa4f4",
+  "library_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+  "products_file_sha256": "428f3f89dea0de5f5d8fcc01cb6ab0d13a49e81df98a169a6f1b9c3b2f6bce6d",
+  "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+  "candidate_response_sha256": "f6305cae102897474f2981c895da43ddd4e92629ea5db747bb5b001c62a36e69",
+  "products": {
+    "raw_state": {
+      "values": 239616,
+      "sha256": "a42e3bff16010a01c8851158b99b70e8598079ea4571a098385c79ddd6da3ae0"
+    },
+    "combined": {
+      "values": 339456,
+      "sha256": "c24db23327c085f91fa71e9e5eeb16195713c88bc9cadb2dc3b760ddf4c776c0"
+    },
+    "jvp": {
+      "values": 339456,
+      "sha256": "6f543a8e903c385a97730717e485bf8b8f43ad5969f17577ba28f0d3bab3ebbb"
+    },
+    "state_vjp": {
+      "values": 239616,
+      "sha256": "be658e09b381c68400f4a9b44c5badf8573236cbaa4f224e3609ae1ddde07429"
+    },
+    "forcing_vjp": {
+      "values": 79872,
+      "sha256": "fa8f04193b496ad210a7b3364d6119bf7f189b6767620634580f895c3e3a3dfd"
+    },
+    "ds": {
+      "values": 239616,
+      "sha256": "3ca450bd8435d0eac4dfecc6d544658b5296537af76e7034bddeb6b574c23ea3"
+    },
+    "df": {
+      "values": 79872,
+      "sha256": "75b4686381d0353d356db9238c85f5f70a50470efa53f963ddade79befaf8a75"
+    },
+    "u": {
+      "values": 339456,
+      "sha256": "df419561439c974112c4a4283f0ac062f4381e9b1582376cbc730e1d1ea02dae"
+    }
+  },
+  "scope": "candidate trace off/on, one paired/interior mixed direction/cotangent, raw12+thermo-finish5; no old-map AD identity or unrestricted FD claim"
+}

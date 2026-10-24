@@ -1,0 +1,113 @@
+"""Independent saved-data accounting and QR oracle replay; adds no model calls."""
+from pathlib import Path
+from io import BytesIO
+import hashlib
+import json
+import math
+
+import numpy as np
+import torch
+
+from harness.ice_factorial_batch import unpack_response
+from harness.analyze_localized_ice_stage import read_records, parse_water_stage_rows
+from harness.analyze_domain_ice_factorial import columns, distribution
+from kdm6.qr_actual_transport import actual_qr_substep
+from kdm6 import constants
+
+ROOT = Path(__file__).resolve().parent
+REPO = Path('/private/tmp/KDM6AD-actual-qr-20261024')
+OUT = ROOT/'analysis_final'
+OUT.mkdir(exist_ok=False)
+B, L, DT = 512, 39, 20.0
+NAMES = 'n k_top0 column dt mstep gate rho dz work q_before q_after departure arrival fall_before fall_after'.split()
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def save(path, data):
+    with path.open('x') as stream:
+        json.dump(data, stream, indent=2, allow_nan=False)
+        stream.write('\n')
+
+
+def weighted(values, weights):
+    return np.array([math.fsum(float(a)*float(w) for a,w in zip(row,weight)) for row,weight in zip(values,weights)])
+
+
+def record_pairs(state):
+    rain, number = state[3], state[10]
+    active = rain >= constants.QCRMIN
+    return {'active_QR_cells':int(active.sum()),'active_QR_with_zero_NR':int(np.count_nonzero(active & (number == 0))),'active_QR_with_NR_below_source_NRMIN':int(np.count_nonzero(active & (number < constants.NRMIN))),'QR_zero_NR_positive':int(np.count_nonzero((rain == 0) & (number > 0))),'number_basis':'legacy raw kernel volume coordinate; historical host basis unknown; no number-budget claim'}
+
+
+ref = json.loads((REPO/'harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json').read_text())
+summary = {'schema':'kdm6.actual_qr_comparison.v1','source_sha256':{str(Path(__file__)):sha(__file__),str(REPO/'oracle/kdm6/qr_actual_transport.py'):sha(REPO/'oracle/kdm6/qr_actual_transport.py')},'cases':[],'model_calls_added':0}
+for chunk in [34, 40]:
+    case = ROOT/'runs'/f'chunk{chunk:03d}_actual_on'
+    receipt = json.loads((case/'receipt.json').read_text())
+    for filename,digest in receipt['trace_sha256'].items():assert sha(case/filename) == digest
+    assert sha(case/'response.bin') == receipt['response_sha256']
+    raw = unpack_response((case/'response.bin').read_bytes())
+    baseline = unpack_response((ROOT/'runs'/f'chunk{chunk:03d}_legacy_off'/'response.bin').read_bytes())
+    data = (case/'actual_qr.tsv').read_bytes()
+    assert data.splitlines()[0].decode().split() == NAMES
+    table = np.loadtxt(BytesIO(data),skiprows=1)
+    assert table.shape[0] % (B*L) == 0 and table.shape[1] == len(NAMES) and np.isfinite(table).all()
+    steps = table.shape[0]//(B*L)
+    arrays = {name:table[:,index].reshape(steps,L,B).transpose(0,2,1).copy() for index,name in enumerate(NAMES)}
+    assert np.array_equal(arrays['n'],np.broadcast_to(np.arange(1,steps+1)[:,None,None],(steps,B,L)))
+    assert np.array_equal(arrays['k_top0'],np.broadcast_to(np.arange(L)[None,None,:],(steps,B,L)))
+    assert np.array_equal(arrays['column'],np.broadcast_to(np.arange(B)[None,:,None],(steps,B,L)))
+    assert (arrays['dt'] == DT).all()
+    assert np.array_equal(arrays['rho'],np.broadcast_to(raw['forcing_in'][0,:,::-1],(steps,B,L)))
+    assert np.array_equal(arrays['dz'],np.broadcast_to(raw['forcing_in'][3,:,::-1],(steps,B,L)))
+    assert np.array_equal(arrays['q_before'][0],raw['state_in'][3,:,::-1])
+    assert np.array_equal(arrays['q_before'][1:],arrays['q_after'][:-1])
+    assert np.array_equal(arrays['fall_before'][1:],arrays['fall_after'][:-1])
+    assert (arrays['fall_before'][0] == 0).all()
+    assert np.array_equal(arrays['gate'],(arrays['mstep'] >= arrays['n']).astype(float))
+    assert np.array_equal(arrays['mstep'],np.broadcast_to(arrays['mstep'][0,:,0][None,:,None],(steps,B,L)))
+    oracle_bit_mismatches = {}
+    for step in range(steps):
+        values = [torch.from_numpy(arrays[key][step]) for key in ['q_before','fall_before','work','rho','dz']]
+        result = actual_qr_substep(*values,torch.from_numpy(arrays['mstep'][step,:,0]),step+1,DT)
+        for key,tensor in zip(['q_after','fall_after','departure','arrival'],result):
+            mismatch = int(np.count_nonzero(arrays[key][step].view('u8') != tensor.numpy().view('u8')))
+            oracle_bit_mismatches[key] = oracle_bit_mismatches.get(key,0)+mismatch
+    assert not any(oracle_bit_mismatches.values()),oracle_bit_mismatches
+    mu = arrays['rho'][0]*arrays['dz'][0]
+    delta = weighted(arrays['q_after'][-1]-arrays['q_before'][0],mu)
+    bottom = np.array([math.fsum(float(arrays['departure'][n,b,-1])*float(mu[b,-1]) for n in range(steps)) for b in range(B)])
+    reported = np.maximum(arrays['fall_after'][-1,:,-1],0)*arrays['dz'][0,:,-1]/1000.0*DT*1000.0
+    residual = delta+reported
+    scale = weighted(abs(arrays['q_before'][0])+abs(arrays['q_after'][-1]),mu)+abs(reported)
+    gate = 256*np.finfo(float).eps*np.maximum(1.0,scale)
+    assert (abs(residual) <= gate).all()
+    interface_gaps = mu[None,:,:-1]*arrays['departure'][:,:,:-1] - mu[None,:,1:]*arrays['arrival'][:,:,1:]
+    water = parse_water_stage_rows(read_records(case/'stage.water.tsv'),mode='norm_actual',batch=B,levels=L,forcing=raw['forcing_in'])['states']
+    assert np.array_equal(water[1,2,:,::-1].view('u8'),arrays['q_after'][-1].view('u8'))
+    weights = raw['forcing_in'][0]*raw['forcing_in'][3]
+    sed_species = np.stack([weighted(water[1,s]-water[0,s],weights) for s in range(6)])
+    micro_total = columns(water[2]-water[1],weights)
+    non_QR_sed = np.array([math.fsum(float(sed_species[s,b]) for s in [0,1,3,4,5])+float(raw['precip'][0,b])-float(reported[b]) for b in range(B)])
+    modes = {}
+    save_arrays = dict(arrays)
+    save_arrays.update(sed_species_change=sed_species,micro_total_change=micro_total,non_QR_sed_residual=non_QR_sed,water_stages_bottomfirst=water,qr_delta=delta,actual_bottom=bottom,reported_QR=reported,qr_residual=residual,qr_gate=gate,interface_gaps=interface_gaps)
+    for label,response in [('legacy',baseline),('actual',raw)]:
+        before,after,precip=response['state_in'],response['state_out'],response['precip']
+        clean=after.copy();clean[1]=np.maximum(clean[1],0);clean[2:7]=np.where(clean[2:7]<ref['zero_out']['threshold'],0,clean[2:7])
+        change=columns(after[1:7]-before[1:7],weights)
+        cleanup=columns(clean[1:7]-after[1:7],weights)
+        budget=np.array([math.fsum((float(a),float(p))) for a,p in zip(change,precip[0])])
+        modes[label]={'raw_residual':distribution(budget),'cleanup':distribution(cleanup),'total_precip':distribution(precip[0]),'moment_pairs':record_pairs(after)}
+        save_arrays.update({label+'_state_in':before,label+'_state_out':after,label+'_precip':precip,label+'_raw_residual':budget,label+'_cleanup':cleanup})
+    selected=254 if chunk==34 else 8
+    row={'chunk':chunk,'B':B,'L':L,'global_steps':steps,'local_steps_at_witness':int(arrays['mstep'][0,selected,0]),'i':113 if chunk==34 else 131,'j':76 if chunk==34 else 88,'oracle_bit_mismatches':oracle_bit_mismatches,'qr_nonnegative':bool((arrays['q_after']>=0).all()),'qr_budget_gate_failures':int(np.count_nonzero(abs(residual)>gate)),'max_abs_qr_residual':float(abs(residual).max()),'max_abs_interface_gap':float(abs(interface_gaps).max()),'witness':{'QR_change':float(delta[selected]),'actual_bottom':float(bottom[selected]),'reported_QR':float(reported[selected]),'QR_residual':float(residual[selected]),'legacy_raw_water_residual':float(save_arrays['legacy_raw_residual'][selected]),'candidate_raw_water_residual':float(save_arrays['actual_raw_residual'][selected]),'candidate_cleanup':float(save_arrays['actual_cleanup'][selected])},'remaining_accounting':{'max_abs_micro_total':float(abs(micro_total).max()),'max_abs_non_QR_sed_residual':float(abs(non_QR_sed).max()),'max_decomposition_remainder':float(abs(save_arrays['actual_raw_residual']-(residual+non_QR_sed+micro_total)).max())},'comparisons':modes,'source_sha256':{'request':receipt['request_sha256'],'response':receipt['response_sha256'],'trace':sha(case/'actual_qr.tsv'),'stage':sha(case/'stage.water.tsv')}}
+    path=OUT/f'chunk{chunk:03d}.npz'
+    with path.open('xb') as stream:np.savez_compressed(stream,**save_arrays)
+    row['array_sha256']=sha(path)
+    summary['cases'].append(row)
+    print(json.dumps({'chunk':chunk,'QR_maxresidual':row['max_abs_qr_residual'],'witness':row['witness'],'pairs':modes['actual']['moment_pairs']}),flush=True)
+save(OUT/'comparison.json',summary)

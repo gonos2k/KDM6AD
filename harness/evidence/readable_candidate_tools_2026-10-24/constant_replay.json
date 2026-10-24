@@ -1,0 +1,9 @@
+{
+  "schema": "kdm6.readable_tools_replay.v1",
+  "old_QR_summary_identical": true,
+  "all4_QR_archives_allfields_identical": true,
+  "KDM_calls": 0,
+  "RTTOV_calls": 0,
+  "analyzer_source_sha256": "bfa8ed20c7931418bcc998e2c5555522c6abc246793bf98f868a832a8823ba8d",
+  "immutable_old_manifest_sha256": "a7b9cb5b99eada19bdfee1f5b08165d35384356518302ac90b7b7c8ebb5f31b2"
+}

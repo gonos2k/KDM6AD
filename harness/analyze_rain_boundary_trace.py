@@ -31,6 +31,7 @@ MODES = ("norm_actual", "raw_actual")
 CHUNKS = (34, 40)
 TARGET_ROWS = {34: 254, 40: 8}
 B, L, DT, DENR = 512, 39, 20.0, 1000.0
+GLOBAL_SUBSTEPS = 5
 SAFE_FLOOR = 1.0e-9
 POST_SED_STAGE_SHA256 = {
     (
@@ -185,7 +186,9 @@ def _integer(row: dict[str, str], key: str) -> int:
     return int(x)
 
 
-def parse_qr_trace(data: bytes, mode: str, *, batch=B, levels=L, steps=5):
+def parse_qr_trace(
+    data: bytes, mode: str, *, batch=B, levels=L, steps=GLOBAL_SUBSTEPS
+):
     """Parse exactly n->level_top0->column row order."""
     shape = (steps, levels, batch)
     out = {name: np.empty(shape, dtype=np.float64) for name in QR_FLOATS}
@@ -228,7 +231,7 @@ def parse_qr_trace(data: bytes, mode: str, *, batch=B, levels=L, steps=5):
     return out
 
 
-def validate_qr_trace(qr, state, forcing, *, steps=5):
+def validate_qr_trace(qr, state, forcing, *, steps=GLOBAL_SUBSTEPS):
     """Check request geometry, n-chain, source attempts, cap operands, and updates."""
     state, forcing = (
         np.asarray(state, dtype=np.float64),
@@ -329,13 +332,15 @@ def validate_qr_trace(qr, state, forcing, *, steps=5):
         raise TraceError("arrival min-attempt diagnostic differs from post-update cap")
 
     if not same_bits(
-        qr["dqr_out_applied_operand_code"][:, 0, :], np.zeros((steps, batch))
+        qr["dqr_out_applied_operand_code"][:, 0, :],
+        np.zeros((steps, batch)),
     ):
         raise TraceError(
             "top departure has no named dqr operand and must use before-after"
         )
     if not same_bits(
-        qr["dqr_arrival_applied_operand_code"][:, 0, :], np.zeros((steps, batch))
+        qr["dqr_arrival_applied_operand_code"][:, 0, :],
+        np.zeros((steps, batch)),
     ):
         raise TraceError("top boundary has no arrival")
     if not same_bits(qr["dqr_out_applied_operand_code"][:, 1:, :], out_min[:, 1:, :]):
@@ -532,7 +537,7 @@ def analyze_case(
     density = qr["DEND_code"][0].T
     depth = qr["DELZ_code"][0].T
     budgets = []
-    for n in range(5):
+    for n in range(GLOBAL_SUBSTEPS):
         budgets.append(
             step_budget(
                 qr["QR_before_code"][n].T,
@@ -648,7 +653,7 @@ def analyze_case(
         "post_sed_qr_reference_bottom_first": post_sed_reference,
     }
     target_rows = []
-    for n in range(5):
+    for n in range(GLOBAL_SUBSTEPS):
         for k in range(L):
 
             def get(key):
@@ -690,7 +695,7 @@ def analyze_case(
         "i1": flat % 234 + 1,
         "j1": flat // 234 + 1,
         "local_mstep": int(qr["mstep"][0, 0, target]),
-        "global_mstepmax": 5,
+        "global_mstepmax": GLOBAL_SUBSTEPS,
         "state_change_kg_m2": float(total["state_change"][target]),
         "actual_bottom_departure_kg_m2": float(
             total["actual_bottom_departure"][target]
@@ -717,7 +722,7 @@ def analyze_case(
     summary = {
         "columns": B,
         "levels": L,
-        "steps": 5,
+        "steps": GLOBAL_SUBSTEPS,
         "local_mstep_min": int(qr["mstep"][0, 0].min()),
         "local_mstep_max": int(qr["mstep"][0, 0].max()),
         "source_chunk_sha256": receipt["source_chunk_sha256"],

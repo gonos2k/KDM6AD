@@ -1,0 +1,16 @@
+{
+  "schema": "kdm6.readable_candidate_tools.v1",
+  "old_measurement_evidence_modified": false,
+  "model_calls_for_readability_replay": 0,
+  "source_sha256": {
+    "harness/run_native_candidate_observation.py": "020ea1aecdda76db8c70978ab1f9814e32543e4b6780aaa92c51bb7b98a7de78",
+    "harness/analyze_rain_boundary_trace.py": "bfa8ed20c7931418bcc998e2c5555522c6abc246793bf98f868a832a8823ba8d",
+    "harness/tests/test_qr_boundary_evidence.py": "d0b2596990b568e542e063b8f2a52da36756cd31d92d308ec837e304de2287f2"
+  },
+  "artifact_sha256": {
+    "harness/evidence/readable_candidate_tools_2026-10-24/REPORT.md": "cb1cf1394f30a135ab6cf3d76b4b82563b45ab8944e46ac7c48026e3e0551b22",
+    "harness/evidence/readable_candidate_tools_2026-10-24/constant_replay.json": "055ad4cfed9b5d1ff6d33c9f1a3177deaa07a6f1268fe4d08826fb8d074ed32e",
+    "harness/evidence/readable_candidate_tools_2026-10-24/executed_sources/analyze_rain_boundary_trace.py.txt": "61634fff75336ef116886862f408c4adcdc3798e680d488d18443a07eac4da44",
+    "harness/evidence/readable_candidate_tools_2026-10-24/executed_sources/test_qr_boundary_evidence.py.txt": "a8282a85a3b3d57c402319fcb1a168dcd5b507a719f6b58cb4887f001605110e"
+  }
+}

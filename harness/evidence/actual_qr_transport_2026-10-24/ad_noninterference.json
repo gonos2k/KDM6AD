@@ -1,0 +1,36 @@
+{
+  "KDM_calls": 4,
+  "scope": "candidate trace off/on one paired/interior mixed tangent/cotangent perblock; no old-map identity or new FDcertificate",
+  "comparisons": [
+    {
+      "chunk": 34,
+      "products_bitwise_equal": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      },
+      "off_sha256": "4514ab58f108e9d270d2decd7cf5db98542d81d35b648cc6119d08b63a7e456d",
+      "on_sha256": "4514ab58f108e9d270d2decd7cf5db98542d81d35b648cc6119d08b63a7e456d"
+    },
+    {
+      "chunk": 40,
+      "products_bitwise_equal": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      },
+      "off_sha256": "428f3f89dea0de5f5d8fcc01cb6ab0d13a49e81df98a169a6f1b9c3b2f6bce6d",
+      "on_sha256": "428f3f89dea0de5f5d8fcc01cb6ab0d13a49e81df98a169a6f1b9c3b2f6bce6d"
+    }
+  ]
+}
