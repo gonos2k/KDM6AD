@@ -1,0 +1,183 @@
+{
+  "schema": "kdm6.graphify.saved_candidate_attribution_refresh.v1",
+  "base_commit": "3f3899b474e51d814988a5ac24fbf22cb2c42bba",
+  "dirty_source_content": "Relevant current source bytes pinned in public evidence manifest; git HEAD is the base, not a content-equality claim.",
+  "base_counts": [
+    22013,
+    43605,
+    25
+  ],
+  "final_counts": {
+    "nodes": 22043,
+    "edges": 43635,
+    "hyperedges": 27,
+    "communities": 1629
+  },
+  "cached_semantic_files": 14,
+  "fragments": [
+    {
+      "file": "graphify-out/actual_qr_transport_semantic.json",
+      "sha256": "3ce49664d98a190057fa2070153004190a8a196805a4c36994008617e7694c23",
+      "nodes": 15,
+      "edges": 14,
+      "hyperedges": 3
+    },
+    {
+      "file": "graphify-out/applied_finish_semantic.json",
+      "sha256": "4562dcea7f195f49faf2ec16547772324d2d2db6481762047e51a9df0c749819",
+      "nodes": 22,
+      "edges": 41,
+      "hyperedges": 0
+    },
+    {
+      "file": "graphify-out/domain_ice_factorial_semantic.json",
+      "sha256": "318e0718cddb6bb3a53ec8712991ba89eb8e428b7d78e49bb333591aefa08405",
+      "nodes": 14,
+      "edges": 11,
+      "hyperedges": 2
+    },
+    {
+      "file": "graphify-out/ice_boundary_semantic.json",
+      "sha256": "350d20c84e8b216fa4e6c8ff69e8f7058ea4b67693953eee89d7c67d2d32908e",
+      "nodes": 25,
+      "edges": 30,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/ice_factorial_semantic.json",
+      "sha256": "859b81cf619ea0219c9ef25f466b818290045a15e56c5670cf15638a4cbaa321",
+      "nodes": 10,
+      "edges": 8,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/localized_ice_budget_ad_semantic.json",
+      "sha256": "00cb1e81854a5130e5b9cac29a4a1e92782c835acf1ffdc39de1c6f8ad6a5896",
+      "nodes": 12,
+      "edges": 10,
+      "hyperedges": 3
+    },
+    {
+      "file": "graphify-out/microphysics_observation_semantic.json",
+      "sha256": "336773497d21b2bd4108bb0e5a2be111d3db93937220ae06a498e85eeddacae0",
+      "nodes": 29,
+      "edges": 27,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/native_number_boundary_semantic.json",
+      "sha256": "879a9bfbb0f6854964d9d49ea2d8c0d4e5b1f247c8a84bad2fe9abdddfbdd0ef",
+      "nodes": 38,
+      "edges": 27,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/native_number_budget_semantic.json",
+      "sha256": "092add582150e524a2b0128eddbcacbd1735049da74a64614054577b1f45b456",
+      "nodes": 28,
+      "edges": 25,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/native_observation_semantic.json",
+      "sha256": "30a1240c47ff92aa99f7db9933e522a23792af7a86d91b573ca9464e9037a853",
+      "nodes": 14,
+      "edges": 18,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/native_prep_semantic.json",
+      "sha256": "f4424c15489117cdfd4fd0474c5dd0108d37bef6c020e060799665b4e4689cd4",
+      "nodes": 11,
+      "edges": 22,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/norm_actual_observation_semantic.json",
+      "sha256": "9ff658e561cf2c3d83525e42373fdd00bbae4200adae1cb30cd8d0648d40a215",
+      "nodes": 12,
+      "edges": 11,
+      "hyperedges": 3
+    },
+    {
+      "file": "graphify-out/plan_output_guard_semantic.json",
+      "sha256": "a44b84c669d189bea88c64da24ec316a0712916ab23f3a5dc7a8996a882e5a46",
+      "nodes": 9,
+      "edges": 8,
+      "hyperedges": 2
+    },
+    {
+      "file": "graphify-out/pr437_ci_semantic.json",
+      "sha256": "cf13da080eb0e5f8fa109f18ab7b232f4c57ad9c55e467d87651a802a05c2f39",
+      "nodes": 3,
+      "edges": 2,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/pr437_merge_semantic.json",
+      "sha256": "9e471c1950aae76d1704291c78d5f6365c8ebcaf4f8f56368c34d9263e924c9e",
+      "nodes": 9,
+      "edges": 6,
+      "hyperedges": 2
+    },
+    {
+      "file": "graphify-out/qr_boundary_semantic.json",
+      "sha256": "e4425c804586487dd0c0ce659cc95767e80e422ee52eed9ee4b025757aa5646c",
+      "nodes": 12,
+      "edges": 12,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/same_call_water_budget_semantic.json",
+      "sha256": "0743eb76017c1c960429a0081370775dd05f18829a40bdc364366d1ed64ffa80",
+      "nodes": 22,
+      "edges": 25,
+      "hyperedges": 1
+    },
+    {
+      "file": "graphify-out/saved_candidate_attribution_semantic.json",
+      "sha256": "ab191993485d60524236ef0ea046d3a7d01747780a0baebd5a951ff86edc54e7",
+      "nodes": 15,
+      "edges": 13,
+      "hyperedges": 2
+    },
+    {
+      "file": "graphify-out/state_forcing_semantic.json",
+      "sha256": "689023cd5f3323693eb0cc74bd7d242f212b103e726a3db9dec89391910fdf3c",
+      "nodes": 27,
+      "edges": 40,
+      "hyperedges": 0
+    }
+  ],
+  "missing_relationships": {
+    "nodes": 0,
+    "edges": 0,
+    "hyperedges": 0
+  },
+  "coverage_limits": [
+    "Public source AST; private host AST unavailable.",
+    "486 extraction warnings including generic dataclasses nodes without source_file; unrelated ambiguity not repaired here.",
+    "No graph.html above5000node limit.",
+    "Semantic tokens unmetered; null does not mean zero."
+  ],
+  "graph_sha256": "60aab76a3813c73a1929afca85587cab05107115dbd0c926e06bbce3db9ca9a7",
+  "report_sha256": "7f24bc4563c1b3cffe3f8ab051ff48b3bf00eb9fe989c7b06d6d8d0ba5d4add9",
+  "manifest_sha256": "9f527c80bf4b64a10eb3aac9193acbc2bdfb0dc12f3cd5baa28d6c4abe1954cc",
+  "direction_helper_relationship_audit": {
+    "removed_live_duplicate_nodes": [],
+    "runtime_to_shared_helper_edges": [
+      {
+        "relation": "calls",
+        "context": "call",
+        "confidence": "EXTRACTED",
+        "source_file": "harness/run_native_candidate_observation.py",
+        "source_location": "L916",
+        "weight": 1.0,
+        "confidence_score": 1.0,
+        "source": "harness_run_native_candidate_observation_direction_vectors",
+        "target": "harness_run_native_candidate_observation_verify_case_impl"
+      }
+    ],
+    "source_verified_call": "directions = direction_vectors(x, rest, experiment)"
+  }
+}

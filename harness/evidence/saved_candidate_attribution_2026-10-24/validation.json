@@ -1,0 +1,23 @@
+{
+  "schema": "kdm6.saved_candidate_attribution_validation.v1",
+  "base_main": "3f3899b474e51d814988a5ac24fbf22cb2c42bba",
+  "new_KDM_calls": 0,
+  "new_RTTOV_calls": 0,
+  "new_native_host_steps": 0,
+  "new_DA_optimizations": 0,
+  "new_scientific_builds": 0,
+  "direction_unification": "one live direction_vectors helper; prior duplicate removed; current runtime consumes(dx,dr) fromtestedhelper; original input vectors equal in same NumPy environment",
+  "old_evidence_modified": false,
+  "old_source_audit": "exact snapshots for prior controller and source-hash test; immutable old manifests preserved",
+  "post_micro_primary_reduction": "joint species-major/level-major fsum of rounded binary64 weighted increments; matches saved net bits",
+  "post_micro_causal_process_identified": false,
+  "full_water_number_or_energy_budget_certified": false,
+  "profile_attribution": "algebraic per-field/per-group K*tangent and saved cost seed; validated total directions,not per-field FD or named-process attribution",
+  "paired_comparison": "same saved target,observation,quality/mask,geometry/surface andnative directions admitted; old unrecordedrest/cfrac scope explicit",
+  "Green": "saved inputs/outputs,rounding and scope reviewed; final semantic relationship update recorded separately",
+  "Red": "All final profile/post-micro/evidence focused tests pass; public snapshot portability, paired-input and own-cost-seed guards checked; no remaining actionable finding",
+  "focused_tests": "44 focused tests pass after final source/manifest refresh",
+  "full_local_harness": "2847 passed,72 skipped,309 deselected in167.96s; isolated Python3.12/NumPy2.4.6/pytest9.1.1/netCDF4 1.7.4,optionalTorch/compiled/private paths unavailable",
+  "public_checkout_replay": "Reference zero-rest contract resolves archived public controller snapshot, SHA checked against prepared identity and original manifest; private host paths are not read",
+  "full_local_harness_log_sha256": "71e09d899c9d6b10e3f1de91c4749867601e0e281dce7494a02e17d334c6ed39"
+}

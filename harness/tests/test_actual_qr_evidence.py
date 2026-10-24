@@ -164,15 +164,25 @@ def test_selected_first_order_products_are_unchanged_by_candidate_trace():
                 assert np.array_equal(off[key].view("u8"), on[key].view("u8"))
 
 
-def test_current_source_and_artifact_manifest():
+def test_executed_source_and_artifact_manifest():
     manifest = json.loads((E / "manifest.json").read_text())
     root = E.parents[2]
     for name in ["source_sha256", "artifact_sha256"]:
         assert manifest[name]
         for path, digest in manifest[name].items():
-            assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, (
-                path
-            )
+            # Keep old executed source pins; current refactoring has its own manifest.
+            archived = {
+                "harness/run_native_candidate_observation.py": "run_native_candidate_observation.py.txt",
+                "harness/tests/test_actual_qr_evidence.py": "test_actual_qr_evidence.py.txt",
+            }
+            source = root / path
+            if name == "source_sha256" and path in archived:
+                source = (
+                    root
+                    / "harness/evidence/saved_candidate_attribution_2026-10-24/executed_sources"
+                    / archived[path]
+                )
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == digest, path
 
 
 def test_repeated_controller_uses_one_scope_and_explicit_kernel_branch_limit():

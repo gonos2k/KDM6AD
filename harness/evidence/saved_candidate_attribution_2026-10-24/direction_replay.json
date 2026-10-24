@@ -1,0 +1,29 @@
+{
+  "schema": "kdm6.direction_unification_replay.v1",
+  "numpy_version": "2.2.6",
+  "old_executed_runner_sha256": "020ea1aecdda76db8c70978ab1f9814e32543e4b6780aaa92c51bb7b98a7de78",
+  "current_runner_sha256": "74b2ce806988761d1e162cd432e271faa4ce4bfac10817a4810e5a70ecb16fa5",
+  "directions": {
+    "theta_m": {
+      "old_new_dx_bitwise_equal_in_this_environment": true,
+      "rest_direction_zero": true,
+      "saved_executed_dx_bitwise_equal": true,
+      "saved_executed_dx_maxabs_difference": 0.0
+    },
+    "qv": {
+      "old_new_dx_bitwise_equal_in_this_environment": true,
+      "rest_direction_zero": true,
+      "saved_executed_dx_bitwise_equal": true,
+      "saved_executed_dx_maxabs_difference": 0.0
+    },
+    "mixed": {
+      "old_new_dx_bitwise_equal_in_this_environment": true,
+      "rest_direction_zero": true,
+      "saved_executed_dx_bitwise_equal": true,
+      "saved_executed_dx_maxabs_difference": 0.0
+    }
+  },
+  "KDM_calls": 0,
+  "RTTOV_calls": 0,
+  "scope": "Pure archived helper vs unified helper arithmetic; no physics/AD threshold or old run evidence changed"
+}
