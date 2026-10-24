@@ -713,7 +713,11 @@ def analyze(candidate_path, reference_path, output_path, *, reference_prepared=N
             "K×tangent terms decompose saved profile-coordinate first-order products, not KDM state rows or named physical processes.",
             "CFRAC is a non-differentiable RTTOV passthrough and has no stored profile_K; the old result also omitted old endpoint CFRAC, so no old/new CFRAC comparison is certified.",
             "The prior norm_actual result predates the actual QR-transport selector; candidate/reference contribution differences are not a paired single-formula perturbation attribution.",
-            "The prior result did not serialize rest_direction; its pinned controller source establishes zero rest input, while the candidate result serializes and passes an explicit zero array.",
+            (
+                "The prior result did not serialize rest_direction; its pinned controller source establishes zero rest input, while the candidate result serializes and passes an explicit zero array."
+                if reference_rest_contract is not None
+                else "The prior rest_direction is not serialized and no prepared source contract was supplied; reference rest equality is unverified."
+            ),
             "No new KDM, RTTOV, host/RK, HVP, unrestricted-gradient or forecast-skill evidence is produced by this reader.",
         ],
     }

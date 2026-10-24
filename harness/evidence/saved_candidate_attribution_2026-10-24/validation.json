@@ -17,7 +17,8 @@
   "Green": "saved inputs/outputs,rounding and scope reviewed; final semantic relationship update recorded separately",
   "Red": "All final profile/post-micro/evidence focused tests pass; public snapshot portability, paired-input and own-cost-seed guards checked; no remaining actionable finding",
   "focused_tests": "44 focused tests pass after final source/manifest refresh",
-  "full_local_harness": "2847 passed,72 skipped,309 deselected in167.96s; isolated Python3.12/NumPy2.4.6/pytest9.1.1/netCDF4 1.7.4,optionalTorch/compiled/private paths unavailable",
+  "full_local_harness": "2847 passed,72 skipped,309 deselected in167.96s; isolated Python3.12/NumPy2.4.6/pytest9.1.1/netCDF4 1.7.4,optionalTorch/compiled/private paths unavailable; before final optional-provenance wording guard; final targeted attribution21 passed",
   "public_checkout_replay": "Reference zero-rest contract resolves archived public controller snapshot, SHA checked against prepared identity and original manifest; private host paths are not read",
-  "full_local_harness_log_sha256": "71e09d899c9d6b10e3f1de91c4749867601e0e281dce7494a02e17d334c6ed39"
+  "full_local_harness_log_sha256": "71e09d899c9d6b10e3f1de91c4749867601e0e281dce7494a02e17d334c6ed39",
+  "final_metadata_guard": "Without optional reference prepared record, rest equality is explicitly unverified; standard published-case numbers/limits unchanged"
 }

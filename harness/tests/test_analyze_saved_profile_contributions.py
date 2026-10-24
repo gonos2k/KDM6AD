@@ -171,6 +171,9 @@ def test_offline_analysis_outputs_candidate_and_reference_profile_terms(tmp_path
     assert output.is_file()
     assert result["input_comparison_contract"]["direction_x_bit_equal_by_direction"]
     assert result["reference_rest_direction_contract"] is None
+    assert any(
+        "reference rest equality is unverified" in limit for limit in result["limits"]
+    )
 
 
 @pytest.mark.parametrize("key", ["observation_BT_KMA", "quality", "mask"])

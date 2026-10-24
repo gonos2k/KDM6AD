@@ -1,17 +1,17 @@
 {
   "schema": "kdm6.graphify.saved_candidate_attribution_refresh.v1",
-  "base_commit": "3f3899b474e51d814988a5ac24fbf22cb2c42bba",
+  "base_commit": "d0cf922b370c441efa82062a40322c5fe5747561",
   "dirty_source_content": "Relevant current source bytes pinned in public evidence manifest; git HEAD is the base, not a content-equality claim.",
   "base_counts": [
-    22013,
-    43605,
-    25
+    22028,
+    43619,
+    27
   ],
   "final_counts": {
     "nodes": 22043,
-    "edges": 43635,
+    "edges": 43636,
     "hyperedges": 27,
-    "communities": 1629
+    "communities": 1631
   },
   "cached_semantic_files": 14,
   "fragments": [
@@ -160,9 +160,9 @@
     "No graph.html above5000node limit.",
     "Semantic tokens unmetered; null does not mean zero."
   ],
-  "graph_sha256": "60aab76a3813c73a1929afca85587cab05107115dbd0c926e06bbce3db9ca9a7",
-  "report_sha256": "7f24bc4563c1b3cffe3f8ab051ff48b3bf00eb9fe989c7b06d6d8d0ba5d4add9",
-  "manifest_sha256": "9f527c80bf4b64a10eb3aac9193acbc2bdfb0dc12f3cd5baa28d6c4abe1954cc",
+  "graph_sha256": "c67adaccc7e5d0593b1fc771a6f51b77ebee502cec11f533a5c2edf0cb05adeb",
+  "report_sha256": "3537c4a952c046034ceb8d18624e74c47bdc306d91fd1610962e96ae317abcc2",
+  "manifest_sha256": "96f26c8f920271219a5da3b1f3239c92b6c41ca8e4bb3f5acb2ebca273aee827",
   "direction_helper_relationship_audit": {
     "removed_live_duplicate_nodes": [],
     "runtime_to_shared_helper_edges": [
@@ -177,7 +177,6 @@
         "source": "harness_run_native_candidate_observation_direction_vectors",
         "target": "harness_run_native_candidate_observation_verify_case_impl"
       }
-    ],
-    "source_verified_call": "directions = direction_vectors(x, rest, experiment)"
+    ]
   }
 }
