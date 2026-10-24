@@ -1,0 +1,68 @@
+"""Continue the authorized fixed case after its independently checked baseline."""
+from pathlib import Path
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+import numpy as np
+from harness.run_native_satellite_case import load_arrays, publish_json
+base = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024")
+root = base / "RUN_v4"
+source = base / "source_v3"
+case = json.loads((root / "CASE_MANIFEST.json").read_text())
+pilot = json.loads((root / "PILOT.json").read_text())
+fd = json.loads((root / "PILOT_FD.json").read_text())
+baselines = {row["chunk_index"]: row for row in pilot["chunks"]}
+checks = []
+for trial in fd["trials"]:
+    changes = []
+    for endpoint in trial["endpoints"]:
+        b = load_arrays(baselines[endpoint["chunk_index"]])
+        e = load_arrays(endpoint)
+        supported = b["mask"].any(axis=1)
+        old_rows = {int(row): index for index, row in enumerate(b["profile_rows"])}
+        new_rows = {int(row): index for index, row in enumerate(e["profile_rows"])}
+        missing = sum(int(row) not in new_rows for row in np.flatnonzero(supported))
+        cf = 0
+        for row in np.flatnonzero(supported):
+            if int(row) in old_rows and int(row) in new_rows:
+                cf += int(np.count_nonzero(b["profile_CFRAC"][old_rows[int(row)]] != e["profile_CFRAC"][new_rows[int(row)]]))
+        water = {}
+        for name in ("qc", "qi", "qs"):
+            water[name] = int(np.count_nonzero(((b["cloud_"+name] > 0) != (e["cloud_"+name] > 0)) & supported[:, None]))
+        changes.append({"chunk": endpoint["chunk_index"], "missing_supported_profiles": missing,
+                        "CF_supported_changed": cf, "clean_mass_zero_changes": water})
+    stable = all(row["missing_supported_profiles"] == 0 and row["CF_supported_changed"] == 0
+                 and not any(row["clean_mass_zero_changes"].values()) for row in changes)
+    checks.append({"epsilon": trial["epsilon"], "FD_passed": trial["passed"],
+                   "observed_branches_stable": stable, "endpoints": changes})
+assert any(row["FD_passed"] and row["observed_branches_stable"] for row in checks)
+publish_json(root / "PILOT_FD_BRANCH_STABILITY.json", {
+    "scope": "supported profile CF and observable cleaned QC/QI/QS zero masks only; not all internal KDM branches",
+    "source_run_id": case["run_id"], "checks": checks,
+    "driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()})
+print("Independent pilot FD and observed branch checks passed; waiting for all129 baseline blocks", flush=True)
+deadline = time.monotonic() + 12*3600
+while not (root / "BASELINE.json").exists():
+    failures = list((root / "failures").glob("*.json")) if (root / "failures").exists() else []
+    if failures:
+        raise RuntimeError("baseline has a failure receipt; preserve it and resolve before continuation")
+    if time.monotonic() > deadline:
+        raise TimeoutError("baseline continuation watch exceeded its12h limit; no new trial launched")
+    time.sleep(10)
+baseline = json.loads((root / "BASELINE.json").read_text())
+assert baseline["full_domain"] and baseline["processed_columns"] == 65988
+assert len(baseline["chunks"]) == 129 and baseline["dot"]["passed"]
+command = [sys.executable, "-m", "harness.run_native_satellite_case", "--case-json", str(base / "CASE_REQUEST_v4.json"),
+           "--output-root", str(root), "--stage", "all", "--resume", "--workers", "3"]
+print("Full baseline passed; starting fixed global FD aggregation and bounded trial budget", flush=True)
+with (base / "RUN_v4_ALL.log").open("x") as log:
+    subprocess.run(command, cwd=source, env={**os.environ, "OMP_NUM_THREADS":"1", "MKL_NUM_THREADS":"1", "OMP_THREAD_LIMIT":"1"},
+                   stdout=log, stderr=subprocess.STDOUT, check=True)
+final = json.loads((root / "FINAL.json").read_text())
+publish_json(root / "CONTINUATION_RECEIPT.json", {"driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+    "source_run_id":case["run_id"], "command":command, "final_status":final["status"],
+    "final_sha256":hashlib.sha256((root / "FINAL.json").read_bytes()).hexdigest()})
+print(json.dumps(final), flush=True)

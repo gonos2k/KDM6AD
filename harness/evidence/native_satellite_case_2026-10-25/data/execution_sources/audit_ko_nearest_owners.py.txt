@@ -1,0 +1,99 @@
+"""Independent read-only model-to-KO nearest-owner check, no KDM/RTTOV calls."""
+from pathlib import Path
+import hashlib
+import json
+
+import numpy as np
+import scipy
+from scipy.spatial import cKDTree
+
+BASE = Path(__file__).resolve().parent
+RUN = BASE / "RUN_v4"
+RADIUS_M = 6371008.77
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for data in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            digest.update(data)
+    return digest.hexdigest()
+
+
+def xyz(lat, lon):
+    latitude, longitude = np.radians(lat), np.radians(lon)
+    return np.stack((np.cos(latitude) * np.cos(longitude),
+                     np.cos(latitude) * np.sin(longitude), np.sin(latitude)), axis=-1)
+
+
+def main():
+    manifest_path = RUN / "CASE_MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text())
+    source = Path(manifest["case_preparation"]["paths"]["observations"])
+    source_sha = sha(source)
+    if source_sha != manifest["source_pins"][str(source)]:
+        raise ValueError("observation archive differs from the case pin")
+    keys = ("native_lat_deg", "native_lon_deg", "ko_lat_deg_full", "ko_lon_deg_full",
+            "ko_nearest_flat_index", "ko_nearest_row", "ko_nearest_col", "ko_distance_m")
+    with np.load(source, allow_pickle=False) as archive:
+        values = {name: archive[name].copy() for name in keys}
+    native_lat, native_lon = [np.asarray(values[name], dtype=np.float64).ravel()
+                             for name in ("native_lat_deg", "native_lon_deg")]
+    ko_lat, ko_lon = [np.asarray(values[name], dtype=np.float64).ravel()
+                     for name in ("ko_lat_deg_full", "ko_lon_deg_full")]
+    if native_lat.size != 65988 or ko_lat.size != 900 * 900:
+        raise ValueError("unexpected native or selected-channel KO geometry shape")
+    if not all(np.isfinite(a).all() for a in (native_lat, native_lon, ko_lat, ko_lon)):
+        raise ValueError("nonfinite source geometry")
+    model_xyz, ko_xyz = xyz(native_lat, native_lon), xyz(ko_lat, ko_lon)
+    chord, nearest = cKDTree(ko_xyz).query(model_xyz, k=2, workers=1)
+    saved = np.asarray(values["ko_nearest_flat_index"]).ravel()
+    rows, cols = np.asarray(values["ko_nearest_row"]).ravel(), np.asarray(values["ko_nearest_col"]).ravel()
+    if not np.array_equal(saved, rows * 900 + cols):
+        raise ValueError("recorded KO row/column and flat owners differ")
+    mismatches = np.flatnonzero(nearest[:, 0] != saved)
+    distance = 2 * RADIUS_M * np.arcsin(np.clip(chord[:, 0] / 2, 0, 1))
+    second_distance = 2 * RADIUS_M * np.arcsin(np.clip(chord[:, 1] / 2, 0, 1))
+    # Direct exhaustive great-circle comparison at fixed corners, boundary
+    # negative-number positions and the two prior native observation cases.
+    sample_indices = sorted({0, 233, 65754, 65987, 217, 18953, 63179, 65285,
+                             65833, 65974, 65957, 20488, 17662, 32994})
+    ko_phi, ko_lambda = np.radians(ko_lat), np.radians(ko_lon)
+    direct = []
+    for flat in sample_indices:
+        phi, lam = np.radians(native_lat[flat]), np.radians(native_lon[flat])
+        hav = (np.sin((ko_phi - phi) / 2) ** 2
+               + np.cos(phi) * np.cos(ko_phi) * np.sin((ko_lambda - lam) / 2) ** 2)
+        direct_owner = int(np.argmin(hav))
+        direct.append({"native_flat_index": flat, "pixel_flat_index": direct_owner,
+                       "matches_tree_and_saved": direct_owner == int(nearest[flat, 0]) == int(saved[flat])})
+    report = {
+        "schema": "kdm6.native_KO_nearest_owner_audit.v1", "run_id": manifest["run_id"],
+        "scope": "input geometry and nearest-pixel identity only; not KDM/RTTOV execution or original-provider navigation certification",
+        "native_columns": int(native_lat.size), "candidate_KO_pixels": int(ko_lat.size),
+        "pixel_mismatches": int(mismatches.size), "first_mismatching_native_indices": mismatches[:20].tolist(),
+        "unique_saved_pixel_owners": int(np.unique(saved).size),
+        "unique_recomputed_pixel_owners": int(np.unique(nearest[:, 0]).size),
+        "max_nearest_distance_m_assumed_radius": float(distance.max()),
+        "minimum_second_minus_first_distance_m": float((second_distance - distance).min()),
+        "max_abs_distance_difference_from_saved_m": float(np.max(np.abs(distance - values["ko_distance_m"].ravel()))),
+        "saved_distance_dtype": str(values["ko_distance_m"].dtype),
+        "distance_comparison_is_not_a_bit_parity_gate": True,
+        "direct_exhaustive_samples": direct,
+        "passed": bool(mismatches.size == 0 and all(row["matches_tree_and_saved"] for row in direct)),
+        "radius_m_assumption": RADIUS_M, "quality_used_to_choose_owner": False,
+        "provider_original_authenticity_certified": False, "pixel_UTC_verified": False,
+        "new_model_or_RTTOV_calls": 0, "scipy_version": scipy.__version__,
+        "source_sha256": {"producer": sha(__file__), "case_manifest": sha(manifest_path),
+                          "observation_archive": source_sha},
+    }
+    output = RUN / "KO_NEAREST_OWNER_AUDIT.json"
+    with output.open("x") as stream:
+        json.dump(report, stream, indent=2, allow_nan=False)
+    print(json.dumps({k: v for k, v in report.items() if k not in ("direct_exhaustive_samples", "source_sha256")}, indent=2))
+    if not report["passed"]:
+        raise ValueError("independent nearest-owner check differs; preserve this diagnostic")
+
+
+if __name__ == "__main__":
+    main()

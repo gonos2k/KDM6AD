@@ -1,0 +1,89 @@
+"""Read-only admission check for completed boundary rows; not a final case audit."""
+from pathlib import Path
+import hashlib
+import io
+import json
+
+import netCDF4
+import numpy as np
+
+BASE = Path(__file__).resolve().parent
+RUN = BASE / "RUN_v4"
+
+
+def sha(path):
+    result = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for piece in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            result.update(piece)
+    return result.hexdigest()
+
+
+def main():
+    case_path = RUN / "CASE_MANIFEST.json"
+    case = json.loads(case_path.read_text())
+    input_path = RUN / "ALL_NATIVE_INPUT_BLOCKS_AUDIT.json"
+    inputs = json.loads(input_path.read_text())
+    if inputs["source_run_id"] != case["run_id"]:
+        raise ValueError("all-native input audit belongs to another case")
+    checkpoint = Path(case["case_preparation"]["paths"]["checkpoint"])
+    if sha(checkpoint) != case["source_pins"][str(checkpoint)]:
+        raise ValueError("checkpoint differs from the pinned source")
+    fields = {"NC": inputs["initial_negative_NC_rows"], "NI": inputs["initial_negative_NI_rows"]}
+    records = []
+    with netCDF4.Dataset(checkpoint) as native:
+        for name, indices in fields.items():
+            for flat in indices:
+                chunk, row = divmod(flat, 512)
+                i, j = flat % 234 + 1, flat // 234 + 1
+                receipt_path = RUN / "baseline" / f"chunk_{chunk:05d}" / "receipt.json"
+                entry = {"flat_index": flat, "native_i_1based": i, "native_j_1based": j,
+                         "number_field": name, "chunk": chunk,
+                         "outermost_model_center": i in (1, 234) or j in (1, 282)}
+                if not receipt_path.is_file():
+                    records.append({**entry, "baseline_receipt_present": False})
+                    continue
+                receipt = json.loads(receipt_path.read_text())
+                expected_b = min(512, 65988 - chunk * 512)
+                if (receipt["start"], receipt["stop"], receipt["columns"]) != (
+                        chunk * 512, chunk * 512 + expected_b, expected_b):
+                    raise ValueError("completed baseline range differs from the original full batch")
+                artifact = Path(receipt["artifact"])
+                data = artifact.read_bytes()
+                if hashlib.sha256(data).hexdigest() != receipt["artifact_sha256"]:
+                    raise ValueError("saved baseline artifact hash changed")
+                with np.load(io.BytesIO(data), allow_pickle=False) as arrays:
+                    if not np.array_equal(arrays["flat_index"], np.arange(receipt["start"], receipt["stop"])):
+                        raise ValueError("baseline artifact cropped or reordered native rows")
+                    checks = {
+                        "recorded_initial_negative_number": bool(arrays["initial_negative_" + name.lower()][row]),
+                        "raw_source_DQF_zero": bool((arrays["source_dqf"][row] == 0).all()),
+                        "raw_source_QC_zero": bool((arrays["source_qc"][row] == 0).all()),
+                        "all_seven_cost_terms_excluded": bool((~arrays["mask"][row]).all()),
+                        "TQ_controls_frozen": bool((~arrays["active"][:, row]).all()),
+                    }
+                    for saved, source in (("theta_m", "THM_2"), ("qv", "QVAPOR")):
+                        original = np.asarray(native[source][0, :, j - 1, i - 1], dtype=np.float64)
+                        checks[saved + "_unchanged_from_checkpoint"] = arrays[saved][row].tobytes() == original.tobytes()
+                    if not all(checks.values()):
+                        raise ValueError(f"negative {name} admission differs at native {(i, j)}: {checks}")
+                    records.append({**entry, "baseline_receipt_present": True, "checks": checks,
+                                    "reason": str(arrays["reasons"][row]),
+                                    "full_batch_columns": expected_b, "receipt_sha256": sha(receipt_path),
+                                    "artifact_sha256": receipt["artifact_sha256"]})
+    report = {"scope": "observed completed negative-number rows only; pending rows are not certified; not full-case completion",
+              "run_id": case["run_id"], "source_number_units_certified": False,
+              "expected_negative_number_rows": sum(map(len, fields.values())),
+              "completed_rows_audited": sum(r["baseline_receipt_present"] for r in records),
+              "all_negative_rows_on_outer_model_centers": all(r["outermost_model_center"] for r in records),
+              "new_model_or_RTTOV_calls": 0, "records": records,
+              "source_sha256": {"producer": sha(__file__), "case_manifest": sha(case_path),
+                                "all_native_input_audit": sha(input_path), "checkpoint": sha(checkpoint)}}
+    output = RUN / "OBSERVED_NEGATIVE_MOMENT_BOUNDARY_AUDIT_01.json"
+    with output.open("x") as stream:
+        json.dump(report, stream, indent=2, allow_nan=False)
+    print(json.dumps({k: v for k, v in report.items() if k not in ("records", "source_sha256")}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

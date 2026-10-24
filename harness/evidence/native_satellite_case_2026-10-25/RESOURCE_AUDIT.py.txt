@@ -1,0 +1,37 @@
+"""Read existing private receipts; no model calls. Output new JSON only."""
+import hashlib
+import json
+import statistics
+import sys
+from pathlib import Path
+
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+run, bundle, output = map(Path, sys.argv[1:])
+published = json.loads((bundle / 'execution_receipts.json').read_text())
+trials = json.loads((bundle / 'trials/trials.json').read_text())
+stages = [('baseline', published['baseline'])] + [(t['name'].removesuffix('.json'), t) for t in trials]
+result = {'schema': 'kdm6.native_satellite_resource_audit.v1',
+          'run_id': published['run_id'], 'producer_sha256': sha(Path(__file__)),
+          'new_model_calls': 0, 'stages': {},
+          'limits': 'Per-chunk wall seconds; RSS is cumulative per-worker self/child high-water, not concurrent system peak. No total CPU time is recorded.'}
+for stage, manifest in stages:
+    rows = []
+    for item in manifest['chunks']:
+        matches = list((run / stage).glob('chunk_*/receipt.json'))
+        path = next(p for p in matches if json.loads(p.read_text())['chunk_index'] == item['chunk_index'])
+        receipt = json.loads(path.read_text())
+        assert sha(path) == item['receipt_sha256']
+        for key in ['chunk_index', 'start', 'stop', 'columns']:
+            assert receipt[key] == item[key]
+        rows.append({key: receipt[key] for key in ['chunk_index', 'start', 'stop',
+                     'wall_seconds', 'cumulative_process_peak_RSS_bytes', 'cumulative_child_peak_RSS_bytes']}
+                    | {'receipt_sha256': sha(path)})
+    assert len(rows) == 129 and sum(r['stop'] - r['start'] for r in rows) == 65988
+    wall = [r['wall_seconds'] for r in rows]
+    result['stages'][stage] = {'chunks': rows, 'chunk_wall_seconds_min': min(wall),
+        'chunk_wall_seconds_median': statistics.median(wall), 'chunk_wall_seconds_max': max(wall),
+        'maximum_recorded_process_peak_RSS_bytes': max(r['cumulative_process_peak_RSS_bytes'] for r in rows),
+        'maximum_recorded_child_peak_RSS_bytes': max(r['cumulative_child_peak_RSS_bytes'] for r in rows)}
+with output.open('x') as stream:
+    json.dump(result, stream, indent=2, allow_nan=False)
+    stream.write('\n')

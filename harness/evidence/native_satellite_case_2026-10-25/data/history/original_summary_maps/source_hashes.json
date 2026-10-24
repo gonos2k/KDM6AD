@@ -1,0 +1,38 @@
+{
+  "files": {
+    "channel_10.png": {
+      "bytes": 703117,
+      "sha256": "270f57a27550730340ade7055f380735b330cb14ea03b9fa458ddafce1bb6eab"
+    },
+    "channel_11.png": {
+      "bytes": 897876,
+      "sha256": "ff0115c5b02d71ba46060b747372c7a0afb5d7caf63fb5845c2f7fe98affd7bb"
+    },
+    "channel_12.png": {
+      "bytes": 894808,
+      "sha256": "e5d07b5227de7b8ddda9e839d5e160564b7093a78b35dc5a1d1675f228e20110"
+    },
+    "channel_13.png": {
+      "bytes": 892629,
+      "sha256": "72867077ccd6c9a9b7d677982f8b904b92a109272bf4d8c73cb81f6fa03427cd"
+    },
+    "channel_14.png": {
+      "bytes": 881877,
+      "sha256": "0634fcd021b9c9ca458494682710f928829ed9794d14ed02025f86c7691369e1"
+    },
+    "channel_15.png": {
+      "bytes": 856495,
+      "sha256": "9041edd419f870abc799fd17e79404713e9d87f82c03150ed2fa5307bcf10ed3"
+    },
+    "channel_16.png": {
+      "bytes": 809131,
+      "sha256": "3179744315c0e065e745a136f9374352d7982d5fbab18e8d47bb6e97f870532e"
+    },
+    "control_updates_and_reasons.png": {
+      "bytes": 80751,
+      "sha256": "34bbcc09827d89a27b6387d809b275dafc477c6b8459e65ef9431ffe631a8d89"
+    }
+  },
+  "source": "receipt-verified original summary plots; copied byte-for-byte without modification",
+  "summary_receipt_sha256": "081191db7111ed832a4ed795820bede32b6be0774ace9544315ce08b62054e71"
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "artifact_sha256": "a36c59ed41f82d4826f5a95c5fe5db4a4a01c5f61349c336dec3770390a23fe4",
+    "attempt": "v1_timeout",
+    "exception": "",
+    "status": "INCOMPLETE"
+  },
+  {
+    "artifact_sha256": "d07bfcc213161cb5abb050444786ee8ba3c7a5acfcc57969d54f849abc4341cd",
+    "attempt": "v2_pilot",
+    "passed": null,
+    "scope": "pilot only",
+    "trials": []
+  },
+  {
+    "artifact_sha256": "3de4e06da9188562ed2e834e0827708f5f73ef088af97d95a5977cbbad960b42",
+    "attempt": "v3_prior_fd",
+    "passed": false,
+    "scope": "sparse active-control T/Q direction supported on four original full-B chunks; unchanged chunks cancel, prior included",
+    "trials": [
+      {
+        "AD": 0.03202179353338733,
+        "FD": 0.01857163090292761,
+        "eligible": true,
+        "epsilon": 0.001,
+        "passed": false,
+        "tolerance_ratio": 13856.807182227514
+      },
+      {
+        "AD": 0.03202179353338733,
+        "FD": -0.039993285198542096,
+        "eligible": true,
+        "epsilon": 0.0003,
+        "passed": false,
+        "tolerance_ratio": 59526.50412531402
+      }
+    ]
+  },
+  {
+    "FD_step_revision": {
+      "FD_atol_changed": false,
+      "FD_rtol_changed": false,
+      "observation_support_changed": false,
+      "physical_map_changed": false,
+      "previous_epsilons": [
+        0.001,
+        0.0003
+      ],
+      "previous_request": "CASE_REQUEST_v3.json",
+      "reason": "Measured supported cleanup/cloud-fraction branch changes and failed directional differences at previous steps; smaller steps test the same fixed map within a local branch. All previous failures retained.",
+      "trial_alphas_changed": false
+    },
+    "attempt": "v4_full_domain",
+    "request_sha256": "0395f0704067ee88e3cd3ecdfc49e61bdba1122117ae4a796e2166b1309165d9",
+    "status": "full-domain decision in RUN_v4/FINAL.json"
+  }
+]

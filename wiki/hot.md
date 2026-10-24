@@ -1,11 +1,12 @@
 ---
 title: Hot Cache
 type: meta
-date_modified: 2026-10-13
+date_modified: 2026-10-25
 ---
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-domain-ko7-bounded-case-2026-10-25]] — Completed fixed 65,988-column KO7 case; baseline derivatives pass, all three full-domain proposals lose fixed support and are rejected. No host-cycle or fit-improvement claim.
 - [[sources/applied-snow-graupel-transfer-2026-10-24]] — Actual signed rates balance at three cells; internal QG threshold cleanup accounts for the remaining localized mass sink; no physical correction/default change.
 - [[sources/saved-candidate-attribution-2026-10-24]] — Shared direction helper, public-only saved attribution; post_micro losses localized to new columns/layers, and profile T/ice cancellation explained without new M/H runs.
 - [[sources/actual-qr-transport-2026-10-24]] — QR actual-departure candidate closes two-block QR accounting; smaller post_micro residual remains, native cost/AD passes without measurable fit gain; controller metadata/readability corrected.

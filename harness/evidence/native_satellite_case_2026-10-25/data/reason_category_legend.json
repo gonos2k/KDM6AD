@@ -1,0 +1,39 @@
+{
+  "exact_original_row_reasons": "UTF-8 strings are losslessly stored as one JSON object per native flat index in observation_reasons.jsonl.gz and per-trial *_reasons.jsonl.gz files.",
+  "multi_label_counts": {
+    "0": 54504,
+    "1": 1,
+    "2": 6,
+    "3": 0,
+    "4": 448,
+    "5": 11036,
+    "6": 11484
+  },
+  "primary_category_codes": {
+    "0": "admitted (no row exclusion reason)",
+    "1": "raw NC negative at initial state",
+    "2": "raw NI negative at initial state",
+    "3": "raw source DQF/QC invalid",
+    "4": "native optical profile invalid",
+    "5": "RTTOV model quality nonzero",
+    "6": "no baseline-supported channel / other reason"
+  },
+  "primary_counts": {
+    "0": 54504,
+    "1": 1,
+    "2": 6,
+    "3": 0,
+    "4": 441,
+    "5": 11036,
+    "6": 0
+  },
+  "primary_precedence": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    0
+  ]
+}

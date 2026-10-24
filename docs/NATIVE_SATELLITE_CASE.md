@@ -1,5 +1,15 @@
 # Bounded native-domain KO7 satellite case
 
+The first full-domain case has completed with
+`COMPLETED_NO_ACCEPTABLE_UPDATE`. All 129 baseline blocks and each of the three
+bounded proposals cover 65,988 columns. The baseline cost/gradient and sparse
+independent FD checks pass; the proposals lose 29, 18 and 13 baseline-supported
+profiles through the active-QC/zero-NC profile-admission condition. None is
+accepted, and the final input controls/BT remain baseline. See the
+[actual-case report](../harness/evidence/native_satellite_case_2026-10-25/REPORT.md)
+and its exact, hash-pinned public products. This records the fixed experiment's
+outcome, not convergence, improved fit, or a host cycle.
+
 The first case is the unchanged KO nominal `202507190000` scene and the MP137
 checkpoint `2025-07-19_00:00:40`, based on main `792e890e`. It evaluates a local
 20-second microphysics map and a satellite objective over all native columns.
@@ -145,3 +155,23 @@ maps, summary hashes and final source recheck. A partial summary is retried in
 a new directory. Completion distinguishes an accepted update from no acceptable
 update; it never implies convergence or forecast skill. A pilot, input inventory,
 zero-mask cost, incomplete gradient, or merely started process is not completion.
+
+## Replay the published case
+
+The first case's public bundle is separate from the private simulation inputs.
+Its exact binary64 arrays are split into files below 50 MiB; trial quality,
+profile validity and exact exclusion reasons accompany BT rather than silently
+removing lost support. JSON paths are redacted; exact source attachments retain
+their original example paths so producer hashes remain verifiable.
+
+```sh
+python -m harness.replay_native_satellite_case \
+  harness/evidence/native_satellite_case_2026-10-25/data
+```
+
+This NumPy-only command checks artifact hashes, native indices, fixed support,
+one global normalizer, baseline cost, the published JVP/VJP dot, control-vector
+hashes and the three rejected proposals. It makes no kernel, RTTOV or host
+calls. Published normalized gradients and the executed numerator-first dot
+have separately reported rounding paths. Numeric replay does not replace
+source/build attribution or an independent private-model execution.

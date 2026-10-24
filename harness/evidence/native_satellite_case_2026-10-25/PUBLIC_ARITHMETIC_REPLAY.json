@@ -1,0 +1,35 @@
+{
+  "schema": "kdm6.native_satellite_public_arithmetic_replay.v1",
+  "status": "REPLAY_PASSED",
+  "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "native_columns": 65988,
+  "blocks": 129,
+  "globalZ": 381528.0,
+  "observation_numerator": 4255356.85888542,
+  "baseline_J": 11.153458878209252,
+  "published_dot_relative_error": 4.411634227890259e-16,
+  "trials": [
+    {
+      "alpha": 1.0,
+      "lost_profiles": 29,
+      "lost_channel_cells": 203,
+      "accepted": false
+    },
+    {
+      "alpha": 0.5,
+      "lost_profiles": 18,
+      "lost_channel_cells": 126,
+      "accepted": false
+    },
+    {
+      "alpha": 0.25,
+      "lost_profiles": 13,
+      "lost_channel_cells": 91,
+      "accepted": false
+    }
+  ],
+  "publication_manifest_sha256": "bc67f05376b52f9f11c30f88e83988bcb0772f7701698885c7f5e88ed12355b5",
+  "replayer_sha256": "a9cfe38239072ba5584ab518ebf0cd6e78cee8badc2a98c2528214bee9202ec4",
+  "new_KDM_RTTOV_host_calls": 0,
+  "limits": "Published arithmetic/identity only; private model inputs, kernel execution, RTTOV K, navigation authenticity and physical budgets are not independently re-executed here."
+}

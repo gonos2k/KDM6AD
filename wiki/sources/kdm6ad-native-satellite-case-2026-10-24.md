@@ -28,6 +28,9 @@ settings, not changes to derivative or cost acceptance tolerances.
 Execution uses immutable private Python source snapshots and source/input
 receipts. Private evidence is under
 `host/research_evidence/native_satellite_case_20261024/`; raw host files and
-RTTOV assets remain private. Global case completion is pending its required
-129-block, derivative, trial and assembled-output gates. KO pixel UTC and
-historical host number-unit migration remain unverified qualifications.
+RTTOV assets remain private. At this wiring/pilot stage, the required global
+129-block, derivative, trial and assembled-output gates were still pending.
+The subsequent completed case is recorded in
+[[native-domain-ko7-bounded-case-2026-10-25]]: all three bounded proposals were
+rejected for lost baseline support. KO pixel UTC and historical host
+number-unit migration remain unverified qualifications.

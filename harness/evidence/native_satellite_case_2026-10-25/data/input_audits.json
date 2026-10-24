@@ -1,0 +1,1759 @@
+{
+  "all_native_input_blocks": {
+    "report": {
+      "blocks": 129,
+      "columns": 65988,
+      "first_flat": 0,
+      "initial_negative_NC_rows": [
+        65957
+      ],
+      "initial_negative_NI_rows": [
+        217,
+        18953,
+        63179,
+        65285,
+        65833,
+        65974
+      ],
+      "last_flat": 65987,
+      "max_prep_abs_vs_original_packet": 7.275957614183426e-11,
+      "negative_BG_rows_diagnostic_only": [
+        29951,
+        65799
+      ],
+      "records": [
+        {
+          "chunk": 0,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 0,
+          "stop": 512
+        },
+        {
+          "chunk": 1,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 512,
+          "stop": 1024
+        },
+        {
+          "chunk": 2,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 1024,
+          "stop": 1536
+        },
+        {
+          "chunk": 3,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 1536,
+          "stop": 2048
+        },
+        {
+          "chunk": 4,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 2048,
+          "stop": 2560
+        },
+        {
+          "chunk": 5,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 2560,
+          "stop": 3072
+        },
+        {
+          "chunk": 6,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 3072,
+          "stop": 3584
+        },
+        {
+          "chunk": 7,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 3584,
+          "stop": 4096
+        },
+        {
+          "chunk": 8,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 4096,
+          "stop": 4608
+        },
+        {
+          "chunk": 9,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 4608,
+          "stop": 5120
+        },
+        {
+          "chunk": 10,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 5120,
+          "stop": 5632
+        },
+        {
+          "chunk": 11,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 5632,
+          "stop": 6144
+        },
+        {
+          "chunk": 12,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 6144,
+          "stop": 6656
+        },
+        {
+          "chunk": 13,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 6656,
+          "stop": 7168
+        },
+        {
+          "chunk": 14,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 7168,
+          "stop": 7680
+        },
+        {
+          "chunk": 15,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 7680,
+          "stop": 8192
+        },
+        {
+          "chunk": 16,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 8192,
+          "stop": 8704
+        },
+        {
+          "chunk": 17,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 8704,
+          "stop": 9216
+        },
+        {
+          "chunk": 18,
+          "columns": 512,
+          "prep_max_abs": 7.275957614183426e-11,
+          "source_valid_observations": 3584,
+          "start": 9216,
+          "stop": 9728
+        },
+        {
+          "chunk": 19,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 9728,
+          "stop": 10240
+        },
+        {
+          "chunk": 20,
+          "columns": 512,
+          "prep_max_abs": 7.275957614183426e-11,
+          "source_valid_observations": 3584,
+          "start": 10240,
+          "stop": 10752
+        },
+        {
+          "chunk": 21,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 10752,
+          "stop": 11264
+        },
+        {
+          "chunk": 22,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 11264,
+          "stop": 11776
+        },
+        {
+          "chunk": 23,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 11776,
+          "stop": 12288
+        },
+        {
+          "chunk": 24,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 12288,
+          "stop": 12800
+        },
+        {
+          "chunk": 25,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 12800,
+          "stop": 13312
+        },
+        {
+          "chunk": 26,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 13312,
+          "stop": 13824
+        },
+        {
+          "chunk": 27,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 13824,
+          "stop": 14336
+        },
+        {
+          "chunk": 28,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 14336,
+          "stop": 14848
+        },
+        {
+          "chunk": 29,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 14848,
+          "stop": 15360
+        },
+        {
+          "chunk": 30,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 15360,
+          "stop": 15872
+        },
+        {
+          "chunk": 31,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 15872,
+          "stop": 16384
+        },
+        {
+          "chunk": 32,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 16384,
+          "stop": 16896
+        },
+        {
+          "chunk": 33,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 16896,
+          "stop": 17408
+        },
+        {
+          "chunk": 34,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 17408,
+          "stop": 17920
+        },
+        {
+          "chunk": 35,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 17920,
+          "stop": 18432
+        },
+        {
+          "chunk": 36,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 18432,
+          "stop": 18944
+        },
+        {
+          "chunk": 37,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 18944,
+          "stop": 19456
+        },
+        {
+          "chunk": 38,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 19456,
+          "stop": 19968
+        },
+        {
+          "chunk": 39,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 19968,
+          "stop": 20480
+        },
+        {
+          "chunk": 40,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 20480,
+          "stop": 20992
+        },
+        {
+          "chunk": 41,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 20992,
+          "stop": 21504
+        },
+        {
+          "chunk": 42,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 21504,
+          "stop": 22016
+        },
+        {
+          "chunk": 43,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 22016,
+          "stop": 22528
+        },
+        {
+          "chunk": 44,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 22528,
+          "stop": 23040
+        },
+        {
+          "chunk": 45,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 23040,
+          "stop": 23552
+        },
+        {
+          "chunk": 46,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 23552,
+          "stop": 24064
+        },
+        {
+          "chunk": 47,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 24064,
+          "stop": 24576
+        },
+        {
+          "chunk": 48,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 24576,
+          "stop": 25088
+        },
+        {
+          "chunk": 49,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 25088,
+          "stop": 25600
+        },
+        {
+          "chunk": 50,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 25600,
+          "stop": 26112
+        },
+        {
+          "chunk": 51,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 26112,
+          "stop": 26624
+        },
+        {
+          "chunk": 52,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 26624,
+          "stop": 27136
+        },
+        {
+          "chunk": 53,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 27136,
+          "stop": 27648
+        },
+        {
+          "chunk": 54,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 27648,
+          "stop": 28160
+        },
+        {
+          "chunk": 55,
+          "columns": 512,
+          "prep_max_abs": 7.275957614183426e-11,
+          "source_valid_observations": 3584,
+          "start": 28160,
+          "stop": 28672
+        },
+        {
+          "chunk": 56,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 28672,
+          "stop": 29184
+        },
+        {
+          "chunk": 57,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 29184,
+          "stop": 29696
+        },
+        {
+          "chunk": 58,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 29696,
+          "stop": 30208
+        },
+        {
+          "chunk": 59,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 30208,
+          "stop": 30720
+        },
+        {
+          "chunk": 60,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 30720,
+          "stop": 31232
+        },
+        {
+          "chunk": 61,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 31232,
+          "stop": 31744
+        },
+        {
+          "chunk": 62,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 31744,
+          "stop": 32256
+        },
+        {
+          "chunk": 63,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 32256,
+          "stop": 32768
+        },
+        {
+          "chunk": 64,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 32768,
+          "stop": 33280
+        },
+        {
+          "chunk": 65,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 33280,
+          "stop": 33792
+        },
+        {
+          "chunk": 66,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 33792,
+          "stop": 34304
+        },
+        {
+          "chunk": 67,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 34304,
+          "stop": 34816
+        },
+        {
+          "chunk": 68,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 34816,
+          "stop": 35328
+        },
+        {
+          "chunk": 69,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 35328,
+          "stop": 35840
+        },
+        {
+          "chunk": 70,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 35840,
+          "stop": 36352
+        },
+        {
+          "chunk": 71,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 36352,
+          "stop": 36864
+        },
+        {
+          "chunk": 72,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 36864,
+          "stop": 37376
+        },
+        {
+          "chunk": 73,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 37376,
+          "stop": 37888
+        },
+        {
+          "chunk": 74,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 37888,
+          "stop": 38400
+        },
+        {
+          "chunk": 75,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 38400,
+          "stop": 38912
+        },
+        {
+          "chunk": 76,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 38912,
+          "stop": 39424
+        },
+        {
+          "chunk": 77,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 39424,
+          "stop": 39936
+        },
+        {
+          "chunk": 78,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 39936,
+          "stop": 40448
+        },
+        {
+          "chunk": 79,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 40448,
+          "stop": 40960
+        },
+        {
+          "chunk": 80,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 40960,
+          "stop": 41472
+        },
+        {
+          "chunk": 81,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 41472,
+          "stop": 41984
+        },
+        {
+          "chunk": 82,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 41984,
+          "stop": 42496
+        },
+        {
+          "chunk": 83,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 42496,
+          "stop": 43008
+        },
+        {
+          "chunk": 84,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 43008,
+          "stop": 43520
+        },
+        {
+          "chunk": 85,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 43520,
+          "stop": 44032
+        },
+        {
+          "chunk": 86,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 44032,
+          "stop": 44544
+        },
+        {
+          "chunk": 87,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 44544,
+          "stop": 45056
+        },
+        {
+          "chunk": 88,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 45056,
+          "stop": 45568
+        },
+        {
+          "chunk": 89,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 45568,
+          "stop": 46080
+        },
+        {
+          "chunk": 90,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 46080,
+          "stop": 46592
+        },
+        {
+          "chunk": 91,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 46592,
+          "stop": 47104
+        },
+        {
+          "chunk": 92,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 47104,
+          "stop": 47616
+        },
+        {
+          "chunk": 93,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 47616,
+          "stop": 48128
+        },
+        {
+          "chunk": 94,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 48128,
+          "stop": 48640
+        },
+        {
+          "chunk": 95,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 48640,
+          "stop": 49152
+        },
+        {
+          "chunk": 96,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 49152,
+          "stop": 49664
+        },
+        {
+          "chunk": 97,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 49664,
+          "stop": 50176
+        },
+        {
+          "chunk": 98,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 50176,
+          "stop": 50688
+        },
+        {
+          "chunk": 99,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 50688,
+          "stop": 51200
+        },
+        {
+          "chunk": 100,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 51200,
+          "stop": 51712
+        },
+        {
+          "chunk": 101,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 51712,
+          "stop": 52224
+        },
+        {
+          "chunk": 102,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 52224,
+          "stop": 52736
+        },
+        {
+          "chunk": 103,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 52736,
+          "stop": 53248
+        },
+        {
+          "chunk": 104,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 53248,
+          "stop": 53760
+        },
+        {
+          "chunk": 105,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 53760,
+          "stop": 54272
+        },
+        {
+          "chunk": 106,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 54272,
+          "stop": 54784
+        },
+        {
+          "chunk": 107,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 54784,
+          "stop": 55296
+        },
+        {
+          "chunk": 108,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 55296,
+          "stop": 55808
+        },
+        {
+          "chunk": 109,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 55808,
+          "stop": 56320
+        },
+        {
+          "chunk": 110,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 56320,
+          "stop": 56832
+        },
+        {
+          "chunk": 111,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 56832,
+          "stop": 57344
+        },
+        {
+          "chunk": 112,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 57344,
+          "stop": 57856
+        },
+        {
+          "chunk": 113,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 57856,
+          "stop": 58368
+        },
+        {
+          "chunk": 114,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 58368,
+          "stop": 58880
+        },
+        {
+          "chunk": 115,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 58880,
+          "stop": 59392
+        },
+        {
+          "chunk": 116,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 59392,
+          "stop": 59904
+        },
+        {
+          "chunk": 117,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 59904,
+          "stop": 60416
+        },
+        {
+          "chunk": 118,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 60416,
+          "stop": 60928
+        },
+        {
+          "chunk": 119,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 60928,
+          "stop": 61440
+        },
+        {
+          "chunk": 120,
+          "columns": 512,
+          "prep_max_abs": 5.093170329928398e-11,
+          "source_valid_observations": 3584,
+          "start": 61440,
+          "stop": 61952
+        },
+        {
+          "chunk": 121,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 61952,
+          "stop": 62464
+        },
+        {
+          "chunk": 122,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 62464,
+          "stop": 62976
+        },
+        {
+          "chunk": 123,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 62976,
+          "stop": 63488
+        },
+        {
+          "chunk": 124,
+          "columns": 512,
+          "prep_max_abs": 4.3655745685100555e-11,
+          "source_valid_observations": 3584,
+          "start": 63488,
+          "stop": 64000
+        },
+        {
+          "chunk": 125,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 64000,
+          "stop": 64512
+        },
+        {
+          "chunk": 126,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 64512,
+          "stop": 65024
+        },
+        {
+          "chunk": 127,
+          "columns": 512,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3584,
+          "start": 65024,
+          "stop": 65536
+        },
+        {
+          "chunk": 128,
+          "columns": 452,
+          "prep_max_abs": 5.820766091346741e-11,
+          "source_valid_observations": 3164,
+          "start": 65536,
+          "stop": 65988
+        }
+      ],
+      "scope": "read-only full-domain native/KO/surface preparation; no KDM or RTTOV calls",
+      "source_QC_zero_observations": 461916,
+      "source_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7"
+    },
+    "sha256": "1ae0bc68086852bc1872e049e99c5b9cc4ba9b2e9013a52c4483234e7cef3b8c"
+  },
+  "nearest_owner_identity": {
+    "report": {
+      "candidate_KO_pixels": 810000,
+      "direct_exhaustive_samples": [
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 0,
+          "pixel_flat_index": 721058
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 217,
+          "pixel_flat_index": 721601
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 233,
+          "pixel_flat_index": 721641
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 17662,
+          "pixel_flat_index": 552138
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 18953,
+          "pixel_flat_index": 541641
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 20488,
+          "pixel_flat_index": 525183
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 32994,
+          "pixel_flat_index": 403358
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 63179,
+          "pixel_flat_index": 115941
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65285,
+          "pixel_flat_index": 96141
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65754,
+          "pixel_flat_index": 88358
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65833,
+          "pixel_flat_index": 88556
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65957,
+          "pixel_flat_index": 88866
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65974,
+          "pixel_flat_index": 88908
+        },
+        {
+          "matches_tree_and_saved": true,
+          "native_flat_index": 65987,
+          "pixel_flat_index": 88941
+        }
+      ],
+      "distance_comparison_is_not_a_bit_parity_gate": true,
+      "first_mismatching_native_indices": [],
+      "max_abs_distance_difference_from_saved_m": 29.967501342143237,
+      "max_nearest_distance_m_assumed_radius": 880.3461634515182,
+      "minimum_second_minus_first_distance_m": 664.8303780124094,
+      "native_columns": 65988,
+      "new_model_or_RTTOV_calls": 0,
+      "passed": true,
+      "pixel_UTC_verified": false,
+      "pixel_mismatches": 0,
+      "provider_original_authenticity_certified": false,
+      "quality_used_to_choose_owner": false,
+      "radius_m_assumption": 6371008.77,
+      "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+      "saved_distance_dtype": "float32",
+      "schema": "kdm6.native_KO_nearest_owner_audit.v1",
+      "scipy_version": "1.15.3",
+      "scope": "input geometry and nearest-pixel identity only; not KDM/RTTOV execution or original-provider navigation certification",
+      "source_sha256": {
+        "case_manifest": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+        "observation_archive": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+        "producer": "4710dcf6f06c40ac40921ebe50716756786654039c2871858503529de3e15b9b"
+      },
+      "unique_recomputed_pixel_owners": 65988,
+      "unique_saved_pixel_owners": 65988
+    },
+    "sha256": "e7fe8be12f92368387a724f4329721d30f68eda8f6f6e24c0aee2e671d8824c1"
+  },
+  "raw16_quality_and_footprint": {
+    "report": {
+      "earth_radius_m_assumption": 6371008.77,
+      "no_KDM_calls": true,
+      "no_RTTOV_calls": true,
+      "no_model_or_observation_modification": true,
+      "pixel_UTC_verified": false,
+      "provider_original_authenticity_certified": false,
+      "raw_channels": 16,
+      "records": [
+        {
+          "channel": "ir087",
+          "full_raster_DN_range": [
+            3295.0,
+            7772.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir087_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "ir096",
+          "full_raster_DN_range": [
+            5085.0,
+            7411.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir096_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "ir105",
+          "full_raster_DN_range": [
+            2603.0,
+            7536.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir105_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "ir112",
+          "full_raster_DN_range": [
+            2534.0,
+            7412.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir112_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "ir123",
+          "full_raster_DN_range": [
+            2738.0,
+            7253.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir123_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "ir133",
+          "full_raster_DN_range": [
+            3843.0,
+            7075.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_ir133_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "nr013",
+          "full_raster_DN_range": [
+            37.0,
+            1689.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "65923c60f7bad8d1fe094ce59bc3df276a21b1501dc02f6826a039fc37956797",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_nr013_ela020ge_202507190000.nc",
+          "valid_DN_bits": 12
+        },
+        {
+          "channel": "nr016",
+          "full_raster_DN_range": [
+            21.0,
+            771.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "4d6380f9d287506e14db113a82d299e19d84062de49ff27cbd3f7d9049089616",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_nr016_ela020ge_202507190000.nc",
+          "valid_DN_bits": 11
+        },
+        {
+          "channel": "sw038",
+          "full_raster_DN_range": [
+            15197.0,
+            16310.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "4b426ce7451459b0d24075a6cbec8538ee3cd885c6c53699633cecdaefa5d842",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_sw038_ela020ge_202507190000.nc",
+          "valid_DN_bits": 14
+        },
+        {
+          "channel": "vi004",
+          "full_raster_DN_range": [
+            117.0,
+            1477.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 3240000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 1000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "d54055e5ec00ddd5b24b1b382f382f9167487abf827d4b6e0003fe6a27bfa0b0",
+          "stored_shape": [
+            1800,
+            1800
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_vi004_ela010ge_202507190000.nc",
+          "valid_DN_bits": 11
+        },
+        {
+          "channel": "vi005",
+          "full_raster_DN_range": [
+            95.0,
+            1485.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 3240000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 1000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "195223671546d77cfa1785b74a5e1ed696b06f9443fe803b04940704f974b4a8",
+          "stored_shape": [
+            1800,
+            1800
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_vi005_ela010ge_202507190000.nc",
+          "valid_DN_bits": 11
+        },
+        {
+          "channel": "vi006",
+          "full_raster_DN_range": [
+            33.0,
+            3329.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 12960000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 500.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "bb088d6d6e7bc12c3c103c0b0ac60df04c316da41897aa25d03a60274caa9dac",
+          "stored_shape": [
+            3600,
+            3600
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_vi006_ela005ge_202507190000.nc",
+          "valid_DN_bits": 12
+        },
+        {
+          "channel": "vi008",
+          "full_raster_DN_range": [
+            93.0,
+            6285.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 3240000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 1000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "46c67cd5626e64373af0f5c1608a9a855981504348bac74785583deb40ed4130",
+          "stored_shape": [
+            1800,
+            1800
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_vi008_ela010ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "wv063",
+          "full_raster_DN_range": [
+            3582.0,
+            3999.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_wv063_ela020ge_202507190000.nc",
+          "valid_DN_bits": 12
+        },
+        {
+          "channel": "wv069",
+          "full_raster_DN_range": [
+            6547.0,
+            7972.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": false,
+          "source_bytes_unchanged": true,
+          "source_sha256": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_wv069_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        },
+        {
+          "channel": "wv073",
+          "full_raster_DN_range": [
+            6044.0,
+            7931.0
+          ],
+          "full_raster_DQF_counts": {
+            "0": 810000,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "full_raster_missing_pixels": 0,
+          "mapped_DQF_counts": {
+            "0": 65988,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "mapped_missing_pixels": 0,
+          "mapped_quality0_nonmissing": 65988,
+          "model_centers_outside": 0,
+          "model_centers_total": 65988,
+          "pixel_size_m": 2000.0,
+          "raw_DQF_bits": "14-15",
+          "selected_for_cost": true,
+          "source_bytes_unchanged": true,
+          "source_sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+          "stored_shape": [
+            900,
+            900
+          ],
+          "time_related_header_attributes": {},
+          "upstream_filename_attribute": "gk2a_ami_le1b_wv073_ela020ge_202507190000.nc",
+          "valid_DN_bits": 13
+        }
+      ],
+      "scope": "read-only inventory/quality/footprint for all16 provided raw KO channels; only selected7enter cost; unused solar channels not converted to thermal BT",
+      "source_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7"
+    },
+    "sha256": "ef0b49319c9d66f070a2787a1fc5bffd24d0f4f3aed1b4d28f2a79a62f4615db"
+  }
+}
