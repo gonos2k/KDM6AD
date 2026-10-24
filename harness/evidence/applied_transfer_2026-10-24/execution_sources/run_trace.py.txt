@@ -1,0 +1,62 @@
+"""Same-candidate B512 applied-transfer observer off/on comparison."""
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+import time
+
+from harness.ice_factorial_batch import _child_environment, unpack_response
+from harness.run_domain_ice_factorial import _parse_time_log
+
+ROOT = Path(__file__).resolve().parent
+BASE = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/runs')
+TOOL = ROOT/'build/applied_transfer_batch'
+RUNS = ROOT/'runs'
+RUNS.mkdir(exist_ok=False)
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def save(path,data):
+    with path.open('x') as stream:
+        json.dump(data,stream,indent=2,allow_nan=False)
+        stream.write('\n')
+
+
+build=json.loads((ROOT/'build/receipt.json').read_text())
+pins={str(Path(__file__)):sha(__file__),str(TOOL):build['batch_tool_sha256'],str(ROOT/'build/receipt.json'):sha(ROOT/'build/receipt.json')}
+for chunk in [34,40]:
+    for name in ['request.bin','response.bin','receipt.json']:
+        path=BASE/f'chunk{chunk:03d}_actual_off'/name
+        pins[str(path)]=sha(path)
+save(ROOT/'run_prepared.json',{'source_sha256':pins,'B':512,'L':39,'dt':20,'calls_planned':4,'physics':'frozen actual_departure QR/norm_actual ice','targets':{'34':{'column':281,'levels_bottom0':[17,18]},'40':{'column':250,'levels_bottom0':[17]}},'scope':'same unchanged candidate operator; narrow coordinator observer; no RTTOV/host/DA'})
+receipts=[]
+for chunk in [34,40]:
+    original=BASE/f'chunk{chunk:03d}_actual_off'
+    for mode in ['off','on']:
+        case=RUNS/f'chunk{chunk:03d}_{mode}'
+        case.mkdir()
+        with(case/'request.bin').open('xb')as stream:stream.write((original/'request.bin').read_bytes())
+        env=_child_environment('norm_actual')
+        for key in ['KDM6_ICE_BOUNDARY_TRACE','KDM6_RAIN_BOUNDARY_TRACE','KDM6_ACTUAL_QR_TRACE','KDM6_APPLIED_TRANSFER_TRACE','KDM6_APPLIED_TRANSFER_CHUNK']:
+            env.pop(key,None)
+        env['KDM6_QR_TRANSPORT']='actual_departure'
+        if mode=='on':
+            env['KDM6_APPLIED_TRANSFER_TRACE']=str(case/'trace.tsv')
+            env['KDM6_APPLIED_TRANSFER_CHUNK']=str(chunk)
+        assert all(sha(path)==value for path,value in pins.items())
+        start=time.monotonic()
+        with(case/'resource.log').open('xb')as log:
+            subprocess.run(['/usr/bin/time','-l',str(TOOL),'--input',str(case/'request.bin'),'--output',str(case/'response.bin')],env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+        elapsed=time.monotonic()-start
+        unpack_response((case/'response.bin').read_bytes())
+        assert (case/'response.bin').read_bytes()==(original/'response.bin').read_bytes()
+        assert (case/'trace.tsv').exists()==(mode=='on')
+        row={'chunk':chunk,'trace':mode,'B':512,'L':39,'dt':20,'ice_mode':'norm_actual','QR_transport':'actual_departure','controller_sha256':sha(__file__),'tool_sha256':sha(TOOL),'build_receipt_sha256':sha(ROOT/'build/receipt.json'),'request_sha256':sha(case/'request.bin'),'response_sha256':sha(case/'response.bin'),'prior_candidate_response_sha256':sha(original/'response.bin'),'same_candidate_full_response_bitwise_equal':True,'wall_seconds':elapsed,'resources':_parse_time_log((case/'resource.log').read_text()),'trace_sha256':sha(case/'trace.tsv')if mode=='on'else None}
+        save(case/'receipt.json',row)
+        receipts.append(row)
+        print(json.dumps({'chunk':chunk,'trace':mode,'same_candidate':True,'seconds':elapsed}),flush=True)
+assert all(sha(path)==value for path,value in pins.items())
+save(ROOT/'execution.json',{'source_sha256':pins,'receipts':receipts,'KDM_calls':4,'RTTOV_calls':0,'host_steps':0,'DA_trials':0,'whole_domain_repeats':0})

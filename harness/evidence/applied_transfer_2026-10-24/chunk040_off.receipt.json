@@ -1,0 +1,24 @@
+{
+  "chunk": 40,
+  "trace": "off",
+  "B": 512,
+  "L": 39,
+  "dt": 20,
+  "ice_mode": "norm_actual",
+  "QR_transport": "actual_departure",
+  "controller_sha256": "52356cefd2a03820db6f28d98f74219d15e5b58f546b16627e9185696ceedd5b",
+  "tool_sha256": "d4d53bd0a0fb723f38033ca46224045c01d183f85a68d5c0db82c5a26d866379",
+  "build_receipt_sha256": "cf5a86eba3d4d8212548594d8af3b982e78fdef05ad0dc3166306dbf849e041f",
+  "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+  "response_sha256": "f6305cae102897474f2981c895da43ddd4e92629ea5db747bb5b001c62a36e69",
+  "prior_candidate_response_sha256": "f6305cae102897474f2981c895da43ddd4e92629ea5db747bb5b001c62a36e69",
+  "same_candidate_full_response_bitwise_equal": true,
+  "wall_seconds": 0.28805170906707644,
+  "resources": {
+    "wall": 0.28,
+    "user": 0.25,
+    "system": 0.02,
+    "peak_rss_bytes": 217137152
+  },
+  "trace_sha256": null
+}

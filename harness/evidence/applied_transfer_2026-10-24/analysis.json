@@ -1,0 +1,3046 @@
+{
+  "schema": "kdm6.applied_transfer_trace_analysis.v1",
+  "source_trace_sha256": null,
+  "source_traces_sha256": [
+    "6d0990b453201a8051cb5827f7771040057ed2302da3b3d807634318cfb145ac",
+    "85e46baa2a843980059d83a51ef000ca5f1400752d05c0be177057dcbc6bbd25"
+  ],
+  "source_trace_bytes": [
+    32806,
+    16438
+  ],
+  "target_contract": {
+    "chunk_column_level_bottom0": [
+      [
+        34,
+        281,
+        17
+      ],
+      [
+        34,
+        281,
+        18
+      ],
+      [
+        40,
+        250,
+        17
+      ]
+    ],
+    "batch_columns": 512,
+    "vertical_levels": 39
+  },
+  "rate_semantics": {
+    "call_index": "one-based trace-enabled coordinator invocation ordinal local to its source process; matching ordinals from separate chunk trace files do not imply a shared KDM execution or model-step count",
+    "dtcld_seconds": "dtcld seconds for that microphysics subcycle, not the parent window length",
+    "pre_limits": "process outputs after their local process caps and before the separate group conservation limiter",
+    "post_limits": "rates after group conservation limiting; not uncapped phase-rate attempts",
+    "pair_amount": "signed selected branch rate multiplied by dt in this analyzer; nominal pair transfer, not an isolated rounded state contribution"
+  },
+  "cleanup_thresholds": {
+    "cloud_water_ice_qmin_with_paired_number_cleanup": 1e-15,
+    "precipitating_qcrmin": 1e-09
+  },
+  "calls": [
+    {
+      "call_index": 1,
+      "call_index_semantics": "one-based trace-enabled coordinator invocation ordinal local to this source process; merged chunks share ordinals, not a KDM execution or model-step count",
+      "targets": [
+        {
+          "call_index": 1,
+          "trace_source_sha256": "6d0990b453201a8051cb5827f7771040057ed2302da3b3d807634318cfb145ac",
+          "chunk": 34,
+          "column": 281,
+          "level_bottom0": 17,
+          "dtcld_seconds": 20.0,
+          "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131,
+          "stages": {
+            "micro_entry": {
+              "qv": 0.002596332225948572,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.055109207634346e-05,
+              "qg": 9.92534901862453e-10,
+              "t": 267.2695113995073
+            },
+            "pre_limits": {
+              "qv": 0.002596332225948572,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.055109207634346e-05,
+              "qg": 9.92534901862453e-10,
+              "t": 267.2695113995073
+            },
+            "post_limits": {
+              "qv": 0.002596332225948572,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.055109207634346e-05,
+              "qg": 9.92534901862453e-10,
+              "t": 267.2695113995073
+            },
+            "state_update_raw": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 6.249024687686985e-10
+            },
+            "post_state_update": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 6.249024687686985e-10,
+              "t": 267.26393818309305
+            },
+            "post_reclass_ice": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 6.249024687686985e-10,
+              "t": 267.26393818309305
+            },
+            "post_reclass_rain": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 6.249024687686985e-10,
+              "t": 267.26393818309305
+            },
+            "post_satadj": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 6.249024687686985e-10,
+              "t": 267.26393818309305
+            },
+            "post_threshold": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 0.0,
+              "t": 267.26393818309305
+            },
+            "micro_exit": {
+              "qv": 0.0025983008147608126,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 8.582870896536262e-06,
+              "qg": 0.0,
+              "t": 267.26393818309305
+            }
+          },
+          "stage_water_changes": [
+            {
+              "from_stage": "micro_entry",
+              "to_stage": "pre_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598173,
+              "water_total_after_kg_kg": 0.0026068843105598173,
+              "water_total_before_kg_m2_local_level": 1.213317259023259,
+              "water_total_after_kg_m2_local_level": 1.213317259023259,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "pre_limits",
+              "to_stage": "post_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598173,
+              "water_total_after_kg_kg": 0.0026068843105598173,
+              "water_total_before_kg_m2_local_level": 1.213317259023259,
+              "water_total_after_kg_m2_local_level": 1.213317259023259,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_limits",
+              "to_stage": "state_update_raw",
+              "field_delta_kg_kg": {
+                "qv": 1.96858881224048e-06,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": -1.9682211798071986e-06,
+                "qg": -3.676324330937545e-10
+              },
+              "water_total_delta_kg_kg": 1.8766784224388698e-19,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 4.336808689942018e-19,
+              "water_total_delta_cancellation_remainder_kg_kg": 2.460130267503148e-19,
+              "water_total_before_kg_kg": 0.0026068843105598173,
+              "water_total_after_kg_kg": 0.0026068843105598177,
+              "water_total_before_kg_m2_local_level": 1.213317259023259,
+              "water_total_after_kg_m2_local_level": 1.2133172590232593,
+              "water_total_delta_kg_m2_local_level": 8.728026011855323e-17,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 2.0184727075436364e-16,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 1.145670106358104e-16,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "state_update_raw",
+              "to_stage": "post_state_update",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598177,
+              "water_total_after_kg_kg": 0.0026068843105598177,
+              "water_total_before_kg_m2_local_level": 1.2133172590232593,
+              "water_total_after_kg_m2_local_level": 1.2133172590232593,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_state_update",
+              "to_stage": "post_reclass_ice",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598177,
+              "water_total_after_kg_kg": 0.0026068843105598177,
+              "water_total_before_kg_m2_local_level": 1.2133172590232593,
+              "water_total_after_kg_m2_local_level": 1.2133172590232593,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_reclass_ice",
+              "to_stage": "post_reclass_rain",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598177,
+              "water_total_after_kg_kg": 0.0026068843105598177,
+              "water_total_before_kg_m2_local_level": 1.2133172590232593,
+              "water_total_after_kg_m2_local_level": 1.2133172590232593,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_reclass_rain",
+              "to_stage": "post_satadj",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0026068843105598177,
+              "water_total_after_kg_kg": 0.0026068843105598177,
+              "water_total_before_kg_m2_local_level": 1.2133172590232593,
+              "water_total_after_kg_m2_local_level": 1.2133172590232593,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_satadj",
+              "to_stage": "post_threshold",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": -6.249024687686985e-10
+              },
+              "water_total_delta_kg_kg": -6.249024687686985e-10,
+              "water_total_delta_from_inventory_subtraction_kg_kg": -6.249024687467186e-10,
+              "water_total_delta_cancellation_remainder_kg_kg": 2.197984323675905e-20,
+              "water_total_before_kg_kg": 0.0026068843105598177,
+              "water_total_after_kg_kg": 0.002606883685657349,
+              "water_total_before_kg_m2_local_level": 1.2133172590232593,
+              "water_total_after_kg_m2_local_level": 1.2133169681760791,
+              "water_total_delta_kg_m2_local_level": -2.90847180096183e-07,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": -2.9084718008595296e-07,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 1.0230040420463812e-17,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            },
+            {
+              "from_stage": "post_threshold",
+              "to_stage": "micro_exit",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.002606883685657349,
+              "water_total_after_kg_kg": 0.002606883685657349,
+              "water_total_before_kg_m2_local_level": 1.2133169681760791,
+              "water_total_after_kg_m2_local_level": 1.2133169681760791,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 465.4281181978131
+            }
+          ],
+          "rate_fields_before_after_group_limiters": {
+            "psdep": {
+              "post_process_local_cap_pre_group_limiter": -9.841105899035994e-08,
+              "post_group_limiter": -9.841105899035994e-08,
+              "group_limiter_delta": 0.0
+            },
+            "pgdep": {
+              "post_process_local_cap_pre_group_limiter": -1.8381621654687723e-11,
+              "post_group_limiter": -1.8381621654687723e-11,
+              "group_limiter_delta": 0.0
+            },
+            "psevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            },
+            "pgevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            }
+          },
+          "limiter_groups": {
+            "limiter_groups": [
+              {
+                "group": "1",
+                "budget_name": "cold_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "2",
+                "budget_name": "cold_mass_qi",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "3",
+                "budget_name": "cold_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "4",
+                "budget_name": "cold_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1.055109207634346e-05,
+                  "source": 1.9682211798071986e-06,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1.055109207634346e-05,
+                  "source": 1.9682211798071986e-06,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "5",
+                "budget_name": "cold_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 9.92534901862453e-10,
+                  "source": 3.6763243309375446e-10,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 9.92534901862453e-10,
+                  "source": 3.6763243309375446e-10,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "6",
+                "budget_name": "cold_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "7",
+                "budget_name": "cold_number_ni",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "8",
+                "budget_name": "cold_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "9",
+                "budget_name": "warm_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "10",
+                "budget_name": "warm_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "11",
+                "budget_name": "warm_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1.055109207634346e-05,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1.055109207634346e-05,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "12",
+                "budget_name": "warm_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-09,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-09,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "13",
+                "budget_name": "warm_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "14",
+                "budget_name": "warm_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -9.841105899035994e-08,
+                  "pgdep": -1.8381621654687723e-11,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              }
+            ],
+            "rate_names": [
+              "psdep",
+              "pgdep",
+              "psevp",
+              "pgevp"
+            ],
+            "group_mapping": {
+              "1": [
+                "cold_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "2": [
+                "cold_mass_qi",
+                "mass mixing ratio kg/kg"
+              ],
+              "3": [
+                "cold_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "4": [
+                "cold_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "5": [
+                "cold_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "6": [
+                "cold_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "7": [
+                "cold_number_ni",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "8": [
+                "cold_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "9": [
+                "warm_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "10": [
+                "warm_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "11": [
+                "warm_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "12": [
+                "warm_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "13": [
+                "warm_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "14": [
+                "warm_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ]
+            }
+          },
+          "signed_pair_transfer_nominals": {
+            "psdep": {
+              "selected_signed_rate_kg_kg_s": -9.841105899035994e-08,
+              "nominal_signed_amount_kg_kg": -1.9682211798071986e-06,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 1.9682211798071986e-06,
+                "qs": -1.9682211798071986e-06
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgdep": {
+              "selected_signed_rate_kg_kg_s": -1.8381621654687723e-11,
+              "nominal_signed_amount_kg_kg": -3.6763243309375446e-10,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 3.6763243309375446e-10,
+                "qg": -3.6763243309375446e-10
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "psevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qs": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qg": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            }
+          },
+          "aggregate_state_update_reconstruction": {
+            "qv": {
+              "state_update_input": 0.002596332225948572,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": 1.9685888122402924e-06,
+              "nominal_rate_sum_times_dt_plus_amount": 1.9685888122402924e-06,
+              "source_order": "qv_before + dqv_sum*dt",
+              "expected_unclamped_state": 0.0025983008147608126,
+              "traced_raw_state": 0.0025983008147608126,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 1.96858881224048e-06,
+              "actual_postclamp_state": 0.0025983008147608126,
+              "actual_postclamp_state_delta": 1.96858881224048e-06,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qc": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qc_before + dqc_amount) + dqc_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qr": {
+              "state_update_input": 0.0,
+              "inline_amount": -0.0,
+              "rate_sum_times_dt": 0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qr_before + dqr_amount) + dqr_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qi": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qi_before + dqi_amount) + dqi_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qs": {
+              "state_update_input": 1.055109207634346e-05,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -1.9682211798071986e-06,
+              "nominal_rate_sum_times_dt_plus_amount": -1.9682211798071986e-06,
+              "source_order": "qs_before + dqs_sum*dt",
+              "expected_unclamped_state": 8.582870896536262e-06,
+              "traced_raw_state": 8.582870896536262e-06,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -1.9682211798071986e-06,
+              "actual_postclamp_state": 8.582870896536262e-06,
+              "actual_postclamp_state_delta": -1.9682211798071986e-06,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qg": {
+              "state_update_input": 9.92534901862453e-10,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -3.6763243309375446e-10,
+              "nominal_rate_sum_times_dt_plus_amount": -3.6763243309375446e-10,
+              "source_order": "(qg_before + dqg_amount) + dqg_rate_sum*dt",
+              "expected_unclamped_state": 6.249024687686985e-10,
+              "traced_raw_state": 6.249024687686985e-10,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -3.676324330937545e-10,
+              "actual_postclamp_state": 6.249024687686985e-10,
+              "actual_postclamp_state_delta": -3.676324330937545e-10,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            }
+          }
+        },
+        {
+          "call_index": 1,
+          "trace_source_sha256": "6d0990b453201a8051cb5827f7771040057ed2302da3b3d807634318cfb145ac",
+          "chunk": 34,
+          "column": 281,
+          "level_bottom0": 18,
+          "dtcld_seconds": 20.0,
+          "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463,
+          "stages": {
+            "micro_entry": {
+              "qv": 0.0014677643775939941,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 2.0824395419948923e-05,
+              "qg": 2.0037178729366823e-08,
+              "t": 262.72797709195777
+            },
+            "pre_limits": {
+              "qv": 0.0014677643775939941,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 2.0824395419948923e-05,
+              "qg": 2.0037178729366823e-08,
+              "t": 262.72797709195777
+            },
+            "post_limits": {
+              "qv": 0.0014677643775939941,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 2.0824395419948923e-05,
+              "qg": 2.0037178729366823e-08,
+              "t": 262.72797709195777
+            },
+            "state_update_raw": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 9.78895847838864e-10
+            },
+            "post_state_update": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 9.78895847838864e-10,
+              "t": 262.71641176809845
+            },
+            "post_reclass_ice": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 9.78895847838864e-10,
+              "t": 262.71641176809845
+            },
+            "post_reclass_rain": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 9.78895847838864e-10,
+              "t": 262.71641176809845
+            },
+            "post_satadj": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 9.78895847838864e-10,
+              "t": 262.71641176809845
+            },
+            "post_threshold": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 0.0,
+              "t": 262.71641176809845
+            },
+            "micro_exit": {
+              "qv": 0.0014718456615282496,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 1.6762169768574988e-05,
+              "qg": 0.0,
+              "t": 262.71641176809845
+            }
+          },
+          "stage_water_changes": [
+            {
+              "from_stage": "micro_entry",
+              "to_stage": "pre_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926725,
+              "water_total_after_kg_kg": 0.0014886088101926725,
+              "water_total_before_kg_m2_local_level": 0.6863743947073788,
+              "water_total_after_kg_m2_local_level": 0.6863743947073788,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "pre_limits",
+              "to_stage": "post_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926725,
+              "water_total_after_kg_kg": 0.0014886088101926725,
+              "water_total_before_kg_m2_local_level": 0.6863743947073788,
+              "water_total_after_kg_m2_local_level": 0.6863743947073788,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_limits",
+              "to_stage": "state_update_raw",
+              "field_delta_kg_kg": {
+                "qv": 4.081283934255411e-06,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": -4.062225651373935e-06,
+                "qg": -1.905828288152796e-08
+              },
+              "water_total_delta_kg_kg": -5.2506116562415985e-20,
+              "water_total_delta_from_inventory_subtraction_kg_kg": -2.168404344971009e-19,
+              "water_total_delta_cancellation_remainder_kg_kg": -1.643343179346849e-19,
+              "water_total_before_kg_kg": 0.0014886088101926725,
+              "water_total_after_kg_kg": 0.0014886088101926723,
+              "water_total_before_kg_m2_local_level": 0.6863743947073788,
+              "water_total_after_kg_m2_local_level": 0.6863743947073787,
+              "water_total_delta_kg_m2_local_level": -2.4367443826611712e-17,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": -9.998175541952416e-17,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": -7.561431159291245e-17,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "state_update_raw",
+              "to_stage": "post_state_update",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926723,
+              "water_total_after_kg_kg": 0.0014886088101926723,
+              "water_total_before_kg_m2_local_level": 0.6863743947073787,
+              "water_total_after_kg_m2_local_level": 0.6863743947073787,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_state_update",
+              "to_stage": "post_reclass_ice",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926723,
+              "water_total_after_kg_kg": 0.0014886088101926723,
+              "water_total_before_kg_m2_local_level": 0.6863743947073787,
+              "water_total_after_kg_m2_local_level": 0.6863743947073787,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_reclass_ice",
+              "to_stage": "post_reclass_rain",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926723,
+              "water_total_after_kg_kg": 0.0014886088101926723,
+              "water_total_before_kg_m2_local_level": 0.6863743947073787,
+              "water_total_after_kg_m2_local_level": 0.6863743947073787,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_reclass_rain",
+              "to_stage": "post_satadj",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886088101926723,
+              "water_total_after_kg_kg": 0.0014886088101926723,
+              "water_total_before_kg_m2_local_level": 0.6863743947073787,
+              "water_total_after_kg_m2_local_level": 0.6863743947073787,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_satadj",
+              "to_stage": "post_threshold",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": -9.78895847838864e-10
+              },
+              "water_total_delta_kg_kg": -9.78895847838864e-10,
+              "water_total_delta_from_inventory_subtraction_kg_kg": -9.7889584762742e-10,
+              "water_total_delta_cancellation_remainder_kg_kg": 2.1144390818080493e-19,
+              "water_total_before_kg_kg": 0.0014886088101926723,
+              "water_total_after_kg_kg": 0.0014886078312968246,
+              "water_total_before_kg_m2_local_level": 0.6863743947073787,
+              "water_total_after_kg_m2_local_level": 0.6863739433537119,
+              "water_total_delta_kg_m2_local_level": -4.513536668878127e-07,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": -4.5135366679031915e-07,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 9.749354516852917e-17,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            },
+            {
+              "from_stage": "post_threshold",
+              "to_stage": "micro_exit",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0014886078312968246,
+              "water_total_after_kg_kg": 0.0014886078312968246,
+              "water_total_before_kg_m2_local_level": 0.6863739433537119,
+              "water_total_after_kg_m2_local_level": 0.6863739433537119,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 461.0844635660463
+            }
+          ],
+          "rate_fields_before_after_group_limiters": {
+            "psdep": {
+              "post_process_local_cap_pre_group_limiter": -2.0311128256869672e-07,
+              "post_group_limiter": -2.0311128256869672e-07,
+              "group_limiter_delta": 0.0
+            },
+            "pgdep": {
+              "post_process_local_cap_pre_group_limiter": -9.52914144076398e-10,
+              "post_group_limiter": -9.52914144076398e-10,
+              "group_limiter_delta": 0.0
+            },
+            "psevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            },
+            "pgevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            }
+          },
+          "limiter_groups": {
+            "limiter_groups": [
+              {
+                "group": "1",
+                "budget_name": "cold_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "2",
+                "budget_name": "cold_mass_qi",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "3",
+                "budget_name": "cold_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "4",
+                "budget_name": "cold_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0824395419948923e-05,
+                  "source": 4.062225651373934e-06,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0824395419948923e-05,
+                  "source": 4.062225651373934e-06,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "5",
+                "budget_name": "cold_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0037178729366823e-08,
+                  "source": 1.905828288152796e-08,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0037178729366823e-08,
+                  "source": 1.905828288152796e-08,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "6",
+                "budget_name": "cold_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "7",
+                "budget_name": "cold_number_ni",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "8",
+                "budget_name": "cold_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "9",
+                "budget_name": "warm_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "10",
+                "budget_name": "warm_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "11",
+                "budget_name": "warm_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0824395419948923e-05,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0824395419948923e-05,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "12",
+                "budget_name": "warm_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0037178729366823e-08,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 2.0037178729366823e-08,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "13",
+                "budget_name": "warm_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "14",
+                "budget_name": "warm_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -2.0311128256869672e-07,
+                  "pgdep": -9.52914144076398e-10,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              }
+            ],
+            "rate_names": [
+              "psdep",
+              "pgdep",
+              "psevp",
+              "pgevp"
+            ],
+            "group_mapping": {
+              "1": [
+                "cold_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "2": [
+                "cold_mass_qi",
+                "mass mixing ratio kg/kg"
+              ],
+              "3": [
+                "cold_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "4": [
+                "cold_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "5": [
+                "cold_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "6": [
+                "cold_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "7": [
+                "cold_number_ni",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "8": [
+                "cold_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "9": [
+                "warm_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "10": [
+                "warm_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "11": [
+                "warm_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "12": [
+                "warm_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "13": [
+                "warm_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "14": [
+                "warm_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ]
+            }
+          },
+          "signed_pair_transfer_nominals": {
+            "psdep": {
+              "selected_signed_rate_kg_kg_s": -2.0311128256869672e-07,
+              "nominal_signed_amount_kg_kg": -4.062225651373934e-06,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 4.062225651373934e-06,
+                "qs": -4.062225651373934e-06
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgdep": {
+              "selected_signed_rate_kg_kg_s": -9.52914144076398e-10,
+              "nominal_signed_amount_kg_kg": -1.905828288152796e-08,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 1.905828288152796e-08,
+                "qg": -1.905828288152796e-08
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "psevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qs": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qg": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            }
+          },
+          "aggregate_state_update_reconstruction": {
+            "qv": {
+              "state_update_input": 0.0014677643775939941,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": 4.081283934255462e-06,
+              "nominal_rate_sum_times_dt_plus_amount": 4.081283934255462e-06,
+              "source_order": "qv_before + dqv_sum*dt",
+              "expected_unclamped_state": 0.0014718456615282496,
+              "traced_raw_state": 0.0014718456615282496,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 4.081283934255411e-06,
+              "actual_postclamp_state": 0.0014718456615282496,
+              "actual_postclamp_state_delta": 4.081283934255411e-06,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qc": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qc_before + dqc_amount) + dqc_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qr": {
+              "state_update_input": 0.0,
+              "inline_amount": -0.0,
+              "rate_sum_times_dt": 0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qr_before + dqr_amount) + dqr_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qi": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qi_before + dqi_amount) + dqi_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qs": {
+              "state_update_input": 2.0824395419948923e-05,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -4.062225651373934e-06,
+              "nominal_rate_sum_times_dt_plus_amount": -4.062225651373934e-06,
+              "source_order": "qs_before + dqs_sum*dt",
+              "expected_unclamped_state": 1.6762169768574988e-05,
+              "traced_raw_state": 1.6762169768574988e-05,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -4.062225651373935e-06,
+              "actual_postclamp_state": 1.6762169768574988e-05,
+              "actual_postclamp_state_delta": -4.062225651373935e-06,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qg": {
+              "state_update_input": 2.0037178729366823e-08,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -1.905828288152796e-08,
+              "nominal_rate_sum_times_dt_plus_amount": -1.905828288152796e-08,
+              "source_order": "(qg_before + dqg_amount) + dqg_rate_sum*dt",
+              "expected_unclamped_state": 9.78895847838864e-10,
+              "traced_raw_state": 9.78895847838864e-10,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -1.905828288152796e-08,
+              "actual_postclamp_state": 9.78895847838864e-10,
+              "actual_postclamp_state_delta": -1.905828288152796e-08,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            }
+          }
+        },
+        {
+          "call_index": 1,
+          "trace_source_sha256": "85e46baa2a843980059d83a51ef000ca5f1400752d05c0be177057dcbc6bbd25",
+          "chunk": 40,
+          "column": 250,
+          "level_bottom0": 17,
+          "dtcld_seconds": 20.0,
+          "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444,
+          "stages": {
+            "micro_entry": {
+              "qv": 0.0016117037739604712,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001672520639598193,
+              "qg": 3.4578766887669134e-08,
+              "t": 267.2153586140959
+            },
+            "pre_limits": {
+              "qv": 0.0016117037739604712,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001672520639598193,
+              "qg": 3.4578766887669134e-08,
+              "t": 267.2153586140959
+            },
+            "post_limits": {
+              "qv": 0.0016117037739604712,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001672520639598193,
+              "qg": 3.4578766887669134e-08,
+              "t": 267.2153586140959
+            },
+            "state_update_raw": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 8.984240569093862e-10
+            },
+            "post_state_update": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 8.984240569093862e-10,
+              "t": 267.16966691793937
+            },
+            "post_reclass_ice": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 8.984240569093862e-10,
+              "t": 267.16966691793937
+            },
+            "post_reclass_rain": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 8.984240569093862e-10,
+              "t": 267.16966691793937
+            },
+            "post_satadj": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 8.984240569093862e-10,
+              "t": 267.16966691793937
+            },
+            "post_threshold": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 0.0,
+              "t": 267.16966691793937
+            },
+            "micro_exit": {
+              "qv": 0.0016278298467852137,
+              "qc": 0.0,
+              "qr": 0.0,
+              "qi": 0.0,
+              "qs": 0.0001511596714779075,
+              "qg": 0.0,
+              "t": 267.16966691793937
+            }
+          },
+          "stage_water_changes": [
+            {
+              "from_stage": "micro_entry",
+              "to_stage": "pre_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "pre_limits",
+              "to_stage": "post_limits",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_limits",
+              "to_stage": "state_update_raw",
+              "field_delta_kg_kg": {
+                "qv": 1.6126072824742535e-05,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": -1.6092392481911792e-05,
+                "qg": -3.368034283075975e-08
+              },
+              "water_total_delta_kg_kg": -1.7529611541223762e-20,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 1.7529611541223762e-20,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": -8.575361558002537e-18,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 8.575361558002537e-18,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "state_update_raw",
+              "to_stage": "post_state_update",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_state_update",
+              "to_stage": "post_reclass_ice",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_reclass_ice",
+              "to_stage": "post_reclass_rain",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_reclass_rain",
+              "to_stage": "post_satadj",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.001778990416687178,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260974248453044,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_satadj",
+              "to_stage": "post_threshold",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": -8.984240569093862e-10
+              },
+              "water_total_delta_kg_kg": -8.984240569093862e-10,
+              "water_total_delta_from_inventory_subtraction_kg_kg": -8.984240569380464e-10,
+              "water_total_delta_cancellation_remainder_kg_kg": -2.86601538637373e-20,
+              "water_total_before_kg_kg": 0.001778990416687178,
+              "water_total_after_kg_kg": 0.0017789895182631211,
+              "water_total_before_kg_m2_local_level": 0.8260974248453044,
+              "water_total_after_kg_m2_local_level": 0.8260970076503644,
+              "water_total_delta_kg_m2_local_level": -4.171949398209843e-07,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": -4.1719493983429306e-07,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": -1.3308740485937177e-17,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            },
+            {
+              "from_stage": "post_threshold",
+              "to_stage": "micro_exit",
+              "field_delta_kg_kg": {
+                "qv": 0.0,
+                "qc": 0.0,
+                "qr": 0.0,
+                "qi": 0.0,
+                "qs": 0.0,
+                "qg": 0.0
+              },
+              "water_total_delta_kg_kg": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_kg": 0.0,
+              "water_total_delta_cancellation_remainder_kg_kg": 0.0,
+              "water_total_before_kg_kg": 0.0017789895182631211,
+              "water_total_after_kg_kg": 0.0017789895182631211,
+              "water_total_before_kg_m2_local_level": 0.8260970076503644,
+              "water_total_after_kg_m2_local_level": 0.8260970076503644,
+              "water_total_delta_kg_m2_local_level": 0.0,
+              "water_total_delta_from_inventory_subtraction_kg_m2_local_level": 0.0,
+              "water_total_delta_cancellation_remainder_kg_m2_local_level": 0.0,
+              "fixed_entry_dry_mass_weight_kg_m2": 464.36305507685444
+            }
+          ],
+          "rate_fields_before_after_group_limiters": {
+            "psdep": {
+              "post_process_local_cap_pre_group_limiter": -8.046196240955893e-07,
+              "post_group_limiter": -8.046196240955893e-07,
+              "group_limiter_delta": 0.0
+            },
+            "pgdep": {
+              "post_process_local_cap_pre_group_limiter": -1.6840171415379873e-09,
+              "post_group_limiter": -1.6840171415379873e-09,
+              "group_limiter_delta": 0.0
+            },
+            "psevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            },
+            "pgevp": {
+              "post_process_local_cap_pre_group_limiter": 0.0,
+              "post_group_limiter": 0.0,
+              "group_limiter_delta": 0.0
+            }
+          },
+          "limiter_groups": {
+            "limiter_groups": [
+              {
+                "group": "1",
+                "budget_name": "cold_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "2",
+                "budget_name": "cold_mass_qi",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "3",
+                "budget_name": "cold_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "4",
+                "budget_name": "cold_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.0001672520639598193,
+                  "source": 1.6092392481911786e-05,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.0001672520639598193,
+                  "source": 1.6092392481911786e-05,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "5",
+                "budget_name": "cold_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 3.4578766887669134e-08,
+                  "source": 3.368034283075975e-08,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 3.4578766887669134e-08,
+                  "source": 3.368034283075975e-08,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "6",
+                "budget_name": "cold_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "7",
+                "budget_name": "cold_number_ni",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "8",
+                "budget_name": "cold_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 1.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "9",
+                "budget_name": "warm_mass_qc",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "10",
+                "budget_name": "warm_mass_qr",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 1e-15,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "11",
+                "budget_name": "warm_mass_qs",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.0001672520639598193,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.0001672520639598193,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "12",
+                "budget_name": "warm_mass_qg",
+                "coordinate": "mass mixing ratio kg/kg",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 3.4578766887669134e-08,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 3.4578766887669134e-08,
+                  "source": -0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "13",
+                "budget_name": "warm_number_nc",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 10.0,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              },
+              {
+                "group": "14",
+                "budget_name": "warm_number_nr",
+                "coordinate": "number-state coordinate; physical basis unverified",
+                "fields_before": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "fields_after": {
+                  "psdep": -8.046196240955893e-07,
+                  "pgdep": -1.6840171415379873e-09,
+                  "psevp": 0.0,
+                  "pgevp": 0.0,
+                  "value": 0.01,
+                  "source": 0.0,
+                  "factor": 1.0,
+                  "gate": 0.0
+                },
+                "captured_rate_field_delta": {
+                  "psdep": 0.0,
+                  "pgdep": 0.0,
+                  "psevp": 0.0,
+                  "pgevp": 0.0
+                }
+              }
+            ],
+            "rate_names": [
+              "psdep",
+              "pgdep",
+              "psevp",
+              "pgevp"
+            ],
+            "group_mapping": {
+              "1": [
+                "cold_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "2": [
+                "cold_mass_qi",
+                "mass mixing ratio kg/kg"
+              ],
+              "3": [
+                "cold_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "4": [
+                "cold_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "5": [
+                "cold_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "6": [
+                "cold_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "7": [
+                "cold_number_ni",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "8": [
+                "cold_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "9": [
+                "warm_mass_qc",
+                "mass mixing ratio kg/kg"
+              ],
+              "10": [
+                "warm_mass_qr",
+                "mass mixing ratio kg/kg"
+              ],
+              "11": [
+                "warm_mass_qs",
+                "mass mixing ratio kg/kg"
+              ],
+              "12": [
+                "warm_mass_qg",
+                "mass mixing ratio kg/kg"
+              ],
+              "13": [
+                "warm_number_nc",
+                "number-state coordinate; physical basis unverified"
+              ],
+              "14": [
+                "warm_number_nr",
+                "number-state coordinate; physical basis unverified"
+              ]
+            }
+          },
+          "signed_pair_transfer_nominals": {
+            "psdep": {
+              "selected_signed_rate_kg_kg_s": -8.046196240955893e-07,
+              "nominal_signed_amount_kg_kg": -1.6092392481911786e-05,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 1.6092392481911786e-05,
+                "qs": -1.6092392481911786e-05
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgdep": {
+              "selected_signed_rate_kg_kg_s": -1.6840171415379873e-09,
+              "nominal_signed_amount_kg_kg": -3.368034283075975e-08,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": 3.368034283075975e-08,
+                "qg": -3.368034283075975e-08
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "psevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qs": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            },
+            "pgevp": {
+              "selected_signed_rate_kg_kg_s": 0.0,
+              "nominal_signed_amount_kg_kg": 0.0,
+              "nominal_signed_endpoint_changes_kg_kg": {
+                "qv": -0.0,
+                "qg": 0.0
+              },
+              "convention": "nominal signed rate*dt; not an isolated contribution to the rounded aggregate state update"
+            }
+          },
+          "aggregate_state_update_reconstruction": {
+            "qv": {
+              "state_update_input": 0.0016117037739604712,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": 1.6126072824742545e-05,
+              "nominal_rate_sum_times_dt_plus_amount": 1.6126072824742545e-05,
+              "source_order": "qv_before + dqv_sum*dt",
+              "expected_unclamped_state": 0.0016278298467852137,
+              "traced_raw_state": 0.0016278298467852137,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 1.6126072824742535e-05,
+              "actual_postclamp_state": 0.0016278298467852137,
+              "actual_postclamp_state_delta": 1.6126072824742535e-05,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qc": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qc_before + dqc_amount) + dqc_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qr": {
+              "state_update_input": 0.0,
+              "inline_amount": -0.0,
+              "rate_sum_times_dt": 0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qr_before + dqr_amount) + dqr_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qi": {
+              "state_update_input": 0.0,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -0.0,
+              "nominal_rate_sum_times_dt_plus_amount": 0.0,
+              "source_order": "(qi_before + dqi_amount) + dqi_rate_sum*dt",
+              "expected_unclamped_state": 0.0,
+              "traced_raw_state": 0.0,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": 0.0,
+              "actual_postclamp_state": 0.0,
+              "actual_postclamp_state_delta": 0.0,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qs": {
+              "state_update_input": 0.0001672520639598193,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -1.6092392481911786e-05,
+              "nominal_rate_sum_times_dt_plus_amount": -1.6092392481911786e-05,
+              "source_order": "qs_before + dqs_sum*dt",
+              "expected_unclamped_state": 0.0001511596714779075,
+              "traced_raw_state": 0.0001511596714779075,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -1.6092392481911792e-05,
+              "actual_postclamp_state": 0.0001511596714779075,
+              "actual_postclamp_state_delta": -1.6092392481911792e-05,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            },
+            "qg": {
+              "state_update_input": 3.4578766887669134e-08,
+              "inline_amount": 0.0,
+              "rate_sum_times_dt": -3.368034283075975e-08,
+              "nominal_rate_sum_times_dt_plus_amount": -3.368034283075975e-08,
+              "source_order": "(qg_before + dqg_amount) + dqg_rate_sum*dt",
+              "expected_unclamped_state": 8.984240569093862e-10,
+              "traced_raw_state": 8.984240569093862e-10,
+              "raw_state_minus_nominal_reconstruction": 0.0,
+              "actual_raw_state_delta": -3.368034283075975e-08,
+              "actual_postclamp_state": 8.984240569093862e-10,
+              "actual_postclamp_state_delta": -3.368034283075975e-08,
+              "postclamp_minus_raw_state": 0.0,
+              "note": "aggregate comparison only; rounding residual is not assigned to individual process rates"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "observed_threshold_cleanup_boundary": {
+    "rule": "post_threshold applies the saved qcrmin=1e-9 cutoff; these rows report the observed post_satadj to post_threshold delta",
+    "targets": [
+      {
+        "call_index": 1,
+        "chunk": 34,
+        "column": 281,
+        "level_bottom0": 17,
+        "qg_before_threshold_cleanup_kg_kg": 6.249024687686985e-10,
+        "qg_after_threshold_cleanup_kg_kg": 0.0,
+        "qg_before_is_nonnegative_and_at_or_below_qcrmin": true,
+        "qg_signed_cleanup_delta_kg_kg": -6.249024687686985e-10,
+        "water_total_delta_kg_kg": -6.249024687686985e-10,
+        "water_total_delta_kg_m2_local_level": -2.90847180096183e-07,
+        "changed_water_fields": [
+          "qg"
+        ]
+      },
+      {
+        "call_index": 1,
+        "chunk": 34,
+        "column": 281,
+        "level_bottom0": 18,
+        "qg_before_threshold_cleanup_kg_kg": 9.78895847838864e-10,
+        "qg_after_threshold_cleanup_kg_kg": 0.0,
+        "qg_before_is_nonnegative_and_at_or_below_qcrmin": true,
+        "qg_signed_cleanup_delta_kg_kg": -9.78895847838864e-10,
+        "water_total_delta_kg_kg": -9.78895847838864e-10,
+        "water_total_delta_kg_m2_local_level": -4.513536668878127e-07,
+        "changed_water_fields": [
+          "qg"
+        ]
+      },
+      {
+        "call_index": 1,
+        "chunk": 40,
+        "column": 250,
+        "level_bottom0": 17,
+        "qg_before_threshold_cleanup_kg_kg": 8.984240569093862e-10,
+        "qg_after_threshold_cleanup_kg_kg": 0.0,
+        "qg_before_is_nonnegative_and_at_or_below_qcrmin": true,
+        "qg_signed_cleanup_delta_kg_kg": -8.984240569093862e-10,
+        "water_total_delta_kg_kg": -8.984240569093862e-10,
+        "water_total_delta_kg_m2_local_level": -4.171949398209843e-07,
+        "changed_water_fields": [
+          "qg"
+        ]
+      }
+    ]
+  },
+  "interpretation_limits": [
+    "micro_entry to pre_limits is an aggregate endpoint change and does not attribute inline D1-D4 or homogeneous processes individually",
+    "the state update uses aggregate source-order sums; its floating-point residual is not distributed among process rates",
+    "stage changes are saved endpoint differences, not a conservation proof or forecast attribution",
+    "the saved endpoints locate the water loss at threshold cleanup, but do not explain why qg entered that boundary below qcrmin",
+    "this analyzer performs no model, KDM, RTTOV, or build operation"
+  ],
+  "reference_npz_bitwise_crosscheck": {
+    "manifest_path": "harness/evidence/actual_qr_transport_2026-10-24/manifest.json",
+    "manifest_sha256": "bff87dba95d4cff3d8209077176a7c1e6cfb8227f7de528155e17a49d3843f90",
+    "manifest_artifact_hash_pins_verified": true,
+    "comparisons": [
+      {
+        "call_index": 1,
+        "chunk": 34,
+        "column": 281,
+        "level_bottom0": 17,
+        "water_entry_exit_bitwise_equal": true,
+        "rho_delz_entry_bitwise_equal": true,
+        "reference_npz": "harness/evidence/actual_qr_transport_2026-10-24/chunk034.npz",
+        "reference_npz_sha256": "8e0341ab5a296332d176ddd6b9d773210f1d4a066c91081c4aa4e181ce3adf8d",
+        "level_mapping": "water_stages_bottomfirst directly; rho/dz topfirst index=38-level_bottom0"
+      },
+      {
+        "call_index": 1,
+        "chunk": 34,
+        "column": 281,
+        "level_bottom0": 18,
+        "water_entry_exit_bitwise_equal": true,
+        "rho_delz_entry_bitwise_equal": true,
+        "reference_npz": "harness/evidence/actual_qr_transport_2026-10-24/chunk034.npz",
+        "reference_npz_sha256": "8e0341ab5a296332d176ddd6b9d773210f1d4a066c91081c4aa4e181ce3adf8d",
+        "level_mapping": "water_stages_bottomfirst directly; rho/dz topfirst index=38-level_bottom0"
+      },
+      {
+        "call_index": 1,
+        "chunk": 40,
+        "column": 250,
+        "level_bottom0": 17,
+        "water_entry_exit_bitwise_equal": true,
+        "rho_delz_entry_bitwise_equal": true,
+        "reference_npz": "harness/evidence/actual_qr_transport_2026-10-24/chunk040.npz",
+        "reference_npz_sha256": "eaf3bb7c001ae8b03ab7d5864c0ee2e3e24c50b9e79ecd47c17303c64ccc16c8",
+        "level_mapping": "water_stages_bottomfirst directly; rho/dz topfirst index=38-level_bottom0"
+      }
+    ]
+  },
+  "source_trace_paths": [
+    "/private/tmp/KDM6AD-applied-transfer-20261024/harness/evidence/applied_transfer_2026-10-24/chunk034.trace.tsv",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/harness/evidence/applied_transfer_2026-10-24/chunk040.trace.tsv"
+  ],
+  "analysis_source": {
+    "path": "/private/tmp/KDM6AD-applied-transfer-20261024/harness/analyze_applied_transfer_trace.py",
+    "sha256": "da5ef91155d4b9d16f513f1d630126587ec40cd31493e589543f7212c501fe68"
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "source_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.a": "0c1b002f2a85bdcc5d82a53bf3d7b03471105df9f161ce8eb195e5ff4e64238a",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/batch_tool_build/ice_factorial_batch.o": "eea6c7531f96f240ef303575155dbbb776c8073ee74ba45357372dd03d67fe8b",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/kdm6_c_api.cpp.o": "a95211b6186982780c1e54bc76dffa1db159bb8f4929679d093f32b5269e95a0",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/build_observer.py": "6165d4e473b67a1b5b3f37cb47239be9b3731fe754026ff4007e561421cded5d",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/build/CMakeFiles/kdm6.dir/flags.make": "51167818af8b6e20292580aaab1f57d867e319f5024b24d142086ab53929d748",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/overlay/source_sha256.json": "df0bbe847133bbd5f96008cc65c8846ba9078bf6f7ba601ef07e2bab681bd28d",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/harness/make_applied_transfer_overlay.py": "1b4a1faed69edb73e76212ef3c17a53e8f49e0c857e8fac4f012fdf6803655e3",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/harness/make_actual_qr_overlay.py": "d0023016201466a0fc06a242fabaeed7578170abae0da9314781768b731658e8",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/overlay/sedimentation_conservative.cpp": "c3c63cf65c247921c282fff3c58201e942cc5d5b15d88482359efea259895323",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/overlay/sedimentation.cpp": "32ffa4e2f15fa7ab487525f595c98c869b51d242b00c6346f78f499151fec9b5",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/overlay/coordinator.cpp": "4f74348f01ebaacfc38a5ca8d47d068194de9ccd8c3c2d9eb05559a6c551d109",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/overlay/runtime.cpp": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/slope.h": "410c00b1efc66a901cf2537c8b547d97589a8a455c639e2dc4c20fc1d8c1f982",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/progb.h": "76b8510077233b84304b159df103107c324be4ed0d7824dc63e3d0d9f878c6dd",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/sedimentation.h": "26c849172d3b2e0dfd15e860c6fe575701d46efaf32550a0f94229b742064c0b",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/cold.h": "97016e73c21f3d6329ea9ff7c4723f4ab0129ae2fab69d17e24235005f07962a",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/thermo.h": "52c5050b9a746d1e8a760ee7c0431a6b60515a5389d7678db41a0905db3e0fc8",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/warm.h": "d41f7d4da4945ce5b0eaa818cfc44eff6039b4d43463ab2e44c702d6541f993f",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/runtime.h": "7820c9acd0866dd32521054a88d727ce88c91af629275940b4b7eea0046f6276",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/constants.h": "f9e41a49e36414f9247f1a645051ba78b4dc7847bdc084669e4a96516a2a3f74",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/satadj.h": "f849ef31c79494d240c9c02680837370bccbd28c4380ed8106bd331607fc9b51",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/cloud_dsd.h": "1cf3d37df0b06329f2265d09dd09b9a9514d7c23cafa51368d8042593823ad2a",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/sedimentation_conservative.h": "ce05feb9e7347fbbfc113d8ef51c5a93b0c89d073bc8107134bb2dfdaaf182c2",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/coordinator.h": "6bdfa36b6b4f92a56feeb0ce726c455004350d8bc6c42b892d392c591d0fe165",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/melt_freeze.h": "a8e562d644ea7aa88a8221f4ef30aea5b48cdd80a7173f3d71cf8c5678808292",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/ops.h": "4a11cca456b9a0095917e96c4fea1ec7347e4c0050416925d837bbdc002d8b5d",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/state.h": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d",
+    "/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/include/kdm6/fconst.h": "0bd277fe788a0b334441c9295fdcef8d0cb8f8eefd9ce5d98172b4cef63aba1d"
+  },
+  "objects": [
+    {
+      "name": "__.SYMDEF",
+      "before_sha256": "cc9e1c8b08dc1ec233e1d6dfef69122443241ada37641dbcdb19de79d3b91ed1",
+      "after_sha256": "35dcd5a6136e1787ecd5e6a38eb0763730696708576b817a939b643bd65842bf",
+      "identical": false
+    },
+    {
+      "name": "ops.cpp.o",
+      "before_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039",
+      "after_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039",
+      "identical": true
+    },
+    {
+      "name": "slope.cpp.o",
+      "before_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a",
+      "after_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a",
+      "identical": true
+    },
+    {
+      "name": "progb.cpp.o",
+      "before_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b",
+      "after_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b",
+      "identical": true
+    },
+    {
+      "name": "warm.cpp.o",
+      "before_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858",
+      "after_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858",
+      "identical": true
+    },
+    {
+      "name": "satadj.cpp.o",
+      "before_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55",
+      "after_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55",
+      "identical": true
+    },
+    {
+      "name": "cold.cpp.o",
+      "before_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572",
+      "after_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572",
+      "identical": true
+    },
+    {
+      "name": "melt_freeze.cpp.o",
+      "before_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd",
+      "after_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd",
+      "identical": true
+    },
+    {
+      "name": "thermo.cpp.o",
+      "before_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0",
+      "after_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0",
+      "identical": true
+    },
+    {
+      "name": "state.cpp.o",
+      "before_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399",
+      "after_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399",
+      "identical": true
+    },
+    {
+      "name": "cloud_dsd.cpp.o",
+      "before_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9",
+      "after_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9",
+      "identical": true
+    },
+    {
+      "name": "runtime.cpp.o",
+      "before_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898",
+      "after_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898",
+      "identical": true
+    },
+    {
+      "name": "coordinator.cpp.o",
+      "before_sha256": "7b3733f94b2a4280d0a0269e52a37121966a0f0cd1faca370718f91127181ca6",
+      "after_sha256": "1febc1c927d6841040e5b0fceb84248be39e85426413f5dd30b78635d87e5bb6",
+      "identical": false
+    },
+    {
+      "name": "sedimentation.cpp.o",
+      "before_sha256": "0c923f2ca613b0be71d13661e9eaa01f5c8ab93da5768cd6f82caf99c5bfa124",
+      "after_sha256": "0c923f2ca613b0be71d13661e9eaa01f5c8ab93da5768cd6f82caf99c5bfa124",
+      "identical": true
+    },
+    {
+      "name": "sedimentation_conservative.cpp.o",
+      "before_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6",
+      "after_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6",
+      "identical": true
+    }
+  ],
+  "changed_object_members": [
+    "coordinator.cpp.o"
+  ],
+  "unchanged_object_members": 13,
+  "archive_symbol_index_separate": true,
+  "link_commands": [
+    [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+      "-O3",
+      "-DNDEBUG",
+      "-arch",
+      "arm64",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+      "-mmacosx-version-min=26.7",
+      "-Wl,-search_paths_first",
+      "-Wl,-headerpad_max_install_names",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/batch_tool_build/ice_factorial_batch.o",
+      "-o",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/build/applied_transfer_batch",
+      "-Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/build/libkdm6_applied_transfer.a",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+      "/opt/homebrew/lib/libc10.dylib"
+    ],
+    [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+      "-O3",
+      "-DNDEBUG",
+      "-arch",
+      "arm64",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+      "-mmacosx-version-min=26.7",
+      "-dynamiclib",
+      "-Wl,-headerpad_max_install_names",
+      "-Wl,-exported_symbols_list,/private/tmp/KDM6AD-applied-transfer-20261024/libtorch/bridge/kdm6_c.exports",
+      "-compatibility_version",
+      "2.0.0",
+      "-current_version",
+      "2.0.0",
+      "-o",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/build/libkdm6_applied_transfer.2.0.0.dylib",
+      "-install_name",
+      "@rpath/libkdm6_applied_transfer.2.dylib",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/kdm6_c_api.cpp.o",
+      "-Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/applied_transfer_20261024/build/libkdm6_applied_transfer.a",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+      "/opt/homebrew/lib/libc10.dylib"
+    ]
+  ],
+  "archive_sha256": "6e13e65f133ae341c506e297d515900c559f4791766dc392c16a92825eaaf9af",
+  "batch_tool_sha256": "d4d53bd0a0fb723f38033ca46224045c01d183f85a68d5c0db82c5a26d866379",
+  "library_sha256": "b88a7d65c3e6e2c3be2a7692080d3a117a976964c7433ed21a3586abd5b6a8de",
+  "operational_install_changed": false
+}

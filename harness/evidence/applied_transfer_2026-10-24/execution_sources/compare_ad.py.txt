@@ -1,0 +1,100 @@
+"""Fresh-process A/B/C values and first-order products for QR observation."""
+
+from pathlib import Path
+import argparse, os, json, hashlib, numpy as np
+from harness.verify_localized_ice_ad import (
+    BatchKernel,
+    BatchFinish,
+    directions,
+    SCALES,
+    _api,
+)
+from harness.ice_factorial_batch import unpack_response, IN_HEADER
+
+p = argparse.ArgumentParser()
+p.add_argument("--mode", required=True)
+p.add_argument("--chunk", type=int, required=True)
+p.add_argument("--condition", required=True, choices=["control", "off", "on"])
+p.add_argument("--library", type=Path, required=True)
+args = p.parse_args()
+R = Path(__file__).resolve().parent
+case = R / "runs" / f"chunk{args.chunk:03d}_off"
+out = R / "ad_products" / f"chunk{args.chunk:03d}_{args.condition}"
+out.mkdir(parents=True, exist_ok=False)
+if args.condition == "on":
+    os.environ["KDM6_APPLIED_TRANSFER_TRACE"] = str(out / "trace.tsv")
+else:
+    os.environ.pop("KDM6_APPLIED_TRANSFER_TRACE", None)
+os.environ["KDM6_QR_TRANSPORT"] = "actual_departure"
+os.environ["KDM6_ICE_FACTORIAL_MODE"] = "norm_actual"
+os.environ["KDM6_APPLIED_TRANSFER_CHUNK"] = str(args.chunk)
+r = unpack_response((case / "response.bin").read_bytes())
+s, f = r["state_in"], r["forcing_in"]
+b = 281 if args.chunk == 34 else 250
+raw = (case / "request.bin").read_bytes()
+land = np.frombuffer(
+    raw, dtype="<f8", offset=IN_HEADER.size + 16 * 512 * 39 * 8, count=512
+).copy()
+k = BatchKernel(args.library, land, 39)
+ref = json.loads(
+    Path(
+        "/private/tmp/KDM6AD-applied-transfer-20261024/harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json"
+    ).read_text()
+)
+op = BatchFinish(
+    _api().FinishConfig(**ref["configuration"]), _api().ZeroOutConfig(**ref["zero_out"])
+)
+y, h = k.forward(s, f, record=True)
+try:
+    if not np.array_equal(y.view("u8"), r["state_out"].view("u8")):
+        raise RuntimeError("forward differs from candidate value-only response")
+    combined = op.value(s, y)
+    u = np.zeros_like(combined)
+    u[:, b] = np.sin(0.23 * (np.arange(17 * 39).reshape(17, 39) + 1)) / SCALES[:, 0]
+    old, seed = op.vjp(s, y, u)
+    gs, gf = k.vjp(h, seed)
+    gs[:3] += old
+    ds, df = directions(s, f, b, "entry_interior_pairs")["mixed"]
+    jv = op.jvp(s, y, ds, k.jvp(h, ds, df))
+    arrays = {
+        "raw_state": y,
+        "combined": combined,
+        "jvp": jv,
+        "state_vjp": gs,
+        "forcing_vjp": gf,
+        "ds": ds,
+        "df": df,
+        "u": u,
+    }
+    if any(not np.isfinite(a).all() for a in arrays.values()):
+        raise RuntimeError("nonfinite product")
+    with (out / "products.npz").open("xb") as stream:
+        np.savez_compressed(stream, **arrays)
+    receipt = {
+        "mode": args.mode,
+        "chunk": args.chunk,
+        "condition": args.condition,
+        "B": 512,
+        "L": 39,
+        "KDM_forward_calls": k.forward_calls,
+        "controller_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "library_sha256": hashlib.sha256(args.library.read_bytes()).hexdigest(),
+        "products_file_sha256": hashlib.sha256(
+            (out / "products.npz").read_bytes()
+        ).hexdigest(),
+        "request_sha256": hashlib.sha256(
+            (case / "request.bin").read_bytes()
+        ).hexdigest(),
+        "candidate_response_sha256": hashlib.sha256(
+            (case / "response.bin").read_bytes()
+        ).hexdigest(),
+        "products": {
+            name: {"values": a.size, "sha256": hashlib.sha256(a.tobytes()).hexdigest()}
+            for name, a in arrays.items()
+        },
+        "scope": "same-candidate frozen/off/on, one paired/interior mixed direction/cotangent at new hotspot, raw12+thermo-finish5; no old-map AD identity or unrestricted FD claim",
+    }
+    with (out / "receipt.json").open("x") as stream:
+        json.dump(receipt, stream, indent=2)
+finally:
+    k.close(h)

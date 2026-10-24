@@ -1,0 +1,45 @@
+{
+  "schema": "kdm6.applied_transfer_ad_noninterference.v1",
+  "KDM_calls": 6,
+  "comparisons": [
+    {
+      "chunk": 34,
+      "target_column": 281,
+      "all_products_bitwise_equal": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      },
+      "sha256": {
+        "control": "4bc27f03bd6656eff9de94e053a91243b97f3b1a6beacad151455255c0a30f64",
+        "off": "4bc27f03bd6656eff9de94e053a91243b97f3b1a6beacad151455255c0a30f64",
+        "on": "4bc27f03bd6656eff9de94e053a91243b97f3b1a6beacad151455255c0a30f64"
+      }
+    },
+    {
+      "chunk": 40,
+      "target_column": 250,
+      "all_products_bitwise_equal": {
+        "raw_state": true,
+        "combined": true,
+        "jvp": true,
+        "state_vjp": true,
+        "forcing_vjp": true,
+        "ds": true,
+        "df": true,
+        "u": true
+      },
+      "sha256": {
+        "control": "ce16bbdf487aafbf627eafd0e339502e67204e106d58c7489b7033c63feaf9b9",
+        "off": "ce16bbdf487aafbf627eafd0e339502e67204e106d58c7489b7033c63feaf9b9",
+        "on": "ce16bbdf487aafbf627eafd0e339502e67204e106d58c7489b7033c63feaf9b9"
+      }
+    }
+  ],
+  "scope": "same actualQR/norm_actual candidate; frozen/control/off/on selected values/JVP/VJP/finish; one paired-interior mixed tangent/cotangent perblock, not new FD/HVP/RTTOV certification"
+}

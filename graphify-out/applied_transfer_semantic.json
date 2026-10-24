@@ -1,0 +1,531 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Value-only trace and same-variant AD noninterference checks for three selected cells in the fp64 actual-QR/norm_actual B512 map. The observed localized sink is the coordinator's actual QG threshold cleanup. This does not explain why the graupel state entered the threshold, or certify a full physical-water/host/forecast budget. Token usage unmetered.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "applied_transfer_trace_contract",
+      "label": "Applied snow/graupel-to-vapor transfer trace contract and limits",
+      "file_type": "document",
+      "source_file": "docs/APPLIED_SNOW_GRAUPEL_TRACE.md",
+      "source_location": "H1:Applied snow/graupel-to-vapor transfer trace",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "scope": "Original actual-QR/norm_actual B512 blocks 34 and 40; selected bottom-first levels only; no physics map, default, install, or acceptance threshold changes.",
+      "limits": [
+        "group-pre rates are post local caps, not uncapped attempts",
+        "inline D1-D4/homogeneous changes are aggregated before group-pre",
+        "threshold cleanup sink does not identify why QG entered the cutoff",
+        "no full host, energy, number, FD, HVP, RTTOV, or forecast certificate"
+      ]
+    },
+    {
+      "id": "applied_transfer_signed_cold_rate_map",
+      "label": "Cold deposition/sublimation rates use signed vapor and frozen-water updates",
+      "file_type": "code",
+      "source_file": "libtorch/src/coordinator.cpp",
+      "source_location": "L1846-L1851; L1918-L1931; L1945-L1960",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "cold_update": "qv adds -dt*(prevp+psdep+pgdep+pinud+pidep); qs and qg apply their signed cold rates in source order.",
+      "selected_rate_signs": "psdep<0 and pgdep<0, so each nominal pair consumes its snow/graupel species and supplies qv.",
+      "rounding_contract": "Aggregate rate sums are multiplied by dt then added to the reservoir with two-rounding source order; pair rate*dt diagnostics are not individual partitions of aggregate rounding."
+    },
+    {
+      "id": "applied_transfer_phase_local_rate_gates",
+      "label": "Phase-local deposition and sublimation operators cap rates before group limiting",
+      "file_type": "code",
+      "source_file": "libtorch/src/cold.cpp",
+      "source_location": "L907-L915; L986-L1024; L1109-L1131; L1144-L1167",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "local_gate_and_cap": "Cold psdep/pgdep use sequential active/ifsat and source-mass/supice/saturation caps; warm psevp/pgevp are nonpositive and capped by donor mass over dt.",
+      "trace_scope": "Captured pre_limits rates are already after these phase-local operations; raw uncapped physical attempts are not emitted."
+    },
+    {
+      "id": "applied_transfer_group_limiter",
+      "label": "Sequential mass group limiters record source, reservoir value, branch gate, factor, and rate changes",
+      "file_type": "code",
+      "source_file": "libtorch/src/coordinator.cpp",
+      "source_location": "L1645-L1689; L1717-L1734; L1770-L1779",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "factor_rule": "value=max(floor,reservoir); source=source_sum*dt; factor=value/max(source,value) on the selected temperature branch, else 1.",
+      "selected_cells": "Cold snow group 4 and graupel group 5 both record factor 1 and identical before/after psdep/pgdep."
+    },
+    {
+      "id": "applied_transfer_observer_generator",
+      "label": "Generated environment-gated observer serializes selected value snapshots without feeding physics",
+      "file_type": "code",
+      "source_file": "harness/make_applied_transfer_overlay.py",
+      "source_location": "L1-L15; L28-L72; L80-L160",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "selected_targets": [
+        [
+          34,
+          281,
+          17
+        ],
+        [
+          34,
+          281,
+          18
+        ],
+        [
+          40,
+          250,
+          17
+        ]
+      ],
+      "observer_semantics": "NoGrad value-only TSV; B512\u00d739 fp64/bool checks; execution snapshots are returned nowhere to the live map."
+    },
+    {
+      "id": "applied_transfer_isolated_build_receipt",
+      "label": "Observer overlay is built as an isolated coordinator translation-unit replacement",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/build_receipt.json",
+      "source_location": "/source_sha256; /changed_object_members; /operational_install_changed",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "changed_translation_unit": "coordinator.cpp only",
+      "compiler_contract": "Original -ffp-contract=off flags retained.",
+      "operational_install_changed": false
+    },
+    {
+      "id": "applied_transfer_frozen_candidate_value_calls",
+      "label": "Trace-off and trace-on full B512 outputs match the prior frozen actual-QR responses bytewise",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/execution.json",
+      "source_location": "/receipts; /source_sha256",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "calls": 4,
+      "conditions": [
+        "chunk034_off",
+        "chunk034_on",
+        "chunk040_off",
+        "chunk040_on"
+      ],
+      "all_same_candidate_full_response_bitwise_equal": true,
+      "batch_shape": [
+        512,
+        39
+      ],
+      "ice_mode": "norm_actual",
+      "qr_transport": "actual_departure",
+      "RTTOV_calls": 0
+    },
+    {
+      "id": "applied_transfer_trace_analyzer",
+      "label": "Strict saved trace analyzer pairs stage endpoints, rates, limiter groups, and mass-measure changes",
+      "file_type": "code",
+      "source_file": "harness/analyze_applied_transfer_trace.py",
+      "source_location": "L1-L8; L27-L41; L130-L285",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "guards": "Exact trace header, unique target/call/stage/group/field rows, finite values, dt consistency, required stages, and fixed saved-input measure cross-check.",
+      "interpretation": "Tracks aggregate endpoint changes and nominal signed pair-rate products separately."
+    },
+    {
+      "id": "applied_transfer_selected_cell_analysis",
+      "label": "Three selected cold-branch cells show negative snow/graupel sublimation rates and no group scaling",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/calls/0/targets; /rate_semantics",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "call_index_scope": "One-based ordinal local to each source process; matching ordinal across chunk trace files does not imply one shared KDM execution.",
+      "cells": [
+        {
+          "chunk": 34,
+          "column0": 281,
+          "level_bottom0": 17,
+          "native_bottom_up_level1": 18,
+          "supcol_positive": true,
+          "psdep": -9.841105899035994e-08,
+          "pgdep": -1.8381621654687723e-11
+        },
+        {
+          "chunk": 34,
+          "column0": 281,
+          "level_bottom0": 18,
+          "native_bottom_up_level1": 19,
+          "supcol_positive": true,
+          "psdep": -2.0311128256869672e-07,
+          "pgdep": -9.52914144076398e-10
+        },
+        {
+          "chunk": 40,
+          "column0": 250,
+          "level_bottom0": 17,
+          "native_bottom_up_level1": 18,
+          "supcol_positive": true,
+          "psdep": -8.046196240955893e-07,
+          "pgdep": -1.6840171415379873e-09
+        }
+      ],
+      "limits": "Rates are phase-capped outputs. Source-order residual is not allocated to individual process rates."
+    },
+    {
+      "id": "applied_transfer_state_update_reconstruction",
+      "label": "Captured raw state updates reconstruct from branch sums with no final water clamp at the three cells",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/calls/0/targets/*/aggregate_state_update_reconstruction; /calls/0/targets/*/stage_water_changes",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "fixed_measure_state_update_water_delta_kg_m2_local_level": [
+        8.728026011855323e-17,
+        -2.4367443826611712e-17,
+        -8.575361558002537e-18
+      ],
+      "state_update_raw_to_post_state_update_water_change": "Zero for all six water fields at each selected cell; no qv/qs/qg final max correction is active.",
+      "rounding_note": "Tiny fixed-measure aggregate residuals are source-order binary64 rounding, not process-specific remainder estimates."
+    },
+    {
+      "id": "applied_transfer_actual_threshold_cleanup_sink",
+      "label": "Actual post-satadj cleanup removes only subthreshold graupel and matches the localized water loss",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/observed_threshold_cleanup_boundary/targets; /calls/0/targets/*/stage_water_changes",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "qcrmin": 1e-09,
+      "observed_qg_before_to_zero_kg_kg": [
+        6.249024687686985e-10,
+        9.78895847838864e-10,
+        8.984240569093862e-10
+      ],
+      "measured_cleanup_sink_kg_m2_local_level": [
+        -2.90847180096183e-07,
+        -4.513536668878127e-07,
+        -4.171949398209843e-07
+      ],
+      "other_stage_changes": "Reclassification and post-satadj water deltas are zero at all three cells; post-threshold to micro-exit water deltas are zero.",
+      "cause_limit": "Identifies the observed sink boundary; does not explain why QG entered the cutoff below qcrmin."
+    },
+    {
+      "id": "applied_transfer_fixed_measure_crosscheck",
+      "label": "Trace entry/exit water and dry-density-depth match the archived B512 artifacts bitwise",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/reference_npz_bitwise_crosscheck",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "checks": "All three traced entry/exit state arrays and rho*DELZ values match the pinned actual-QR NPZ exactly; level mapping is bottom-first k to top-first index 38-k for rho/dz.",
+      "fixed_measure": "Entry dry density times layer thickness, in kg/m\u00b2 per level."
+    },
+    {
+      "id": "applied_transfer_prior_hypothetical_cleanup_separate",
+      "label": "Prior whole-column cleanup diagnostic was hypothetical and is distinct from the newly observed actual cleanup stage",
+      "file_type": "document",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/execution_sources/analyze_blocks_final.py.txt",
+      "source_location": "L98-L105",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "old_diagnostic": "Constructed a copied response output, applied extra threshold masks, and measured that hypothetical delta; it was not the internal applied cleanup boundary.",
+      "current_measurement": "The new trace samples post_satadj and post_threshold from the actual coordinator execution."
+    },
+    {
+      "id": "applied_transfer_ad_noninterference_control",
+      "label": "Saved control/off/on first-order products are bitwise equal at two selected columns",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/ad_noninterference.json",
+      "source_location": "/comparisons; /scope; /KDM_calls; /RTTOV_calls",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "KDM_calls": 6,
+      "RTTOV_calls": 0,
+      "outputs_bitwise_equal_per_cell": [
+        "raw_state",
+        "combined",
+        "jvp",
+        "state_vjp",
+        "forcing_vjp",
+        "ds",
+        "df",
+        "u"
+      ],
+      "cells": [
+        [
+          34,
+          281
+        ],
+        [
+          40,
+          250
+        ]
+      ],
+      "scope_limit": "One saved paired-interior tangent/cotangent per block and the listed products; not new FD, HVP, branch-completeness, or RTTOV evidence."
+    },
+    {
+      "id": "applied_transfer_budget_and_causal_limits",
+      "label": "Threshold cleanup is a measured local sink; the full physical budget and upstream reason remain unclosed",
+      "file_type": "document",
+      "source_file": "docs/APPLIED_SNOW_GRAUPEL_TRACE.md",
+      "source_location": "H1:Applied snow/graupel-to-vapor transfer trace",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "not_claimed": [
+        "why pre-cleanup QG is subthreshold",
+        "full-host/energy/number conservation",
+        "new FD/HVP/RTTOV evidence",
+        "forecast skill",
+        "named-process allocation of aggregate roundoff"
+      ]
+    },
+    {
+      "id": "applied_transfer_public_report",
+      "label": "Final bounded report links signed-rate updates to the actual QG threshold cleanup sink",
+      "file_type": "document",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/REPORT.md",
+      "source_location": "H1:Applied snow/graupel transfer and actual cleanup sink; H2:Executed source, input and noninterference; H2:Actual signed rates and update boundary; H2:The observed cleanup loss; H2:Replay and coverage limits",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "native_cells_and_levels_bottom_up_1based": [
+        {
+          "chunk": 34,
+          "native_ij": [
+            140,
+            76
+          ],
+          "level": 18
+        },
+        {
+          "chunk": 34,
+          "native_ij": [
+            140,
+            76
+          ],
+          "level": 19
+        },
+        {
+          "chunk": 40,
+          "native_ij": [
+            139,
+            89
+          ],
+          "level": 18
+        }
+      ],
+      "observed_actual_cleanup_sinks_kg_m2_local_level": [
+        -2.90847180096183e-07,
+        -4.513536668878127e-07,
+        -4.171949398209843e-07
+      ],
+      "scope": "Four value observer-off/on calls plus six saved selected-control/off/on AD calls; the measured cleanup boundary is exact, while the reason pre-cleanup QG entered the cutoff is unresolved."
+    }
+  ],
+  "edges": [
+    {
+      "source": "applied_transfer_trace_contract",
+      "target": "applied_transfer_observer_generator",
+      "relation": "defines_bounded_value_observer_for",
+      "source_file": "docs/APPLIED_SNOW_GRAUPEL_TRACE.md",
+      "source_location": "H1:Applied snow/graupel-to-vapor transfer trace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_observer_generator",
+      "target": "applied_transfer_isolated_build_receipt",
+      "relation": "produces_pinned_overlay_for",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/build_receipt.json",
+      "source_location": "/changed_object_members; /source_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_isolated_build_receipt",
+      "target": "applied_transfer_frozen_candidate_value_calls",
+      "relation": "builds_same_candidate_used_by",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/execution.json",
+      "source_location": "/receipts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_frozen_candidate_value_calls",
+      "target": "applied_transfer_selected_cell_analysis",
+      "relation": "produces_value_only_traces_for",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/execution.json",
+      "source_location": "/receipts/*/trace_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_signed_cold_rate_map",
+      "target": "applied_transfer_selected_cell_analysis",
+      "relation": "defines_signed_state_update_for",
+      "source_file": "libtorch/src/coordinator.cpp",
+      "source_location": "L1846-L1851; L1918-L1960",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_phase_local_rate_gates",
+      "target": "applied_transfer_group_limiter",
+      "relation": "feeds_post_local_cap_rates_to",
+      "source_file": "libtorch/src/cold.cpp",
+      "source_location": "L986-L1024; L1109-L1167",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_group_limiter",
+      "target": "applied_transfer_selected_cell_analysis",
+      "relation": "records_limiter_gates_and_rate_scales_for",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/calls/0/targets/*/limiter_groups",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_trace_analyzer",
+      "target": "applied_transfer_selected_cell_analysis",
+      "relation": "parses_and_reconstructs_saved_trace_in",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/schema; /source_traces_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_selected_cell_analysis",
+      "target": "applied_transfer_state_update_reconstruction",
+      "relation": "records_signed_rates_and_raw_update_for",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/calls/0/targets/*/aggregate_state_update_reconstruction",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_state_update_reconstruction",
+      "target": "applied_transfer_actual_threshold_cleanup_sink",
+      "relation": "separates_roundoff_scale_update_from_later_sink_at",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/calls/0/targets/*/stage_water_changes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_actual_threshold_cleanup_sink",
+      "target": "applied_transfer_budget_and_causal_limits",
+      "relation": "localizes_but_does_not_explain_upstream_subthreshold_state",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/observed_threshold_cleanup_boundary",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_fixed_measure_crosscheck",
+      "target": "applied_transfer_selected_cell_analysis",
+      "relation": "anchors_trace_cells_to_original_saved_inputs",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/analysis.json",
+      "source_location": "/reference_npz_bitwise_crosscheck",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_prior_hypothetical_cleanup_separate",
+      "target": "applied_transfer_actual_threshold_cleanup_sink",
+      "relation": "distinguishes_hypothetical_host_metric_from_actual_internal_boundary",
+      "source_file": "harness/evidence/actual_qr_transport_2026-10-24/execution_sources/analyze_blocks_final.py.txt",
+      "source_location": "L98-L105",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_ad_noninterference_control",
+      "target": "applied_transfer_observer_generator",
+      "relation": "checks_selected_value_and_AD_products_with_observer_off_and_on",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/ad_noninterference.json",
+      "source_location": "/comparisons; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_ad_noninterference_control",
+      "target": "applied_transfer_budget_and_causal_limits",
+      "relation": "bounds_derivative_scope_to_saved_products",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/ad_noninterference.json",
+      "source_location": "/scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_public_report",
+      "target": "applied_transfer_actual_threshold_cleanup_sink",
+      "relation": "reports_exact_localized_cleanup_sink_and_bounds_upstream_causality",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/REPORT.md",
+      "source_location": "H2:The observed cleanup loss",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "applied_transfer_public_report",
+      "target": "applied_transfer_ad_noninterference_control",
+      "relation": "summarizes_limited_selected_AD_noninterference_scope",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/REPORT.md",
+      "source_location": "H2:Executed source, input and noninterference; H2:Replay and coverage limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "applied_transfer_operator_to_cleanup_chain",
+      "label": "Signed sublimation updates, group budgets, state clamps, and actual cleanup identify the measured sink boundary",
+      "nodes": [
+        "applied_transfer_signed_cold_rate_map",
+        "applied_transfer_phase_local_rate_gates",
+        "applied_transfer_group_limiter",
+        "applied_transfer_state_update_reconstruction",
+        "applied_transfer_actual_threshold_cleanup_sink",
+        "applied_transfer_budget_and_causal_limits"
+      ],
+      "relation": "explains_observed_localized_cleanup_loss_without_extending_causality",
+      "source_file": "docs/APPLIED_SNOW_GRAUPEL_TRACE.md",
+      "source_location": "H1:Applied snow/graupel-to-vapor transfer trace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "applied_transfer_pinned_evidence_chain",
+      "label": "Pinned candidate, observer build, four value calls, trace analysis, source-stage crosscheck, and limited AD noninterference form a bounded evidence chain",
+      "nodes": [
+        "applied_transfer_isolated_build_receipt",
+        "applied_transfer_frozen_candidate_value_calls",
+        "applied_transfer_trace_analyzer",
+        "applied_transfer_selected_cell_analysis",
+        "applied_transfer_fixed_measure_crosscheck",
+        "applied_transfer_ad_noninterference_control"
+      ],
+      "relation": "supports_reproducible_selected_cell_observation_only",
+      "source_file": "harness/evidence/applied_transfer_2026-10-24/execution.json",
+      "source_location": "/source_sha256; /receipts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}
