@@ -1,0 +1,104 @@
+"""Compute the saved target's fixed-support Huber seed from pilot outputs only."""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+RUN = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+PILOT = RESEARCH / "observation_prep_v1/pilot_v2"
+OUT = PILOT / "TARGET_HUBER_SEED.json"
+ROW = 368
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def json_new(path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    encoded = (json.dumps(result, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return result
+
+
+def main():
+    if OUT.exists() or OUT.is_symlink():
+        raise FileExistsError(OUT)
+    sys.path.insert(0, str(SOURCE_V2))
+    from harness.native_satellite_objective import BIAS, HUBER_DELTA, SIGMA, objective_chunk
+
+    base_npz = PILOT / "baseline/target_observation.npz"
+    trial_npz = PILOT / "alpha025/target_observation.npz"
+    contraction_path = PILOT / "BASELINE_K_ACTUAL_PROFILE_JVP_CONTRACTION.json"
+    summary_path = RUN / "summary/summary.json"
+    parent_path = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/baseline/chunk_00022/attempt_0952eb5c7acd486282b3aa2c4f8839dc/result.npz")
+    with np.load(base_npz, allow_pickle=False) as z:
+        bt_base = z["bt"].reshape(1, 7).copy()
+    with np.load(trial_npz, allow_pickle=False) as z:
+        bt_trial = z["bt"].reshape(1, 7).copy()
+    with np.load(parent_path, allow_pickle=False) as z:
+        obs = z["obs_bt"][ROW:ROW + 1].copy()
+        m0 = z["mask"][ROW:ROW + 1].copy()
+        weights = z["weights"][ROW:ROW + 1].copy()
+    global_z = float(json.loads(summary_path.read_text())["globalZ"])
+    support = {"m0": m0, "weights": weights}
+    base = objective_chunk(bt_base, obs, support)
+    trial = objective_chunk(bt_trial, obs, support)
+    contraction = json.loads(contraction_path.read_text())
+    bt_jvp = np.asarray(contraction["K_actual_direction_profile_jvp_K"], dtype=np.float64).reshape(1, 7)
+    cost_jvp_num = math.fsum(float(a * b) for a, b in zip(base["bt_cotangent_numerator"].ravel(), bt_jvp.ravel()))
+    bt_delta = bt_trial - bt_base
+    payload = {
+        "schema": "kdm6.block22_target_huber_seed.v1",
+        "status": "SAVED_PILOT_ARITHMETIC_COMPLETE",
+        "target_row0": ROW,
+        "target_flat0": 11632,
+        "native_ijk1": [167, 50, 18],
+        "channels": [10, 11, 12, 13, 14, 15, 16],
+        "objective_constants": {"huber_delta": HUBER_DELTA, "sigma": SIGMA, "bias": BIAS},
+        "target_support": {"all_seven_baseline_m0": bool(m0.all()), "weights": weights[0].tolist()},
+        "global_Z_from_parent_v4": global_z,
+        "baseline_bt_kma_v3_0": bt_base[0].tolist(),
+        "alpha025_bt_kma_v3_0": bt_trial[0].tolist(),
+        "alpha025_minus_baseline_bt_K": bt_delta[0].tolist(),
+        "target_baseline_huber_numerator": base["numerator"],
+        "target_alpha025_huber_numerator": trial["numerator"],
+        "target_baseline_huber_global_cost_contribution": base["numerator"] / global_z,
+        "target_alpha025_huber_global_cost_contribution": trial["numerator"] / global_z,
+        "target_alpha025_minus_baseline_global_cost_contribution": (trial["numerator"] - base["numerator"]) / global_z,
+        "baseline_target_bt_cotangent_numerator": base["bt_cotangent_numerator"][0].tolist(),
+        "actual_candidate_direction_baseline_BT_JVP_K": bt_jvp[0].tolist(),
+        "target_cost_directional_numerator_from_Huber_seed": cost_jvp_num,
+        "target_cost_directional_global_contribution": cost_jvp_num / global_z,
+        "scope": "Target-row-only contribution using frozen baseline support/weights. The K projection is per saved AD direction; alpha=.25 endpoint is a separate finite displacement. These do not represent the whole-domain objective derivative or a full-case forecast update.",
+        "new_KDM_calls": 0,
+        "new_RTTOV_calls": 0,
+        "source_hashes": {
+            "objective": sha(SOURCE_V2 / "harness/native_satellite_objective.py"),
+            "global_summary": sha(summary_path),
+            "baseline_target_npz": sha(base_npz),
+            "alpha025_target_npz": sha(trial_npz),
+            "K_profile_JVP_contraction": sha(contraction_path),
+        },
+        "producer_sha256": sha(Path(__file__)),
+    }
+    result = json_new(OUT, payload)
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

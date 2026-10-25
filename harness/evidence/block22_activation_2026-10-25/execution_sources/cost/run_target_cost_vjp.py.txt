@@ -1,0 +1,780 @@
+"""Prepare and run one baseline full-B Huber-cotangent VJP.
+
+Default operation is a static/offline preflight. The ``--execute`` path requires
+the exact reviewed preflight digest and, in a fresh process, performs one
+full-B KDM forward+JVP and one reverse pass through the saved-target K cotangent.
+It does not run RTTOV, optimize K, or claim a surrogate forward loss.
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+COST_DIR = RESEARCH / "cost_vjp_v1"
+PREFLIGHT_PATH = COST_DIR / "PREFLIGHT_v2.json"
+PREVIOUS_PREFLIGHT_PATH = COST_DIR / "PREFLIGHT.json"
+EXECUTION_DIR = COST_DIR / "execution_v1"
+INPUT_NPZ = RESEARCH / "input_prep_v1/block22_fullB_inputs.npz"
+INPUT_PREPARATION = RESEARCH / "input_prep_v1/BLOCK22_PREPARATION.json"
+PARENT_RUN = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+PARENT_BASELINE = PARENT_RUN / "baseline/chunk_00022"
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+DRIVER_V1 = RESEARCH / "driver_v1"
+DIRECTION_PROOF = RESEARCH / "ACTUAL_DIRECTION_PROOF_v1.json"
+OBSERVER_DIR = RESEARCH / "overlay_final_build_v1"
+OBSERVER_DSO = OBSERVER_DIR / "libkdm6_actual_qr_block22_observer.2.0.0.dylib"
+OBSERVER_DSO_SHA256 = "53abe03ba228bf6ec04f649a4da89c0f7b3e748d31bc49d8694cf5b5f35a0370"
+OBSERVER_SOURCE_RECEIPT = RESEARCH / "overlay_final/source_receipt.json"
+BUILD_RECEIPT = OBSERVER_DIR / "build_receipt.json"
+PILOT = RESEARCH / "observation_prep_v1/pilot_v2"
+TARGET_SEED = PILOT / "TARGET_HUBER_SEED.json"
+TARGET_K = PILOT / "baseline/target_observation.npz"
+K_RECOVERY_RECEIPT = PILOT / "baseline/K_RECOVERY_RECEIPT.json"
+EXPERIMENT_PLAN = RESEARCH / "EXPERIMENT_PLAN_v2.json"
+RHO_REPLAY = RESEARCH / "driver_v1/postprep_rho_jvp_v2/postprep_rho_jvp.npz"
+RHO_REPLAY_RECEIPT = RESEARCH / "driver_v1/postprep_rho_jvp_v2/receipt.json"
+ROW = 368
+LEVEL = 17
+FLAT = 11632
+BATCH = 512
+NATIVE_LEVELS = 39
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+ALPHA_REFERENCE = 0.25
+PROFILE_K_FIELDS = {
+    "T": "K_T",
+    "Q": "K_Q",
+    "P": "K_P",
+    "P_HALF": "K_P_HALF",
+    "HYDRO6": "K_HYDRO6",
+    "HYDRO7": "K_HYDRO7",
+    "HYDRO_DEFF6": "K_HYDRO_DEFF6",
+    "HYDRO_DEFF7": "K_HYDRO_DEFF7",
+}
+PROFILE_ATTRS = {
+    "T": "t_lay",
+    "Q": "q_lay",
+    "P": "p_lay",
+    "P_HALF": "p_half",
+    "HYDRO6": "clw",
+    "HYDRO7": "ciw",
+    "HYDRO_DEFF6": "deff_liq",
+    "HYDRO_DEFF7": "deff_ice",
+    "CFRAC": "cfrac",
+}
+FULL_PROFILE_FIELDS = tuple(PROFILE_ATTRS)
+RHO_REPLAY_FIELD = "baseline__rho_d_tangent_recomputed"
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _receipt_sha(payload: dict) -> str:
+    body = dict(payload)
+    body.pop("receipt_sha256", None)
+    canonical = (json.dumps(body, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    return sha256_bytes(canonical)
+
+
+def _write_new(path: Path, payload: dict) -> None:
+    if path.exists() or path.is_symlink():
+        raise FileExistsError(path)
+    encoded = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def same_bits(left, right) -> bool:
+    a = np.asarray(left)
+    b = np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes(order="C") == b.tobytes(order="C")
+
+
+def finite_dot(left, right) -> float:
+    products = np.asarray(left, dtype=np.float64) * np.asarray(right, dtype=np.float64)
+    if not np.isfinite(products).all():
+        raise ValueError("nonfinite dot operands")
+    return math.fsum(map(float, products.ravel()))
+
+
+def _source_files() -> tuple[str, ...]:
+    return (
+        "harness/native_batch_microphysics.py",
+        "harness/native_observation_batch.py",
+        "harness/run_native_candidate_observation.py",
+        "harness/run_native_satellite_case.py",
+        "harness/prepare_native_satellite_case.py",
+        "harness/native_satellite_objective.py",
+        "harness/verify_localized_ice_ad.py",
+        "oracle/kdm6/native_prep.py",
+        "oracle/kdm6/native_finish.py",
+        "oracle/kdm6/obs/native_batch_profile.py",
+        "oracle/kdm6/obs/native_cloud_profile.py",
+        "oracle/kdm6/obs/native_profile_builder.py",
+    )
+
+
+def _frozen_case_api():
+    if str(SOURCE_V2) not in sys.path:
+        sys.path.insert(0, str(SOURCE_V2))
+    from harness.prepare_native_satellite_case import load_case_block, load_case_config
+    from harness.native_satellite_objective import BIAS, HUBER_DELTA, SIGMA, objective_chunk
+
+    return load_case_block, load_case_config, objective_chunk, BIAS, HUBER_DELTA, SIGMA
+
+
+def _load_parent_npz() -> tuple[dict, Path, dict]:
+    receipt_path = PARENT_BASELINE / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    artifact = Path(receipt["artifact"])
+    if sha256_file(artifact) != receipt["artifact_sha256"]:
+        raise ValueError("saved parent baseline artifact differs from its receipt")
+    with np.load(artifact, allow_pickle=False) as archive:
+        return {name: archive[name] for name in archive.files}, artifact, receipt
+
+
+def _verify_input_bundle(data: dict, prep: dict, block: dict, parent_arrays: dict) -> dict:
+    if prep.get("schema") != "kdm6.block22_activation_input_bundle.v1":
+        raise ValueError("unexpected block22 input preparation schema")
+    if (prep.get("B"), prep.get("L"), prep.get("start_flat"), prep.get("stop_flat_exclusive")) != (
+        BATCH, NATIVE_LEVELS, 11264, 11776
+    ):
+        raise ValueError("input bundle is not the original contiguous chunk22 B512 block")
+    if set(prep.get("arrays", {})) != set(data):
+        raise ValueError("input bundle keys differ from their preparation receipt")
+    for name, array in data.items():
+        contiguous = np.ascontiguousarray(array)
+        if prep["arrays"][name]["shape"] != list(array.shape):
+            raise ValueError(f"input array {name} shape differs from preparation receipt")
+        if prep["arrays"][name]["dtype"] != contiguous.dtype.str:
+            raise ValueError(f"input array {name} dtype differs from preparation receipt")
+        if sha256_bytes(contiguous.tobytes(order="C")) != prep["arrays"][name]["sha256"]:
+            raise ValueError(f"input array {name} content differs from preparation receipt")
+
+    checks = {
+        "flat_indices": (data["block__flat_indices"], block["flat_indices"]),
+        "packet_state": (data["block__packet_state"], block["packet_state"]),
+        "packet_forcing": (data["block__packet_forcing"], block["packet_forcing"]),
+        "theta_m": (data["block__theta_m"], block["theta_m"]),
+        "qv": (data["block__qv"], block["qv"]),
+        "ph": (data["block__ph"], block["ph"]),
+        "rest": (data["block__rest"], block["rest"]),
+        "mu": (data["block__mu"], block["mu"]),
+        "xland": (data["block__xland"], block["xland"]),
+        "obs_bt": (data["block__obs_bt"], block["obs_bt"]),
+        "obs_dqf": (data["block__obs_dqf"], block["obs_dqf"]),
+        "obs_qc_codes": (data["block__obs_qc_codes"], block["obs_qc_codes"]),
+    }
+    for name, (saved, actual) in checks.items():
+        if not same_bits(saved, actual):
+            raise ValueError(f"loaded original case block differs from input bundle field {name}")
+    for name in ("phb", "c3h", "c4h", "c3f", "c4f"):
+        if not same_bits(data[f"block__geometry__{name}"], block["geometry"][name]):
+            raise ValueError(f"loaded original block geometry differs for {name}")
+    if not np.array_equal(block["flat_indices"], np.arange(11264, 11776, dtype=np.int32)):
+        raise ValueError("block row order no longer maps to original flat range")
+    if int(block["flat_indices"][ROW]) != FLAT or int(block["i"][ROW]) != 166 or int(block["j"][ROW]) != 49:
+        raise ValueError("target row no longer maps to native i/j/flat coordinates")
+    if block["obs_bt"].shape != (BATCH, len(CHANNELS)) or block["rest"].shape != (10, BATCH, NATIVE_LEVELS):
+        raise ValueError("loaded block observation or rest-state shape differs")
+    if not bool(block["initial_admission"]["cost_eligible"][ROW]):
+        raise ValueError("target row is not in original baseline cost support")
+    if not np.isfinite(block["obs_bt"][ROW]).all() or not np.all(block["obs_dqf"][ROW] == 0) or not np.all(block["obs_qc_codes"][ROW] == 0):
+        raise ValueError("target seven-channel observation is not source-qualified")
+
+    parent_primal_pairs = {
+        "finish": ("parent_baseline__finish", "finish"),
+        "rho_d": ("parent_baseline__rho_d", "rho_d"),
+        "native_after_thm_pert": ("parent_baseline__native_after_thm_pert", "native_after_thm_pert"),
+        "native_after_qv": ("parent_baseline__native_after_qv", "native_after_qv"),
+        "native_after_p_center_Pa": ("parent_baseline__native_after_p_center_Pa", "native_after_p_center_Pa"),
+        "native_after_phi_interfaces": ("parent_baseline__native_after_phi_interfaces", "native_after_phi_interfaces"),
+        **{f"cloud_{name}": (f"parent_baseline__cloud_{name}", f"cloud_{name}") for name in ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg")},
+    }
+    for name, (bundle_key, parent_key) in parent_primal_pairs.items():
+        if not same_bits(data[bundle_key], parent_arrays[parent_key]):
+            raise ValueError(f"input bundle field {bundle_key} differs from saved parent result")
+    return {
+        "loaded_full_original_block": True,
+        "loaded_block_fields_bitwise_match_bundle": list(checks),
+        "loaded_geometry_fields_bitwise_match_bundle": ["phb", "c3h", "c4h", "c3f", "c4f"],
+        "parent_primal_fields_bitwise_match_bundle": list(parent_primal_pairs),
+        "B": BATCH,
+        "L": NATIVE_LEVELS,
+        "flat_range": [11264, 11776],
+        "target": {"row0": ROW, "flat0": FLAT, "i_1based": 167, "j_1based": 50, "k_1based": 18},
+    }
+
+
+def _verify_direction(data: dict) -> dict:
+    proof = json.loads(DIRECTION_PROOF.read_text())
+    direction_theta = np.ascontiguousarray(data["parent_alpha025__delta_theta"] / ALPHA_REFERENCE, dtype=np.float64)
+    direction_qv = np.ascontiguousarray(data["parent_alpha025__delta_qv"] / ALPHA_REFERENCE, dtype=np.float64)
+    actual = {"theta": direction_theta, "qv": direction_qv}
+    hashes = {}
+    for name, value in actual.items():
+        digest = sha256_bytes(value.tobytes(order="C"))
+        if proof[name]["bitwise_equal"] is not True or digest != proof[name]["direction_sha256"]:
+            raise ValueError(f"saved candidate-direction proof failed for {name}")
+        hashes[name] = digest
+    return {"direction_hashes": hashes, "reference_alpha": ALPHA_REFERENCE, "proof_sha256": sha256_file(DIRECTION_PROOF)}
+
+
+def _verify_huber_seed(block: dict, parent_arrays: dict, target: dict, seed: dict, objective_chunk, bias, delta, sigma) -> dict:
+    if seed.get("schema") != "kdm6.block22_target_huber_seed.v1" or seed.get("status") != "SAVED_PILOT_ARITHMETIC_COMPLETE":
+        raise ValueError("target Huber seed schema/status mismatch")
+    if (seed.get("target_row0"), seed.get("target_flat0"), seed.get("channels")) != (ROW, FLAT, list(CHANNELS)):
+        raise ValueError("target Huber seed points at a different row or channel set")
+    if _receipt_sha(seed) != seed.get("receipt_sha256"):
+        raise ValueError("target Huber seed self-hash is invalid")
+    if sha256_file(TARGET_K) != seed["source_hashes"]["baseline_target_npz"]:
+        raise ValueError("fresh baseline K target NPZ hash differs from Huber seed")
+    k_recovery = json.loads(K_RECOVERY_RECEIPT.read_text())
+    if _receipt_sha(k_recovery) != k_recovery.get("receipt_sha256"):
+        raise ValueError("fresh K recovery receipt self-hash is invalid")
+    if k_recovery["recovered_target_npz_sha256"] != sha256_file(TARGET_K):
+        raise ValueError("fresh K recovery receipt does not bind this target NPZ")
+    if k_recovery.get("status") != "ONE_FRESH_K_PARSED_AND_RECONSTRUCTED_NO_RERUN":
+        raise ValueError("baseline K recovery receipt status is not the admitted saved-K path")
+    if k_recovery.get("additional_KDM_calls_for_recovery") != 0 or k_recovery.get("additional_RTTOV_calls_for_recovery") != 0:
+        raise ValueError("K recovery receipt reports additional model calls")
+    if k_recovery.get("fresh_RTTOV_K_calls_already_completed") != 1:
+        raise ValueError("expected exactly the previously completed fresh baseline K call")
+    if not k_recovery.get("bt_matches_parent_bitwise") or not k_recovery.get("quality_matches_parent_bitwise"):
+        raise ValueError("saved fresh-K BT/quality does not match parent baseline")
+    if not all(k_recovery.get("profile_fields_match_parent_bitwise", {}).values()):
+        raise ValueError("saved fresh-K nine-profile comparison is incomplete or mismatched")
+    if (bias, delta, sigma) != (
+        float(seed["objective_constants"]["bias"]),
+        float(seed["objective_constants"]["huber_delta"]),
+        float(seed["objective_constants"]["sigma"]),
+    ):
+        raise ValueError("Huber constants differ from pinned objective source")
+    bt = np.asarray(target["bt"], dtype=np.float64).reshape(1, len(CHANNELS))
+    obs = np.asarray(block["obs_bt"][ROW : ROW + 1], dtype=np.float64)
+    mask = np.asarray(target["parent_support_mask"], dtype=np.bool_).reshape(1, len(CHANNELS))
+    weights = np.asarray(seed["target_support"]["weights"], dtype=np.float64).reshape(1, len(CHANNELS))
+    if not mask.all() or not bool(seed["target_support"]["all_seven_baseline_m0"]):
+        raise ValueError("target baseline mask is not all-seven supported")
+    if not np.array_equal(weights, np.ones_like(weights)):
+        raise ValueError("target seed weights are not the saved all-one weights")
+    if not same_bits(bt[0], parent_arrays["bt"][ROW]) or not same_bits(target["quality"], parent_arrays["quality"][ROW]):
+        raise ValueError("fresh K BT or quality differs from pinned parent baseline")
+    if not same_bits(mask[0], parent_arrays["mask"][ROW]) or not same_bits(weights[0], parent_arrays["weights"][ROW]):
+        raise ValueError("fresh target K support/weights differ from parent baseline")
+    if not same_bits(obs, parent_arrays["obs_bt"][ROW : ROW + 1]):
+        raise ValueError("loaded original-block BT observations differ from parent objective inputs")
+    objective = objective_chunk(bt, obs, {"m0": mask, "weights": weights})
+    cotangent = np.asarray(objective["bt_cotangent_numerator"], dtype=np.float64)
+    saved_cotangent = np.asarray(seed["baseline_target_bt_cotangent_numerator"], dtype=np.float64).reshape(1, len(CHANNELS))
+    if not same_bits(cotangent, saved_cotangent):
+        raise ValueError("fresh-source Huber cotangent differs from saved target seed")
+    if float(objective["numerator"]) != float(seed["target_baseline_huber_numerator"]):
+        raise ValueError("fresh-source Huber numerator differs from saved target seed")
+    if not np.array_equal(cotangent, np.ones_like(cotangent)):
+        raise ValueError("expected the recorded +1 Huber cotangent in all seven channels")
+    return {
+        "seed_sha256": sha256_file(TARGET_SEED),
+        "fresh_baseline_k_sha256": sha256_file(TARGET_K),
+        "k_recovery_receipt_sha256": sha256_file(K_RECOVERY_RECEIPT),
+        "k_recovery_receipt_status": json.loads(K_RECOVERY_RECEIPT.read_text())["status"],
+        "KDM_calls_in_K_recovery_receipt": json.loads(K_RECOVERY_RECEIPT.read_text())["additional_KDM_calls_for_recovery"],
+        "RTTOV_calls_in_K_recovery_receipt": json.loads(K_RECOVERY_RECEIPT.read_text())["additional_RTTOV_calls_for_recovery"],
+        "target_bt_bitwise_matches_parent": True,
+        "target_quality_mask_weights_match_parent": True,
+        "source_huber_objective_matches_seed": True,
+        "huber_cotangent_numerator": cotangent[0].tolist(),
+        "baseline_target_huber_numerator": float(objective["numerator"]),
+        "expected_directional_huber_numerator_from_saved_seed": float(seed["target_cost_directional_numerator_from_Huber_seed"]),
+        "global_Z": float(seed["global_Z_from_parent_v4"]),
+    }
+
+
+def preflight_payload() -> dict:
+    if not all(path.is_file() for path in (
+        INPUT_NPZ, INPUT_PREPARATION, PARENT_RUN / "CASE_MANIFEST.json",
+        DIRECTION_PROOF, OBSERVER_DSO, OBSERVER_SOURCE_RECEIPT, BUILD_RECEIPT,
+        TARGET_SEED, TARGET_K, K_RECOVERY_RECEIPT, EXPERIMENT_PLAN, RHO_REPLAY,
+        RHO_REPLAY_RECEIPT, PARENT_BASELINE / "receipt.json",
+    )):
+        raise FileNotFoundError("one or more pinned inputs for cost VJP preflight are missing")
+    prep = json.loads(INPUT_PREPARATION.read_text())
+    if sha256_file(INPUT_NPZ) != prep["input_npz_sha256"]:
+        raise ValueError("B512 input NPZ differs from its preparation receipt")
+    parent_manifest_path = PARENT_RUN / "CASE_MANIFEST.json"
+    parent_manifest = json.loads(parent_manifest_path.read_text())
+    if parent_manifest.get("run_id") != prep["parent_run_id"]:
+        raise ValueError("input preparation parent run differs from CASE_MANIFEST")
+    if sha256_file(parent_manifest_path) != prep["parent_case_manifest_sha256"]:
+        raise ValueError("input preparation is not bound to this parent CASE_MANIFEST")
+    if sha256_file(OBSERVER_DSO) != OBSERVER_DSO_SHA256:
+        raise ValueError("observer DSO differs from pinned hash")
+    build_receipt = json.loads(BUILD_RECEIPT.read_text())
+    if build_receipt["isolated_outputs"]["DSO_sha256"] != OBSERVER_DSO_SHA256:
+        raise ValueError("observer DSO does not match isolated build receipt")
+    source_receipt = json.loads(OBSERVER_SOURCE_RECEIPT.read_text())
+    if source_receipt["coordinator_sha256"] != build_receipt["source"]["sha256"]:
+        raise ValueError("observer source receipt differs from build source pin")
+    plan = json.loads(EXPERIMENT_PLAN.read_text())
+    dot_rtol = float(plan["local_FD"]["dot_rtol"])
+    if plan.get("schema") != "kdm6.block22_activation_experiment_plan.v2" or dot_rtol != 1.0e-10:
+        raise ValueError("experiment plan DOT_RTOL differs from frozen 1e-10 relative criterion")
+
+    source_hashes = {}
+    for relative in _source_files():
+        path = SOURCE_V2 / relative
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        source_hashes[relative] = sha256_file(path)
+    source_hashes["driver_v1/run_block22_actual_ad.py"] = sha256_file(DRIVER_V1 / "run_block22_actual_ad.py")
+    if source_hashes["harness/native_batch_microphysics.py"] != "c21fb137ccb1f9f724233b83e784d970fb3b98db9f87f3a3a898b3547090a0f9":
+        raise ValueError("source_v2 native batch adapter differs from saved rho replay pin")
+    seed_for_source_pins = json.loads(TARGET_SEED.read_text())
+    contraction_path = PILOT / "BASELINE_K_ACTUAL_PROFILE_JVP_CONTRACTION.json"
+    summary_path = PARENT_RUN / "summary/summary.json"
+    if source_hashes["harness/native_satellite_objective.py"] != seed_for_source_pins["source_hashes"]["objective"]:
+        raise ValueError("Huber seed objective source differs from immutable source_v2")
+    if sha256_file(contraction_path) != seed_for_source_pins["source_hashes"]["K_profile_JVP_contraction"]:
+        raise ValueError("Huber seed K-profile contraction artifact changed")
+    if sha256_file(summary_path) != seed_for_source_pins["source_hashes"]["global_summary"]:
+        raise ValueError("Huber seed global-Z summary artifact changed")
+    rho_receipt = json.loads(RHO_REPLAY_RECEIPT.read_text())
+    if rho_receipt["source_v2_batch_adapter_sha256"] != source_hashes["harness/native_batch_microphysics.py"]:
+        raise ValueError("rho replay was produced from a different native batch adapter")
+    if rho_receipt["product_npz_sha256"] != sha256_file(RHO_REPLAY):
+        raise ValueError("post-prep rho replay NPZ differs from its receipt")
+
+    with np.load(INPUT_NPZ, allow_pickle=False) as archive:
+        data = {name: archive[name] for name in archive.files}
+    with np.load(TARGET_K, allow_pickle=False) as archive:
+        target = {name: archive[name] for name in archive.files}
+    with np.load(RHO_REPLAY, allow_pickle=False) as archive:
+        rho_replay = {name: archive[name] for name in archive.files}
+    parent_arrays, parent_artifact, parent_receipt = _load_parent_npz()
+    seed = json.loads(TARGET_SEED.read_text())
+
+    load_case_block, load_case_config, objective_chunk, bias, huber_delta, sigma = _frozen_case_api()
+    config = load_case_config(parent_manifest["case_preparation"]["paths"])
+    config["paths"]["candidate_library"] = str(OBSERVER_DSO)
+    block = load_case_block(config, 22)
+    block_checks = _verify_input_bundle(data, prep, block, parent_arrays)
+    direction = _verify_direction(data)
+    huber = _verify_huber_seed(block, parent_arrays, target, seed, objective_chunk, bias, huber_delta, sigma)
+
+    target_profile_fields = {}
+    for field in FULL_PROFILE_FIELDS:
+        key = f"profile_{field}"
+        expected = parent_arrays[key][ROW : ROW + 1]
+        if not same_bits(target[key], expected):
+            raise ValueError(f"fresh target-K {key} differs from saved parent profile")
+        target_profile_fields[field] = {
+            "shape": list(target[key].shape),
+            "dtype": target[key].dtype.str,
+            "bitwise_matches_parent": True,
+        }
+    for field, key in PROFILE_K_FIELDS.items():
+        expected_shape = (1, len(CHANNELS), 67 if field == "P_HALF" else 66)
+        value = target[key]
+        if value.shape != expected_shape or value.dtype != np.float64 or not np.isfinite(value).all():
+            raise ValueError(f"fresh K {key} has invalid shape/dtype/finiteness")
+    if not np.array_equal(target["parent_support_mask"], np.ones(7, dtype=np.bool_)):
+        raise ValueError("fresh baseline K support is not all seven target channels")
+    if not np.array_equal(target["quality"], np.zeros(7, dtype=np.int32)):
+        raise ValueError("fresh baseline K target quality flags are not all clear")
+    if rho_replay[RHO_REPLAY_FIELD].shape != (BATCH, NATIVE_LEVELS) or rho_replay[RHO_REPLAY_FIELD].dtype != np.float64:
+        raise ValueError("saved baseline tangent-rho replay has wrong shape/dtype")
+
+    return {
+        "schema": "kdm6.block22_target_huber_cost_vjp_preflight.v1",
+        "status": "READY_FOR_ROOT_REVIEW_NO_NEW_MODEL_CALLS",
+        "execution_boundary": {
+            "planned_fullB_KDM_forward": 1,
+            "planned_fullB_KDM_JVP": 1,
+            "planned_fullB_KDM_VJP": 1,
+            "planned_new_RTTOV_calls": 0,
+            "planned_host_calls": 0,
+            "baseline_only": True,
+            "trace_mode": "unset",
+            "requires_root_review_sha_before_execute": True,
+        },
+        "dot_acceptance": {
+            "source_plan": str(EXPERIMENT_PLAN),
+            "source_plan_sha256": sha256_file(EXPERIMENT_PLAN),
+            "DOT_RTOL_relative": dot_rtol,
+            "relative_error_denominator": "max(abs(lhs),abs(rhs),1e-12)",
+            "absolute_errors_retained_as_diagnostics": True,
+        },
+        "preflight_calls_executed": {"KDM6": 0, "RTTOV": 0, "host": 0},
+        "target": block_checks["target"],
+        "B": BATCH,
+        "L": NATIVE_LEVELS,
+        "block_checks": block_checks,
+        "candidate_direction": direction,
+        "target_huber": huber,
+        "fresh_K_profile_bitwise_matches_parent": target_profile_fields,
+        "profile_fields_used_in_K_contraction": list(PROFILE_K_FIELDS),
+        "profile_fields_not_contracted": ["CFRAC", "K_O3", "K_CO2", "K_HYDRO", "K_HYDRO_DEFF", "K_HYDRO_FRAC", "K_HYDRO_FRAC_EFF", "K_CTP", "K_CFRACTION", "K_SKIN", "K_NEAR_SURFACE"],
+        "rho_jvp_replay": {
+            "receipt_sha256": sha256_file(RHO_REPLAY_RECEIPT),
+            "npz_sha256": sha256_file(RHO_REPLAY),
+            "baseline_tangent_key": RHO_REPLAY_FIELD,
+            "expected_fullB_shape": [BATCH, NATIVE_LEVELS],
+        },
+        "sources": {
+            "public_source_snapshot": str(SOURCE_V2),
+            "source_hashes": source_hashes,
+            "source_receipt_sha256": sha256_file(OBSERVER_SOURCE_RECEIPT),
+            "build_receipt_sha256": sha256_file(BUILD_RECEIPT),
+            "observer_dso_sha256": sha256_file(OBSERVER_DSO),
+            "input_npz_sha256": sha256_file(INPUT_NPZ),
+            "input_preparation_sha256": sha256_file(INPUT_PREPARATION),
+            "parent_case_manifest_sha256": sha256_file(parent_manifest_path),
+            "parent_baseline_artifact_sha256": parent_receipt["artifact_sha256"],
+            "parent_baseline_receipt_sha256": sha256_file(PARENT_BASELINE / "receipt.json"),
+            "actual_direction_proof_sha256": sha256_file(DIRECTION_PROOF),
+            "target_huber_seed_sha256": sha256_file(TARGET_SEED),
+            "target_K_artifact_sha256": sha256_file(TARGET_K),
+            "target_K_recovery_receipt_sha256": sha256_file(K_RECOVERY_RECEIPT),
+            "experiment_plan_sha256": sha256_file(EXPERIMENT_PLAN),
+            "previous_zero_call_preflight_sha256": json.loads(PREVIOUS_PREFLIGHT_PATH.read_text())["preflight_sha256"],
+        },
+        "runtime_selectors": {
+            "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+            "KDM6_QR_TRANSPORT": "actual_departure",
+            "OMP_NUM_THREADS": "1",
+            "OMP_DYNAMIC": "FALSE",
+            "OMP_THREAD_LIMIT": "1",
+            "MKL_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+            "torch_threads": 1,
+        },
+        "scope": "A saved baseline K transpose is injected as a fixed first-order profile cotangent. K and Huber cotangent are constants. This is not a differentiated K, not a new RTTOV call, and not a surrogate forward-loss claim.",
+    }
+
+
+def _preflight_with_hash() -> dict:
+    payload = preflight_payload()
+    payload["producer_sha256"] = sha256_file(Path(__file__))
+    payload["preflight_sha256"] = sha256_bytes(
+        (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    )
+    return payload
+
+
+def write_preflight() -> dict:
+    if not COST_DIR.is_dir():
+        raise FileNotFoundError(COST_DIR)
+    payload = _preflight_with_hash()
+    _write_new(PREFLIGHT_PATH, payload)
+    return payload
+
+
+def _np(value) -> np.ndarray:
+    return np.array(value.detach().cpu().numpy(), copy=True)
+
+
+def _numpy_output(output) -> dict:
+    result = {"rho_d": _np(output.rho_d)}
+    result.update({"native_after_" + name: _np(value) for name, value in output.native_profile._asdict().items()})
+    result.update({"cloud_" + name: _np(value) for name, value in output.cloud_state._asdict().items()})
+    result["finish"] = np.stack([_np(value) for value in output.finish], axis=0)
+    return result
+
+
+def _profile_tensors(profiles) -> dict:
+    return {name: getattr(profiles, attr) for name, attr in PROFILE_ATTRS.items()}
+
+
+def execute(reviewed_preflight_sha: str) -> dict:
+    if not PREFLIGHT_PATH.is_file():
+        raise FileNotFoundError("run --preflight and obtain root review before --execute")
+    reviewed = json.loads(PREFLIGHT_PATH.read_text())
+    current = _preflight_with_hash()
+    if reviewed_preflight_sha != reviewed["preflight_sha256"]:
+        raise ValueError("root review cue does not name this exact preflight")
+    if current["preflight_sha256"] != reviewed["preflight_sha256"]:
+        raise ValueError("preflight pins changed since root review")
+    if reviewed["producer_sha256"] != sha256_file(Path(__file__)):
+        raise ValueError("controller source changed since preflight")
+    if EXECUTION_DIR.exists() or EXECUTION_DIR.is_symlink():
+        raise FileExistsError(EXECUTION_DIR)
+    EXECUTION_DIR.mkdir(parents=False, exist_ok=False)
+
+    sys.path.insert(0, str(DRIVER_V1))
+    if str(SOURCE_V2) not in sys.path:
+        sys.path.insert(0, str(SOURCE_V2))
+    from run_block22_actual_ad import RecordingBatchKernel
+    from harness.native_batch_microphysics import (
+        BatchPrepGeometry,
+        NativeBatchDirection,
+        NativeBatchMicrophysics,
+        make_batch_kernel,
+    )
+    from harness.native_observation_batch import PROFILE_FIELDS, _selected_profile_context, profile_jvp
+    from harness.run_native_candidate_observation import EXPERIMENT, _runtime_environment
+    from harness.prepare_native_satellite_case import load_case_block, load_case_config
+    from oracle.kdm6.native_finish import FinishConfig, ZeroOutConfig
+    from oracle.kdm6.native_prep import NativePrepConfig
+    import torch
+
+    with np.load(INPUT_NPZ, allow_pickle=False) as archive:
+        data = {name: archive[name] for name in archive.files}
+    parent_manifest = json.loads((PARENT_RUN / "CASE_MANIFEST.json").read_text())
+    config = load_case_config(parent_manifest["case_preparation"]["paths"])
+    config["paths"]["candidate_library"] = str(OBSERVER_DSO)
+    block = load_case_block(config, 22)
+    with np.load(TARGET_K, allow_pickle=False) as archive:
+        target = {name: archive[name] for name in archive.files}
+    with np.load(RHO_REPLAY, allow_pickle=False) as archive:
+        rho_replay = archive[RHO_REPLAY_FIELD].copy()
+    seed = json.loads(TARGET_SEED.read_text())
+
+    candidate_theta = np.ascontiguousarray(data["parent_alpha025__delta_theta"] / ALPHA_REFERENCE, dtype=np.float64)
+    candidate_qv = np.ascontiguousarray(data["parent_alpha025__delta_qv"] / ALPHA_REFERENCE, dtype=np.float64)
+    zero_ph = np.zeros_like(block["ph"])
+    zero_rest = np.zeros_like(block["rest"])
+
+    torch.set_num_threads(1)
+    # All dynamic loading and use of the observer DSO happen inside the exact
+    # saved physical selector/thread environment in a fresh Python process.
+    with _runtime_environment(EXPERIMENT):
+        os.environ.pop("KDM6_BLOCK22_ACTIVATION_TRACE", None)
+        geometry = BatchPrepGeometry(*(torch.from_numpy(np.ascontiguousarray(block["geometry"][name])) for name in ("phb", "c3h", "c4h", "c3f", "c4f")))
+        base_kernel = make_batch_kernel(OBSERVER_DSO, block["xland"], NATIVE_LEVELS)
+        kernel = RecordingBatchKernel(base_kernel)
+        model = NativeBatchMicrophysics(
+            kernel,
+            geometry,
+            NativePrepConfig(**config["prep_configuration"]),
+            FinishConfig(**config["finish_configuration"]),
+            ZeroOutConfig(**config["zero_out_configuration"]),
+        )
+        theta = torch.from_numpy(np.ascontiguousarray(block["theta_m"], dtype=np.float64)).requires_grad_(True)
+        qv = torch.from_numpy(np.ascontiguousarray(block["qv"], dtype=np.float64)).requires_grad_(True)
+        mu = torch.from_numpy(np.ascontiguousarray(block["mu"], dtype=np.float64))
+        ph = torch.from_numpy(np.ascontiguousarray(block["ph"], dtype=np.float64))
+        rest = torch.from_numpy(np.ascontiguousarray(block["rest"], dtype=np.float64))
+        direction = NativeBatchDirection(
+            torch.from_numpy(candidate_theta),
+            torch.from_numpy(candidate_qv),
+            torch.from_numpy(zero_ph),
+            torch.from_numpy(zero_rest),
+        )
+        kernel.capture = {}
+        kernel.jvp_calls = 0
+        kernel.vjp_calls = 0
+        forward_before = kernel.forward_calls
+        primal, tangent = model.forward_with_jvp(theta, qv, mu, ph, rest, direction=direction)
+        if kernel.forward_calls - forward_before != 1 or kernel.jvp_calls != 1 or kernel.vjp_calls != 0:
+            raise RuntimeError("expected one KDM forward+JVP and no VJP before profile cotangent")
+
+        profiles = _selected_profile_context(block, primal, [ROW], config)
+        profile_primal = _profile_tensors(profiles)
+        profile_values = {name: _np(value) for name, value in profile_primal.items()}
+        profile_tangents = profile_jvp(block, primal, tangent, config, [ROW])
+        if kernel.forward_calls - forward_before != 1 or kernel.jvp_calls != 1 or kernel.vjp_calls != 0:
+            raise RuntimeError("profile JVP unexpectedly crossed the KDM ABI reverse boundary")
+        for name in PROFILE_FIELDS:
+            if name not in profile_tangents:
+                raise ValueError(f"profile JVP helper omitted {name}")
+
+        huber_seed = np.asarray(seed["baseline_target_bt_cotangent_numerator"], dtype=np.float64).reshape(1, len(CHANNELS))
+        k_values = {name: np.asarray(target[key], dtype=np.float64) for name, key in PROFILE_K_FIELDS.items()}
+        profile_cotangents = {
+            name: np.einsum("bc,bck->bk", huber_seed, k_values[name])
+            for name in PROFILE_K_FIELDS
+        }
+        bt_jvp = np.zeros((1, len(CHANNELS)), dtype=np.float64)
+        for name in PROFILE_FIELDS:
+            bt_jvp += np.einsum("bck,bk->bc", k_values[name], profile_tangents[name])
+        target_huber_jvp_numerator = math.fsum(
+            float(seed_value * tangent_value)
+            for seed_value, tangent_value in zip(huber_seed.ravel(), bt_jvp.ravel())
+        )
+        expected_target_jvp = float(seed["target_cost_directional_numerator_from_Huber_seed"])
+        target_jvp_abs_error = abs(target_huber_jvp_numerator - expected_target_jvp)
+        dot_rtol = float(reviewed["dot_acceptance"]["DOT_RTOL_relative"])
+        target_jvp_relative_error = target_jvp_abs_error / max(
+            abs(target_huber_jvp_numerator), abs(expected_target_jvp), 1.0e-12
+        )
+        if target_jvp_relative_error > dot_rtol:
+            raise ValueError(f"profile-JVP*K contraction relative error exceeds DOT_RTOL: {target_jvp_relative_error:.17g}")
+
+        scalar_terms = []
+        for name in PROFILE_FIELDS:
+            cotangent = torch.as_tensor(profile_cotangents[name], dtype=torch.float64, device=profile_primal[name].device)
+            scalar_terms.append((profile_primal[name] * cotangent).sum())
+        fixed_profile_cotangent_scalar = torch.stack(scalar_terms).sum()
+        gradient_theta, gradient_qv = torch.autograd.grad(
+            fixed_profile_cotangent_scalar, (theta, qv), retain_graph=False
+        )
+        if kernel.forward_calls - forward_before != 1 or kernel.jvp_calls != 1 or kernel.vjp_calls != 1:
+            raise RuntimeError("expected exactly one KDM forward, one JVP, and one VJP")
+
+        grad_theta = _np(gradient_theta)
+        grad_qv = _np(gradient_qv)
+        direction_theta = candidate_theta
+        direction_q = candidate_qv
+        vjp_dot = finite_dot(grad_theta, direction_theta) + finite_dot(grad_qv, direction_q)
+        vjp_dot_abs_error = abs(vjp_dot - target_huber_jvp_numerator)
+        vjp_dot_relative_error = vjp_dot_abs_error / max(
+            abs(vjp_dot), abs(target_huber_jvp_numerator), 1.0e-12
+        )
+        if vjp_dot_relative_error > dot_rtol:
+            raise ValueError(f"full-B gradient dot actual direction relative error exceeds DOT_RTOL: {vjp_dot_relative_error:.17g}")
+
+        capture = dict(kernel.capture)
+        abi_lhs = finite_dot(capture["abi_raw_state_cotangent"], capture["abi_raw_state_jvp"])
+        abi_rhs = finite_dot(capture["abi_state_vjp"], capture["abi_state_direction"]) + finite_dot(capture["abi_forcing_vjp"], capture["abi_forcing_direction"])
+        abi_abs_error = abs(abi_lhs - abi_rhs)
+        abi_relative_error = abi_abs_error / max(abs(abi_lhs), abs(abi_rhs), 1.0e-12)
+
+        primal_arrays = _numpy_output(primal)
+        tangent_arrays = _numpy_output(tangent)
+        parent_receipt = json.loads((PARENT_BASELINE / "receipt.json").read_text())
+        parent_artifact = Path(parent_receipt["artifact"])
+        with np.load(parent_artifact, allow_pickle=False) as archive:
+            parent_arrays = {name: archive[name] for name in archive.files}
+        primal_bit_checks = {name: same_bits(value, parent_arrays[name]) for name, value in primal_arrays.items()}
+        if not all(primal_bit_checks.values()):
+            raise ValueError("fresh baseline primal differs from parent saved native output")
+        for name, value in profile_values.items():
+            key = "profile_" + name
+            target_equal = same_bits(value, target[key])
+            parent_equal = same_bits(value, parent_arrays[key][ROW : ROW + 1])
+            if not target_equal or not parent_equal:
+                raise ValueError(f"connected selected profile {name} differs from parent/fresh K")
+        rho_tangent_bit_equal = same_bits(tangent_arrays["rho_d"], rho_replay)
+        if not rho_tangent_bit_equal:
+            raise ValueError("captured rho_d tangent differs from saved pure-prep JVP replay")
+
+        products = {
+            "theta_m_input": _np(theta),
+            "qv_input": _np(qv),
+            "mu_total": _np(mu),
+            "ph": _np(ph),
+            "rest": _np(rest),
+            "direction_theta_m": direction_theta,
+            "direction_qv": direction_q,
+            "direction_ph": zero_ph,
+            "direction_rest": zero_rest,
+            "gradient_theta_m": grad_theta,
+            "gradient_qv": grad_qv,
+            "seed_bt_cotangent_numerator": huber_seed,
+            "target_bt_jvp_from_profile_K": bt_jvp,
+            "target_huber_profile_jvp_numerator": np.asarray([target_huber_jvp_numerator]),
+        }
+        products.update({"primal_" + name: value for name, value in primal_arrays.items()})
+        products.update({"tangent_" + name: value for name, value in tangent_arrays.items()})
+        products.update({"profile_primal_" + name: value for name, value in profile_values.items()})
+        products.update({"profile_jvp_" + name: np.asarray(value, dtype=np.float64) for name, value in profile_tangents.items()})
+        products.update({"profile_K_" + name: value for name, value in k_values.items()})
+        products.update({"profile_cotangent_" + name: value for name, value in profile_cotangents.items()})
+        products.update({"abi_" + name: value for name, value in capture.items() if isinstance(value, np.ndarray)})
+
+    product_path = EXECUTION_DIR / "cost_vjp_products.npz"
+    with product_path.open("xb") as stream:
+        np.savez_compressed(stream, **products)
+        stream.flush()
+        os.fsync(stream.fileno())
+    receipt = {
+        "schema": "kdm6.block22_target_huber_cost_vjp.v1",
+        "status": "ONE_BASELINE_F1_J1_V1_RECORDED",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "preflight_sha256": reviewed_preflight_sha,
+        "preflight_receipt_sha256": sha256_file(PREFLIGHT_PATH),
+        "B": BATCH,
+        "L": NATIVE_LEVELS,
+        "target": {"row0": ROW, "flat0": FLAT, "native_ijk1": [167, 50, 18], "channels": list(CHANNELS)},
+        "candidate_dso_sha256": sha256_file(OBSERVER_DSO),
+        "source_v2_hashes": current["sources"]["source_hashes"],
+        "source_v2_batch_adapter_sha256": current["sources"]["source_hashes"]["harness/native_batch_microphysics.py"],
+        "source_v2_observation_adapter_sha256": current["sources"]["source_hashes"]["harness/native_observation_batch.py"],
+        "fresh_baseline_K_artifact_sha256": sha256_file(TARGET_K),
+        "target_Huber_seed_sha256": sha256_file(TARGET_SEED),
+        "target_Huber_seed": seed,
+        "candidate_direction_proof_sha256": sha256_file(DIRECTION_PROOF),
+        "KDM_calls": {"forward": kernel.forward_calls - forward_before, "JVP": kernel.jvp_calls, "VJP": kernel.vjp_calls},
+        "RTTOV_calls": 0,
+        "host_calls": 0,
+        "instrumentation_mode": "trace_off_unset",
+        "runtime_selectors": reviewed["runtime_selectors"],
+        "connected_native_profile_context": True,
+        "differentiated_inputs": ["theta_m_pert", "qv"],
+        "fixed_inputs": ["mu_total", "PH", "rest", "prep_geometry", "K_profile", "Huber_cotangent"],
+        "profile_fields_contracted": list(PROFILE_K_FIELDS),
+        "profile_fields_excluded": ["CFRAC", "O3", "CO2", "surface_and_auxiliary_K"],
+        "profile_tangent_K_contraction_BT_JVP_K": bt_jvp[0].tolist(),
+        "target_Huber_directional_numerator_from_profile_JVP": target_huber_jvp_numerator,
+        "expected_saved_target_Huber_directional_numerator": expected_target_jvp,
+        "profile_JVP_contraction_abs_error": target_jvp_abs_error,
+        "DOT_RTOL_relative": dot_rtol,
+        "profile_JVP_contraction_relative_error": target_jvp_relative_error,
+        "fullB_VJP_gradient_dot_actual_direction": vjp_dot,
+        "fullB_VJP_dot_abs_error_vs_profile_K_JVP": vjp_dot_abs_error,
+        "fullB_VJP_dot_relative_error_vs_profile_K_JVP": vjp_dot_relative_error,
+        "ABI_raw_dot_lhs": abi_lhs,
+        "ABI_raw_dot_rhs": abi_rhs,
+        "ABI_raw_dot_abs_error": abi_abs_error,
+        "ABI_raw_dot_relative_error": abi_relative_error,
+        "primal_parent_bitwise_matches": primal_bit_checks,
+        "primal_parent_all_bitwise_matches": all(primal_bit_checks.values()),
+        "target_profile_9_parent_and_freshK_bitwise_match": True,
+        "rho_d_tangent_bitwise_matches_saved_prep_replay": rho_tangent_bit_equal,
+        "product_npz": str(product_path),
+        "product_npz_sha256": sha256_file(product_path),
+        "interpretation_limits": [
+            "The saved K and Huber cotangent are fixed constants; no derivative of K is taken.",
+            "The VJP is the derivative of a linear profile cotangent contraction, not a newly evaluated RTTOV forward cost.",
+            "Only the target row's saved baseline K cotangent contributes; this is not a whole-domain objective evaluation.",
+            "No new RTTOV, host, or finite-difference calls are performed by this controller.",
+        ],
+    }
+    receipt["receipt_sha256"] = _receipt_sha(receipt)
+    receipt_path = EXECUTION_DIR / "receipt.json"
+    _write_new(receipt_path, receipt)
+    return receipt
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--preflight", action="store_true", help="validate saved inputs without KDM/RTTOV calls")
+    group.add_argument("--execute", action="store_true", help="run only after receiving the exact root-reviewed preflight SHA")
+    parser.add_argument("--reviewed-preflight-sha")
+    args = parser.parse_args(argv)
+    if args.execute:
+        if not args.reviewed_preflight_sha:
+            raise ValueError("--execute requires the root-reviewed preflight SHA")
+        receipt = execute(args.reviewed_preflight_sha)
+        print(json.dumps({"receipt": str(EXECUTION_DIR / "receipt.json"), "receipt_sha256": receipt["receipt_sha256"], "product_npz_sha256": receipt["product_npz_sha256"]}, sort_keys=True))
+    else:
+        payload = write_preflight()
+        print(json.dumps({"preflight": str(PREFLIGHT_PATH), "preflight_sha256": payload["preflight_sha256"], "status": payload["status"], "KDM_calls": payload["preflight_calls_executed"]}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

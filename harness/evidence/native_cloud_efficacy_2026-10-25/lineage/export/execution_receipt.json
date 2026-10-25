@@ -1,0 +1,20 @@
+{
+  "baseline_final_sha256": "49c9df91e48bb8e1fd33e39eb4bd3f789cc056fb86c05601ae4dfbf3d79fa6fa",
+  "baseline_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "call_counts": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "candidate_confirmation_sha256": "23a466d2a3c2f40cfbc901187f50934840b07ba73503c7d3b82c9ed596a91f90",
+  "candidate_final_sha256": "37a79e4855acd6e23eb96d2b1ca3ec2dbdeff8d26bbc9d7d29aeb91d6ed3d89c",
+  "candidate_run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "created_at_utc": "2026-10-25T06:09:23.819568+00:00",
+  "input_manifest_sha256": "e89e816e606b1f2b061c04d5c6509b9a0e83d0b170501fe667d0ed3a35e6c8b8",
+  "producer": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/extraction_v1/extract_native_cloud_efficacy.py",
+  "producer_sha256": "3036ab11528ed34eb1174483cbc208cc72105852283ec59dc8a3a7f2080c5058",
+  "producer_snapshot": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/extraction_v1/export_v1/execution_sources/extract_native_cloud_efficacy.py.txt",
+  "producer_snapshot_sha256": "3036ab11528ed34eb1174483cbc208cc72105852283ec59dc8a3a7f2080c5058",
+  "schema": "kdm6.native_cloud_efficacy_extraction_inputs.v1"
+}

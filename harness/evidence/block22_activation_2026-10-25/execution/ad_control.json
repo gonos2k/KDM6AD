@@ -1,0 +1,225 @@
+{
+  "B": 512,
+  "L": 39,
+  "accepted_direction_proof": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/ACTUAL_DIRECTION_PROOF_v1.json",
+  "accepted_direction_proof_sha256": "c106fcff537acdac68ec0f1546a39dea69a35245318a578cfc8299ee1a93df1e",
+  "basepoints": {
+    "alpha025": {
+      "ABI_dot_abs_error": 2.7755575615628914e-17,
+      "ABI_dot_lhs": 0.09639644002110301,
+      "ABI_dot_relative_error": 2.8793154196931635e-16,
+      "ABI_dot_rhs": 0.09639644002110304,
+      "abi_capture_shapes": {
+        "abi_forcing_direction": [
+          4,
+          512,
+          39
+        ],
+        "abi_forcing_input": [
+          4,
+          512,
+          39
+        ],
+        "abi_forcing_vjp": [
+          4,
+          512,
+          39
+        ],
+        "abi_raw_state_cotangent": [
+          12,
+          512,
+          39
+        ],
+        "abi_raw_state_jvp": [
+          12,
+          512,
+          39
+        ],
+        "abi_raw_state_output": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_direction": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_input": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_vjp": [
+          12,
+          512,
+          39
+        ]
+      },
+      "native_JVP_target_thm": 0.09637712768915166,
+      "native_VJP_dot_lhs": 0.09637712768915166,
+      "native_VJP_dot_rhs": 0.09637712768915181,
+      "native_dot_abs_error": 1.5265566588595902e-16,
+      "native_dot_relative_error": 1.5839408119561744e-15,
+      "parent_primal_all_exact": true,
+      "parent_primal_exact_bytes": {
+        "cloud_bg": true,
+        "cloud_nc": true,
+        "cloud_ni": true,
+        "cloud_nn": true,
+        "cloud_nr": true,
+        "cloud_qc": true,
+        "cloud_qg": true,
+        "cloud_qi": true,
+        "cloud_qr": true,
+        "cloud_qs": true,
+        "finish": true,
+        "native_after_p_center_Pa": true,
+        "native_after_phi_interfaces": true,
+        "native_after_qv": true,
+        "native_after_thm_pert": true,
+        "rho_d": true
+      },
+      "parent_reference": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/TRIAL_alpha_0p25/chunk_00022/attempt_1530cbcbb5cb4f38bae42393f8ead892/result.npz",
+      "parent_reference_sha256": "904ef1a95cdc6864e05477e4559b8e74a486e84dbf7dfbebed7279275e735ffc",
+      "parent_reference_stage": "TRIAL_alpha_0p25",
+      "target_level_bottom0": 17,
+      "target_row0": 368
+    },
+    "baseline": {
+      "ABI_dot_abs_error": 2.7755575615628914e-17,
+      "ABI_dot_lhs": 0.0946471627147352,
+      "ABI_dot_relative_error": 2.9325311841923566e-16,
+      "ABI_dot_rhs": 0.09464716271473522,
+      "abi_capture_shapes": {
+        "abi_forcing_direction": [
+          4,
+          512,
+          39
+        ],
+        "abi_forcing_input": [
+          4,
+          512,
+          39
+        ],
+        "abi_forcing_vjp": [
+          4,
+          512,
+          39
+        ],
+        "abi_raw_state_cotangent": [
+          12,
+          512,
+          39
+        ],
+        "abi_raw_state_jvp": [
+          12,
+          512,
+          39
+        ],
+        "abi_raw_state_output": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_direction": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_input": [
+          12,
+          512,
+          39
+        ],
+        "abi_state_vjp": [
+          12,
+          512,
+          39
+        ]
+      },
+      "native_JVP_target_thm": 0.09464714292014817,
+      "native_VJP_dot_lhs": 0.09464714292014817,
+      "native_VJP_dot_rhs": 0.0946471429201482,
+      "native_dot_abs_error": 2.7755575615628914e-17,
+      "native_dot_relative_error": 2.9325317975045174e-16,
+      "parent_primal_all_exact": true,
+      "parent_primal_exact_bytes": {
+        "cloud_bg": true,
+        "cloud_nc": true,
+        "cloud_ni": true,
+        "cloud_nn": true,
+        "cloud_nr": true,
+        "cloud_qc": true,
+        "cloud_qg": true,
+        "cloud_qi": true,
+        "cloud_qr": true,
+        "cloud_qs": true,
+        "finish": true,
+        "native_after_p_center_Pa": true,
+        "native_after_phi_interfaces": true,
+        "native_after_qv": true,
+        "native_after_thm_pert": true,
+        "rho_d": true
+      },
+      "parent_reference": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/baseline/chunk_00022/attempt_0952eb5c7acd486282b3aa2c4f8839dc/result.npz",
+      "parent_reference_sha256": "1d6436896a56bc0772c747e33e0fe990afb5cd218c292f051d7761dce312c5df",
+      "parent_reference_stage": "baseline",
+      "target_level_bottom0": 17,
+      "target_row0": 368
+    }
+  },
+  "candidate_library": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.2.0.0.dylib",
+  "candidate_library_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+  "created_at_utc": "2026-10-25T01:58:07.324790+00:00",
+  "cross_mode_comparison": null,
+  "direction_qv_sha256": "a86c10acd09594842a0ebc1ee836170800cdc9367d3d94d28399460dbb891735",
+  "direction_theta_sha256": "3f29e5faf40e2a9c502c11efb420ce65e45d0e823c9c605f44e1778c44e24fce",
+  "elapsed_seconds": 5.677351624704897,
+  "environment_mode": {
+    "KDM6_BLOCK22_ACTIVATION_TRACE": "unset",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "experiment_plan": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/EXPERIMENT_PLAN_v1.json",
+  "experiment_plan_sha256": "6134431d7fc71016d711813fe57c929300866b9f4463cfd4ae457bccde8bf8fd",
+  "flat_range": [
+    11264,
+    11776
+  ],
+  "input_bundle_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/input_prep_v1/block22_fullB_inputs.npz",
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "input_processor_KDM_calls": 0,
+  "instrumentation_mode": "control",
+  "new_RTTOV_calls": 0,
+  "new_host_calls": 0,
+  "observer_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json",
+  "observer_source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+  "overlay_build_receipt_sha256": "a4cb6281180d25105aaeaac8451bca43ed60fe202b915868cd59f87eb885c572",
+  "parent_chunk_index": 22,
+  "parent_runtime_environment_sha256": "b4a6fa223e4f6ac59b955c4b0cf0c43e648aed77f3fc77d1deb77d2a06440990",
+  "per_basepoint_calls": {
+    "KDM_JVP": 1,
+    "KDM_VJP": 1,
+    "KDM_forward": 1,
+    "RTTOV_calls": 0
+  },
+  "product_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v1/ad_execution_v1/ad_control/block22_actual_jvp_vjp.npz",
+  "product_npz_sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+  "run_id_parent": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "schema": "kdm6.block22_actual_direction_jvp_vjp.v1",
+  "source_v2_batch_adapter_sha256": "c21fb137ccb1f9f724233b83e784d970fb3b98db9f87f3a3a898b3547090a0f9",
+  "source_v2_runner_sha256": "ee23e31fd50cfed35e58caceaf9effbef5b62bd905893c7873d1cc15ccfabd6a",
+  "status": "JVP_VJP_RECORDED",
+  "target_seed": {
+    "level_bottom0": 17,
+    "row0": 368
+  },
+  "trace_path": null,
+  "trace_sha256": null
+}

@@ -1,0 +1,40 @@
+{
+  "K_actual_direction_profile_jvp_K": [
+    -177.07949382430954,
+    -5320.7126434758065,
+    -3107.7597083255287,
+    -4638.528509571267,
+    -5430.190246121158,
+    -5676.832875983402,
+    -3520.420318946322
+  ],
+  "K_profile_fields_match_parent_bits": {
+    "HYDRO6": true,
+    "HYDRO7": true,
+    "HYDRO_DEFF6": true,
+    "HYDRO_DEFF7": true,
+    "P": true,
+    "P_HALF": true,
+    "Q": true,
+    "T": true
+  },
+  "historical_parent_bt_jvp_used": false,
+  "k_npz_sha256": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d",
+  "new_KDM_calls": 0,
+  "new_RTTOV_calls": 0,
+  "parent_baseline_bt_kma_v3_0": [
+    251.15808105601587,
+    275.27456521304646,
+    259.0426167048654,
+    277.2934836204166,
+    275.51584981578844,
+    272.24224912275713,
+    262.7492087103915
+  ],
+  "pilot_receipt_sha256": "8859abebd6f18c250c92b9bdfb915b847a06aa89e97ff82d426df38f41c505e6",
+  "profile_jvp_npz_sha256": "c52c9f6f7b6f8d84811fed3d52aeb66651da13c43da6605697ad67c324809e0e",
+  "profile_jvp_receipt_sha256": "f8c1f2a0435fe1b5fec786be3f0e58588126b1d33d2838eb7596c8bd76cf2b67",
+  "receipt_sha256": "7cd58ca2531eb4a9ce4021bad0fe902d68f046680a1cf51d130df201339fc46f",
+  "schema": "kdm6.block22_baseline_K_actual_candidate_profile_jvp.v1",
+  "scope": "One fresh baseline K call contracted with the saved actual-candidate native direction; first-order local projection only. No tangent is taken through RTTOV K."
+}

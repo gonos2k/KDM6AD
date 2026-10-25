@@ -1,0 +1,57 @@
+{
+  "actual_direction_ad_npz_sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+  "direction_proof_sha256": "c106fcff537acdac68ec0f1546a39dea69a35245318a578cfc8299ee1a93df1e",
+  "full_B_value_npz_sha256": "6189e21c0fbc93ec41a9f6de5632ac159c99e77a0e785ccebbf12e351db81c92",
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "native_ijk1": [
+    167,
+    50,
+    18
+  ],
+  "new_KDM_calls": 0,
+  "new_RTTOV_calls": 0,
+  "preflight_producer_sha256": "c83776d5a0662e1c06832520d0d81a01e0b444bfc60bc1332daf32198a422154",
+  "producer_sha256": "8651970269bb9348027cf6274f1791d128392721430e35e18605bd16327dec82",
+  "profile_fields": {
+    "HYDRO6": [
+      1,
+      66
+    ],
+    "HYDRO7": [
+      1,
+      66
+    ],
+    "HYDRO_DEFF6": [
+      1,
+      66
+    ],
+    "HYDRO_DEFF7": [
+      1,
+      66
+    ],
+    "P": [
+      1,
+      66
+    ],
+    "P_HALF": [
+      1,
+      67
+    ],
+    "Q": [
+      1,
+      66
+    ],
+    "T": [
+      1,
+      66
+    ]
+  },
+  "profile_jvp_npz_sha256": "c52c9f6f7b6f8d84811fed3d52aeb66651da13c43da6605697ad67c324809e0e",
+  "receipt_sha256": "b10587e7e362e69bb302cc8757b633e059c8b22debc44d501ff699dd51f5052c",
+  "reference_scope": "No comparison against the historical sinusoidal-probe profile JVP; this is the saved actual-candidate direction, to be checked against new centered FD endpoint profiles.",
+  "rho_d_tangent_target_finite": true,
+  "schema": "kdm6.block22_actual_candidate_profile_jvp_replay.v2",
+  "status": "SAVED_DATA_REPLAY_COMPLETE",
+  "target_flat0": 11632,
+  "target_row0": 368
+}

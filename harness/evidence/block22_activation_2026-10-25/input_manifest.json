@@ -1,0 +1,241 @@
+{
+  "schema": "kdm6.block22_activation_fd_inputs.v1",
+  "roles": {
+    "ad_control": {
+      "file": "data/ad/control.npz",
+      "sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+      "bytes": 7181013
+    },
+    "ad_off": {
+      "file": "data/ad/off.npz",
+      "sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+      "bytes": 7181013
+    },
+    "ad_on": {
+      "file": "data/ad/on.npz",
+      "sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+      "bytes": 7181013
+    },
+    "input_bundle": {
+      "file": "data/input_bundle.npz",
+      "sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+      "bytes": 19468750
+    },
+    "profile_jvp": {
+      "file": "data/profile_jvp.npz",
+      "sha256": "c52c9f6f7b6f8d84811fed3d52aeb66651da13c43da6605697ad67c324809e0e",
+      "bytes": 6844
+    },
+    "baseline_K": {
+      "file": "data/baseline_K.npz",
+      "sha256": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d",
+      "bytes": 111447
+    },
+    "huber_seed": {
+      "file": "data/huber_seed.json",
+      "sha256": "64c533683aa4348157cd44b0fe3a57f56c832cf4b4825e81e2b0e8b8ee909307",
+      "bytes": 2981
+    },
+    "native_summary": {
+      "file": "data/native_summary.json",
+      "sha256": "9831a334aab5e5fa3530d3bf029307ad072f6d2062498a34853f287cc7158acb",
+      "bytes": 180409
+    },
+    "observation_result": {
+      "file": "data/observation_result.json",
+      "sha256": "974853c4ad8427a34d1c4ddbf2f1b2969288be8e804b60583bfb037f9e32cbb0",
+      "bytes": 33081
+    },
+    "cost_vjp": {
+      "file": "data/cost_vjp.npz",
+      "sha256": "7d6d7dc1805a78c511a99300d940498c47168574252e9450e6acf4d107f47e73",
+      "bytes": 3632986
+    },
+    "activation_trace": {
+      "file": "data/activation_trace.tsv",
+      "sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e",
+      "bytes": 357340
+    },
+    "observer_receipt": {
+      "file": "data/source_receipt.json",
+      "sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+      "bytes": 552
+    },
+    "fd_trace": {
+      "file": "data/fd_trace.tsv",
+      "sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471",
+      "bytes": 1787980
+    },
+    "plan": {
+      "file": "data/experiment_plan_v2.json",
+      "sha256": "fab2afb081d1f74556709a8fbed8dd3f01242ae3aaa417e207ebcf1e617b250f",
+      "bytes": 4476
+    },
+    "accepted_z_block22": {
+      "file": "data/accepted_z_block22.npz",
+      "sha256": "fb39714da83b40d39659222c97eb44c810f63354e818ad09a65247646b0935f9",
+      "bytes": 175022
+    },
+    "objective_inputs": {
+      "file": "data/objective_inputs.npz",
+      "sha256": "efa31b3a7ce88477ee13adb56184e17bd26caee7208a3e36c64ff1379a9028f6",
+      "bytes": 1215
+    }
+  },
+  "endpoints": [
+    {
+      "epsilon": 0.01,
+      "sign": 1,
+      "native": {
+        "file": "data/fd/eps_1e-02_plus/endpoint.npz",
+        "sha256": "d69fdf428b11e738703b62f2255d9116a7cd4beb5903965b869c65bbfa1f20d7",
+        "bytes": 3065936
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-02_plus/target_observation.npz",
+        "sha256": "2919ceeda7bf68516c9a5ff692b7c68a64de86e9ded0f97bbadde5c2ddb06d7b",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 0.01,
+      "sign": -1,
+      "native": {
+        "file": "data/fd/eps_1e-02_minus/endpoint.npz",
+        "sha256": "4b8174b2ecd4c1eaaff6cb3981a7fe4d9da3770ccc42f63e041c7f15a3f5769e",
+        "bytes": 3063808
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-02_minus/target_observation.npz",
+        "sha256": "d47006b5ed1085af21f183886a20c1d5ae3833e25323f7d73f9908952b208f92",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 0.001,
+      "sign": 1,
+      "native": {
+        "file": "data/fd/eps_1e-03_plus/endpoint.npz",
+        "sha256": "164443ecda3552379fba8e4b09d96edcba87c0f9d472e05a862c513ba8c6f09b",
+        "bytes": 3039950
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-03_plus/target_observation.npz",
+        "sha256": "3d27e03c892e7613ec008d317fce9d563a68416c1a940983f01e5ba6baae925b",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 0.001,
+      "sign": -1,
+      "native": {
+        "file": "data/fd/eps_1e-03_minus/endpoint.npz",
+        "sha256": "41c746839b2f3b6edd285b92fe27282fa57d141668086f9273765fbf712ea4ae",
+        "bytes": 3038925
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-03_minus/target_observation.npz",
+        "sha256": "2457e046bcde8f325553e96236cdd4c6bc439d3a80c39e7e1a0a7c4435e28547",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 0.0001,
+      "sign": 1,
+      "native": {
+        "file": "data/fd/eps_1e-04_plus/endpoint.npz",
+        "sha256": "caecace685272312527f44898f094efca9b43e92ac4e11b8376bba563215e6fd",
+        "bytes": 3003557
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-04_plus/target_observation.npz",
+        "sha256": "ed7c175237c2b5504e3dd90684258c2b572e15390b93cfde67e65aad4c86a80f",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 0.0001,
+      "sign": -1,
+      "native": {
+        "file": "data/fd/eps_1e-04_minus/endpoint.npz",
+        "sha256": "aef7a3f3e6fc82ef08f0be1a532a2e0a435e13b5068313e29fc243135eea0b9a",
+        "bytes": 3003626
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-04_minus/target_observation.npz",
+        "sha256": "31e293a65ebf8fd18b7b98678e01e58589414c9875f07c03267721cd57b6c2c8",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 1e-05,
+      "sign": 1,
+      "native": {
+        "file": "data/fd/eps_1e-05_plus/endpoint.npz",
+        "sha256": "5182fd569e08a964374496223f70ff8778fdf2158a1241519893cfc24131ca14",
+        "bytes": 2963511
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-05_plus/target_observation.npz",
+        "sha256": "4bbc668d2c6a2e7dfd3d274d5172eb5b4d3601328a614eaebc8143e001565f25",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 1e-05,
+      "sign": -1,
+      "native": {
+        "file": "data/fd/eps_1e-05_minus/endpoint.npz",
+        "sha256": "e5bdd166f551d647b180cfd1c3a915497a9bbea0c5a83d85caa99c84d6039a32",
+        "bytes": 2963370
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-05_minus/target_observation.npz",
+        "sha256": "7abfe836e466037622f0fcfaba70ba65bb1f9a9d33baa07604a8a42b443a8e95",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 1e-06,
+      "sign": 1,
+      "native": {
+        "file": "data/fd/eps_1e-06_plus/endpoint.npz",
+        "sha256": "889329b043a8e4c3710e8d9e98235604fcbbec5f433ba6cd9615bf38a8fa2c66",
+        "bytes": 2918838
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-06_plus/target_observation.npz",
+        "sha256": "d1a05d00bd2d273f05f639ca129c640cf0128ff420c07c87fdde8775b8e5c2ee",
+        "bytes": 7676
+      }
+    },
+    {
+      "epsilon": 1e-06,
+      "sign": -1,
+      "native": {
+        "file": "data/fd/eps_1e-06_minus/endpoint.npz",
+        "sha256": "3df3fe501ed515e07578eff9ea07fe41fd3fb7c16e18d3cc340498c98cf12ee7",
+        "bytes": 2919062
+      },
+      "observation": {
+        "file": "data/observation/eps_1e-06_minus/target_observation.npz",
+        "sha256": "a2083157916b3fef026f2f7df44c6b02b6311b77f2d2849d3623adb6b697489c",
+        "bytes": 7676
+      }
+    }
+  ],
+  "scope": "Saved-array replay. One-step microphysics supplies tendencies at a fixed analysis stage; no forecast cycling. Joint33 criterion failures retained.",
+  "fixed_inputs_proof": "PH/MU/rest are source-bound common inputs. Per-endpoint PH/MU were not separately serialized; actual output phi and forcing DEN/DELZ plus raw rest rows support the fixed-geometry check.",
+  "original_accepted_z_file_sha256": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+  "control_zero_history": {
+    "accepted_run_control_npz_sha256": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+    "accepted_run_control_array_sha256": "1177f076e4d8421bfe855f3fd9e064d54bedcf353fcda211c35a4d7059710c38",
+    "recorded_AD_direction_recipe": "input_bundle parent_alpha025__delta_theta/qv divided by 0.25",
+    "numeric_equal": true,
+    "signed_zero_bit_differences_per_component": [
+      8619,
+      8619
+    ],
+    "scope": "Accepted-run/public proposal and actual parent-delta AD direction are the same real vector with separate zero encodings. All ten native finite inputs are byte-identical; AD recording identities use the parent-delta bytes, not a relabeled accepted-control encoding."
+  }
+}

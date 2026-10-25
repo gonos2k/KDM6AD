@@ -1,0 +1,33 @@
+{
+  "schema": "kdm6.block22_AD_saved_arithmetic_replay.v1",
+  "products_per_mode": 98,
+  "three_mode_bitwise_equal": true,
+  "all_arrays_finite": true,
+  "DOT_RTOL": 1e-10,
+  "checks": {
+    "baseline": {
+      "native_lhs": 0.09464714292014817,
+      "native_rhs": 0.0946471429201482,
+      "native_relative_error": 2.9325317975045174e-16,
+      "ABI_lhs": 0.0946471627147352,
+      "ABI_rhs": 0.09464716271473522,
+      "ABI_relative_error": 2.9325311841923566e-16,
+      "passed": true
+    },
+    "alpha025": {
+      "native_lhs": 0.09637712768915166,
+      "native_rhs": 0.09637712768915181,
+      "native_relative_error": 1.5839408119561744e-15,
+      "ABI_lhs": 0.09639644002110301,
+      "ABI_rhs": 0.09639644002110304,
+      "ABI_relative_error": 2.8793154196931635e-16,
+      "passed": true
+    }
+  },
+  "products_sha256": {
+    "block22_actual_jvp_vjp.npz:ad_control": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+    "block22_actual_jvp_vjp.npz:ad_trace_off": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+    "block22_actual_jvp_vjp.npz:ad_trace_on": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af"
+  },
+  "scope": "Actual candidate direction, selected native theta cotangent; independent saved-array transpose replay, not FD or all Jacobian directions."
+}

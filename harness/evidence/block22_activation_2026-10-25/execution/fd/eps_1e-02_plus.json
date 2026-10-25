@@ -1,0 +1,17 @@
+{
+  "RTTOV_calls": 0,
+  "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-02_plus/endpoint.npz",
+  "endpoint_npz_sha256": "d69fdf428b11e738703b62f2255d9116a7cd4beb5903965b869c65bbfa1f20d7",
+  "epsilon": 0.01,
+  "fullB_KDM_calls": 1,
+  "invalid_profile_rows": {},
+  "profile_builder_calls": 1,
+  "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+  "schema": "kdm6.block22_centered_fd_endpoint.v1",
+  "sign": 1,
+  "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+  "tag": "eps_1e-02_plus",
+  "trace_call_ordinal": 1,
+  "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+  "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+}

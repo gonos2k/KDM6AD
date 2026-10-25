@@ -1,0 +1,975 @@
+"""Offline full-domain audit of saved native cloud fields and BT response.
+
+Reads the source-pinned 129-chunk efficacy export, restricted controls, and
+saved baseline/candidate RTTOV results. Performs no KDM, RTTOV, host, or
+optimizer calls and acquires no external data.
+"""
+from __future__ import annotations
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+
+import numpy as np
+
+
+EXPORT_ROOT = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/extraction_v1/export_v1")
+RESTRICTED_DATA = Path("/private/tmp/KDM6AD-block22-activation-20261025/harness/evidence/native_satellite_restricted_2026-10-25/data")
+RESTRICTED_MANIFEST = RESTRICTED_DATA / "publication_manifest.json"
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+IR105_CHANNEL_INDEX = 3
+NX, NY, LEVELS, NCOLUMNS = 234, 282, 39, 65988
+EXPECTED_EXPORT_MANIFEST_SHA = "66a358255ed136c809ecf83d174e5bbbe7bd89f9b62b8e2efbd0405eb3cbf077"
+EXPECTED_RESTRICTED_CHANNEL_SHA = "a79a02eefc12dd112b5374843bb1d4be445c95aa72016f3908050d2329acb949"
+EXPECTED_RESTRICTED_Z_SHA = "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11"
+FIELDS = {
+    "T": "temperature_native_K_bottomfirst",
+    "QV": "qv_kgkg_dry",
+    "QC": "qc_kgkg",
+    "QI": "qi_kgkg",
+    "QS": "qs_kgkg",
+}
+PHASES = ("baseline", "candidate")
+
+
+def sha(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def same_bits(left, right) -> bool:
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def _write_json_new(path: Path, payload: dict) -> str:
+    encoded = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _write_npz_new(path: Path, arrays: dict) -> dict:
+    with Path(path).open("xb") as stream:
+        np.savez_compressed(stream, **arrays)
+        stream.flush()
+        os.fsync(stream.fileno())
+    size = Path(path).stat().st_size
+    if size > 50 * 1024 * 1024:
+        raise ValueError(f"split native bundle exceeds 50 MiB: {path} ({size} bytes)")
+    return {
+        "path": str(path), "sha256": sha(path), "bytes": size,
+        "keys": sorted(arrays),
+        "arrays": {name: {"shape": list(np.asarray(value).shape), "dtype": np.asarray(value).dtype.str}
+                   for name, value in arrays.items()},
+    }
+
+
+def _hash_one(item):
+    label, path, expected = item
+    path = Path(path)
+    if not path.is_file() or path.is_symlink():
+        return label, str(path), False, "missing_or_symlink"
+    actual = sha(path)
+    return label, str(path), actual == expected, actual
+
+
+def _quantiles(values):
+    a = np.asarray(values, dtype=np.float64)
+    if not a.size:
+        return {"count": 0}
+    q = np.quantile(a, [0.0, 0.5, 0.9, 0.95, 0.99, 0.999, 1.0])
+    return {
+        "count": int(a.size), "mean": float(np.mean(a)), "median": float(q[1]),
+        "p90": float(q[2]), "p95": float(q[3]), "p99": float(q[4]),
+        "p99_9": float(q[5]), "max": float(q[6]),
+        "rms_magnitude": float(np.sqrt(np.mean(a * a))),
+    }
+
+
+def _bt_delta_summary(delta_bt_k):
+    delta = np.asarray(delta_bt_k, dtype=np.float64)
+    if not delta.size:
+        return {"count": 0}
+    absolute = np.abs(delta)
+    q = np.quantile(absolute, [0.0, 0.5, 0.9, 0.95, 0.99, 0.999, 1.0])
+    return {
+        "count": int(delta.size),
+        "absolute_delta_quantiles_K": {
+            "min": float(q[0]), "p50": float(q[1]), "p90": float(q[2]),
+            "p95": float(q[3]), "p99": float(q[4]), "p99_9": float(q[5]), "max": float(q[6]),
+        },
+        "rms_increment_K": float(np.sqrt(np.mean(delta * delta))),
+        "count_abs_ge_0p1K": int(np.count_nonzero(absolute >= 0.1)),
+        "count_abs_ge_1K": int(np.count_nonzero(absolute >= 1.0)),
+        "count_abs_lt_0p1K": int(np.count_nonzero(absolute < 0.1)),
+        "signed_mean_delta_K": float(np.mean(delta)),
+    }
+
+
+def _residual_stats(residual):
+    residual = np.asarray(residual, dtype=np.float64)
+    if not residual.size:
+        return {"count": 0}
+    absolute = np.abs(residual)
+    return {
+        "count": int(residual.size),
+        "bias_mean_K": float(np.mean(residual)),
+        "rmse_K": float(np.sqrt(np.mean(residual * residual))),
+        "mae_K": float(np.mean(absolute)),
+        "median_abs_residual_K": float(np.median(absolute)),
+        "p90_abs_residual_K": float(np.quantile(absolute, 0.9)),
+        "p95_abs_residual_K": float(np.quantile(absolute, 0.95)),
+        "p99_abs_residual_K": float(np.quantile(absolute, 0.99)),
+        "max_abs_residual_K": float(np.max(absolute)),
+    }
+
+
+def _residual_skill(baseline_bt, candidate_bt, observed_bt, selector):
+    b = np.asarray(baseline_bt, dtype=np.float64)[selector]
+    c = np.asarray(candidate_bt, dtype=np.float64)[selector]
+    o = np.asarray(observed_bt, dtype=np.float64)[selector]
+    if not b.size:
+        return {"support_count": 0}
+    if not (np.isfinite(b).all() and np.isfinite(c).all() and np.isfinite(o).all()):
+        raise ValueError("nonfinite BT on fixed residual cohort")
+    br = b - o
+    cr = c - o
+    absolute_gain = np.abs(br) - np.abs(cr)  # positive means candidate closer to observation
+    return {
+        "support_count": int(b.size),
+        "baseline_B_minus_O_residual": _residual_stats(br),
+        "baseline_O_minus_B_residual": _residual_stats(-br),
+        "candidate_A_minus_O_residual": _residual_stats(cr),
+        "candidate_O_minus_A_residual": _residual_stats(-cr),
+        "baseline_minus_candidate_RMSE_improvement_K": float(np.sqrt(np.mean(br * br)) - np.sqrt(np.mean(cr * cr))),
+        "baseline_minus_candidate_MAE_improvement_K": float(np.mean(np.abs(br)) - np.mean(np.abs(cr))),
+        "absolute_residual_gain_baseline_minus_candidate_K": {
+            "mean": float(np.mean(absolute_gain)),
+            "median": float(np.median(absolute_gain)),
+            "positive_count": int(np.count_nonzero(absolute_gain > 0.0)),
+            "worsened_count": int(np.count_nonzero(absolute_gain < 0.0)),
+            "unchanged_count": int(np.count_nonzero(absolute_gain == 0.0)),
+            "improved_by_at_least_0p1K": int(np.count_nonzero(absolute_gain >= 0.1)),
+            "improved_by_at_least_1K": int(np.count_nonzero(absolute_gain >= 1.0)),
+        },
+    }
+
+
+def _phase_delta_stats(base, candidate, selector):
+    b = np.asarray(base, dtype=np.float64)[selector]
+    c = np.asarray(candidate, dtype=np.float64)[selector]
+    d = c - b
+    if not d.size:
+        return {"columns": 0}
+    return {
+        "columns": int(d.size),
+        "baseline": _quantiles(b),
+        "candidate": _quantiles(c),
+        "delta_candidate_minus_baseline": {
+            **_quantiles(d),
+            "positive_columns": int(np.count_nonzero(d > 0.0)),
+            "negative_columns": int(np.count_nonzero(d < 0.0)),
+            "zero_columns": int(np.count_nonzero(d == 0.0)),
+        },
+    }
+
+
+def _level_stats(delta, selector):
+    values = np.asarray(delta, dtype=np.float64)[selector]
+    if not values.size:
+        return {"columns": 0}
+    q10, med, q90 = np.quantile(values, [0.1, 0.5, 0.9], axis=0)
+    return {
+        "columns": int(values.shape[0]),
+        "native_k_bottomfirst_1based": list(range(1, values.shape[1] + 1)),
+        "mean": np.mean(values, axis=0).tolist(),
+        "median": med.tolist(),
+        "p10": q10.tolist(),
+        "p90": q90.tolist(),
+        "max_abs": np.max(np.abs(values), axis=0).tolist(),
+        "nonzero_columns_by_level": np.count_nonzero(values != 0.0, axis=0).tolist(),
+        "positive_cells_by_level": np.count_nonzero(values > 0.0, axis=0).tolist(),
+        "negative_cells_by_level": np.count_nonzero(values < 0.0, axis=0).tolist(),
+    }
+
+
+def _plot_outputs(outdir, data, cohorts, top_columns):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    d_bt = data["candidate_bt"][:, IR105_CHANNEL_INDEX] - data["baseline_bt"][:, IR105_CHANNEL_INDEX]
+    mask = data["m0_ir105"]
+    ny, nx = NY, NX
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10), constrained_layout=True)
+    panels = [
+        (d_bt, "IR105 model BT change (candidate − baseline), K", mask),
+        (data["candidate__lwp_QC_kg_m2"] - data["baseline__lwp_QC_kg_m2"], "LWP change, kg m$^{-2}$ (QC only)", mask),
+        (data["candidate__iwp_ice_QI_kg_m2"] - data["baseline__iwp_ice_QI_kg_m2"], "IWP change, kg m$^{-2}$ (QI only)", mask),
+        (data["candidate__iwp_optical_QI_plus_QS_kg_m2"] - data["baseline__iwp_optical_QI_plus_QS_kg_m2"], "Optical IWP change, kg m$^{-2}$ (QI + QS)", mask),
+    ]
+    for ax, (field, title, support) in zip(axes.ravel(), panels):
+        grid = np.asarray(field).reshape(ny, nx).astype(np.float64)
+        grid[~np.asarray(support).reshape(ny, nx)] = np.nan
+        image = ax.imshow(grid, origin="lower", aspect="auto", cmap="coolwarm")
+        ax.set_title(title)
+        ax.set_xlabel("native i index (0-based)")
+        ax.set_ylabel("native j index (0-based)")
+        fig.colorbar(image, ax=ax, shrink=0.8)
+        for entry in top_columns:
+            ax.plot(entry["native_i1"] - 1, entry["native_j1"] - 1, "k.", ms=3)
+    fig.suptitle("Offline paired native-domain response; black dots mark top projected-gradient columns")
+    fig.savefig(outdir / "native_response_maps.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), constrained_layout=True)
+    named = [
+        ("m0_ir105", "m0 IR105 support"),
+        ("m0_ir105_active_control_unfrozen", "m0 with nonzero restricted control"),
+        ("liquid_empty_warm_m0_ir105", "QC-empty, B−O > 10 K"),
+        ("liquid_empty_warm_active_control", "QC-empty, B−O > 10 K, nonzero control"),
+    ]
+    for name, label in named:
+        vals = np.abs(d_bt[cohorts[name]])
+        if vals.size:
+            axes[0].hist(vals, bins=np.linspace(0, max(1.0, float(np.quantile(vals, 0.995))), 60),
+                         histtype="step", density=True, label=f"{label} (n={vals.size})")
+    axes[0].axvline(0.1, color="gray", linestyle="--", linewidth=1)
+    axes[0].axvline(1.0, color="black", linestyle=":", linewidth=1)
+    axes[0].set_xlabel("|ΔBT IR105|, K")
+    axes[0].set_ylabel("density")
+    axes[0].set_title("BT response distributions")
+    axes[0].legend(fontsize=8)
+    axes[1].axis("off")
+    axes[1].text(0.0, 0.95, "Cohort definitions", fontsize=12, weight="bold", va="top")
+    axes[1].text(0.0, 0.86,
+                 "m0 IR105: frozen baseline fixed-support mask, channel 13.\n"
+                 "Active control: any nonzero component of either restricted z field.\n"
+                 "QC-empty: baseline QC is exactly zero at all 39 native levels.\n"
+                 "Warm residual: baseline model BT − observed BT > 10 K.\n"
+                 "Liquid-empty does not mean optically empty; QI/QS are tested separately.",
+                 fontsize=10, va="top", linespacing=1.5)
+    fig.savefig(outdir / "bt_cohort_distributions.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 5, figsize=(18, 4), constrained_layout=True)
+    field_labels = [("T", "ΔT, K"), ("QV", "ΔQV, kg/kg"), ("QC", "ΔQC, kg/kg"),
+                    ("QI", "ΔQI, kg/kg"), ("QS", "ΔQS, kg/kg")]
+    cohort = cohorts["m0_ir105_active_control_unfrozen"]
+    for ax, (name, label) in zip(axes, field_labels):
+        stats = data["level_stats_m0_active_control"][name]
+        k = np.asarray(stats["native_k_bottomfirst_1based"])
+        med = np.asarray(stats["median"])
+        lo = np.asarray(stats["p10"])
+        hi = np.asarray(stats["p90"])
+        ax.plot(med, k, color="navy")
+        ax.fill_betweenx(k, lo, hi, color="steelblue", alpha=0.3)
+        ax.axvline(0.0, color="black", linewidth=0.6)
+        ax.set_title(label)
+        ax.set_ylabel("native mass level, bottom-first (1-based)")
+    fig.suptitle(f"Native-level deltas on m0 columns with nonzero restricted controls (n={int(cohort.sum())})")
+    fig.savefig(outdir / "native_level_deltas.png", dpi=170)
+    plt.close(fig)
+
+
+def audit(export_root: Path, outdir: Path):
+    if outdir.exists() or outdir.is_symlink():
+        raise FileExistsError(f"audit output must be new: {outdir}")
+    export_root = Path(export_root)
+    manifest_path = export_root / "output_manifest.json"
+    completion_path = export_root / "completion.json"
+    execution_path = export_root / "execution_receipt.json"
+    input_manifest_path = export_root / "input_manifest.json"
+    restricted_manifest_path = RESTRICTED_MANIFEST
+    control_path = RESTRICTED_DATA / "restricted_controls.npz"
+    sourcebound_path = RESTRICTED_DATA / "restricted_candidate_sourcebound.json"
+    comp_path = RESTRICTED_DATA / "channel_comparison.npz"
+    topgrad_path = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/top_gradient_columns_v1.json")
+    baseline_source = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/source_v3")
+    candidate_source = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+
+    manifest_sha = sha(manifest_path)
+    if manifest_sha != EXPECTED_EXPORT_MANIFEST_SHA:
+        raise ValueError("native cloud efficacy output manifest SHA differs")
+    manifest = json.loads(manifest_path.read_text())
+    completion = json.loads(completion_path.read_text())
+    execution = json.loads(execution_path.read_text())
+    source_manifest = json.loads(input_manifest_path.read_text())
+    restricted_manifest = json.loads(restricted_manifest_path.read_text())
+    sourcebound = json.loads(sourcebound_path.read_text())
+    if sha(input_manifest_path) != manifest["input_manifest_sha256"]:
+        raise ValueError("export input manifest hash differs")
+    if sha(comp_path) != EXPECTED_RESTRICTED_CHANNEL_SHA or sha(control_path) != EXPECTED_RESTRICTED_Z_SHA:
+        raise ValueError("restricted comparison/control source hashes differ")
+    if restricted_manifest["artifacts"]["channel_comparison.npz"]["sha256"] != EXPECTED_RESTRICTED_CHANNEL_SHA:
+        raise ValueError("restricted publication manifest does not pin channel_comparison.npz")
+    if restricted_manifest["artifacts"]["restricted_controls.npz"]["sha256"] != EXPECTED_RESTRICTED_Z_SHA:
+        raise ValueError("restricted publication manifest does not pin restricted controls")
+    if sourcebound.get("control_npz_sha256") != EXPECTED_RESTRICTED_Z_SHA:
+        raise ValueError("source-bound restricted candidate does not pin z archive")
+    if manifest.get("status") != "COMPLETE_ALL_NATIVE_COLUMNS" or manifest.get("chunk_count") != 129 or manifest.get("columns_verified") != NCOLUMNS:
+        raise ValueError("export does not certify all 129 native chunks and 65,988 columns")
+    if completion.get("output_manifest_sha256") != manifest_sha or completion.get("status") != "COMPLETE_ALL_NATIVE_COLUMNS":
+        raise ValueError("completion receipt does not bind complete exporter manifest")
+    if execution.get("call_counts") != {"KDM6": 0, "RTTOV": 0, "host": 0, "optimizer": 0}:
+        raise ValueError("export execution receipt reports an unexpected model/host/optimizer call")
+    if manifest.get("candidate_alpha") != 1.0 or manifest.get("candidate_stage") != "RESTRICTED_alpha_1p0":
+        raise ValueError("paired candidate is not the declared restricted alpha=1 endpoint")
+    source_files = {
+        "baseline_case_packet_loader": baseline_source / "harness/prepare_native_satellite_case.py",
+        "baseline_native_batch_microphysics": baseline_source / "harness/native_batch_microphysics.py",
+        "baseline_native_batch_profile": baseline_source / "oracle/kdm6/obs/native_batch_profile.py",
+        "baseline_native_cloud_profile": baseline_source / "oracle/kdm6/obs/native_cloud_profile.py",
+        "baseline_native_finish": baseline_source / "oracle/kdm6/native_finish.py",
+        "baseline_native_observation_batch": baseline_source / "harness/native_observation_batch.py",
+        "baseline_native_prep": baseline_source / "oracle/kdm6/native_prep.py",
+        "baseline_native_profile_builder": baseline_source / "oracle/kdm6/obs/native_profile_builder.py",
+        "candidate_case_packet_loader": candidate_source / "harness/prepare_native_satellite_case.py",
+        "candidate_native_batch_microphysics": candidate_source / "harness/native_batch_microphysics.py",
+        "candidate_native_batch_profile": candidate_source / "oracle/kdm6/obs/native_batch_profile.py",
+        "candidate_native_cloud_profile": candidate_source / "oracle/kdm6/obs/native_cloud_profile.py",
+        "candidate_native_finish": candidate_source / "oracle/kdm6/native_finish.py",
+        "candidate_native_observation_batch": candidate_source / "harness/native_observation_batch.py",
+        "candidate_native_prep": candidate_source / "oracle/kdm6/native_prep.py",
+        "candidate_native_profile_builder": candidate_source / "oracle/kdm6/obs/native_profile_builder.py",
+    }
+    source_checks = {name: sha(path) == manifest["source_code_sha256"][name] for name, path in source_files.items()}
+    if not all(source_checks.values()):
+        raise ValueError(f"one or more source-v2/source-v3 pins changed: {source_checks}")
+
+    with np.load(comp_path, allow_pickle=False) as z:
+        comp = {key: z[key] for key in z.files}
+    required_comp = {"flat_index", "observed_bt", "baseline_bt", "candidate_bt", "mask", "weights",
+                     "baseline_quality", "candidate_quality", "baseline_profile_valid", "candidate_profile_valid"}
+    if required_comp - set(comp):
+        raise ValueError(f"channel comparison bundle missing keys {sorted(required_comp-set(comp))}")
+    if comp["flat_index"].shape != (NCOLUMNS,) or not np.array_equal(comp["flat_index"], np.arange(NCOLUMNS, dtype=np.int32)):
+        raise ValueError("channel comparison flat index domain differs")
+    if comp["mask"].shape != (NCOLUMNS, 7) or comp["weights"].shape != (NCOLUMNS, 7):
+        raise ValueError("channel comparison support/weight shapes differ")
+
+    with np.load(control_path, allow_pickle=False) as z:
+        controls = np.asarray(z["z"])
+    if controls.shape != (2, NCOLUMNS, LEVELS) or controls.dtype != np.float64:
+        raise ValueError("restricted z must be float64 [2,65988,39]")
+    if hashlib.sha256(np.ascontiguousarray(controls).tobytes()).hexdigest() != sourcebound["control_z_sha256"]:
+        raise ValueError("restricted z array hash differs from source-bound screen")
+    frozen_blocks = [int(x) for x in sourcebound["freeze_blocks_0based"]]
+    frozen = np.zeros(NCOLUMNS, dtype=np.bool_)
+    for block in frozen_blocks:
+        start = block * 512
+        stop = min(start + 512, NCOLUMNS)
+        frozen[start:stop] = True
+    if len(frozen_blocks) != 25 or not np.all(controls[:, frozen, :] == 0.0):
+        raise ValueError("restricted frozen-block mask differs from its source-bound definition")
+    active_control = np.any(controls != 0.0, axis=(0, 2))
+    if np.any(active_control & frozen):
+        raise ValueError("a frozen block has nonzero projected control")
+
+    data = {
+        "flat_index": np.empty(NCOLUMNS, dtype=np.int32),
+        "baseline_bt": np.empty((NCOLUMNS, 7), dtype=np.float64),
+        "candidate_bt": np.empty((NCOLUMNS, 7), dtype=np.float64),
+        "observed_bt": np.empty((NCOLUMNS, 7), dtype=np.float64),
+        "mask": np.empty((NCOLUMNS, 7), dtype=np.bool_),
+        "weights": np.empty((NCOLUMNS, 7), dtype=np.float64),
+        "baseline_quality": np.empty((NCOLUMNS, 7), dtype=np.int32),
+        "candidate_quality": np.empty((NCOLUMNS, 7), dtype=np.int32),
+        "baseline_profile_valid": np.empty(NCOLUMNS, dtype=np.bool_),
+        "candidate_profile_valid": np.empty(NCOLUMNS, dtype=np.bool_),
+    }
+    physical_names = ("temperature_native_K_bottomfirst", "qv_kgkg_dry", "qc_kgkg", "qi_kgkg", "qs_kgkg", "qg_kgkg",
+                      "rho_DEN_kg_m3", "rho_postEOS_kg_m3", "delz_m", "phi_interfaces_m2_s2",
+                      "pressure_center_Pa", "pressure_interface_Pa_bottomfirst")
+    physical_shapes = {
+        "phi_interfaces_m2_s2": (NCOLUMNS, LEVELS + 1),
+        "pressure_interface_Pa_bottomfirst": (NCOLUMNS, LEVELS + 1),
+    }
+    for phase in PHASES:
+        for name in physical_names:
+            data[phase + "__" + name] = np.empty(physical_shapes.get(name, (NCOLUMNS, LEVELS)), dtype=np.float64)
+        data[phase + "__profile_cfrac_native_bottomfirst"] = np.full((NCOLUMNS, LEVELS), np.nan, dtype=np.float64)
+        for name in ("lwp_QC_kg_m2", "iwp_ice_QI_kg_m2", "iwp_optical_QI_plus_QS_kg_m2", "qg_column_mass_kg_m2_optional"):
+            data[phase + "__" + name] = np.empty(NCOLUMNS, dtype=np.float64)
+        data[phase + "__profile_valid"] = np.empty(NCOLUMNS, dtype=np.bool_)
+        data[phase + "__quality"] = np.empty((NCOLUMNS, 7), dtype=np.int32)
+        data[phase + "__mask"] = np.empty((NCOLUMNS, 7), dtype=np.bool_)
+        data[phase + "__weights"] = np.empty((NCOLUMNS, 7), dtype=np.float64)
+        data[phase + "__source_dqf"] = np.empty((NCOLUMNS, 7), dtype=np.uint8)
+        data[phase + "__source_qc"] = np.empty((NCOLUMNS, 7), dtype=np.float64)
+        data[phase + "__source_eligible"] = np.empty((NCOLUMNS, 7), dtype=np.bool_)
+        data[phase + "__initial_negative_nc"] = np.empty(NCOLUMNS, dtype=np.bool_)
+        data[phase + "__initial_negative_ni"] = np.empty(NCOLUMNS, dtype=np.bool_)
+        data[phase + "__profile_t_stored_native39"] = [None] * 129
+
+    # Verify all source-result, receipt, applied-physics, packet, and exported chunk hashes.
+    hash_jobs = []
+    for out in manifest["output_chunks"]:
+        hash_jobs.append((f"output_chunk_{out['chunk_index']}", out["path"], out["sha256"]))
+    for item in manifest["input_shas_and_receipts"]:
+        for path_key, sha_key in (
+            ("baseline_artifact", "baseline_artifact_sha256"),
+            ("baseline_receipt", "baseline_receipt_sha256"),
+            ("candidate_artifact", "candidate_artifact_sha256"),
+            ("candidate_receipt", "candidate_receipt_sha256"),
+            ("source_packet", "source_packet_sha256"),
+            ("baseline_applied_physics_audit", "baseline_applied_physics_audit_sha256"),
+        ):
+            hash_jobs.append((f"chunk_{item['chunk_index']}_{path_key}", item[path_key], item[sha_key]))
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        hash_results = list(pool.map(_hash_one, hash_jobs))
+    hash_failures = [x for x in hash_results if not x[2]]
+    if hash_failures:
+        raise ValueError(f"source/output hash verification failed: {hash_failures[:5]}")
+
+    coverage_ranges = []
+    profile_bit_checks = {phase: 0 for phase in PHASES}
+    profile_fallback_rows = {phase: 0 for phase in PHASES}
+    geometry_gate_checks = 0
+    for out in sorted(manifest["output_chunks"], key=lambda x: x["chunk_index"]):
+        ci = int(out["chunk_index"])
+        item = manifest["input_shas_and_receipts"][ci]
+        start, stop = int(out["start_flat"]), int(out["stop_flat_exclusive"])
+        expected_flat = np.arange(start, stop, dtype=np.int32)
+        if stop - start != int(out["columns"]) or not np.array_equal(expected_flat, np.arange(start, stop, dtype=np.int32)):
+            raise ValueError(f"invalid chunk range metadata at {ci}")
+        with np.load(out["path"], allow_pickle=False) as archive:
+            chunk = {key: archive[key] for key in archive.files}
+        n = stop - start
+        if not np.array_equal(chunk["flat_index"], expected_flat):
+            raise ValueError(f"exported flat indices are not contiguous at chunk {ci}")
+        if not np.array_equal(chunk["baseline__flat_index"], expected_flat) or not np.array_equal(chunk["candidate__flat_index"], expected_flat):
+            raise ValueError(f"paired flat-index arrays differ at chunk {ci}")
+        gates = out["geometry_density_gates"]
+        if gates.get("baseline_candidate_DELZ_bitwise_equal") is not True or gates.get("baseline_candidate_phi_interfaces_bitwise_equal") is not True or gates.get("baseline_rho_postEOS_equals_replayed_actual_DEN_bitwise") is not True or gates.get("candidate_rho_postEOS_equals_applied_DEN_bitwise") is not True:
+            raise ValueError(f"density/geometry gates failed at chunk {ci}")
+        geometry_gate_checks += 1
+        data["flat_index"][start:stop] = expected_flat
+        for name in ("observed_bt", "baseline_bt", "candidate_bt", "mask", "weights", "baseline_quality", "candidate_quality", "baseline_profile_valid", "candidate_profile_valid"):
+            data[name][start:stop] = comp[name][start:stop]
+        for phase in PHASES:
+            pv = np.asarray(chunk[phase + "__profile_valid"], dtype=np.bool_)
+            data[phase + "__profile_valid"][start:stop] = pv
+            rows = np.asarray(chunk[phase + "__profile_rows"], dtype=np.int64)
+            if pv.shape != (n,) or not np.array_equal(rows, np.flatnonzero(pv)):
+                raise ValueError(f"profile row map differs at chunk {ci}/{phase}")
+            for name in physical_names:
+                value = np.asarray(chunk[phase + "__" + name], dtype=np.float64)
+                expected_shape = (n, LEVELS + 1) if name in ("phi_interfaces_m2_s2", "pressure_interface_Pa_bottomfirst") else (n, LEVELS)
+                if value.shape != expected_shape or not np.isfinite(value).all():
+                    raise ValueError(f"physical field shape/finite gate failed {ci}/{phase}/{name}")
+                data[phase + "__" + name][start:stop] = value
+            for name in ("lwp_QC_kg_m2", "iwp_ice_QI_kg_m2", "iwp_optical_QI_plus_QS_kg_m2", "qg_column_mass_kg_m2_optional"):
+                value = np.asarray(chunk[phase + "__" + name], dtype=np.float64)
+                if value.shape != (n,) or not np.isfinite(value).all():
+                    raise ValueError(f"column integral shape/finite gate failed {ci}/{phase}/{name}")
+                data[phase + "__" + name][start:stop] = value
+            for name, dtype, shape in (
+                ("quality", np.int32, (n, 7)), ("mask", np.bool_, (n, 7)),
+                ("weights", np.float64, (n, 7)), ("source_dqf", np.uint8, (n, 7)),
+                ("source_qc", np.float64, (n, 7)), ("source_eligible", np.bool_, (n, 7)),
+                ("initial_negative_nc", np.bool_, (n,)), ("initial_negative_ni", np.bool_, (n,)),
+            ):
+                value = np.asarray(chunk[phase + "__" + name])
+                if value.shape != shape or value.dtype != dtype:
+                    raise ValueError(f"support array shape/dtype failed {ci}/{phase}/{name}")
+                data[phase + "__" + name][start:stop] = value
+            stored = np.asarray(chunk[phase + "__profile_T_RTTOV_order_stored_native39"], dtype=np.float64)
+            if stored.shape != (rows.size, LEVELS):
+                raise ValueError(f"stored profile_T rows shape failed {ci}/{phase}")
+            native_t = data[phase + "__temperature_native_K_bottomfirst"][start:stop]
+            if not same_bits(stored, native_t[rows, ::-1]):
+                raise ValueError(f"native vs stored RTTOV profile temperature bits differ at {ci}/{phase}")
+            profile_bit_checks[phase] += int(rows.size)
+            profile_fallback_rows[phase] += int(np.count_nonzero(~chunk[phase + "__temperature_helper_success"]))
+        for phase in PHASES:
+            if not np.array_equal(data[phase + "__mask"][start:stop], comp["mask"][start:stop]):
+                raise ValueError(f"fixed support mask differs in exported {phase} chunk {ci}")
+            if not np.array_equal(data[phase + "__weights"][start:stop], comp["weights"][start:stop]):
+                raise ValueError(f"fixed weights differ in exported {phase} chunk {ci}")
+        if not np.array_equal(chunk["baseline__observation_bt_K"], comp["observed_bt"][start:stop]) or not np.array_equal(chunk["candidate__observation_bt_K"], comp["observed_bt"][start:stop]):
+            raise ValueError(f"observed BT differs from channel-comparison source at chunk {ci}")
+        with np.load(item["baseline_artifact"], allow_pickle=False) as baseline_npz, np.load(item["candidate_artifact"], allow_pickle=False) as candidate_npz, np.load(item["source_packet"], allow_pickle=False) as packet, np.load(item["baseline_applied_physics_audit"], allow_pickle=False) as applied_audit:
+            if not same_bits(baseline_npz["bt"], comp["baseline_bt"][start:stop]) or not same_bits(candidate_npz["bt"], comp["candidate_bt"][start:stop]):
+                raise ValueError(f"model BT differs between channel comparison and original case artifacts at chunk {ci}")
+            if not same_bits(baseline_npz["mask"], comp["mask"][start:stop]) or not same_bits(candidate_npz["mask"], comp["mask"][start:stop]):
+                raise ValueError(f"fixed support differs from original case artifacts at chunk {ci}")
+            for phase, artifact in (("baseline", baseline_npz), ("candidate", candidate_npz)):
+                profile_rows = np.asarray(artifact["profile_rows"], dtype=np.int64)
+                expected_rows = np.flatnonzero(data[phase + "__profile_valid"][start:stop])
+                profile_cfrac = np.asarray(artifact["profile_CFRAC"], dtype=np.float64)
+                if not np.array_equal(profile_rows, expected_rows) or profile_cfrac.shape != (profile_rows.size, 66):
+                    raise ValueError(f"stored CFRAC rows/shape differ at {ci}/{phase}")
+                data[phase + "__profile_cfrac_native_bottomfirst"][start + profile_rows] = profile_cfrac[:, -LEVELS:][:, ::-1]
+            if not same_bits(packet["forcing"][0], data["baseline__rho_DEN_kg_m3"][start:stop]) or not same_bits(packet["forcing"][3], data["baseline__delz_m"][start:stop]):
+                raise ValueError(f"baseline packet DEN/DELZ differs from exported native fields at chunk {ci}")
+            if not same_bits(candidate_npz["applied_forcing"][0], data["candidate__rho_DEN_kg_m3"][start:stop]) or not same_bits(candidate_npz["applied_forcing"][3], data["candidate__delz_m"][start:stop]):
+                raise ValueError(f"candidate same-call applied DEN/DELZ differs from exported native fields at chunk {ci}")
+            baseline_layer_mass = data["baseline__rho_DEN_kg_m3"][start:stop] * data["baseline__delz_m"][start:stop]
+            if not same_bits(baseline_layer_mass, applied_audit["weights_kg_m2_by_level"]):
+                raise ValueError(f"baseline levelwise density-thickness weights differ from applied audit at chunk {ci}")
+            baseline_column_mass_fsum = np.asarray([math.fsum(row) for row in applied_audit["weights_kg_m2_by_level"]], dtype=np.float64)
+            if not same_bits(baseline_column_mass_fsum, applied_audit["dry_mass_DEN_times_DELZ_kg_m2"]):
+                raise ValueError(f"baseline fsum(DEN*DELZ) differs from applied audit at chunk {ci}")
+        if not same_bits(data["baseline__rho_DEN_kg_m3"][start:stop], data["baseline__rho_postEOS_kg_m3"][start:stop]) or not same_bits(data["candidate__rho_DEN_kg_m3"][start:stop], data["candidate__rho_postEOS_kg_m3"][start:stop]):
+            raise ValueError(f"same-call DEN and post-EOS density differ at chunk {ci}")
+        coverage_ranges.append([start, stop])
+
+    if coverage_ranges[0][0] != 0 or coverage_ranges[-1][1] != NCOLUMNS or any(a[1] != b[0] for a, b in zip(coverage_ranges, coverage_ranges[1:])):
+        raise ValueError("export ranges do not cover all 65,988 native columns exactly once")
+    if np.unique(data["flat_index"]).size != NCOLUMNS or not np.array_equal(data["flat_index"], np.arange(NCOLUMNS, dtype=np.int32)):
+        raise ValueError("exported native flat indices duplicate or omit columns")
+
+    m0 = data["mask"][:, IR105_CHANNEL_INDEX].copy()
+    delta_bt = data["candidate_bt"][:, IR105_CHANNEL_INDEX] - data["baseline_bt"][:, IR105_CHANNEL_INDEX]
+    residual_bo = data["baseline_bt"][:, IR105_CHANNEL_INDEX] - data["observed_bt"][:, IR105_CHANNEL_INDEX]
+    control_active = np.any(controls != 0.0, axis=(0, 2))
+    if int(m0.sum()) != 54504 or int((m0 & control_active).sum()) != 43062 or np.any(control_active & frozen):
+        raise ValueError("IR105 support or restricted active/unfrozen control cohort differs from expected source-bound counts")
+    qc_empty = np.all(data["baseline__qc_kgkg"] == 0.0, axis=1)
+    liquid_empty_warm = m0 & qc_empty & (residual_bo > 10.0)
+    liquid_empty_warm_active = liquid_empty_warm & control_active
+    baseline_true_optically_empty = np.all(
+        (data["baseline__qc_kgkg"] == 0.0)
+        & (data["baseline__qi_kgkg"] == 0.0)
+        & (data["baseline__qs_kgkg"] == 0.0), axis=1
+    )
+    true_empty_warm = m0 & baseline_true_optically_empty & (residual_bo > 10.0)
+    true_empty_warm_active = true_empty_warm & control_active
+    if int(liquid_empty_warm.sum()) != 11730 or int(liquid_empty_warm_active.sum()) != 9699:
+        raise ValueError("baseline QC-empty warm-IR105 cohort counts differ from the requested source definition")
+    baseline_cfrac = data["baseline__profile_cfrac_native_bottomfirst"]
+    candidate_cfrac = data["candidate__profile_cfrac_native_bottomfirst"]
+    cfrac_valid_base = data["baseline_profile_valid"]
+    cfrac_valid_candidate = data["candidate_profile_valid"]
+    cfrac_valid_both = cfrac_valid_base & cfrac_valid_candidate
+    threshold_g_m3 = 1.0e-6
+    cfrac_max = 0.999999
+    cfrac_phase_diagnostics = {}
+    for phase in PHASES:
+        rho = data[phase + "__rho_DEN_kg_m3"]
+        qc = data[phase + "__qc_kgkg"]
+        qi = data[phase + "__qi_kgkg"]
+        qs = data[phase + "__qs_kgkg"]
+        clw_g_m3 = (rho * qc) * 1.0e3
+        ciw_g_m3 = (rho * qi) * 1.0e3
+        snow_g_m3 = (rho * qs) * 1.0e3
+        total_g_m3 = clw_g_m3 + (ciw_g_m3 + snow_g_m3)
+        replay_gate = np.where(total_g_m3 > threshold_g_m3, cfrac_max, 0.0)
+        qc_only_gate = clw_g_m3 > threshold_g_m3
+        stored = data[phase + "__profile_cfrac_native_bottomfirst"]
+        valid = data[phase + "__profile_valid"]
+        # Invalid-profile rows deliberately remain NaN/unknown; never treat them as clear.
+        compare = np.isfinite(stored)
+        mismatches = compare & (stored != replay_gate)
+        positive = compare & (stored > 0.0)
+        qc_zero = qc == 0.0
+        cfrac_phase_diagnostics[phase] = {
+            "profile_valid_columns": int(valid.sum()),
+            "stored_cfrac_finite_native_cells": int(compare.sum()),
+            "stored_cfrac_unsupported_unknown_cells": int((~compare).sum()),
+            "stored_cfrac_values_outside_zero_or_max": int(np.count_nonzero(compare & (stored != 0.0) & (stored != cfrac_max))),
+            "stored_cfrac_positive_native_cells": int(positive.sum()),
+            "qc_zero_but_stored_cfrac_positive_native_cells": int(np.count_nonzero(positive & qc_zero)),
+            "qc_only_gate_positive_native_cells": int(np.count_nonzero((clw_g_m3 > threshold_g_m3) & compare)),
+            "total_qc_qi_qs_gate_positive_native_cells": int(np.count_nonzero((total_g_m3 > threshold_g_m3) & compare)),
+            "qc_only_gate_zero_but_total_gate_positive_native_cells": int(np.count_nonzero((~qc_only_gate) & (total_g_m3 > threshold_g_m3) & compare)),
+            "source_formula_gate_mismatch_cells": int(mismatches.sum()),
+            "source_formula_gate_matches_stored_bits_for_all_valid_cells": bool(not mismatches.any()),
+            "source_formula_scope": "Diagnostic replay only; source-built stored profile_CFRAC remains the authority for the optics actually used.",
+        }
+    cfrac_change_cells = cfrac_valid_both[:, None] & (baseline_cfrac != candidate_cfrac)
+    cfrac_base_zero_to_positive = cfrac_valid_both[:, None] & (baseline_cfrac == 0.0) & (candidate_cfrac > 0.0)
+    cfrac_base_positive_to_zero = cfrac_valid_both[:, None] & (baseline_cfrac > 0.0) & (candidate_cfrac == 0.0)
+    cfrac_change_summary = {
+        "both_phase_profile_valid_columns": int(cfrac_valid_both.sum()),
+        "profile_invalid_or_unknown_columns": int((~cfrac_valid_both).sum()),
+        "stored_native_cfrac_changed_layer_cells": int(cfrac_change_cells.sum()),
+        "stored_native_cfrac_changed_columns_any_level": int(cfrac_change_cells.any(axis=1).sum()),
+        "stored_cfrac_zero_to_positive_layer_cells": int(cfrac_base_zero_to_positive.sum()),
+        "stored_cfrac_positive_to_zero_layer_cells": int(cfrac_base_positive_to_zero.sum()),
+        "m0_stored_cfrac_changed_layer_cells": int((cfrac_change_cells & m0[:, None]).sum()),
+        "m0_stored_cfrac_zero_to_positive_layer_cells": int((cfrac_base_zero_to_positive & m0[:, None]).sum()),
+        "m0_stored_cfrac_positive_to_zero_layer_cells": int((cfrac_base_positive_to_zero & m0[:, None]).sum()),
+        "qc_zero_m0_stored_cfrac_positive_native_cells_baseline": int(np.count_nonzero((baseline_cfrac > 0.0) & (data["baseline__qc_kgkg"] == 0.0) & m0[:, None] & cfrac_valid_base[:, None])),
+        "qc_zero_m0_stored_cfrac_positive_native_cells_candidate": int(np.count_nonzero((candidate_cfrac > 0.0) & (data["candidate__qc_kgkg"] == 0.0) & m0[:, None] & cfrac_valid_candidate[:, None])),
+        "unsupported_profile_CFRAC_is_unknown_nan": True,
+        "CFRAC_is_not_added_as_a_continuous_optimizer_control": True,
+    }
+    cohorts = {
+        "full_domain": np.ones(NCOLUMNS, dtype=np.bool_),
+        "m0_ir105": m0,
+        "m0_ir105_active_control_unfrozen": m0 & control_active,
+        "liquid_empty_warm_m0_ir105": liquid_empty_warm,
+        "liquid_empty_warm_active_control": liquid_empty_warm_active,
+        "true_optically_empty_warm_m0_ir105": true_empty_warm,
+        "true_optically_empty_warm_active_control": true_empty_warm_active,
+    }
+    for name, select in cohorts.items():
+        if select.shape != (NCOLUMNS,):
+            raise AssertionError(name)
+
+    delta_lwp = data["candidate__lwp_QC_kg_m2"] - data["baseline__lwp_QC_kg_m2"]
+    delta_iwp_ice = data["candidate__iwp_ice_QI_kg_m2"] - data["baseline__iwp_ice_QI_kg_m2"]
+    delta_iwp_opt = data["candidate__iwp_optical_QI_plus_QS_kg_m2"] - data["baseline__iwp_optical_QI_plus_QS_kg_m2"]
+    delta_qg = data["candidate__qg_column_mass_kg_m2_optional"] - data["baseline__qg_column_mass_kg_m2_optional"]
+
+    # Independently recompute the declared physical column integrals with the exporter operation order.
+    recomputed_integrals = {}
+    for phase in PHASES:
+        layer_mass = data[phase + "__rho_DEN_kg_m3"] * data[phase + "__delz_m"]
+        for name, species, stored_name in (
+            ("lwp_QC", "qc_kgkg", "lwp_QC_kg_m2"),
+            ("iwp_ice_QI", "qi_kgkg", "iwp_ice_QI_kg_m2"),
+            ("iwp_optical_QI_plus_QS", None, "iwp_optical_QI_plus_QS_kg_m2"),
+            ("qg_optional", "qg_kgkg", "qg_column_mass_kg_m2_optional"),
+        ):
+            mixing = (data[phase + "__qi_kgkg"] + data[phase + "__qs_kgkg"]) if species is None else data[phase + "__" + species]
+            computed = np.sum(layer_mass * mixing, axis=1, dtype=np.float64)
+            stored = data[phase + "__" + stored_name]
+            if not same_bits(computed, stored):
+                raise ValueError(f"recomputed physical integral differs from exported {phase} {name}")
+            recomputed_integrals[phase + "__" + name + "_bitwise"] = True
+
+    layer_deltas = {
+        field: data["candidate__" + name] - data["baseline__" + name]
+        for field, name in FIELDS.items()
+    }
+    level_metrics = {
+        cohort: {field: _level_stats(delta, select) for field, delta in layer_deltas.items()}
+        for cohort, select in cohorts.items()
+        if cohort != "full_domain"
+    }
+
+    cohort_metrics = {}
+    for name, select in cohorts.items():
+        bt_select = np.asarray(select, dtype=np.bool_) & m0
+        cohort_metrics[name] = {
+            "columns": int(select.sum()),
+            "bt_supported_columns": int(bt_select.sum()),
+            "delta_bt_ir105_K": _bt_delta_summary(delta_bt[bt_select]),
+            "baseline_and_candidate_residual_skill_ir105": _residual_skill(
+                data["baseline_bt"][:, IR105_CHANNEL_INDEX],
+                data["candidate_bt"][:, IR105_CHANNEL_INDEX],
+                data["observed_bt"][:, IR105_CHANNEL_INDEX],
+                bt_select,
+            ),
+            "delta_lwp_QC_kg_m2": _phase_delta_stats(data["baseline__lwp_QC_kg_m2"], data["candidate__lwp_QC_kg_m2"], select),
+            "delta_iwp_ice_QI_kg_m2": _phase_delta_stats(data["baseline__iwp_ice_QI_kg_m2"], data["candidate__iwp_ice_QI_kg_m2"], select),
+            "delta_iwp_optical_QI_plus_QS_kg_m2": _phase_delta_stats(data["baseline__iwp_optical_QI_plus_QS_kg_m2"], data["candidate__iwp_optical_QI_plus_QS_kg_m2"], select),
+            "delta_qg_column_mass_kg_m2_separate_optional": _phase_delta_stats(data["baseline__qg_column_mass_kg_m2_optional"], data["candidate__qg_column_mass_kg_m2_optional"], select),
+        }
+    data["m0_ir105"] = m0
+    data["active_control"] = control_active
+    data["level_stats_m0_active_control"] = level_metrics["m0_ir105_active_control_unfrozen"]
+
+    optically_empty = {}
+    transition_summary = {}
+    for phase in PHASES:
+        qc = data[phase + "__qc_kgkg"]
+        qi = data[phase + "__qi_kgkg"]
+        qs = data[phase + "__qs_kgkg"]
+        qg = data[phase + "__qg_kgkg"]
+        qc0 = np.all(qc == 0.0, axis=1)
+        true_empty = np.all((qc == 0.0) & (qi == 0.0) & (qs == 0.0), axis=1)
+        mapped_ice_present = np.any((qi > 0.0) | (qs > 0.0), axis=1)
+        qg_present = np.any(qg > 0.0, axis=1)
+        optically_empty[phase] = {
+            "qc_zero_all39_m0_count": int((m0 & qc0).sum()),
+            "true_optically_empty_qc_qi_qs_all39_m0_count": int((m0 & true_empty).sum()),
+            "qc_empty_but_qi_or_qs_present_m0_count": int((m0 & qc0 & mapped_ice_present).sum()),
+            "qg_present_m0_count_separate_nonmapped_species": int((m0 & qg_present).sum()),
+            "qc_zero_all39_liquid_empty_warm_count": int((liquid_empty_warm & qc0).sum()),
+            "true_optically_empty_liquid_empty_warm_count": int((liquid_empty_warm & true_empty).sum()),
+        }
+    qc0_base = data["baseline__qc_kgkg"] == 0.0
+    qc_positive_candidate = data["candidate__qc_kgkg"] > 0.0
+    qc0_to_positive_layers = qc0_base & qc_positive_candidate
+    qcpos_base_to_zero = (data["baseline__qc_kgkg"] > 0.0) & (data["candidate__qc_kgkg"] == 0.0)
+    qi0_to_positive = (data["baseline__qi_kgkg"] == 0.0) & (data["candidate__qi_kgkg"] > 0.0)
+    qipos_to_zero = (data["baseline__qi_kgkg"] > 0.0) & (data["candidate__qi_kgkg"] == 0.0)
+    qs0_to_positive = (data["baseline__qs_kgkg"] == 0.0) & (data["candidate__qs_kgkg"] > 0.0)
+    qspos_to_zero = (data["baseline__qs_kgkg"] > 0.0) & (data["candidate__qs_kgkg"] == 0.0)
+    qg0_to_positive = (data["baseline__qg_kgkg"] == 0.0) & (data["candidate__qg_kgkg"] > 0.0)
+    qgpos_to_zero = (data["baseline__qg_kgkg"] > 0.0) & (data["candidate__qg_kgkg"] == 0.0)
+    candidate_true_empty = np.all(
+        (data["candidate__qc_kgkg"] == 0.0)
+        & (data["candidate__qi_kgkg"] == 0.0)
+        & (data["candidate__qs_kgkg"] == 0.0), axis=1
+    )
+    baseline_valid = data["baseline_profile_valid"]
+    candidate_valid = data["candidate_profile_valid"]
+    mask_lost = data["mask"] & ~data["candidate__mask"]
+    transition_summary = {
+        "qc_zero_to_positive_layer_cells": int(qc0_to_positive_layers.sum()),
+        "qc_zero_to_positive_columns_any_level": int(qc0_to_positive_layers.any(axis=1).sum()),
+        "qc_positive_to_zero_layer_cells": int(qcpos_base_to_zero.sum()),
+        "qc_positive_to_zero_columns_any_level": int(qcpos_base_to_zero.any(axis=1).sum()),
+        "qi_zero_to_positive_layer_cells": int(qi0_to_positive.sum()),
+        "qi_zero_to_positive_columns_any_level": int(qi0_to_positive.any(axis=1).sum()),
+        "qi_positive_to_zero_layer_cells": int(qipos_to_zero.sum()),
+        "qi_positive_to_zero_columns_any_level": int(qipos_to_zero.any(axis=1).sum()),
+        "qs_zero_to_positive_layer_cells": int(qs0_to_positive.sum()),
+        "qs_zero_to_positive_columns_any_level": int(qs0_to_positive.any(axis=1).sum()),
+        "qs_positive_to_zero_layer_cells": int(qspos_to_zero.sum()),
+        "qs_positive_to_zero_columns_any_level": int(qspos_to_zero.any(axis=1).sum()),
+        "qg_zero_to_positive_layer_cells_separate": int(qg0_to_positive.sum()),
+        "qg_positive_to_zero_layer_cells_separate": int(qgpos_to_zero.sum()),
+        "profile_valid_lost_columns": int((baseline_valid & ~candidate_valid).sum()),
+        "profile_valid_gained_columns": int((~baseline_valid & candidate_valid).sum()),
+        "fixed_support_lost_channel_cells": int(mask_lost.sum()),
+        "fixed_support_lost_columns_any_channel": int(mask_lost.any(axis=1).sum()),
+        "baseline_profile_valid_columns": int(baseline_valid.sum()),
+        "candidate_profile_valid_columns": int(candidate_valid.sum()),
+        "baseline_supported_channel_cells": int(data["mask"].sum()),
+        "candidate_supported_channel_cells": int(data["candidate__mask"].sum()),
+        "baseline_true_optically_empty_full_domain_columns": int(baseline_true_optically_empty.sum()),
+        "candidate_true_optically_empty_full_domain_columns": int(candidate_true_empty.sum()),
+        "mapped_ice_true_empty_to_nonempty_full_domain_columns": int((baseline_true_optically_empty & ~candidate_true_empty).sum()),
+        "mapped_ice_true_nonempty_to_empty_full_domain_columns": int((~baseline_true_optically_empty & candidate_true_empty).sum()),
+    }
+    if transition_summary["qc_zero_to_positive_layer_cells"] != 0:
+        qc_transition_expected_count_reproduced = False
+    else:
+        qc_transition_expected_count_reproduced = True
+
+    # Global m0 metrics include exact user-requested cohort count checks.
+    expected_counts = {
+        "m0_ir105": 54504,
+        "m0_ir105_active_control_unfrozen": 43062,
+        "liquid_empty_warm_m0_ir105": 11730,
+        "liquid_empty_warm_active_control": 9699,
+    }
+    observed_counts = {name: int(select.sum()) for name, select in cohorts.items()}
+    if any(observed_counts[key] != value for key, value in expected_counts.items()):
+        raise ValueError(f"source-defined efficacy cohorts differ: {observed_counts}")
+
+    # Top-gradient columns are concentration diagnostics, not effectiveness claims.
+    top_doc = json.loads(topgrad_path.read_text())
+    if top_doc.get("source_z_sha256") != EXPECTED_RESTRICTED_Z_SHA:
+        raise ValueError("top-gradient concentration receipt does not bind the restricted z archive")
+    top_columns = []
+    for entry in top_doc["top_columns"]:
+        idx = int(entry["flat_index0"])
+        top_columns.append({
+            **entry,
+            "in_m0_ir105": bool(m0[idx]),
+            "active_restricted_control": bool(control_active[idx]),
+            "delta_bt_ir105_K": float(delta_bt[idx]),
+            "delta_lwp_QC_kg_m2": float(delta_lwp[idx]),
+            "delta_iwp_ice_QI_kg_m2": float(delta_iwp_ice[idx]),
+            "delta_iwp_optical_QI_plus_QS_kg_m2": float(delta_iwp_opt[idx]),
+            "delta_temperature_max_abs_K": float(np.max(np.abs(layer_deltas["T"][idx]))),
+            "delta_qv_max_abs_kgkg_dry": float(np.max(np.abs(layer_deltas["QV"][idx]))),
+            "delta_qc_max_abs_kgkg": float(np.max(np.abs(layer_deltas["QC"][idx]))),
+            "delta_qi_max_abs_kgkg": float(np.max(np.abs(layer_deltas["QI"][idx]))),
+            "delta_qs_max_abs_kgkg": float(np.max(np.abs(layer_deltas["QS"][idx]))),
+        })
+
+    outdir.mkdir(parents=True, exist_ok=False)
+    # Split binary64 native fields into individually reviewable publication assets.
+    support_fields = {
+        "flat_index": data["flat_index"], "m0_ir105": m0,
+        "active_restricted_control": control_active, "frozen_block": frozen,
+        "baseline_support": data["mask"], "weights": data["weights"],
+        "observed_bt_K": data["observed_bt"],
+        "baseline_bt_K": data["baseline_bt"], "candidate_bt_K": data["candidate_bt"],
+    }
+    bundle_payloads = {
+        "NATIVE_TEMPERATURE_FIELDS_v1.npz": {
+            "flat_index": data["flat_index"],
+            "baseline_T_native_K_bottomfirst": data["baseline__temperature_native_K_bottomfirst"],
+            "candidate_T_native_K_bottomfirst": data["candidate__temperature_native_K_bottomfirst"],
+        },
+        "NATIVE_QV_FIELDS_v1.npz": {
+            "flat_index": data["flat_index"],
+            "baseline_QV_kgkg_dry": data["baseline__qv_kgkg_dry"],
+            "candidate_QV_kgkg_dry": data["candidate__qv_kgkg_dry"],
+        },
+        "NATIVE_CLOUD_PHASE_FIELDS_v1.npz": {
+            "flat_index": data["flat_index"],
+            **{f"{phase}__{name}": data[f"{phase}__{name}"] for phase in PHASES
+               for name in ("qc_kgkg", "qi_kgkg", "qs_kgkg", "qg_kgkg")},
+        },
+        "NATIVE_PRESSURE_CENTERS_v1.npz": {
+            "flat_index": data["flat_index"],
+            "baseline_pressure_center_Pa": data["baseline__pressure_center_Pa"],
+            "candidate_pressure_center_Pa": data["candidate__pressure_center_Pa"],
+        },
+        "NATIVE_INTERFACE_GEOMETRY_v1.npz": {
+            "flat_index": data["flat_index"],
+            "native_phi_interfaces_m2_s2": data["baseline__phi_interfaces_m2_s2"],
+            "native_DELZ_m": data["baseline__delz_m"],
+        },
+        "NATIVE_LAYER_MASS_WEIGHTS_v1.npz": {
+            "flat_index": data["flat_index"],
+            "baseline_DEN_times_DELZ_kg_m2": data["baseline__rho_DEN_kg_m3"] * data["baseline__delz_m"],
+            "candidate_DEN_times_DELZ_kg_m2": data["candidate__rho_DEN_kg_m3"] * data["candidate__delz_m"],
+        },
+        "NATIVE_CLOUD_COLUMN_INTEGRALS_v1.npz": {
+            "flat_index": data["flat_index"],
+            **{f"{phase}__{name}": data[f"{phase}__{name}"] for phase in PHASES
+               for name in ("lwp_QC_kg_m2", "iwp_ice_QI_kg_m2", "iwp_optical_QI_plus_QS_kg_m2", "qg_column_mass_kg_m2_optional")},
+        },
+        "NATIVE_FIXED_SUPPORT_AND_BT_v1.npz": support_fields,
+        "NATIVE_CFRAC_GATE_v1.npz": {
+            "flat_index": data["flat_index"],
+            "baseline_profile_valid": data["baseline_profile_valid"],
+            "candidate_profile_valid": data["candidate_profile_valid"],
+            "baseline_profile_CFRAC_native39_bottomfirst": data["baseline__profile_cfrac_native_bottomfirst"],
+            "candidate_profile_CFRAC_native39_bottomfirst": data["candidate__profile_cfrac_native_bottomfirst"],
+        },
+    }
+    native_bundles = {
+        name: _write_npz_new(outdir / name, payload)
+        for name, payload in bundle_payloads.items()
+    }
+
+    # Attach source IDs and exact physical identities to the compact full-domain summary.
+    observed_bt = data["observed_bt"][:, IR105_CHANNEL_INDEX]
+    m0_stats = cohort_metrics["m0_ir105"]
+    active_stats = cohort_metrics["m0_ir105_active_control_unfrozen"]
+    geometry_same = same_bits(data["baseline__phi_interfaces_m2_s2"], data["candidate__phi_interfaces_m2_s2"])
+    delz_same = same_bits(data["baseline__delz_m"], data["candidate__delz_m"])
+    qc_empty_to_ice_counts = {
+        "baseline_QC_empty_but_QI_or_QS_positive_m0": optically_empty["baseline"]["qc_empty_but_qi_or_qs_present_m0_count"],
+        "candidate_QC_empty_but_QI_or_QS_positive_m0": optically_empty["candidate"]["qc_empty_but_qi_or_qs_present_m0_count"],
+    }
+    summary = {
+        "schema": "kdm6.native_cloud_efficacy_audit.v1",
+        "status": "OFFLINE_NATIVE_FIELDS_AUDITED_ONE_SHOT_GOAL_NOT_MET",
+        "created_at_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "export_source": {"path": str(manifest_path), "sha256": manifest_sha,
+                          "input_manifest_sha256": sha(input_manifest_path),
+                          "completion_sha256": sha(completion_path),
+                          "execution_receipt_sha256": sha(execution_path),
+                          "producer_sha256": execution["producer_sha256"],
+                          "producer_snapshot_sha256": execution["producer_snapshot_sha256"]},
+        "restricted_control_source": {
+            "channel_comparison_sha256": sha(comp_path),
+            "restricted_controls_sha256": sha(control_path),
+            "restricted_controls_z_sha256": hashlib.sha256(np.ascontiguousarray(controls).tobytes()).hexdigest(),
+            "restricted_candidate_sourcebound_sha256": sha(sourcebound_path),
+            "restricted_publication_manifest_sha256": sha(restricted_manifest_path),
+            "top_gradient_columns_sha256": sha(topgrad_path),
+            "top_gradient_source_z_sha256": top_doc["source_z_sha256"],
+        },
+        "verification": {
+            "all_129_export_chunks_hash_checked": True,
+            "all_129_baseline_and_candidate_result_artifacts_hash_checked": True,
+            "all_129_baseline_and_candidate_receipts_hash_checked": True,
+            "all_129_source_packet_hashes_checked": True,
+            "all_129_applied_physics_audit_hashes_checked": True,
+            "all_65988_flat_indices_present_once": True,
+            "geometry_DELZ_identical_baseline_candidate": geometry_same,
+            "geometry_phi_interfaces_identical_baseline_candidate": delz_same,
+            "profile_temperature_native_to_saved_RTTOV_native39_bits_checked_rows": profile_bit_checks,
+            "profile_temperature_formula_fallback_rows": profile_fallback_rows,
+            "physical_column_integrals_recomputed_bitwise": recomputed_integrals,
+            "source_code_hashes_match_export_manifest": source_checks,
+        },
+        "cohort_definitions": {
+            "m0_ir105": "baseline fixed-support mask, channel index3/channel ID13 IR105",
+            "unfrozen_active_control": "m0 IR105 AND any nonzero value in either source-bound restricted z control over 39 levels; frozen block list also retained separately",
+            "liquid_empty_warm": "m0 IR105 AND all 39 baseline QC levels exactly zero AND baseline model BT minus observed BT > 10 K",
+            "liquid_empty_warm_unfrozen": "liquid_empty_warm intersect nonzero restricted-control columns",
+            "true_optically_empty_warm": "m0 IR105 AND all native 39 baseline QC, QI and QS values exactly zero AND baseline model BT minus observed BT > 10 K",
+            "true_optically_empty_warm_unfrozen": "true_optically_empty_warm intersect nonzero restricted-control columns",
+            "true_optically_empty": "all native 39 QC, QI and QS values exactly zero; QI+QS matches direct ice optical mapping; this is distinct from QC-only empty",
+        },
+        "cohort_counts": observed_counts,
+        "expected_counts_reproduced": expected_counts,
+        "IR105_deltaBT_absolute_distribution": {
+            "m0": _bt_delta_summary(delta_bt[m0]),
+            "m0_active_control_unfrozen": _bt_delta_summary(delta_bt[cohorts["m0_ir105_active_control_unfrozen"]]),
+            "liquid_empty_warm": _bt_delta_summary(delta_bt[liquid_empty_warm]),
+            "liquid_empty_warm_unfrozen": _bt_delta_summary(delta_bt[liquid_empty_warm_active]),
+            "true_optically_empty_warm": _bt_delta_summary(delta_bt[true_empty_warm]),
+            "true_optically_empty_warm_unfrozen": _bt_delta_summary(delta_bt[true_empty_warm_active]),
+        },
+        "IR105_residual_skill_and_absolute_error_gain": {
+            name: cohort_metrics[name]["baseline_and_candidate_residual_skill_ir105"]
+            for name in cohorts
+        },
+        "physical_cloud_column_response": cohort_metrics,
+        "physical_layer_level_deltas_bottomfirst": level_metrics,
+        "optically_empty_vs_liquid_empty": optically_empty,
+        "stored_RTTOV_CFRAC_gate": {
+            "source": "profile_CFRAC rows from the original baseline/candidate result NPZs, native 39-level segment extracted from stored RTTOV-order profile_CFRAC and reversed to native bottom-first",
+            "threshold_g_m3": 1.0e-6,
+            "cfrac_positive_value": 0.999999,
+            "baseline": cfrac_phase_diagnostics["baseline"],
+            "candidate": cfrac_phase_diagnostics["candidate"],
+            "baseline_candidate_transitions": cfrac_change_summary,
+            "missing_profiles": "Rows with profile_valid false retain NaN/unknown CFRAC, not clear-sky zeros.",
+            "meaning": "Detached binary condensate gate used by the saved optical profile; it is not a continuous cloud-cover analysis or a gradient control.",
+        },
+        "qc_and_phase_transitions": {**transition_summary,
+            "qc_zero_to_positive_expected_count_reproduced": qc_transition_expected_count_reproduced,
+            "qc_empty_but_ice_or_snow_counts": qc_empty_to_ice_counts,
+            "QI_QS_optical_mapping": "QI + QS; QG reported separately, QR not folded into mapped ice"},
+        "geometry_and_height": {
+            "native_levels": 39,
+            "native_order": "bottom-first, index1 surface through index39 top",
+            "phi_interfaces_bitwise_equal": geometry_same,
+            "DELZ_bitwise_equal": delz_same,
+            "no_vertical_remap": True,
+        },
+        "top_gradient_columns_physical_context": top_columns,
+        "native_field_bundles": {
+            "files": native_bundles,
+            "compression": "Lossless NumPy NPZ; binary64 scientific fields are copied without quantization.",
+            "geometry_note": "phi_interfaces and DELZ are included once because baseline/candidate geometry is bitwise identical; DEN*DELZ weights are retained per phase for LWP/IWP reconstruction.",
+            "source_scope": "Split native diagnostics are separate from the historical local optimization/result bundle.",
+        },
+        "limits": [
+            "This is one saved native KDM state response at a fixed analysis time; it does not show a new gradient or optimizer relinearization after applying the state change.",
+            "The user’s one-shot cloud-analysis effectiveness goal is not met by this evidence; the high-score sample is concentrated and warmed-IR105 / QC-empty cohorts require physical interpretation.",
+            "A warm IR105 residual is not cloud truth; no cloud retrieval or independent cloud observation is available here.",
+            "RTTOV CFRAC is a bounded binary/near-binary profile diagnostic, not continuous cloud-cover truth.",
+            "QC==0 alone does not establish an optically empty column; QI and QS must also be checked. QG and QR are not part of the stated QI+QS direct ice optical mapping.",
+            "Column LWP/IWP are per-column physical integrals; cohort summaries are unweighted column statistics, not area-integrated regional mass or a closed precipitation budget.",
+            "The candidate is a restricted alpha=1 control endpoint with unchanged original support; no convergence, forecast, host-cycle, time-advance or optimizer-algorithm change is claimed.",
+        ],
+    }
+
+    _plot_outputs(outdir, data, cohorts, top_columns)
+    summary["plots"] = {
+        name: {"path": str(outdir / name), "sha256": sha(outdir / name), "bytes": (outdir / name).stat().st_size}
+        for name in ("native_response_maps.png", "bt_cohort_distributions.png", "native_level_deltas.png")
+    }
+    summary_path = outdir / "EFFICACY_AUDIT.json"
+    summary["summary_source_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    summary_file_sha = _write_json_new(summary_path, summary)
+    print(json.dumps({
+        "status": summary["status"],
+        "summary": str(summary_path),
+        "sha256": summary_file_sha,
+        "cohort_counts": summary["cohort_counts"],
+        "bundle_bytes": sum(bundle["bytes"] for bundle in summary["native_field_bundles"]["files"].values()),
+        "m0_ir105_deltaBT": summary["IR105_deltaBT_absolute_distribution"]["m0"],
+    }, indent=2))
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--export-root", type=Path, default=EXPORT_ROOT)
+    parser.add_argument("--output-dir", type=Path, default=Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7"))
+    args = parser.parse_args(argv)
+    audit(args.export_root, args.output_dir)
+
+
+if __name__ == "__main__":
+    main()

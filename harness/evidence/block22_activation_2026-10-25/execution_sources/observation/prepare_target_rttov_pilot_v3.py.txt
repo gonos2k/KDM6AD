@@ -1,0 +1,481 @@
+"""Prepare and (only after explicit review approval) run a target-row RTTOV pilot.
+
+The physics outputs are loaded from immutable, completed full-B512 value calls.
+Only the saved target row is admitted to the RTTOV profile batch; this script
+never invokes the KDM kernel.  Default operation is saved-data preflight only.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+PARENT = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+PREP = RESEARCH / "input_prep_v1"
+VALUES = RESEARCH / "driver_v1/execution_v1/trace_on/values.npz"
+VALUE_RECEIPT = RESEARCH / "driver_v1/execution_v1/trace_on/execution.json"
+VALUE_GATE = RESEARCH / "driver_v1/execution_v1/VALUE_NONINTERFERENCE.json"
+AD_VALUES = RESEARCH / "driver_v1/ad_execution_v1/ad_control/block22_actual_jvp_vjp.npz"
+AD_RECEIPT = RESEARCH / "driver_v1/ad_execution_v1/ad_control/jvp_vjp_receipt.json"
+TARGET_ROW = 368
+TARGET_FLAT = 11632
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+EXPECTED_INPUT_SHA = "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f"
+EXPECTED_VALUE_SHA = "6189e21c0fbc93ec41a9f6de5632ac159c99e77a0e785ccebbf12e351db81c92"
+EXPECTED_AD_SHA = "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af"
+PROFILE_MAP = {
+    "T": "profile_T", "Q": "profile_Q", "P": "profile_P",
+    "P_HALF": "profile_P_HALF", "HYDRO6": "profile_HYDRO6",
+    "HYDRO7": "profile_HYDRO7", "HYDRO_DEFF6": "profile_HYDRO_DEFF6",
+    "HYDRO_DEFF7": "profile_HYDRO_DEFF7", "CFRAC": "profile_CFRAC",
+}
+OUTPUT_FIELDS = (
+    "finish", "rho_d", "native_after_thm_pert", "native_after_qv",
+    "native_after_p_center_Pa", "native_after_phi_interfaces",
+    "cloud_qc", "cloud_qr", "cloud_qi", "cloud_qs", "cloud_qg",
+    "cloud_nn", "cloud_nc", "cloud_ni", "cloud_nr", "cloud_bg",
+)
+
+
+def sha(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def array_sha(value) -> str:
+    return hashlib.sha256(np.ascontiguousarray(value).tobytes()).hexdigest()
+
+
+def json_new(path: Path, value):
+    encoded = (json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def json_with_payload_digest(path: Path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    json_new(path, result)
+    return result
+
+
+def verify_payload_digest(value):
+    claimed = value.get("receipt_sha256")
+    payload = dict(value)
+    payload.pop("receipt_sha256", None)
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    if not isinstance(claimed, str) or hashlib.sha256(canonical).hexdigest() != claimed:
+        raise ValueError("receipt payload digest mismatch")
+
+
+def npz_new(path: Path, **arrays):
+    with path.open("xb") as stream:
+        np.savez(stream, **arrays)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return sha(path)
+
+
+def same_bits(left, right) -> bool:
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def _nest_set(root, parts, value):
+    current = root
+    for name in parts[:-1]:
+        current = current.setdefault(name, {})
+    current[parts[-1]] = value
+
+
+def load_prepared_inputs():
+    prep_path = PREP / "BLOCK22_PREPARATION.json"
+    bundle_path = PREP / "block22_fullB_inputs.npz"
+    prep = json.loads(prep_path.read_text())
+    if sha(bundle_path) != EXPECTED_INPUT_SHA or prep["input_npz_sha256"] != EXPECTED_INPUT_SHA:
+        raise ValueError("block22 full-B input bundle hash differs from the frozen preparation")
+    with np.load(bundle_path, allow_pickle=False) as archive:
+        arrays = {name: archive[name] for name in archive.files}
+    for name, record in prep["arrays"].items():
+        value = arrays.get(name)
+        if value is None or list(value.shape) != record["shape"] or value.dtype.str != record["dtype"]:
+            raise ValueError(f"prepared block array shape/dtype differs: {name}")
+        if array_sha(value) != record["sha256"]:
+            raise ValueError(f"prepared block array hash differs: {name}")
+    if prep["B"] != 512 or prep["L"] != 39 or prep["block_index"] != 22:
+        raise ValueError("preparation is not original block22 B512/L39")
+    flat = arrays["block__flat_indices"]
+    if not same_bits(flat, np.arange(11264, 11776, dtype=np.int32)) or int(flat[TARGET_ROW]) != TARGET_FLAT:
+        raise ValueError("full block indices or target row mapping differs")
+    if not prep["verified_input_checks"]["not_B1"] or not prep["verified_input_checks"]["alpha025_flat_indices_match_original_B512"]:
+        raise ValueError("preparation did not retain the original B512 state")
+
+    block = {"B": 512, "L": 39}
+    surface = {}
+    for name, value in arrays.items():
+        if name.startswith("block__"):
+            _nest_set(block, name[len("block__"):].split("__"), value)
+        elif name.startswith("surface_profiles__"):
+            _nest_set(surface, name[len("surface_profiles__"):].split("__"), value)
+    block["reference"]["fixed_upper_count"] = int(prep["scalar_metadata"]["block__reference__fixed_upper_count"])
+    if "reason" in block["initial_admission"]:
+        block["initial_admission"]["reasons"] = block["initial_admission"].pop("reason")
+    block["surface_profiles"] = [
+        {
+            "skin": {
+                key: (value[row].tolist() if isinstance(value[row], np.ndarray)
+                      else value[row].item() if isinstance(value[row], np.generic)
+                      else value[row])
+                for key, value in surface["skin"].items()
+            },
+            "near_surface": {
+                key: (value[row].tolist() if isinstance(value[row], np.ndarray)
+                      else value[row].item() if isinstance(value[row], np.generic)
+                      else value[row])
+                for key, value in surface["near_surface"].items()
+            },
+        }
+        for row in range(512)
+    ]
+    return prep, arrays, block, bundle_path, prep_path
+
+
+def load_saved_output(state, torch, NativeProfile, CloudProfile, NativeBatchOutput, values):
+    prefix = state + "__"
+    arrays = {name: values[prefix + name] for name in OUTPUT_FIELDS}
+    native = NativeProfile(
+        torch.from_numpy(np.ascontiguousarray(arrays["native_after_thm_pert"])),
+        torch.from_numpy(np.ascontiguousarray(arrays["native_after_qv"])),
+        torch.from_numpy(np.ascontiguousarray(arrays["native_after_p_center_Pa"])),
+        torch.from_numpy(np.ascontiguousarray(arrays["native_after_phi_interfaces"])),
+    )
+    cloud = CloudProfile(*(torch.from_numpy(np.ascontiguousarray(arrays["cloud_" + name]))
+                           for name in ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg")))
+    finish = tuple(torch.from_numpy(np.ascontiguousarray(value)) for value in arrays["finish"])
+    return NativeBatchOutput(native, cloud, torch.from_numpy(np.ascontiguousarray(arrays["rho_d"])), finish), arrays
+
+
+def _check_saved_values():
+    gate = json.loads(VALUE_GATE.read_text())
+    if not gate.get("passed") or not gate.get("trace_off_exactly_matches_control") or not gate.get("trace_on_exactly_matches_control"):
+        raise ValueError("full-B activation value/noninterference gate is not passed")
+    if gate.get("AD_calls_total") != 0 or gate.get("RTTOV_calls_total") != 0 or gate.get("block_index") != 22:
+        raise ValueError("saved value gate has unexpected call counts or block index")
+    receipt = json.loads(VALUE_RECEIPT.read_text())
+    if receipt["mode"] != "trace_on" or receipt["input_bundle_sha256"] != EXPECTED_INPUT_SHA:
+        raise ValueError("trace-on execution receipt does not bind the prepared inputs")
+    if sha(VALUES) != EXPECTED_VALUE_SHA or receipt["value_calls"][0]["state"] != "baseline" or receipt["value_calls"][1]["state"] != "alpha025":
+        raise ValueError("saved full-B values are not the expected baseline/alpha.25 pair")
+    for record in receipt["value_calls"]:
+        if record["physical_output_comparison"]["all_exact"] is not True:
+            raise ValueError(f"full-B {record['state']} saved values failed parent exactness")
+        if record["KDM_forward_calls"] != 1 or record["KDM_JVP_calls"] != 0 or record["KDM_VJP_calls"] != 0 or record["RTTOV_K_calls"] != 0 or record["RTTOV_direct_calls"] != 0:
+            raise ValueError(f"unexpected prior model/RTTOV calls in {record['state']} value capture")
+        if sha(Path(record["parent_reference_npz"])) != record["parent_reference_npz_sha256"]:
+            raise ValueError(f"saved parent reference changed for {record['state']}")
+    return gate, receipt
+
+
+def preflight():
+    sys.path.insert(0, str(SOURCE_V2))
+    import torch
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import _profile_arrays, _selected_profile_context
+    from harness.prepare_native_satellite_case import load_case_block, load_case_config
+
+    prep, arrays, block, bundle_path, prep_path = load_prepared_inputs()
+    gate, value_receipt = _check_saved_values()
+    with np.load(VALUES, allow_pickle=False) as archive:
+        values = {name: archive[name] for name in archive.files}
+    if values["baseline__native_after_thm_pert"].shape != (512, 39) or values["alpha025__native_after_thm_pert"].shape != (512, 39):
+        raise ValueError("saved physical outputs are not full-B512 by39")
+
+    config_manifest = json.loads((PARENT / "CASE_MANIFEST.json").read_text())
+    config = load_case_config(config_manifest["case_preparation"]["paths"])
+    authoritative = load_case_block(config, 22)
+    if sha(PARENT / "CASE_MANIFEST.json") != prep["parent_case_manifest_sha256"]:
+        raise ValueError("parent case manifest differs from the input-preparation receipt")
+    if int(block["reference"]["fixed_upper_count"]) != 27:
+        raise ValueError("fixed upper reference count differs from the parent RTTOV profile")
+    if not bool(block["initial_admission"]["cost_eligible"][TARGET_ROW]):
+        raise ValueError("target row is not initially eligible for the observation pilot")
+    if np.any(block["obs_dqf"][TARGET_ROW] != 0) or np.any(block["obs_qc_codes"][TARGET_ROW] != 0) or not np.isfinite(block["obs_bt"][TARGET_ROW]).all():
+        raise ValueError("target observation row does not pass all seven raw source channels")
+
+    metadata_checks = {"geometry": {}, "rttov_geometry": {}, "reference": {},
+                       "surface_profiles": {}}
+    for group in ("geometry", "rttov_geometry"):
+        for name, value in block[group].items():
+            expected = authoritative[group][name]
+            metadata_checks[group][name] = same_bits(value, expected)
+    for name, value in block["reference"].items():
+        expected = authoritative["reference"][name]
+        metadata_checks["reference"][name] = (
+            int(value) == int(expected) if np.asarray(value).shape == ()
+            else same_bits(value, expected)
+        )
+    for section in ("skin", "near_surface"):
+        for name, value in block["surface_profiles"][TARGET_ROW][section].items():
+            expected = authoritative["surface_profiles"][TARGET_ROW][section][name]
+            metadata_checks["surface_profiles"][section + "." + name] = (
+                type(value) is type(expected) and same_bits(np.asarray(value), np.asarray(expected))
+            )
+    if not all(value for group in metadata_checks.values()
+               for value in (group.values() if isinstance(group, dict) else group)):
+        raise ValueError("reconstructed target geometry/surface differs from authoritative loader")
+
+    profile_checks = {}
+    parent_model_checks = {}
+    for state in ("baseline", "alpha025"):
+        output, _ = load_saved_output(state, torch, NativeProfile, CloudProfile, NativeBatchOutput, values)
+        from harness.native_observation_batch import _validate_selected_inputs
+        invalid = _validate_selected_inputs(block, output, config, np.asarray([TARGET_ROW], dtype=np.int64))
+        if invalid:
+            raise ValueError(f"target fails pure observation profile validation in {state}: {invalid}")
+        rows = np.asarray([TARGET_ROW], dtype=np.int64)
+        profiles = _selected_profile_context(block, output, rows, config)
+        actual = _profile_arrays(profiles)
+        profile_checks[state] = {}
+        for field, old_key in PROFILE_MAP.items():
+            expected = arrays[f"parent_{state}__{old_key}"][TARGET_ROW:TARGET_ROW + 1]
+            observed = actual[field]
+            if not np.isfinite(observed).all() or not np.isfinite(expected).all():
+                raise ValueError(f"nonfinite {state} target profile field {field}")
+            profile_checks[state][field] = {
+                "shape": list(observed.shape),
+                "matches_saved_fullbatch_profile": same_bits(observed, expected),
+                "max_abs_difference": float(np.max(np.abs(observed - expected))),
+            }
+        if not all(item["matches_saved_fullbatch_profile"] for item in profile_checks[state].values()):
+            raise ValueError(f"reconstructed {state} target profile differs from the saved full-batch RTTOV profile")
+        parent_record = next(item for item in value_receipt["value_calls"] if item["state"] == state)
+        with np.load(parent_record["parent_reference_npz"], allow_pickle=False) as parent:
+            parent_model_checks[state] = {
+                "target_bt_matches_input_prep_observation": same_bits(
+                    parent["obs_bt"][TARGET_ROW], block["obs_bt"][TARGET_ROW]),
+                "target_quality_all_zero": bool(np.array_equal(
+                    parent["quality"][TARGET_ROW], np.zeros(7, dtype=np.int32))),
+                "target_bt_finite": bool(np.isfinite(parent["bt"][TARGET_ROW]).all()),
+                "target_model_bt_kma_v3_0": parent["bt"][TARGET_ROW].tolist(),
+                "target_quality": parent["quality"][TARGET_ROW].tolist(),
+            }
+        if not parent_model_checks[state]["target_bt_matches_input_prep_observation"] or not parent_model_checks[state]["target_quality_all_zero"] or not parent_model_checks[state]["target_bt_finite"]:
+            raise ValueError(f"saved parent {state} target RTTOV receipt is not a strict seven-channel pass")
+
+    source_hashes = {
+        str(path.relative_to(SOURCE_V2)): sha(path)
+        for path in (
+            SOURCE_V2 / "harness/native_observation_batch.py",
+            SOURCE_V2 / "harness/native_batch_microphysics.py",
+            SOURCE_V2 / "harness/prepare_native_satellite_case.py",
+            SOURCE_V2 / "oracle/kdm6/obs/rttov_case_writer.py",
+            SOURCE_V2 / "oracle/kdm6/obs/rttov_input_builder.py",
+            SOURCE_V2 / "oracle/kdm6/obs/rttov_obs_operator.py",
+        )
+    }
+    ad_receipt = json.loads(AD_RECEIPT.read_text())
+    if sha(AD_VALUES) != EXPECTED_AD_SHA or ad_receipt["product_npz_sha256"] != EXPECTED_AD_SHA:
+        raise ValueError("saved full-B actual-direction AD artifact hash differs")
+    result = {
+        "schema": "kdm6.block22_target_observation_pilot_preflight.v1",
+        "status": "READY_FOR_ROOT_REVIEW_NO_RTTOV_EXECUTED",
+        "producer_sha256": sha(Path(__file__)),
+        "block_index": 22, "flat_range": [11264, 11776], "B": 512, "L": 39,
+        "target_row0": TARGET_ROW, "target_flat0": TARGET_FLAT,
+        "target_native_ijk1": [167, 50, 18],
+        "input_bundle_sha256": sha(bundle_path),
+        "input_preparation_sha256": sha(prep_path),
+        "parent_case_manifest_sha256": sha(PARENT / "CASE_MANIFEST.json"),
+        "saved_value_npz_sha256": sha(VALUES),
+        "saved_value_receipt_sha256": sha(VALUE_RECEIPT),
+        "value_noninterference_gate_sha256": sha(VALUE_GATE),
+        "saved_actual_direction_ad_npz_sha256": sha(AD_VALUES),
+        "saved_actual_direction_ad_receipt_sha256": sha(AD_RECEIPT),
+        "full_B_value_gate_passed": bool(gate["passed"]),
+        "historical_fullB_profiles_bitwise_match": profile_checks,
+        "historical_target_model_results": parent_model_checks,
+        "target_geometry_surface_loader_bitwise_checks": metadata_checks,
+        "selection_contract": "B512 KDM outputs loaded unchanged; only observation-profile row 368 selected for RTTOV N=1 pilot; source/QC/moment metadata retained from original row.",
+        "planned_calls_after_review": {
+            "baseline": {"RTTOV_K": 1, "RTTOV_direct": 0, "K_recovery": 0},
+            "alpha025": {"RTTOV_K": 0, "RTTOV_direct": 1},
+            "new_KDM_calls": 0,
+        },
+        "profile_fields": list(PROFILE_MAP),
+        "channels": list(CHANNELS),
+        "pressure_gradients": True,
+        "fixed_upper_count": 27,
+        "source_v2_hashes": source_hashes,
+        "actual_direction_proof_sha256": ad_receipt["accepted_direction_proof_sha256"],
+        "actual_direction_sha256": {
+            "theta": ad_receipt["direction_theta_sha256"],
+            "qv": ad_receipt["direction_qv_sha256"],
+        },
+        "RTTOV_template": str(config["paths"]["template"]),
+        "RTTOV_timeout_seconds": float(config.get("rttov_timeout_seconds", 180.0)),
+        "output_path_after_review": str(RESEARCH / "observation_prep_v1/pilot_v2"),
+    }
+    return result, prep, arrays, block, config, value_receipt
+
+
+def run_after_review(output_dir: Path, preflight_path: Path):
+    if os.environ.get("KDM6_ACTIVATION_RTTOV_APPROVED") != "1":
+        raise RuntimeError("root review cue required: set KDM6_ACTIVATION_RTTOV_APPROVED=1")
+    if output_dir.exists() or output_dir.is_symlink():
+        raise FileExistsError(f"pilot output must be new: {output_dir}")
+    expected_preflight = json.loads(preflight_path.read_text())
+    verify_payload_digest(expected_preflight)
+    fresh, prep, arrays, block, config, value_receipt = preflight()
+    for key in ("input_bundle_sha256", "saved_value_npz_sha256", "saved_actual_direction_ad_npz_sha256"):
+        if fresh[key] != expected_preflight[key]:
+            raise ValueError(f"pilot preflight source changed: {key}")
+
+    sys.path.insert(0, str(SOURCE_V2))
+    import torch
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import PROFILE_FIELDS, evaluate_observation_batch
+    from harness.prepare_native_satellite_case import load_case_config
+    from harness.run_native_candidate_observation import EXPERIMENT, _runtime_environment
+    import harness.native_satellite_replay as replay
+
+    torch.set_num_threads(1)
+    config_manifest = json.loads((PARENT / "CASE_MANIFEST.json").read_text())
+    config = load_case_config(config_manifest["case_preparation"]["paths"])
+    with np.load(VALUES, allow_pickle=False) as archive:
+        values = {name: archive[name] for name in archive.files}
+    pilot_block = dict(block)
+    pilot_admission = dict(block["initial_admission"])
+    pilot_rows = np.zeros(512, dtype=np.bool_)
+    pilot_rows[TARGET_ROW] = True
+    pilot_admission["cost_eligible"] = pilot_rows
+    pilot_block["initial_admission"] = pilot_admission
+    output_root = output_dir
+    output_root.mkdir(parents=True, exist_ok=False)
+    calls = {}
+    old_recover = replay.recover_k
+    try:
+        replay.recover_k = lambda *args, **kwargs: None
+        with _runtime_environment(EXPERIMENT):
+            for state, with_k in (("baseline", True), ("alpha025", False)):
+                output, _ = load_saved_output(state, torch, NativeProfile, CloudProfile, NativeBatchOutput, values)
+                workspace = output_root / state
+                result = evaluate_observation_batch(pilot_block, output, config, workspace, with_k=with_k)
+                expected_count = 1 if with_k else 0
+                actual_count = int(result["receipt"]["K_calls"])
+                direct_count = int(result["receipt"]["direct_calls"])
+                recovered = int(result["receipt"]["K_recovered"])
+                if actual_count != expected_count or recovered != 0 or direct_count != (0 if with_k else 1):
+                    raise RuntimeError(f"unexpected RTTOV call path for {state}: {result['receipt']}")
+                if result["rows"].tolist() != [TARGET_ROW] or not bool(result["profile_valid"][TARGET_ROW]):
+                    raise RuntimeError(f"target-only RTTOV profile admission changed for {state}")
+                if not bool(result["baseline_valid_mask"][TARGET_ROW].all()):
+                    raise RuntimeError(f"target did not pass strict all-channel quality for {state}")
+                bt = result["bt"].detach().cpu().numpy()[TARGET_ROW]
+                quality = result["quality"][TARGET_ROW]
+                if not np.isfinite(bt).all() or not np.array_equal(quality, np.zeros(7, dtype=np.int32)):
+                    raise RuntimeError(f"target BT/quality output is invalid for {state}")
+                value_call = next(item for item in value_receipt["value_calls"] if item["state"] == state)
+                with np.load(value_call["parent_reference_npz"], allow_pickle=False) as parent:
+                    previous_bt = parent["bt"][TARGET_ROW]
+                    previous_quality = parent["quality"][TARGET_ROW]
+                    bt_diff = bt - previous_bt
+                    prior_profile = {field: parent[PROFILE_MAP[field]][TARGET_ROW:TARGET_ROW + 1]
+                                     for field in PROFILE_MAP}
+                    profile_compare = {
+                        field: same_bits(result["profile_arrays"][field], prior_profile[field])
+                        for field in PROFILE_MAP
+                    }
+                    prior_support = parent["mask"][TARGET_ROW]
+                    prior_profile_valid = bool(parent["profile_valid"][TARGET_ROW])
+                    if with_k:
+                        k_compare = {}
+                        for field, value in result["k"].items():
+                            key = "K_" + field
+                            candidate = np.asarray(value, dtype=np.float64)
+                            old = parent[key][TARGET_ROW:TARGET_ROW + 1]
+                            k_compare[field] = same_bits(candidate, old)
+                    else:
+                        k_compare = {}
+                output_arrays = {"bt": bt, "quality": quality}
+                for field, value in result["profile_arrays"].items():
+                    output_arrays["profile_" + field] = value
+                if with_k:
+                    for key, value in result["k"].items():
+                        output_arrays["K_" + key] = np.asarray(value, dtype=np.float64)
+                npz_path = workspace / "target_observation.npz"
+                npz_sha = npz_new(npz_path, **output_arrays)
+                calls[state] = {
+                    "mode": "K" if with_k else "direct",
+                    "K_calls": actual_count,
+                    "direct_calls": direct_count,
+                    "K_recovered": recovered,
+                    "rows": result["rows"].tolist(),
+                    "quality": quality.tolist(),
+                    "quality_matches_parent": bool(np.array_equal(quality, previous_quality)),
+                    "support_mask_matches_parent": bool(np.array_equal(result["baseline_valid_mask"][TARGET_ROW], prior_support)),
+                    "profile_valid_matches_parent": bool(bool(result["profile_valid"][TARGET_ROW]) == prior_profile_valid),
+                    "bt_kma_v3_0": bt.tolist(),
+                    "bt_matches_parent_bitwise": same_bits(bt, previous_bt),
+                    "bt_abs_difference_per_channel": np.abs(bt_diff).tolist(),
+                    "bt_max_abs_difference": float(np.max(np.abs(bt_diff))),
+                    "profile_matches_parent_bitwise": profile_compare,
+                    "K_matches_parent_bitwise": k_compare,
+                    "profile_fields": list(PROFILE_FIELDS),
+                    "rttov_receipt": result["receipt"],
+                    "target_npz": str(npz_path),
+                    "target_npz_sha256": npz_sha,
+                }
+    finally:
+        replay.recover_k = old_recover
+    receipt = {
+        "schema": "kdm6.block22_target_observation_pilot_result.v1",
+        "status": "PILOT_COMPLETE_PENDING_REVIEW",
+        "preflight_receipt_sha256": expected_preflight["receipt_sha256"],
+        "input_bundle_sha256": sha(PREP / "block22_fullB_inputs.npz"),
+        "saved_value_npz_sha256": sha(VALUES),
+        "saved_actual_direction_ad_npz_sha256": sha(AD_VALUES),
+        "calls": calls,
+        "new_KDM_calls": 0,
+        "selection_contract": expected_preflight["selection_contract"],
+    }
+    receipt = json_with_payload_digest(output_root / "PILOT_RECEIPT.json", receipt)
+    print(json.dumps(receipt, indent=2))
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    pre = sub.add_parser("preflight", help="hash gates and rebuild/compare profiles only; no KDM/RTTOV")
+    pre.add_argument("--output", type=Path, default=RESEARCH / "observation_prep_v1/PREFLIGHT_v3.json")
+    run = sub.add_parser("run", help="one baseline K and one alpha.25 direct RTTOV call; requires root cue")
+    run.add_argument("--preflight", type=Path, default=RESEARCH / "observation_prep_v1/PREFLIGHT_v3.json")
+    run.add_argument("--output-dir", type=Path, default=RESEARCH / "observation_prep_v1/pilot_v2")
+    args = parser.parse_args(argv)
+    if args.command == "preflight":
+        if args.output.exists() or args.output.is_symlink():
+            raise FileExistsError(args.output)
+        result, *_ = preflight()
+        result = json_with_payload_digest(args.output, result)
+        print(json.dumps(result, indent=2))
+    else:
+        run_after_review(args.output_dir, args.preflight)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,58 @@
+{
+  "all_numeric_direction_values_match": true,
+  "finite_input_checks": [
+    {
+      "epsilon": 0.01,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": 1
+    },
+    {
+      "epsilon": 0.01,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": -1
+    },
+    {
+      "epsilon": 0.001,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": 1
+    },
+    {
+      "epsilon": 0.001,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": -1
+    },
+    {
+      "epsilon": 0.0001,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": 1
+    },
+    {
+      "epsilon": 0.0001,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": -1
+    },
+    {
+      "epsilon": 1e-05,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": 1
+    },
+    {
+      "epsilon": 1e-05,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": -1
+    },
+    {
+      "epsilon": 1e-06,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": 1
+    },
+    {
+      "epsilon": 1e-06,
+      "native_TQ_input_bits_equal_accepted_recipe": true,
+      "sign": -1
+    }
+  ],
+  "no_model_rerun": true,
+  "schema": "kdm6.block22_actual_direction_zero_recipe_lineage.v1",
+  "scope": "Original requested continuous proposal and recorded parent alpha.25 delta/.25; not the later post-f32 effective-native C4 direction. No effective-direction C4 model calls belong to this campaign."
+}

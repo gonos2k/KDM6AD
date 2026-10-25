@@ -1,0 +1,102 @@
+{
+  "actual_candidate_direction_baseline_BT_JVP_K": [
+    -177.07949382430954,
+    -5320.7126434758065,
+    -3107.7597083255287,
+    -4638.528509571267,
+    -5430.190246121158,
+    -5676.832875983402,
+    -3520.420318946322
+  ],
+  "alpha025_bt_kma_v3_0": [
+    250.86694800441825,
+    266.07925599272,
+    253.10102173459913,
+    268.185783718453,
+    267.06115253220634,
+    265.54415226761284,
+    259.0357304539278
+  ],
+  "alpha025_minus_baseline_bt_K": [
+    -0.29113305159762604,
+    -9.195309220326465,
+    -5.941594970266266,
+    -9.1076999019636,
+    -8.454697283582107,
+    -6.698096855144286,
+    -3.713478256463702
+  ],
+  "baseline_bt_kma_v3_0": [
+    251.15808105601587,
+    275.27456521304646,
+    259.0426167048654,
+    277.2934836204166,
+    275.51584981578844,
+    272.24224912275713,
+    262.7492087103915
+  ],
+  "baseline_target_bt_cotangent_numerator": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "global_Z_from_parent_v4": 381528.0,
+  "native_ijk1": [
+    167,
+    50,
+    18
+  ],
+  "new_KDM_calls": 0,
+  "new_RTTOV_calls": 0,
+  "objective_constants": {
+    "bias": 0.0,
+    "huber_delta": 1.0,
+    "sigma": 1.0
+  },
+  "producer_sha256": "fde1f927dab2585d08cd695f10fa8f4a6689f2d8022023b8114d88eb772f0b2f",
+  "receipt_sha256": "43162775c614cb75a79d9af9b1cd9bbd4a8d25a35d8e2b597d948bd76a169aad",
+  "schema": "kdm6.block22_target_huber_seed.v1",
+  "scope": "Target-row-only contribution using frozen baseline support/weights. The K projection is per saved AD direction; alpha=.25 endpoint is a separate finite displacement. These do not represent the whole-domain objective derivative or a full-case forecast update.",
+  "source_hashes": {
+    "K_profile_JVP_contraction": "c0b9723efbd9647a14320f09c93b923f3d9b1c51e11e46ee25f86d690fd4948b",
+    "alpha025_target_npz": "85b7eeb3a3438f038dc41d2d38860b496e1070f6a6bfebf6fffd21537ce833ce",
+    "baseline_target_npz": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d",
+    "global_summary": "769e4f7a834885d27caffe16c2e18f162f5262d65f347b3230ad1988c7e7e99c",
+    "objective": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40"
+  },
+  "status": "SAVED_PILOT_ARITHMETIC_COMPLETE",
+  "target_alpha025_huber_global_cost_contribution": 9.88070985838338e-05,
+  "target_alpha025_huber_numerator": 37.69767470849294,
+  "target_alpha025_minus_baseline_global_cost_contribution": -0.00011375838611935179,
+  "target_baseline_huber_global_cost_contribution": 0.00021256548470318558,
+  "target_baseline_huber_numerator": 81.09968424783699,
+  "target_cost_directional_global_contribution": -0.07305236783734823,
+  "target_cost_directional_numerator_from_Huber_seed": -27871.523796247795,
+  "target_flat0": 11632,
+  "target_row0": 368,
+  "target_support": {
+    "all_seven_baseline_m0": true,
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+}

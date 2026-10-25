@@ -1,0 +1,223 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Semantic refresh for the fixed-time block22 activation packet after clarifying that its AD/FD vector is the original continuous requested proposal, distinct from PR451 post-f32 effective-native C4. The existing requested-direction joint33 failure remains false; no effective-direction C4 calls are in this packet.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "report_actual_activation_trace_candidate_direction_checks",
+      "label": "Fixed-time activation trace and requested-proposal-direction checks",
+      "file_type": "document",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L1-L22",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "scope": "One 20 s microphysics tendency experiment at fixed analysis time; not a forecast cycle or cloud-efficacy pass.",
+      "direction_under_test": "Original continuous requested proposal, corresponding to parent alpha.25 delta divided by .25.",
+      "post_f32_effective_C4_direction_tested": false,
+      "joint33_pass": false
+    },
+    {
+      "id": "report_block22_activation_mechanism",
+      "label": "Block22 activation measurements identify the measured branch and cap behavior",
+      "file_type": "document",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L24-L77",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "scope": "Selected target and contextual levels from full-B512 calls; number-coordinate units remain conditional."
+    },
+    {
+      "id": "report_candidate_direction_joint_33_category_fd",
+      "label": "The requested-proposal direction fails the common-epsilon joint 33-category FD criterion",
+      "file_type": "document",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L117-L174",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "tested_direction": "Original continuous requested T/Q proposal; not post-f32 z_eff.",
+      "epsilons": [
+        0.01,
+        0.001,
+        0.0001,
+        1e-05,
+        1e-06
+      ],
+      "joint33_pass_at_any_epsilon": false,
+      "subset_native17_bt_cost_pass_at_1e6": true
+    },
+    {
+      "id": "block22_requested_direction_lineage",
+      "label": "Direction lineage binds FD endpoints to the requested proposal recipe and excludes the later effective-native direction",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/direction_lineage.json",
+      "source_location": "/scope; /finite_input_checks; /no_model_rerun",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "requested_recipe_matches_parent_alpha025_delta_div_025_numerically": true,
+      "signed_zero_differences_per_component": 8619,
+      "all_ten_fd_native_inputs_match_requested_recipe_bitwise": true,
+      "effective_C4_calls_in_campaign": 0
+    },
+    {
+      "id": "publication_manifest_activation_packet",
+      "label": "Publication manifest pins the requested-direction activation packet and its separate cloud-efficacy packet",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/publication_manifest.json",
+      "source_location": "/scope; /artifact_count; /total_bytes; /report_sha256; /interpretation_limits; /separate_native_cloud_efficacy_packet",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "artifact_count": 94,
+      "total_bytes": 97923500,
+      "report_sha256": "c382ec3e35bbd9994e7afe08cbf54c3e1f39c1aee029954c9d1e50169bc59f5f",
+      "separate_cloud_packet_artifact_count": 27,
+      "separate_cloud_packet_bytes": 218251887,
+      "one_shot_cloud_goal": "not_met",
+      "host_calls": 0,
+      "optimizer_calls": 0
+    },
+    {
+      "id": "native_cloud_efficacy_readme",
+      "label": "Separate offline domain audit reports that the one-shot cloud-analysis effectiveness goal is not met",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md",
+      "source_location": "L1-L5; L35-L43",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "new_model_calls": 0
+    },
+    {
+      "id": "one_step_tendency_analysis",
+      "label": "Fixed-time tendency analysis distinguishes the requested direction from the pending effective-native direction",
+      "file_type": "document",
+      "source_file": "docs/ONE_STEP_TENDENCY_ANALYSIS.md",
+      "source_location": "L1-L14; L108-L114",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "requested_direction_fd_joint33_failure_preserved": true,
+      "effective_native_C4_pending": true,
+      "host_time_advance_gate": false
+    },
+    {
+      "id": "effective_native_C4_direction_pending",
+      "label": "Post-binary32 effective-native C4 direction campaign remains pending and has no calls in this packet",
+      "file_type": "document",
+      "source_file": "docs/ONE_STEP_TENDENCY_ANALYSIS.md",
+      "source_location": "L108-L114",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "model_calls_in_activation_campaign": 0,
+      "reuses_requested_direction_joint33_result_as_C4": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "report_actual_activation_trace_candidate_direction_checks",
+      "target": "report_block22_activation_mechanism",
+      "relation": "reports_measured_activation_context",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L17-L28",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "report_actual_activation_trace_candidate_direction_checks",
+      "target": "report_candidate_direction_joint_33_category_fd",
+      "relation": "reports_requested_direction_fd_result",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L10-L22; L117-L174",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "block22_requested_direction_lineage",
+      "target": "report_candidate_direction_joint_33_category_fd",
+      "relation": "qualifies_direction_recipe_and_fd_endpoint_identity",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/direction_lineage.json",
+      "source_location": "/scope; /finite_input_checks",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "report_actual_activation_trace_candidate_direction_checks",
+      "target": "publication_manifest_activation_packet",
+      "relation": "pinned_by",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/publication_manifest.json",
+      "source_location": "/report_sha256; /artifacts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "report_actual_activation_trace_candidate_direction_checks",
+      "target": "native_cloud_efficacy_readme",
+      "relation": "separates_localized_direction_tests_from_domain_cloud_efficacy",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L221-L230",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "report_actual_activation_trace_candidate_direction_checks",
+      "target": "one_step_tendency_analysis",
+      "relation": "links_to_fixed_time_operator_scope",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L231-L233",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "one_step_tendency_analysis",
+      "target": "effective_native_C4_direction_pending",
+      "relation": "marks_new_effective_direction_check_pending",
+      "source_file": "docs/ONE_STEP_TENDENCY_ANALYSIS.md",
+      "source_location": "L108-L114",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "block22_requested_direction_lineage",
+      "target": "effective_native_C4_direction_pending",
+      "relation": "does_not_cover_later_post_f32_direction",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/direction_lineage.json",
+      "source_location": "/scope; /no_model_rerun",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "requested_direction_fd_and_manifest_scope_chain",
+      "label": "Requested-direction joint33 failure is tied to its own continuous proposal recipe; the effective-native C4 campaign remains pending",
+      "nodes": [
+        "report_actual_activation_trace_candidate_direction_checks",
+        "report_candidate_direction_joint_33_category_fd",
+        "block22_requested_direction_lineage",
+        "publication_manifest_activation_packet",
+        "one_step_tendency_analysis",
+        "effective_native_C4_direction_pending"
+      ],
+      "relation": "preserves_direction_and_campaign_scope_boundary",
+      "source_file": "harness/evidence/block22_activation_2026-10-25/REPORT.md",
+      "source_location": "L10-L22; L117-L126",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}
