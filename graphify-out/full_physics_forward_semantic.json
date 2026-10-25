@@ -1,14 +1,14 @@
 {
   "schema": "graphify.semantic.v1",
-  "scope": "Semantic summary of completed control/candidate full-host value steps from an exactly matched ready state; control-only four-block RTTOV pilot; control endpoint tendency audit v2; and independent candidate/control saved-field arithmetic review v1 reproducing corrected response summary v2. Candidate RTTOV, full-domain C7, C4 effective direction, C5 optimization, physical budget/actual-T reconstruction, efficacy and full-host derivative remain incomplete. The invalid v1 pair summary is omitted.",
+  "scope": "Historical H1 (2026-10-25 13:23:54Z) paired-host plan, control pilot and saved-field arithmetic evidence only. H1 pending statements are superseded by the separate current progress/baseline/trial semantic fragment; exact original docs resolve through the archive record.",
   "input_tokens": null,
   "output_tokens": null,
   "nodes": [
     {
       "id": "native_full_physics_forward_plan",
-      "label": "Paired control/candidate full-host steps and independent saved-field arithmetic review completed; candidate RTTOV and physical efficacy remain pending",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Paired control/candidate full-host steps and saved-field arithmetic review; observation work was pending at that cutoff",
       "file_type": "document",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L1-L23; L32-L47; L49-L87; L89-L148; L150-L162; L164-L197; L199-L223; L274-L296; L298-L328",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -80,13 +80,19 @@
       "independent_pair_audit_result_sha256": "645d25695454d586437c684fdf3a3c11e9f30aee6190501ad71db7239610119d",
       "independent_pair_numeric_elements": 322426586,
       "independent_pair_raw_value_changes": 26454541,
-      "independent_pair_selected_field_metrics_reproduced": 13
+      "independent_pair_selected_field_metrics_reproduced": 13,
+      "source_sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "historical_not_current_status": true,
+      "current_status_source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md"
     },
     {
       "id": "native_analysis_resolution_checklist",
-      "label": "Analysis checklist prioritizes C7/C8 full-host value evidence while keeping C4 v6 unlaunched",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Analysis checklist before the completed full-domain baseline and trial admission",
       "file_type": "document",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "L10-L22; L46-L107; L120-L173; L189-L221",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -106,7 +112,13 @@
       "C7_status": "Four control-output RTTOV pilot blocks; candidate and full-domain RT remain pending.",
       "candidate_saved_field_arithmetic_review_complete": true,
       "candidate_RTTOV_complete": false,
-      "candidate_physical_efficacy_claimed": false
+      "candidate_physical_efficacy_claimed": false,
+      "source_sha256": "6c9717d59b7d368f0f5a2079a4edea89188d43e4fdcd05b417414c09188a4e72",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "historical_not_current_status": true,
+      "current_status_source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md"
     },
     {
       "id": "saved_da_full_physics_configuration_reference",
@@ -159,9 +171,9 @@
     },
     {
       "id": "full_host_checkpoint_to_rttov_value_connection",
-      "label": "Four-block control direct-RT pilot passed; candidate RTTOV and full-domain evaluation remain pending",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Four-block control RT pilot; full domain and candidate RTTOV were pending then",
       "file_type": "document",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L131-L142; interim evidence receipts/pilot_summary.json",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -173,13 +185,19 @@
       "candidate_RTTOV_calls_complete": false,
       "control_pilot_M_host0_channel_cells": 8218,
       "candidate_RTTOV_cost_complete": false,
-      "candidate_cost_complete": false
+      "candidate_cost_complete": false,
+      "source_sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "historical_not_current_status": true,
+      "current_status_source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md"
     },
     {
       "id": "microphysics_and_full_host_objective_distinction",
-      "label": "J_micro and J_host are distinct maps and g_micro is not a full-host gradient",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Distinguishes J_micro and J_host at H1; no full-host derivative",
       "file_type": "document",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L274-L296",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -195,13 +213,19 @@
       "current_r_host_audit_scope": "Control only; candidate r_host difference pending field review.",
       "candidate_saved_output_arithmetic_reviewed": true,
       "candidate_physical_budget_or_T_reconstruction": false,
-      "candidate_J_host_evaluated": false
+      "candidate_J_host_evaluated": false,
+      "source_sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "historical_not_current_status": true,
+      "current_status_source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md"
     },
     {
       "id": "native_full_physics_forward_nonadiabatic_scope",
-      "label": "Paired value run retains enabled KDM, RRTMG, land-surface, PBL and cumulus physics",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Enabled full-physics configuration for the executed pair",
       "file_type": "document",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L32-L47; L184-L197",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -218,7 +242,13 @@
         "CU 37"
       ],
       "H_DIABATIC_entry_and_exit_separate": true,
-      "precision_scope": "The full host uses an explicit FP64 KDM value bridge with REAL4 storage/writeback; other physics stay REAL4."
+      "precision_scope": "The full host uses an explicit FP64 KDM value bridge with REAL4 storage/writeback; other physics stay REAL4.",
+      "source_sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "historical_not_current_status": true,
+      "current_status_source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md"
     },
     {
       "id": "bridge_kdm6_c_api_kdm6_native_fp64_value_c",
@@ -243,7 +273,10 @@
         "RHOG": 1
       },
       "creates_AD_handle": false,
-      "default_kdm6_step_c_changed": false
+      "default_kdm6_step_c_changed": false,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "native_fp64_value_private_build_receipt",
@@ -265,7 +298,10 @@
       "KDM_calls": 0,
       "RTTOV_calls": 0,
       "operational_install_modified": false,
-      "operational_REAL4_parity_certified": false
+      "operational_REAL4_parity_certified": false,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "native_fp64_value_boundary_suite_pending",
@@ -279,7 +315,10 @@
       "case_count": 15,
       "status": "PENDING",
       "counts_as_C4_direction_FD": false,
-      "counts_as_host_forward": false
+      "counts_as_host_forward": false,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "candidate_ready_state_matches_control",
@@ -294,7 +333,10 @@
       "variables_compared": 652,
       "numeric_elements_compared": 322426586,
       "mismatches": 0,
-      "shared_ready_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3"
+      "shared_ready_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "candidate_full_physics_step_receipt",
@@ -313,7 +355,10 @@
       "empty_points": 2012125,
       "output_time": "2025-07-19_00:01:00",
       "output_checkpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
-      "field_response_summary_included": false
+      "field_response_summary_included": false,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "candidate_runtime_execution_audit_v2",
@@ -333,7 +378,10 @@
       "RTTOV_calls": 0,
       "optimizer_calls": 0,
       "field_interpretation_claimed": false,
-      "scope": "Execution, module marker, ready match, ACK and output-time facts; not cost, physical process attribution or full-host gradient."
+      "scope": "Execution, module marker, ready match, ACK and output-time facts; not cost, physical process attribution or full-host gradient.",
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "control_endpoint_tendency_audit_v2",
@@ -351,11 +399,14 @@
       "THM2_is_actual_temperature": false,
       "H_DIABATIC_delta_over_dt_units": "K s-2",
       "candidate_endpoint_included": false,
-      "physical_budget_or_conservation_claimed": false
+      "physical_budget_or_conservation_claimed": false,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "native_full_physics_forward_interim_manifest",
-      "label": "Interim snapshot pins completed control/candidate host receipts, corrected paired summary and independent arithmetic review while candidate RTTOV and domain work remain open",
+      "label": "H1 historical interim manifest at 2026-10-25 13:23:54Z; H1 source document pins resolve to archived bytes",
       "file_type": "dataset",
       "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/interim_snapshot_manifest.json",
       "source_location": "/snapshot_cutoff_utc; /scope; /host_pair; /observation_pilot; /artifacts; /redaction_and_limits",
@@ -378,7 +429,11 @@
       "candidate_saved_field_arithmetic_review_complete": true,
       "candidate_physical_interpretation_complete": false,
       "full_domain_remaining_chunks": 125,
-      "paired_response_summary_v2_included": true
+      "paired_response_summary_v2_included": true,
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true,
+      "source_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343"
     },
     {
       "id": "candidate_pair_response_summary_v2",
@@ -398,7 +453,10 @@
       "closed_water_budget_claimed": false,
       "candidate_RTTOV_cost_evaluated": false,
       "independently_replayed": true,
-      "independent_review_status": "SAVED_PAIR_ARITHMETIC_REVIEW_PASS"
+      "independent_review_status": "SAVED_PAIR_ARITHMETIC_REVIEW_PASS",
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "independent_pair_saved_field_audit_v1",
@@ -418,7 +476,25 @@
       "ready_measure_analysis_water_kg": 25669966.556135986,
       "model_calls": 0,
       "RTTOV_calls": 0,
-      "scope_limit": "Saved arithmetic verification only; no actual T, physical budget closure, named-process cause, cloud efficacy or forecast skill."
+      "scope_limit": "Saved arithmetic verification only; no actual T, physical budget closure, named-process cause, cloud efficacy or forecast skill.",
+      "evidence_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
+    },
+    {
+      "id": "native_full_physics_H1_source_resolution",
+      "label": "H1 manifest and both source-document pins resolve to exact archived bytes at commit 7d4d2d85",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/historical_manifest_sha256; /sources",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "archived_source_documents": 2,
+      "executed_physics_artifacts_changed": false,
+      "source_sha256": "db489c26304980ee3d5b48bca3fcb653e6b09c75acfb40045b87714a9fc3391b"
     }
   ],
   "edges": [
@@ -426,7 +502,7 @@
       "source": "native_full_physics_forward_plan",
       "target": "native_analysis_resolution_checklist",
       "relation": "defines_next_C7_C8_execution_priority",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md L15-L22; L126-L173",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -436,7 +512,7 @@
       "source": "saved_da_full_physics_configuration_reference",
       "target": "native_full_physics_forward_nonadiabatic_scope",
       "relation": "provides_prior_measured_configuration_reference_only",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L22-L47",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -446,7 +522,7 @@
       "source": "native_live_stepper_ready_boundary",
       "target": "native_full_physics_forward_plan",
       "relation": "provides_pre_solve_boundary_handshake_context_but_not_restart_completeness",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L91-L113",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -456,7 +532,7 @@
       "source": "native_full_physics_forward_plan",
       "target": "full_host_checkpoint_to_rttov_value_connection",
       "relation": "plans_checkpoint_to_observation_with_control_defined_M_host0_and_no_extra_MP",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L100-L120",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -466,7 +542,7 @@
       "source": "native_full_physics_forward_plan",
       "target": "microphysics_and_full_host_objective_distinction",
       "relation": "defines_separate_value_maps_and_gradient_limits",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L122-L135",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -476,7 +552,7 @@
       "source": "native_full_physics_forward_nonadiabatic_scope",
       "target": "native_analysis_resolution_checklist",
       "relation": "grounds_C8_process_configuration_and_H_memory_scope",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md L73-L102",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -486,7 +562,7 @@
       "source": "native_analysis_resolution_checklist",
       "target": "microphysics_and_full_host_objective_distinction",
       "relation": "keeps_host_forward_separate_from_host_gradient_and_iteration_claims",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md L126-L167",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -496,7 +572,7 @@
       "source": "bridge_kdm6_c_api_kdm6_native_fp64_value_c",
       "target": "native_full_physics_forward_plan",
       "relation": "is_explicit_KDM_only_precision_entry_for_C8",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L49-L67",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -506,7 +582,7 @@
       "source": "native_fp64_value_private_build_receipt",
       "target": "native_full_physics_forward_plan",
       "relation": "provides_prepared_unexecuted_private_C8_build_attribution",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L69-L80",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -516,7 +592,7 @@
       "source": "native_fp64_value_boundary_suite_pending",
       "target": "native_full_physics_forward_plan",
       "relation": "is_required_before_either_host_session",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L82-L87",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -526,7 +602,7 @@
       "source": "native_fp64_value_boundary_suite_pending",
       "target": "native_analysis_resolution_checklist",
       "relation": "precedes_C8_without_counting_as_C4_or_host_execution",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "L93-L102",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -536,7 +612,7 @@
       "source": "candidate_ready_state_matches_control",
       "target": "native_analysis_resolution_checklist",
       "relation": "closes_precommand_common_ready_state_gate_for_C8_pair",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "L126-L140",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -566,7 +642,7 @@
       "source": "candidate_full_physics_step_receipt",
       "target": "native_full_physics_forward_plan",
       "relation": "records_completed_candidate_host_step_and_independently_reviewed_saved_field_arithmetic_but_not_physical_interpretation_or_observation_cost",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L113-L129; L312-L321",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -576,7 +652,7 @@
       "source": "control_endpoint_tendency_audit_v2",
       "target": "native_full_physics_forward_plan",
       "relation": "provides_control_only_saved_endpoint_tendency_metrics",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L157-L197; L284-L296",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -626,7 +702,7 @@
       "source": "independent_pair_saved_field_audit_v1",
       "target": "native_full_physics_forward_plan",
       "relation": "closes_saved_field_arithmetic_review_but_not_physical_interpretation_or_cost",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L130-L162; L298-L328",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -646,8 +722,28 @@
       "source": "independent_pair_saved_field_audit_v1",
       "target": "native_analysis_resolution_checklist",
       "relation": "updates_candidate_saved_field_arithmetic_gate_status",
-      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
       "source_location": "L128-L160",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_H1_source_resolution",
+      "target": "native_full_physics_forward_plan",
+      "relation": "resolves_H1_document_node_to_exact_committed_source_bytes",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/sources/1",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_H1_source_resolution",
+      "target": "native_analysis_resolution_checklist",
+      "relation": "resolves_H1_document_node_to_exact_committed_source_bytes",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/sources/0",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "_origin": "semantic"
@@ -656,7 +752,7 @@
   "hyperedges": [
     {
       "id": "paired_full_physics_host_value_and_observation_chain",
-      "label": "Control and candidate host steps completed from a matching ready state; independent saved-field arithmetic passes; candidate RTTOV and physical interpretation remain pending",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Control and candidate host steps completed from a matching ready state; independent saved-field arithmetic passes; candidate RTTOV and physical interpretation remain pending",
       "nodes": [
         "native_full_physics_forward_plan",
         "native_live_stepper_ready_boundary",
@@ -666,15 +762,18 @@
         "native_analysis_resolution_checklist"
       ],
       "relation": "records_full_host_value_execution_without_claiming_paired_observation_response_or_full_domain_cost",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "docs/NATIVE_FULL_PHYSICS_FORWARD.md L89-L148; L274-L323",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "_origin": "semantic"
+      "_origin": "semantic",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "explicit_fp64_kdm_value_bridge_C8_gate",
-      "label": "C8 uses an explicit opt-in KDM fp64 value entry while the host and all other physics retain REAL4 storage; boundary tests and host run remain pending",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] C8 uses an explicit opt-in KDM fp64 value entry while the host and all other physics retain REAL4 storage; boundary tests and host run remain pending",
       "nodes": [
         "bridge_kdm6_c_api_kdm6_native_fp64_value_c",
         "native_fp64_value_private_build_receipt",
@@ -683,15 +782,18 @@
         "native_analysis_resolution_checklist"
       ],
       "relation": "separates_experimental_KDM_precision_from_operational_C_ABI_and_host_execution",
-      "source_file": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
       "source_location": "L49-L87",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "_origin": "semantic"
+      "_origin": "semantic",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     },
     {
       "id": "completed_host_pair_pending_observation_response",
-      "label": "Host pair and independent saved-field arithmetic review complete; candidate RTTOV, physical interpretation and full-domain observation work remain open.",
+      "label": "[H1 historical 2026-10-25 13:23:54Z] Host pair and independent saved-field arithmetic review complete; candidate RTTOV, physical interpretation and full-domain observation work remain open.",
       "nodes": [
         "native_full_physics_forward_plan",
         "candidate_ready_state_matches_control",
@@ -708,7 +810,47 @@
       "source_location": "L1-L54; L80-L123",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "_origin": "semantic"
+      "_origin": "semantic",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
     }
-  ]
+  ],
+  "source_pins": {
+    "H1_resolution": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "bytes": 1192,
+      "sha256": "db489c26304980ee3d5b48bca3fcb653e6b09c75acfb40045b87714a9fc3391b"
+    },
+    "H1_manifest": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/interim_snapshot_manifest.json",
+      "bytes": 20785,
+      "sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343"
+    },
+    "H1_full_doc_snapshot": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
+      "bytes": 21341,
+      "sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938"
+    },
+    "H1_checklist_snapshot": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
+      "bytes": 15118,
+      "sha256": "6c9717d59b7d368f0f5a2079a4edea89188d43e4fdcd05b417414c09188a4e72"
+    },
+    "current_full_doc": {
+      "path": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "bytes": 21821,
+      "sha256": "7e512a43b732820f757920443eccd31bb5f1597942cdbe91c29ad454cbd942bc"
+    },
+    "current_checklist": {
+      "path": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "bytes": 15598,
+      "sha256": "076891e4f22a7f5c24901873543c64c53bf347de995a3015b7d3fb56b900c88b"
+    },
+    "H1_report": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/REPORT.md",
+      "bytes": 8461,
+      "sha256": "24d7777be2530c495ade4931e3d9a0caa454a3876f2d8bd201aca93305ebe01b"
+    }
+  }
 }

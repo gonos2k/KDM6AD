@@ -1,5 +1,10 @@
 # Paired native full-physics forward before broader analysis claims
 
+> **Historical status:** the body below is the H1 plan/audit at UTC 2026-10-25 13:23:54. Its pending/unlaunched statements describe that cutoff. For current results and open work, use [the current progress record](NATIVE_ANALYSIS_PROGRESS_20261025.md).
+> Original source bytes and historical manifest pins are preserved in the [H1 source-resolution record](../harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json).
+
+## Historical H1 snapshot
+
 ## Priority and scope
 
 The paired full-host value-forward execution is complete for control and T/Q

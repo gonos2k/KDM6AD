@@ -1,0 +1,110 @@
+"""Reconstruct the compact packet from hash-pinned saved outputs; no models."""
+from pathlib import Path
+from io import BytesIO
+import hashlib
+import json
+
+import numpy as np
+
+ROOT = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025/runs')
+PUBLIC = Path('/private/tmp/KDM6AD-full-physics-forward-20261025/harness/evidence/native_full_physics_observation_2026-10-25')
+PILOT = ROOT / 'native_checkpoint_observation_pilot_v2/actual_calls'
+RUN = ROOT / 'native_checkpoint_direct_full_domain_v1'
+OBS = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/ko7_model_domain_20261014/INPUTS.npz')
+OUT = Path(__file__).parent
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def main():
+    source_sha = sha(Path(__file__).read_bytes())
+    manifest_raw = (PUBLIC / 'manifest.json').read_bytes()
+    manifest = json.loads(manifest_raw)
+    public_raw = (PUBLIC / manifest['packet']['file']).read_bytes()
+    assert sha(public_raw) == manifest['packet']['sha256']
+    with np.load(BytesIO(public_raw), allow_pickle=False) as data:
+        expected = {name: data[name].copy() for name in data.files}
+    rebuilt = {name: np.empty_like(value) for name, value in expected.items()}
+    rebuilt['channel_id'] = np.arange(10, 17, dtype=np.int16)
+    obs_raw = OBS.read_bytes()
+    assert sha(obs_raw) == 'c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b'
+    with np.load(BytesIO(obs_raw), allow_pickle=False) as observations:
+        rebuilt['source_owner_id'][:] = observations['ko_nearest_flat_index'].reshape(-1)
+    input_pins = []
+    source_keys = {
+        'obs_bt_k': 'obs_bt', 'baseline_bt_kma_v3_0': 'bt_kma_v3_0',
+        'source_dqf': 'obs_dqf', 'source_qc_code': 'obs_qc_codes',
+        'model_quality': 'model_quality', 'profile_valid': 'profile_valid',
+        'source_valid': 'source_valid_mask', 'm0_mask': 'baseline_valid_mask',
+    }
+    for item in manifest['chunk_receipts']:
+        index = item['chunk_index']
+        if index in (0, 34, 40, 128):
+            folder = PILOT / f'chunk_{index:03d}'
+        elif index == 55:
+            folder = RUN / 'qmin_recovery_calls/chunk_00055'
+        else:
+            folder = RUN / 'calls' / f'chunk_{index:05d}'
+        raw = (folder / 'actual_checkpoint_direct_result.npz').read_bytes()
+        receipt_raw = (folder / 'receipt.json').read_bytes()
+        assert sha(raw) == item['capture_npz_sha256']
+        assert sha(receipt_raw) == item['receipt_sha256']
+        with np.load(BytesIO(raw), allow_pickle=False) as data:
+            flat = data['flat_indices']
+            assert np.array_equal(flat, np.arange(index * 512, min((index + 1) * 512, 65988)))
+            rebuilt['flat_index'][flat] = flat
+            rebuilt['i_zero_based'][flat] = flat % 234
+            rebuilt['j_zero_based'][flat] = flat // 234
+            rebuilt['chunk_index'][flat] = index
+            rebuilt['chunk_local_row'][flat] = np.arange(flat.size)
+            for destination, source in source_keys.items():
+                rebuilt[destination][flat] = data[source]
+            rebuilt['source_ko_coverage_all7'][flat] = np.isfinite(data['obs_bt']).all(axis=1)
+            edge = (flat % 234 == 0) | (flat % 234 == 233) | (flat // 234 == 0) | (flat // 234 == 281)
+            rebuilt['outer_edge_ring'][flat] = edge
+            reason = np.zeros(flat.size, dtype=np.uint8)
+            for row in range(flat.size):
+                if not data['profile_valid'][row]:
+                    if data['initial_negative_nc'][row] or data['initial_negative_ni'][row]:
+                        reason[row] = 2
+                    elif 'rttov_hard_qmin_invalid' in str(data['reasons'][row]):
+                        reason[row] = 4
+                    else:
+                        reason[row] = 3
+                elif not data['source_valid_mask'][row].all():
+                    reason[row] = 6
+                elif np.any(data['model_quality'][row] != 0):
+                    reason[row] = 1
+                elif not data['baseline_valid_mask'][row].any():
+                    reason[row] = 5
+            rebuilt['reason_code'][flat] = reason
+        input_pins.append({'chunk_index': index, 'NPZ_sha256': sha(raw), 'receipt_sha256': sha(receipt_raw)})
+    comparisons = {}
+    for name, value in rebuilt.items():
+        old = expected[name]
+        assert value.dtype == old.dtype and value.shape == old.shape
+        equal = value.tobytes(order='C') == old.tobytes(order='C')
+        assert equal, name
+        comparisons[name] = {'dtype': str(value.dtype), 'shape': list(value.shape), 'bytes_equal': equal}
+    output = OUT / 'reconstructed_packet.npz'
+    with output.open('xb') as stream:
+        np.savez_compressed(stream, **rebuilt)
+    out_raw = output.read_bytes()
+    result = {
+        'status': 'INDEPENDENT_PACKET_RECONSTRUCTION_PASS',
+        'producer_sha256': source_sha, 'original_public_manifest_sha256': sha(manifest_raw),
+        'original_public_packet_sha256': sha(public_raw), 'reconstructed_packet_sha256': sha(out_raw),
+        'container_bytes_equal': out_raw == public_raw, 'all_array_bytes_equal': True,
+        'array_comparisons': comparisons, 'verified_source_chunks': input_pins,
+        'observation_source_sha256': sha(obs_raw), 'model_calls': 0, 'RTTOV_calls': 0,
+        'scope': 'New frozen independent reconstruction of existing saved outputs. The first exporter source was not captured; this does not retroactively identify it.'}
+    with (OUT / 'receipt.json').open('x') as stream:
+        json.dump(result, stream, indent=2, allow_nan=False)
+        stream.write('\n')
+    print(json.dumps({key: value for key, value in result.items() if key not in ('array_comparisons', 'verified_source_chunks')}))
+
+
+if __name__ == '__main__':
+    main()

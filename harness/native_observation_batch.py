@@ -33,6 +33,10 @@ from oracle.kdm6.obs.native_profile_builder import (
 
 
 CHANNELS = tuple(range(10, 17))
+# RTTOV 14's ``qmin`` is expressed as ppmv over dry air. The native profile
+# builder supplies ppmv over moist air (gas_units=2), so validate after the
+# same conversion performed by RTTOV before admitting a row to a direct call.
+RTTOV_QMIN_PPMV_DRY = 0.1e-10
 PROFILE_FIELDS = (
     "T",
     "Q",
@@ -88,6 +92,30 @@ def _native_upper(block, *, device):
         raise ValueError(
             "block lacks the pinned fixed upper RTTOV reference profile"
         ) from exc
+
+
+def _rttov_qmin_error(q_wet_ppmv):
+    """Return an admission error when RTTOV's converted Q is below qmin."""
+    if not isinstance(q_wet_ppmv, torch.Tensor):
+        raise TypeError("RTTOV Q profile must be a torch.Tensor")
+    if q_wet_ppmv.dtype != torch.float64:
+        raise TypeError("RTTOV Q profile must use float64 for the RTTOV q_min check")
+    denominator = 1.0 - q_wet_ppmv * 1.0e-6
+    if not bool(torch.isfinite(denominator).all().item()) or not bool(
+        (denominator > 0.0).all().item()
+    ):
+        return "RTTOV moist-to-dry Q conversion has invalid denominator"
+    # Match RTTOV's source order: factor = 1/(1-Qwet*1e-6), then Qdry=factor*Qwet.
+    q_dry_ppmv = (1.0 / denominator) * q_wet_ppmv
+    if not bool(torch.isfinite(q_dry_ppmv).all().item()):
+        return "RTTOV dry-air Q conversion is nonfinite"
+    if bool((q_dry_ppmv < RTTOV_QMIN_PPMV_DRY).any().item()):
+        minimum = float(q_dry_ppmv.min().item())
+        return (
+            "RTTOV hard Q minimum: converted dry-air Q "
+            f"{minimum:.17g} ppmv is below {RTTOV_QMIN_PPMV_DRY:.17g} ppmv"
+        )
+    return None
 
 
 def _block_arrays(block):
@@ -256,7 +284,7 @@ def _validate_selected_inputs(block, output, config, candidates):
             )
             rho_d = output.rho_d[row]
             cloud = _optical_cloud_state(cloud_raw, rho_d)
-            native_to_rttov_cloud_profile(
+            profiles = native_to_rttov_cloud_profile(
                 native,
                 cloud,
                 shared_geometry,
@@ -267,6 +295,11 @@ def _validate_selected_inputs(block, output, config, candidates):
                 ncmin_land=float(config["experiment"]["ncmin_land"]),
                 ncmin_sea=float(config["experiment"]["ncmin_sea"]),
             )
+            # Value-only admission check; admitted profiles retain their graph.
+            qmin_error = _rttov_qmin_error(profiles.q_lay)
+            if qmin_error is not None:
+                row_errors[int(row)] = f"rttov_hard_qmin_invalid:{qmin_error}"
+                continue
         except (TypeError, ValueError) as exc:
             row_errors[int(row)] = f"post_microphysics_profile_invalid:{exc}"
     return row_errors

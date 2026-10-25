@@ -1,0 +1,2923 @@
+{
+  "analysis": {
+    "candidate_comparison": "All three tested candidate T/Q updates were inadmissible on frozen baseline support. Candidate and intersection cost are undefined and are not exported.",
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "checkpoint_logical_name": "actual full-host checkpoint at 2025-07-19 00:01:00, itimestep 3",
+    "checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "columns": 65988,
+    "direct_operator": "RTTOV 14 direct-only, KMA v3.0 brightness temperature, AMI channels 10\u201316",
+    "edge_interior": {
+      "definition": "one-cell outer ring i=0/i=NX-1 or j=0/j=NY-1",
+      "edge_columns_expected": 1028,
+      "edge_initial_negative_number_rows": 41,
+      "edge_input_columns": 1028,
+      "edge_profile_valid_rows": 160,
+      "edge_rows_with_direct_quality_nonzero": 0,
+      "edge_support_cells": 1120,
+      "excluded_rows_reason_counts_edge": {
+        "admitted_with_support": 160,
+        "direct_RTTOV_model_quality_nonzero": 0,
+        "initial_negative_native_number_moment": 41,
+        "native_checkpoint_profile_preflight_invalid": 827,
+        "rttov_hard_qmin_input_minimum": 0
+      },
+      "excluded_rows_reason_counts_interior": {
+        "admitted_with_support": 53746,
+        "direct_RTTOV_model_quality_nonzero": 11007,
+        "initial_negative_native_number_moment": 0,
+        "native_checkpoint_profile_preflight_invalid": 206,
+        "rttov_hard_qmin_input_minimum": 1
+      },
+      "interior_columns_expected": 64960,
+      "interior_initial_negative_number_rows": 0,
+      "interior_input_columns": 64960,
+      "interior_profile_valid_rows": 64753,
+      "interior_rows_with_direct_quality_nonzero": 11007,
+      "interior_support_cells": 376222,
+      "interpretation": "Edge positions were included as native input. Any exclusion is attributed to checkpoint moment/profile validity or direct RTTOV quality; no edge position is labeled missing KO data."
+    },
+    "global_cost": 11.007963317242059,
+    "global_huber_observation_numerator": 4153766.894054753,
+    "global_support_Z": 377342,
+    "grid": {
+      "flat_order": "flat=j*234+i; NPZ maps use rows=j, columns=i",
+      "levels": 39,
+      "nx": 234,
+      "ny": 282
+    },
+    "objective": {
+      "bias_K": 0.0,
+      "delta_K": 1.0,
+      "loss": "Huber",
+      "sigma_K": 1.0,
+      "unique_source_pixel_weight": 1.0
+    },
+    "observation_time_policy": {
+      "ko_filename_nominal_slot": "202507190000",
+      "ko_pixel_utc_verified": false,
+      "model_itimestep": 3,
+      "model_time": "2025-07-19_00:01:00",
+      "policy": "Use current host checkpoint at 00:01:00 with the original 00:00 nominal KO bundle. Same-slot FD header 00:00:33 is a cross-check only; pixel UTC is unverified and no temporal interpolation is applied.",
+      "same_slot_fd_header_scene_time": "20250719_000033",
+      "time_audit_status": "ACTUAL_KO_PIXEL_TIME_NOT_ESTABLISHED"
+    },
+    "per_channel": [
+      {
+        "MAE_K": 5.4316756178289225,
+        "RMSE_K": 8.267917728573202,
+        "bias_model_minus_observation_K": 3.4905730630679015,
+        "channel_id": 10,
+        "huber_observation_numerator": 267364.82931444945,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 39.70527954861453
+      },
+      {
+        "MAE_K": 13.457552455183105,
+        "RMSE_K": 18.877442403571433,
+        "bias_model_minus_observation_K": 12.042984540271844,
+        "channel_id": 11,
+        "huber_observation_numerator": 699712.0337030115,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 65.39143690416606
+      },
+      {
+        "MAE_K": 11.572553605361179,
+        "RMSE_K": 14.116016496581183,
+        "bias_model_minus_observation_K": 11.228339595011679,
+        "channel_id": 12,
+        "huber_observation_numerator": 597013.5993523777,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 42.33020809941365
+      },
+      {
+        "MAE_K": 13.99285636718102,
+        "RMSE_K": 19.727039199186578,
+        "bias_model_minus_observation_K": 12.388285979663815,
+        "channel_id": 13,
+        "huber_observation_numerator": 728400.3506091969,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 66.75016703972318
+      },
+      {
+        "MAE_K": 13.699715758509393,
+        "RMSE_K": 19.47589844051428,
+        "bias_model_minus_observation_K": 11.924754023343262,
+        "channel_id": 14,
+        "huber_observation_numerator": 712840.6471149082,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 64.52477741879363
+      },
+      {
+        "MAE_K": 12.712038516993447,
+        "RMSE_K": 18.271378083914477,
+        "bias_model_minus_observation_K": 10.914375290160349,
+        "channel_id": 15,
+        "huber_observation_numerator": 660168.1837086924,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 60.949172380839684
+      },
+      {
+        "MAE_K": 9.497796765033096,
+        "RMSE_K": 13.885868331258152,
+        "bias_model_minus_observation_K": 8.299255196927593,
+        "channel_id": 16,
+        "huber_observation_numerator": 488267.25025211665,
+        "support_count": 53906,
+        "supported_abs_residual_max_K": 50.442714500882715
+      }
+    ],
+    "profile_layers": 66,
+    "q_min_gate": {
+      "comparison": "internal_q < qmin is fatal (strict less-than).",
+      "one_filtered_column": 28195,
+      "qmin_source_hashes_by_basename": {
+        "rttov_check_profiles.F90": "2f78df7a1774f8ca875f013befcdc52758e0582a2eabf4fbc03f6e79dc2784e7",
+        "rttov_convert_profile_units.F90": "785812e86ced00f58224de04a4d9b482b858f0a99fe9d3b492ea06b1d714823f",
+        "rttov_direct.F90": "63a0573505e1563c9f8837c23210adab96081d7eb828757e90d3673d7d72ed21",
+        "rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+        "rttov_kinds.F90": "66b7fee385e2a4dbee14b623481ce529d3c5adbc8fa57d8aaa4822f0a847b13a",
+        "rttov_populate_profiles_internal.F90": "f3e31f30c9822e23e48469a16da7526ed8e3f642ef10a6582ba19e980861d895",
+        "rttov_test.F90": "308d65c4ff85f0bcf70711d7fbe1a0ae05ac0be393bce466b0758b8667115b20"
+      },
+      "raw_native_Q_unchanged_bitwise": true,
+      "row_index0_in_B512": 35,
+      "units": "ppmv over dry air after RTTOV gas_units=2 wet-to-dry conversion",
+      "value": 1e-11
+    },
+    "raw_ko_source_coverage_all7": 65988,
+    "rho_basis": "source-ordered REAL4(1.0)/REAL4(AL+ALB); saved RHO was diagnostic-only; raw QN unit certification is not claimed",
+    "row_reason_counts": {
+      "admitted_with_support": 53906,
+      "direct_RTTOV_model_quality_nonzero": 11007,
+      "initial_negative_native_number_moment": 41,
+      "native_checkpoint_profile_preflight_invalid": 1033,
+      "no_channel_support_after_direct_quality": 0,
+      "rttov_hard_qmin_input_minimum": 1,
+      "source_qc_or_observation_invalid": 0
+    },
+    "source_coverage_basis": "Fixed KO-matched source bundle coverage at the frozen mapping/owner IDs; not a new provider navigation or pixel-UTC certification.",
+    "source_dqf_qc_valid_cells_by_channel": [
+      65988,
+      65988,
+      65988,
+      65988,
+      65988,
+      65988,
+      65988
+    ],
+    "unique_mapped_owner_ids": 65988
+  },
+  "chunk_receipts": [
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3b635fc1a36b5a4065347a0870fc3c6622f463d9eb17e31c0409c8853acf5927",
+      "chunk_index": 0,
+      "flat_range": [
+        0,
+        512
+      ],
+      "profile_rows": 300,
+      "profile_valid_rows": 300,
+      "reason_counts": {
+        "admitted_with_support": 300,
+        "initial_negative_native_number_moment": 6,
+        "native_checkpoint_profile_preflight_invalid": 206
+      },
+      "receipt_sha256": "b48fc0983f8b114afd6740aa20d590336fb84eb6afb0a60a377aee601a4c5e3a",
+      "rttov_config_hash": "430f090c0a2ee388",
+      "support_cells": 2100
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b960d2b7b65fe0ca643c0414c4048b83958db1bf10ed44a394aaecbe682ee705",
+      "chunk_index": 1,
+      "flat_range": [
+        512,
+        1024
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 462,
+        "direct_RTTOV_model_quality_nonzero": 46,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "199860ee8f877cddc53d18b64fddc53233563a65f32e5c7e3b4706e2f8f91eea",
+      "rttov_config_hash": null,
+      "support_cells": 3234
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "18c7735f5e57e1ac72800780e77d10c6436d3cc2c40a92361740a16b49d1b377",
+      "chunk_index": 2,
+      "flat_range": [
+        1024,
+        1536
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 415,
+        "direct_RTTOV_model_quality_nonzero": 95,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "bdb5799691dde7d350a5cc411ebb3d05d0a131e1be4098b1d994cffb31affa91",
+      "rttov_config_hash": null,
+      "support_cells": 2905
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "4049e1213d8c16e89819755a181f1cb639aef17d3986210355cd354ee26b2637",
+      "chunk_index": 3,
+      "flat_range": [
+        1536,
+        2048
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 400,
+        "direct_RTTOV_model_quality_nonzero": 110,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "fd5adbd00d7064a5ba2a53b7187ffd964d4ec038cede9be019c6d634c75f5a92",
+      "rttov_config_hash": null,
+      "support_cells": 2800
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "fd425e96d2fbc648a36e4b25f17a34d54f0ccfa8286fb9e4152c5476eeb9a383",
+      "chunk_index": 4,
+      "flat_range": [
+        2048,
+        2560
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 384,
+        "direct_RTTOV_model_quality_nonzero": 126,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "730f6a6803e69ed5a56a96ae5db582129f34eba6eb47111c6cc2ec2bfcc36286",
+      "rttov_config_hash": null,
+      "support_cells": 2688
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3fe03dee1e1c77ab780031de4dbcee54646898435ff983ca6413514e731fc007",
+      "chunk_index": 5,
+      "flat_range": [
+        2560,
+        3072
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 349,
+        "direct_RTTOV_model_quality_nonzero": 158,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "b6527ce3d67e6ba4f67282f91d6e99877db3d38eda5b41fdb9fa57f802e482db",
+      "rttov_config_hash": null,
+      "support_cells": 2443
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "4c7d205e7b3b9544023e46f4e426e9cdab738b28a148cb8ed3b9c493372246ff",
+      "chunk_index": 6,
+      "flat_range": [
+        3072,
+        3584
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 331,
+        "direct_RTTOV_model_quality_nonzero": 177,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "5ddb4d260a8ff5fbe5cc83437ba59db66c4614765eed62348e5144d23160e435",
+      "rttov_config_hash": null,
+      "support_cells": 2317
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "328f0e354392a36672ad4cca67e4a75f49170bfe96c26f703b5307db72c8307b",
+      "chunk_index": 7,
+      "flat_range": [
+        3584,
+        4096
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 367,
+        "direct_RTTOV_model_quality_nonzero": 141,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "7f02ea5ee2fdb76225eadac3c93c438e446a10971099904422bb9c2ef2b5f309",
+      "rttov_config_hash": null,
+      "support_cells": 2569
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e8a5c710ca7bf386ac5c72e1abaa86408169b8ecacd2baacfaf0939587220b38",
+      "chunk_index": 8,
+      "flat_range": [
+        4096,
+        4608
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 365,
+        "direct_RTTOV_model_quality_nonzero": 143,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "812ee083ddb53c030566b0be1b22d515736ab8d76dbb14a661cac71e69d3ca62",
+      "rttov_config_hash": null,
+      "support_cells": 2555
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5c34d33d73ae898e80bbfe24922387c7207f28cea555d1d4f4578c2e8d6d4030",
+      "chunk_index": 9,
+      "flat_range": [
+        4608,
+        5120
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 362,
+        "direct_RTTOV_model_quality_nonzero": 146,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "a9022cb1f6a00ba512234c9f98f1ab01de0a6c7f1e35b563c21d91fec5d4ca5d",
+      "rttov_config_hash": null,
+      "support_cells": 2534
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "f238d917473137d9952b736bbfe8cc5120bf15374fc6a430f944c0f54e2d0200",
+      "chunk_index": 10,
+      "flat_range": [
+        5120,
+        5632
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 343,
+        "direct_RTTOV_model_quality_nonzero": 162,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "e2961893935069ad2f5965c1d4ebf72591ff7b0f1c3dd8462597e8694cdf2593",
+      "rttov_config_hash": null,
+      "support_cells": 2401
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a52ba858d7049e9b2dbdba7c1871737c67b181b4decfafc808614e76fa6944f2",
+      "chunk_index": 11,
+      "flat_range": [
+        5632,
+        6144
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 310,
+        "direct_RTTOV_model_quality_nonzero": 197,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "abe7765bc7f9e1d83e94ad6d23475ba86a03da1731ae77014559921c6aae3f79",
+      "rttov_config_hash": null,
+      "support_cells": 2170
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "455dd041f35540557c302f8a359e0e0574df2d407e9bdcf0a8ae8bdbb627d7fe",
+      "chunk_index": 12,
+      "flat_range": [
+        6144,
+        6656
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 327,
+        "direct_RTTOV_model_quality_nonzero": 180,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "71710fe328476032857008278d0e014679e5ec7e944afc8c2aebff993e7527b8",
+      "rttov_config_hash": null,
+      "support_cells": 2289
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d247187d030beebb1142f5ea064e9317c1561d42ab9a837949ca4475429b87e6",
+      "chunk_index": 13,
+      "flat_range": [
+        6656,
+        7168
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 346,
+        "direct_RTTOV_model_quality_nonzero": 161,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "56fb97c58cd6ca870d4c900ddca5e1d2c70145ea2fa8f25aadb09ad28d62ff10",
+      "rttov_config_hash": null,
+      "support_cells": 2422
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "7357223dcf3924fb408af00c97ce2a9f01fc254dba2abbe0d6ec199b1407d0c3",
+      "chunk_index": 14,
+      "flat_range": [
+        7168,
+        7680
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 345,
+        "direct_RTTOV_model_quality_nonzero": 163,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "8d5e8e43fde3433aff174c81519401e545d0abac42b213804894653326af746b",
+      "rttov_config_hash": null,
+      "support_cells": 2415
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "f8db79a54f47fe8b5b8629f63f38959860b806114de31747fa557d65989e00f0",
+      "chunk_index": 15,
+      "flat_range": [
+        7680,
+        8192
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 339,
+        "direct_RTTOV_model_quality_nonzero": 166,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "33301e31b08f583a92f400375903e8ab97499ecbaed1852fc2c211490113d453",
+      "rttov_config_hash": null,
+      "support_cells": 2373
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "6cafb8183f50ffc15b84a1c5ecd61ff96466d9de2e1f3c0cc583dc2d8b185f1c",
+      "chunk_index": 16,
+      "flat_range": [
+        8192,
+        8704
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 296,
+        "direct_RTTOV_model_quality_nonzero": 212,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "aa783348dbe508fd7640aba6bd7f3a13824705483269174395aa67d5ca38e886",
+      "rttov_config_hash": null,
+      "support_cells": 2072
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "64e3c713a8a7203df6e0f7fa21d6cd5451572d471e74aa6cfa2d6944d9512823",
+      "chunk_index": 17,
+      "flat_range": [
+        8704,
+        9216
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 292,
+        "direct_RTTOV_model_quality_nonzero": 216,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "f537cbdd798da5d7f853d1efd1804e164356c2e30bb386c5b611e072336ede7e",
+      "rttov_config_hash": null,
+      "support_cells": 2044
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "045b7395f8a767b54e640963a1c9935a71346afb70bcc534dc2c2ce709634999",
+      "chunk_index": 18,
+      "flat_range": [
+        9216,
+        9728
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 332,
+        "direct_RTTOV_model_quality_nonzero": 175,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "64fed40326bad97715f4ea2509c9c5414f59b09dd5704b3dbaf112ab51bd1e4b",
+      "rttov_config_hash": null,
+      "support_cells": 2324
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "629d146f9e4051291f5ede93fa11ede1098c8c4e8abb8e36af6f2edc0bdf6d01",
+      "chunk_index": 19,
+      "flat_range": [
+        9728,
+        10240
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 329,
+        "direct_RTTOV_model_quality_nonzero": 177,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "185ee0ace0b0f5e319fcb5c0425ce397ddc2713c5d030bfec12690e95536831d",
+      "rttov_config_hash": null,
+      "support_cells": 2303
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e1ad70daf9873097340131ea6059df00b66b864146ef21874ec526401c169e4d",
+      "chunk_index": 20,
+      "flat_range": [
+        10240,
+        10752
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 331,
+        "direct_RTTOV_model_quality_nonzero": 177,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "da246efdcd8bec66112f9f9f88e2e6dc966064cf05e04dd5f2d6c0ef05491f58",
+      "rttov_config_hash": null,
+      "support_cells": 2317
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "91431ec6cb8e231df4657b35dea3f348c68c6ca5d693661b9a4e267206c03f24",
+      "chunk_index": 21,
+      "flat_range": [
+        10752,
+        11264
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 300,
+        "direct_RTTOV_model_quality_nonzero": 205,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "b292b07026fcc8e597e9e75334873a8b3175f7467f30e501cdc02551782525ae",
+      "rttov_config_hash": null,
+      "support_cells": 2100
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "448ffce92f93c17734dd2ea33e7449868e472328cdc2fdf31dcb0bd847f2fbcb",
+      "chunk_index": 22,
+      "flat_range": [
+        11264,
+        11776
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 287,
+        "direct_RTTOV_model_quality_nonzero": 221,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "773a56ab5c1ccc90c5d54613190d9a84cd7958a34d25e6405c37a5d25889038c",
+      "rttov_config_hash": null,
+      "support_cells": 2009
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a7d0f05760dd3c5f8bc21b45d67a495bf5024151a1d402406baec4df196d273e",
+      "chunk_index": 23,
+      "flat_range": [
+        11776,
+        12288
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 312,
+        "direct_RTTOV_model_quality_nonzero": 196,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "21287ab7643fed14736ff734954f74cc0b7b5e62f3c31013e97f1f7495a0c0e7",
+      "rttov_config_hash": null,
+      "support_cells": 2184
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5fa6d91459822f74c88d7bd5556d6c187e0b68a0beb7446e28cb8b5d3f19791f",
+      "chunk_index": 24,
+      "flat_range": [
+        12288,
+        12800
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 327,
+        "direct_RTTOV_model_quality_nonzero": 181,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "36a4354dd38d6d8a1f8aa7da5bcfd32f6e24f3ca1c62a36b7ec4f8a658f9a8e3",
+      "rttov_config_hash": null,
+      "support_cells": 2289
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "bc4128d4ef9e44bdf2eb48e8bf74f12c56c1acc69ea78518699667e5c730d4ab",
+      "chunk_index": 25,
+      "flat_range": [
+        12800,
+        13312
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 326,
+        "direct_RTTOV_model_quality_nonzero": 183,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "479a9097c5516d1991d74dca2b21e8bed091ff50f24aa070a94e3330d0b956da",
+      "rttov_config_hash": null,
+      "support_cells": 2282
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "8cf5fc996622727baec638546afdd316057581759e36a36686b5abb231cd78e5",
+      "chunk_index": 26,
+      "flat_range": [
+        13312,
+        13824
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 308,
+        "direct_RTTOV_model_quality_nonzero": 199,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "2c33218bfc42ef8f565462c94474121059b0ba9c46fdc6b3a703e6a623fafad8",
+      "rttov_config_hash": null,
+      "support_cells": 2156
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "cc57280429edd339be726b0f999b33905cef683f0e3739f8d1268a10c9088d7e",
+      "chunk_index": 27,
+      "flat_range": [
+        13824,
+        14336
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 278,
+        "direct_RTTOV_model_quality_nonzero": 230,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "79b15a48d429aad81da2e36f1e00a59f59c90bbcc965d0c2580f8171550d4428",
+      "rttov_config_hash": null,
+      "support_cells": 1946
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d1d126b62c56001e8706089e774530b7b284bdd3668515396834a81e2aed4deb",
+      "chunk_index": 28,
+      "flat_range": [
+        14336,
+        14848
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 287,
+        "direct_RTTOV_model_quality_nonzero": 221,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "496119ed6c18ca45f2394434fd1735cbb85e181a3a27c936253fed45588bca8f",
+      "rttov_config_hash": null,
+      "support_cells": 2009
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "8c7e17b4ff17fa0c10515d707f01177412ac26f44e84ced3664d64a207057c07",
+      "chunk_index": 29,
+      "flat_range": [
+        14848,
+        15360
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 317,
+        "direct_RTTOV_model_quality_nonzero": 188,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "5a129e79ed58a533567895a634fce4ce67f07daaa30bdff8c93dfe622e8ef391",
+      "rttov_config_hash": null,
+      "support_cells": 2219
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "208a007bad0ee6fab7f15abea4c8757fef72e39bd951f2be3850a3aaeb97c81e",
+      "chunk_index": 30,
+      "flat_range": [
+        15360,
+        15872
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 315,
+        "direct_RTTOV_model_quality_nonzero": 192,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "6f63aa159655602e74a484740ebb09b8d8864d5797efa0a0c0c95d82cf984f55",
+      "rttov_config_hash": null,
+      "support_cells": 2205
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c9f262bc267574355ecb933d8d4f7ada752bcf6df5cbab9f889d66a4ab308368",
+      "chunk_index": 31,
+      "flat_range": [
+        15872,
+        16384
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 306,
+        "direct_RTTOV_model_quality_nonzero": 199,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "5c80105b5d98776b9fea443304937f3c59005f6996a30c31c27707f3d1b9daf4",
+      "rttov_config_hash": null,
+      "support_cells": 2142
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e982bbde9a92cada71b9500b693b52d806650bf7fae52e4e05c7b6c3346fa202",
+      "chunk_index": 32,
+      "flat_range": [
+        16384,
+        16896
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 268,
+        "direct_RTTOV_model_quality_nonzero": 239,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "48533e5a3726f5bf0eee24734689a23e10a19f9da22f1253bbf812333713d972",
+      "rttov_config_hash": null,
+      "support_cells": 1876
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "26e594d29c518ddaf68ac7aca06200a6ce39f0f5e087f849452290c8a0980efe",
+      "chunk_index": 33,
+      "flat_range": [
+        16896,
+        17408
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 272,
+        "direct_RTTOV_model_quality_nonzero": 235,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "f12ae8719826bc1bcc8e381f2ac94be364710f080b1da15178bc1c450af662cc",
+      "rttov_config_hash": null,
+      "support_cells": 1904
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "49cb57e20344504e53b03911e7bef9d897daf40dbf5d3c72cd46ad477a21ca8c",
+      "chunk_index": 34,
+      "flat_range": [
+        17408,
+        17920
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 308,
+        "direct_RTTOV_model_quality_nonzero": 199,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "ff12ce1fa8511720c1bfc9d1ef574378af3e26c81ce5172affacd4ff43d0c276",
+      "rttov_config_hash": "9c47889ac2100af8",
+      "support_cells": 2156
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e26bec319f4f0e33965cdb96b5c40735cc6cd48d78a75ee241a555f468db97ec",
+      "chunk_index": 35,
+      "flat_range": [
+        17920,
+        18432
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 314,
+        "direct_RTTOV_model_quality_nonzero": 194,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "5060da6ea210381f1b7f2f9b659c3d76a23ec81205b3bb3e782f27f773a09f20",
+      "rttov_config_hash": null,
+      "support_cells": 2198
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "0c8467b95abec4e0cd526c94e18effeb9f9a7f386b2825d9cd0e2951c41b4986",
+      "chunk_index": 36,
+      "flat_range": [
+        18432,
+        18944
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 319,
+        "direct_RTTOV_model_quality_nonzero": 191,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "7b4654ce09af5926e80362154c3164fe1d82ffa533f9126504a145ba86852ee9",
+      "rttov_config_hash": null,
+      "support_cells": 2233
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "fc19e8413f6860ea27c6d693e895f98049d7fe873d5b681b2973e7d80be9ec97",
+      "chunk_index": 37,
+      "flat_range": [
+        18944,
+        19456
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 288,
+        "direct_RTTOV_model_quality_nonzero": 221,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "7115475e74c26f90b8f9179bb3be1057597ba11a2c15054f197ba2567c890f7c",
+      "rttov_config_hash": null,
+      "support_cells": 2016
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "550b39c960d12e170ec60d92cb71ca4c6dac53dd862435f7b67fccc1d1d11ef2",
+      "chunk_index": 38,
+      "flat_range": [
+        19456,
+        19968
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 278,
+        "direct_RTTOV_model_quality_nonzero": 232,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "5c9a5431ac9a42cd0ea847bf9ecb176803ec679461a71b4d6f1cb8f86da5c9a2",
+      "rttov_config_hash": null,
+      "support_cells": 1946
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "27997a16129aa3313e4bfc4c642337fda2a09ae969426c6346e98aa411f1ba54",
+      "chunk_index": 39,
+      "flat_range": [
+        19968,
+        20480
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 312,
+        "direct_RTTOV_model_quality_nonzero": 197,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "2bc8d3f6020b1351c31555c7a123e2582f2bc4421c0e995e6c4e8d4f61891215",
+      "rttov_config_hash": null,
+      "support_cells": 2184
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "94b2903f3cac6357efdf1e98fb59a54365b53b01ea3cfc74cec3b48e115562ee",
+      "chunk_index": 40,
+      "flat_range": [
+        20480,
+        20992
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 335,
+        "direct_RTTOV_model_quality_nonzero": 175,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "af0ac4f2edee94d6b3fb972f08224351cc17a8bcfef26b41c6dc561c069a163e",
+      "rttov_config_hash": "b32f84e3d0630e22",
+      "support_cells": 2345
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "19ed3d9aa432385324d76b5f2c80131bc161dc617e32123a289f6ba7943b205a",
+      "chunk_index": 41,
+      "flat_range": [
+        20992,
+        21504
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 342,
+        "direct_RTTOV_model_quality_nonzero": 167,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "ce287bd60c6fbac3cba91f0d3741d85b57bda9cf2b5969248bdf5e634e921310",
+      "rttov_config_hash": null,
+      "support_cells": 2394
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a42855cd261bd1d5df088edd39cd6c5761998d671eb705c8f9455497cccd782a",
+      "chunk_index": 42,
+      "flat_range": [
+        21504,
+        22016
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 333,
+        "direct_RTTOV_model_quality_nonzero": 175,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "5429c65216367e93f9f0166dfdaa0b74ddaf0c086b6963daece954a99b1f24bd",
+      "rttov_config_hash": null,
+      "support_cells": 2331
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "8f84024aa1aa2556fe0b866ea5f259cf11e5dac5f10ad8d30a6f19370ec168f3",
+      "chunk_index": 43,
+      "flat_range": [
+        22016,
+        22528
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 306,
+        "direct_RTTOV_model_quality_nonzero": 203,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "6c72da6ff7c3330ca83fcbb7dbda23235393e34c3cc0e967e5766418c74d3648",
+      "rttov_config_hash": null,
+      "support_cells": 2142
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "ca210470d98a71436aab87f32ce5bc3466b3a4570d3c138daf1e6a0a0ad10990",
+      "chunk_index": 44,
+      "flat_range": [
+        22528,
+        23040
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 322,
+        "direct_RTTOV_model_quality_nonzero": 183,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "ae425622cd48b70e01b1f82564fec0853adbab2a73d4e4f8f1d6ea53da18d5ce",
+      "rttov_config_hash": null,
+      "support_cells": 2254
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b6ba960b16e6995f25d7f4a0fd4c820b5e8456409ca5d754f3c4ef7624672a56",
+      "chunk_index": 45,
+      "flat_range": [
+        23040,
+        23552
+      ],
+      "profile_rows": 502,
+      "profile_valid_rows": 502,
+      "reason_counts": {
+        "admitted_with_support": 338,
+        "direct_RTTOV_model_quality_nonzero": 164,
+        "native_checkpoint_profile_preflight_invalid": 10
+      },
+      "receipt_sha256": "09390010f4e9c26a751e15e0a5bab6e27f1098f88803de6ed098259ecc09c604",
+      "rttov_config_hash": null,
+      "support_cells": 2366
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "eab84fde19df9e3db73fbd425ef966771f1acf474dd4e6a1a1d251c1dea2b9c1",
+      "chunk_index": 46,
+      "flat_range": [
+        23552,
+        24064
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 344,
+        "direct_RTTOV_model_quality_nonzero": 162,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "c7682f3fc65643264c76a5340a1162e5696781ab301e00105c5f940fa56e42f7",
+      "rttov_config_hash": null,
+      "support_cells": 2408
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b5d519a61fcc8ec907991ab58413ed9c11256affbde6a43c6cf4399b8c2c3203",
+      "chunk_index": 47,
+      "flat_range": [
+        24064,
+        24576
+      ],
+      "profile_rows": 504,
+      "profile_valid_rows": 504,
+      "reason_counts": {
+        "admitted_with_support": 340,
+        "direct_RTTOV_model_quality_nonzero": 164,
+        "native_checkpoint_profile_preflight_invalid": 8
+      },
+      "receipt_sha256": "0bb82532355c47733ff421a78efc2eabf68e87a4b65a8d406eed90756214e634",
+      "rttov_config_hash": null,
+      "support_cells": 2380
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "f8f4fe51c50f4401c5e9271eaa1500354073b6a63dc804714b9c70379e3ace87",
+      "chunk_index": 48,
+      "flat_range": [
+        24576,
+        25088
+      ],
+      "profile_rows": 502,
+      "profile_valid_rows": 502,
+      "reason_counts": {
+        "admitted_with_support": 303,
+        "direct_RTTOV_model_quality_nonzero": 199,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 9
+      },
+      "receipt_sha256": "896e8ac390c9c4d221351c91c5aa5cbf4d154c708d6e8f17794eb2aebabfcd69",
+      "rttov_config_hash": null,
+      "support_cells": 2121
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "4e21718c202f99bfc8efdc82a32e71a7d1679155a56e89ee4a414e1b17e097fc",
+      "chunk_index": 49,
+      "flat_range": [
+        25088,
+        25600
+      ],
+      "profile_rows": 500,
+      "profile_valid_rows": 500,
+      "reason_counts": {
+        "admitted_with_support": 353,
+        "direct_RTTOV_model_quality_nonzero": 147,
+        "native_checkpoint_profile_preflight_invalid": 12
+      },
+      "receipt_sha256": "dcc3ed84370b9d6684ad25ec652ce7e450dc40f81bc012d7d18c114b8b1ca363",
+      "rttov_config_hash": null,
+      "support_cells": 2471
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "1aad27ca9274c85565ff05310f656e24c2005ac9d5eba34a2ae2420f6cf016e5",
+      "chunk_index": 50,
+      "flat_range": [
+        25600,
+        26112
+      ],
+      "profile_rows": 504,
+      "profile_valid_rows": 504,
+      "reason_counts": {
+        "admitted_with_support": 399,
+        "direct_RTTOV_model_quality_nonzero": 105,
+        "native_checkpoint_profile_preflight_invalid": 8
+      },
+      "receipt_sha256": "e7809c269d616d1de19195ce4f5c4aa2d87d99cc97a5c775979e73a2698e1048",
+      "rttov_config_hash": null,
+      "support_cells": 2793
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b349c20acd287b23c0e2d62de195434b112e7f7477c7efb131472d84b4b7f1fd",
+      "chunk_index": 51,
+      "flat_range": [
+        26112,
+        26624
+      ],
+      "profile_rows": 501,
+      "profile_valid_rows": 501,
+      "reason_counts": {
+        "admitted_with_support": 415,
+        "direct_RTTOV_model_quality_nonzero": 86,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 10
+      },
+      "receipt_sha256": "9ed236c099046b4b5255181dd5a19eb2bed2da28677355a505ced455df7507c0",
+      "rttov_config_hash": null,
+      "support_cells": 2905
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d95ef231c9e66f2bd7f9a1e8da04a5fd5f8183fbf96e63177bb1eb1e52d79a5c",
+      "chunk_index": 52,
+      "flat_range": [
+        26624,
+        27136
+      ],
+      "profile_rows": 503,
+      "profile_valid_rows": 503,
+      "reason_counts": {
+        "admitted_with_support": 426,
+        "direct_RTTOV_model_quality_nonzero": 77,
+        "native_checkpoint_profile_preflight_invalid": 9
+      },
+      "receipt_sha256": "30c182da726f1de6bd17c35983fcba4d01ad7ff9b957bb948fc3eb162a5ac559",
+      "rttov_config_hash": null,
+      "support_cells": 2982
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "6425b0db6e599d8cf9c2e6afc8e5d003ff66725dc20db23bc710c20356212368",
+      "chunk_index": 53,
+      "flat_range": [
+        27136,
+        27648
+      ],
+      "profile_rows": 503,
+      "profile_valid_rows": 503,
+      "reason_counts": {
+        "admitted_with_support": 411,
+        "direct_RTTOV_model_quality_nonzero": 92,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 8
+      },
+      "receipt_sha256": "19633393756d0f88a9376aaf73556bebe2d60555d017d47c05b3aa181a72b2f6",
+      "rttov_config_hash": null,
+      "support_cells": 2877
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "868b3c574592aa2dbfc98a234eab9fe442c7a8e4d2859020131cc49265e8c6d6",
+      "chunk_index": 54,
+      "flat_range": [
+        27648,
+        28160
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 446,
+        "direct_RTTOV_model_quality_nonzero": 61,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "5c8fa592a256cab06d31fee91c807c5d2d9865982a01cb89344b48e213df3913",
+      "rttov_config_hash": null,
+      "support_cells": 3122
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "4e43aed1bda6e9ce133d4dda364ff0cfbf463750595e62c3fea48772859acea9",
+      "chunk_index": 55,
+      "flat_range": [
+        28160,
+        28672
+      ],
+      "profile_rows": 502,
+      "profile_valid_rows": 502,
+      "reason_counts": {
+        "admitted_with_support": 448,
+        "direct_RTTOV_model_quality_nonzero": 54,
+        "native_checkpoint_profile_preflight_invalid": 9,
+        "rttov_hard_qmin_input_minimum": 1
+      },
+      "receipt_sha256": "570a30b37a79d3316b88304264501d40cefde8c52515775780454c9426a5137e",
+      "rttov_config_hash": "9d2a86f865340591",
+      "support_cells": 3136
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "2c7a57de2db6a3f62ae85e03ede10fb06a49f3a46b821c657b7ce74c0ce68680",
+      "chunk_index": 56,
+      "flat_range": [
+        28672,
+        29184
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 451,
+        "direct_RTTOV_model_quality_nonzero": 55,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "9a9ac4acf53ca1abf6d0b6058d8837d774cbad31f8bf666b270f8955538065e1",
+      "rttov_config_hash": "496a21ec9989d571",
+      "support_cells": 3157
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a915ff9d7cb443b76e27cf30d4281673489e45c09a9071da8e384d9c8c690027",
+      "chunk_index": 57,
+      "flat_range": [
+        29184,
+        29696
+      ],
+      "profile_rows": 498,
+      "profile_valid_rows": 498,
+      "reason_counts": {
+        "admitted_with_support": 448,
+        "direct_RTTOV_model_quality_nonzero": 50,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 13
+      },
+      "receipt_sha256": "24442c6aa9e08e185cc273f7aeabb98ee88d8a2f800d1f02bca0452e098351ac",
+      "rttov_config_hash": "8745bb0951cba9ba",
+      "support_cells": 3136
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "48e823813bd99106bb42595e5867d32ac52257f9eb9c82e49953d989803698e0",
+      "chunk_index": 58,
+      "flat_range": [
+        29696,
+        30208
+      ],
+      "profile_rows": 503,
+      "profile_valid_rows": 503,
+      "reason_counts": {
+        "admitted_with_support": 439,
+        "direct_RTTOV_model_quality_nonzero": 64,
+        "native_checkpoint_profile_preflight_invalid": 9
+      },
+      "receipt_sha256": "d8d0bafa47d33ca79122809c0887a2c8d60be6ca2c81b446a96dc5b7c62f9eaa",
+      "rttov_config_hash": "47f31d0dad2f0018",
+      "support_cells": 3073
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "96d834eb84a6af914c9251769e848cf395b3992f65e5f79678856252eeb5f899",
+      "chunk_index": 59,
+      "flat_range": [
+        30208,
+        30720
+      ],
+      "profile_rows": 502,
+      "profile_valid_rows": 502,
+      "reason_counts": {
+        "admitted_with_support": 437,
+        "direct_RTTOV_model_quality_nonzero": 65,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 9
+      },
+      "receipt_sha256": "4ac4a5a07cd9ba428af1aef254d46a26c1fac720e7a6afdba440ca4420aca2ca",
+      "rttov_config_hash": "da1898218ab7d33b",
+      "support_cells": 3059
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b16eaf97e8a6be0919fd845bc1f8b4f8f2909fab3cf4e7bb63da32215f528753",
+      "chunk_index": 60,
+      "flat_range": [
+        30720,
+        31232
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 453,
+        "direct_RTTOV_model_quality_nonzero": 54,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "c61c3acbb96d189d96086003a04d6a0ffd78e4d6deff1ae5ab0ffbce4152a876",
+      "rttov_config_hash": "d0195d657ae8284d",
+      "support_cells": 3171
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e0766fa68d287da6d4830820fdad6bffe294a2dd5f69c619579803f916e38d20",
+      "chunk_index": 61,
+      "flat_range": [
+        31232,
+        31744
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 447,
+        "direct_RTTOV_model_quality_nonzero": 59,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "1021e3e0ccb239a51d38a9b233ea329bbdd649f3da154be11375fc8d42682621",
+      "rttov_config_hash": "af62d21303b82836",
+      "support_cells": 3129
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d91adbbc695c86b1e44653ce416e848d901cfa88fe425eb5037990c5b77f228b",
+      "chunk_index": 62,
+      "flat_range": [
+        31744,
+        32256
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 450,
+        "direct_RTTOV_model_quality_nonzero": 55,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "840d18cdf5dfcfc77bb01ccf4523a75db77c91453218b55985e37410fa09bcea",
+      "rttov_config_hash": "7601b7f2e7999110",
+      "support_cells": 3150
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3c3673d7fdfc3b9c0a64c4afad292d006eddb61ec767bf3b782b31fc45b351b3",
+      "chunk_index": 63,
+      "flat_range": [
+        32256,
+        32768
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 452,
+        "direct_RTTOV_model_quality_nonzero": 54,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "b28acfd65d84d05cb491f61b5577763161f64049c945e4fd385b2906e44194bf",
+      "rttov_config_hash": "bb18bcd861b222fe",
+      "support_cells": 3164
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "299626713ee7a79d5bfb666fcc94a1850be114c39191b753d0a919c4bead2e65",
+      "chunk_index": 64,
+      "flat_range": [
+        32768,
+        33280
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 434,
+        "direct_RTTOV_model_quality_nonzero": 73,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "3b6152d4e91395df125c5f00342fba83896e31eb26efb52ef084e7a92493b0a1",
+      "rttov_config_hash": "0a32022c6a3ce4e4",
+      "support_cells": 3038
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c34f7fb9cb671e0230afc8051e4f1ba59d950d56e0702d1c59dcf409178c0114",
+      "chunk_index": 65,
+      "flat_range": [
+        33280,
+        33792
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 456,
+        "direct_RTTOV_model_quality_nonzero": 51,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "ccb1afa710a1bd548c6012aec4c6f6e32559d4199b088c6bcde6a3664b7ce5a8",
+      "rttov_config_hash": "6d1f683a16996a76",
+      "support_cells": 3192
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "550f3cd5a002947e6f26a4369752d355be037b544f7d2ed24f8536567ace2236",
+      "chunk_index": 66,
+      "flat_range": [
+        33792,
+        34304
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 458,
+        "direct_RTTOV_model_quality_nonzero": 48,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "386ef218d5abd390ea444564a0d1f7f2f62cf4b7f40cf10fc22a0a12a7da2c68",
+      "rttov_config_hash": "9e7a94d61a4aa872",
+      "support_cells": 3206
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "05b10fe3e9b2cf65459ee968b74761d6a8aee74c22ae2df4fb45ff52a3c1bd48",
+      "chunk_index": 67,
+      "flat_range": [
+        34304,
+        34816
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 453,
+        "direct_RTTOV_model_quality_nonzero": 55,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "b414757e9d857c014f44f61113647776aee55d58fc0647ad3976373af9d36b4c",
+      "rttov_config_hash": "18386862851c7989",
+      "support_cells": 3171
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5243a4206259221553132d840f93dc50d83267fca9e1bbf06a411fb2b81054ad",
+      "chunk_index": 68,
+      "flat_range": [
+        34816,
+        35328
+      ],
+      "profile_rows": 501,
+      "profile_valid_rows": 501,
+      "reason_counts": {
+        "admitted_with_support": 447,
+        "direct_RTTOV_model_quality_nonzero": 54,
+        "native_checkpoint_profile_preflight_invalid": 11
+      },
+      "receipt_sha256": "cf9136c0a2b67cfff6b19cea7d220faf4c1fd1501a32a0806f072527a75e0455",
+      "rttov_config_hash": "56366c491d5c5fe4",
+      "support_cells": 3129
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "ba15a53bf932cfd8a9a1ea1857382a6cec7fa23d948390791cf4b45e57029904",
+      "chunk_index": 69,
+      "flat_range": [
+        35328,
+        35840
+      ],
+      "profile_rows": 501,
+      "profile_valid_rows": 501,
+      "reason_counts": {
+        "admitted_with_support": 433,
+        "direct_RTTOV_model_quality_nonzero": 68,
+        "native_checkpoint_profile_preflight_invalid": 11
+      },
+      "receipt_sha256": "59795322f95fabc7439fa96e783441d3796ae058309ab0e366193cf7236ded03",
+      "rttov_config_hash": "8ecf34cbfcff7040",
+      "support_cells": 3031
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c86f14da93a9186159741538eea347f948531254f24d0ecf9ef2ee1f1d33d558",
+      "chunk_index": 70,
+      "flat_range": [
+        35840,
+        36352
+      ],
+      "profile_rows": 502,
+      "profile_valid_rows": 502,
+      "reason_counts": {
+        "admitted_with_support": 451,
+        "direct_RTTOV_model_quality_nonzero": 51,
+        "native_checkpoint_profile_preflight_invalid": 10
+      },
+      "receipt_sha256": "29c2f6357c0b2c425e4dd77c90b81a114bd699c8b14df69d68014a0d92ad7587",
+      "rttov_config_hash": "e23489933fd0aceb",
+      "support_cells": 3157
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5e8c8f655d1bcdfc77bdf79a391529bcbfad75f38ba68c2d13201d8a6fcc136d",
+      "chunk_index": 71,
+      "flat_range": [
+        36352,
+        36864
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 457,
+        "direct_RTTOV_model_quality_nonzero": 48,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "627a358767537ec42733acca1fb12b54ed75dc5f1cfcdc6b9212c8f00725b49f",
+      "rttov_config_hash": "2dd7bc1d0ed1b331",
+      "support_cells": 3199
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b925799168667cac4ca6908c6ba6b9238a3bc7f6a67ca6779e6b48027804b6ab",
+      "chunk_index": 72,
+      "flat_range": [
+        36864,
+        37376
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 458,
+        "direct_RTTOV_model_quality_nonzero": 48,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "5005ec770f9366b1f5c30af46edf1136f0ff8d3ab9237b098de906eea5834d0b",
+      "rttov_config_hash": "b3b8982056b874d8",
+      "support_cells": 3206
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "0db8b4864aeea70ad86828906b5a91a5bd30549f56d19232d7c5eb2c289ece99",
+      "chunk_index": 73,
+      "flat_range": [
+        37376,
+        37888
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 459,
+        "direct_RTTOV_model_quality_nonzero": 48,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "f50129368964c0a3cefb9ec815b2e7243a2026a39d37fd705363d57d2c523731",
+      "rttov_config_hash": "bdd77108f20607ea",
+      "support_cells": 3213
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "bb54863c53875c424b830e4bcad01b55b3a3efd251fbd91e52a4128b27a9e14a",
+      "chunk_index": 74,
+      "flat_range": [
+        37888,
+        38400
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 454,
+        "direct_RTTOV_model_quality_nonzero": 51,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "51264789a3c20229b2df5892fb54846a63bfce0b53877572828da129c57e90e2",
+      "rttov_config_hash": "9b95ded34ee9d544",
+      "support_cells": 3178
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b42b7c49cc5b2a8cea7e2c4cfe5ef16f2fb386f2a9250273797189263bf7faef",
+      "chunk_index": 75,
+      "flat_range": [
+        38400,
+        38912
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 443,
+        "direct_RTTOV_model_quality_nonzero": 64,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "3986518e81d573fa5f228dd808e7bbb333cc7046f7ddc8c4ec0fabd1829e47ad",
+      "rttov_config_hash": "9d885cecb9cf1d2a",
+      "support_cells": 3101
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b6f50ce1c0f5986fb97bac00809c7110c25b90798c26dd319d3bd2575b1c97dd",
+      "chunk_index": 76,
+      "flat_range": [
+        38912,
+        39424
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 476,
+        "direct_RTTOV_model_quality_nonzero": 31,
+        "initial_negative_native_number_moment": 2,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "c313d2d6700a61517e6699ba8f973dffa05af3fdc144a5caacae2d3353a87ca6",
+      "rttov_config_hash": "3a3a9719efc7366b",
+      "support_cells": 3332
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "b2375fac83c3427c19238ff38be31f83e489f076152829918fd004bdb8c96d83",
+      "chunk_index": 77,
+      "flat_range": [
+        39424,
+        39936
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 485,
+        "direct_RTTOV_model_quality_nonzero": 25,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "370fbead5c50ad4678acc9fc671b6f9c8fb3738f5a1984d0a833c54598172d1c",
+      "rttov_config_hash": "459d100428dc6c4e",
+      "support_cells": 3395
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "ff51dbab33b840c5cf297b0e39abad37a464b80259cf7b18b3441925198f5115",
+      "chunk_index": 78,
+      "flat_range": [
+        39936,
+        40448
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 487,
+        "direct_RTTOV_model_quality_nonzero": 20,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "81b8c0c6e727ddb010ee894cea7a379ebd65a42cf61e53801df8aa4680635272",
+      "rttov_config_hash": "cd6702cda2fbc077",
+      "support_cells": 3409
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "96290495d91d8ce50590221c6287af95e607b4c656cea4410a1de29ead640d6f",
+      "chunk_index": 79,
+      "flat_range": [
+        40448,
+        40960
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 491,
+        "direct_RTTOV_model_quality_nonzero": 17,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "5fd037228d30b5cf8736216af5a6becf90a4043532d5506e4702c4fe58732c3a",
+      "rttov_config_hash": "1be3682d7aa08e60",
+      "support_cells": 3437
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "09d47ed0363a301890f0b5ecc1e451b62fcae0d742cd119da45e8dc96002b542",
+      "chunk_index": 80,
+      "flat_range": [
+        40960,
+        41472
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 490,
+        "direct_RTTOV_model_quality_nonzero": 18,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "f328be8cad98314281bcd2bfd76658eba80a935fd9894ae417d3dd9f59f1d0fa",
+      "rttov_config_hash": "5795eaed263b83a3",
+      "support_cells": 3430
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c90599e1f3f607007cdde34de04df6ba6a4594f8e8858da20bdff57469395c37",
+      "chunk_index": 81,
+      "flat_range": [
+        41472,
+        41984
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 489,
+        "direct_RTTOV_model_quality_nonzero": 18,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "05fd1e6589395a163fb20276072802c02dd16fb1f61a758e5c1b3e206c705981",
+      "rttov_config_hash": "4ed90114e72d7b6c",
+      "support_cells": 3423
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "cc8cc09c139b28189a8ac6b01e94f84f942cb1e2b34f19ff8a67a5d1a60c1d7e",
+      "chunk_index": 82,
+      "flat_range": [
+        41984,
+        42496
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 480,
+        "direct_RTTOV_model_quality_nonzero": 28,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "f7be90fa428371cb08ad4f8af681e51888be4aae6245d8965963c9c37eaf8868",
+      "rttov_config_hash": "e3b8645ec0ee51bd",
+      "support_cells": 3360
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "dbd5b3cfec83c573afcbcefb84affe88da50609267639cbc49b6fc2160735fa4",
+      "chunk_index": 83,
+      "flat_range": [
+        42496,
+        43008
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 491,
+        "direct_RTTOV_model_quality_nonzero": 19,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "fc49ec8dc6e78c17ed9f98ffbae84ec5d411b725ec09c47ae13223e2400008f6",
+      "rttov_config_hash": "6cef551590ec44fc",
+      "support_cells": 3437
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "fc022b36ab087f7971daa35e285251cfb86847e0022052c5d01574138c24e433",
+      "chunk_index": 84,
+      "flat_range": [
+        43008,
+        43520
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 491,
+        "direct_RTTOV_model_quality_nonzero": 17,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "63f891bf9f8ff03513d587c73ebecfa0e45e57025b01f594dc103434008cc113",
+      "rttov_config_hash": "6181dbb28c1b59f6",
+      "support_cells": 3437
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "9a87ad1206f6208c532c14cb649081aa2a877059328bd62dcac05ffd51223177",
+      "chunk_index": 85,
+      "flat_range": [
+        43520,
+        44032
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 488,
+        "direct_RTTOV_model_quality_nonzero": 17,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "5b73da5facfc901c16161e44068c890e8b8e55807d94c3b6dbb06040a4205c93",
+      "rttov_config_hash": "c6f1808712b93902",
+      "support_cells": 3416
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3f4c8796d1f4f1ad0ae9f07fb86ced45953f34236a9d8692d91cc27c5e9c0d89",
+      "chunk_index": 86,
+      "flat_range": [
+        44032,
+        44544
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 490,
+        "direct_RTTOV_model_quality_nonzero": 17,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "5819a4365ddf57cfffbba1801464f02703074fd8312059df7d0a712893372396",
+      "rttov_config_hash": "3b9d8f6a15591695",
+      "support_cells": 3430
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5f661efb2bf3e2e8ddc9699b6359e8508ef8ca86c5deb05402ec73dacbbb21d8",
+      "chunk_index": 87,
+      "flat_range": [
+        44544,
+        45056
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 495,
+        "direct_RTTOV_model_quality_nonzero": 14,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "dd357c744b1ef99e604b3f57b986daaf6dda6899de5e7fdae47f95b41be99db8",
+      "rttov_config_hash": "50022e2744c25fd3",
+      "support_cells": 3465
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a1f2efecead589f6333adbb749834d8955dd4df1fe1e721cf88eb019db4a5f15",
+      "chunk_index": 88,
+      "flat_range": [
+        45056,
+        45568
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 486,
+        "direct_RTTOV_model_quality_nonzero": 20,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "d354be3f0feeaa53139c3ea8ea7866184b4331564f8bd7024d62b984f4a07522",
+      "rttov_config_hash": "b85fd9610acf187a",
+      "support_cells": 3402
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "9a23902688660b6fe249eb0be77b65ce1242707e92672a97e1c7c4242d047189",
+      "chunk_index": 89,
+      "flat_range": [
+        45568,
+        46080
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 484,
+        "direct_RTTOV_model_quality_nonzero": 21,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "395950d9301af056c02a6a5085b6ace79a5442180856ada5d16a76bd9a136cc6",
+      "rttov_config_hash": "79f90b347107d355",
+      "support_cells": 3388
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c7391f1fcef9c1e748eb32d262f9fad51fd0bb1f6768329ab6165b1a440591a6",
+      "chunk_index": 90,
+      "flat_range": [
+        46080,
+        46592
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 481,
+        "direct_RTTOV_model_quality_nonzero": 26,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "65163b76a61a08df9248884fc3de051ebf9274fe576ecf44d432bdb4f163e823",
+      "rttov_config_hash": "83a7ebe4c0c8d86c",
+      "support_cells": 3367
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "c8d41b8255ffae0ae8b18a7365f6cacb84b1a11215c36ef08cbd8465f94f21eb",
+      "chunk_index": 91,
+      "flat_range": [
+        46592,
+        47104
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 463,
+        "direct_RTTOV_model_quality_nonzero": 45,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "424ca0933ec6fbb9e6045e3109c449e13ede0e90e962d5fc4d4b9592490348e3",
+      "rttov_config_hash": "d4c7d7df20f4264f",
+      "support_cells": 3241
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "5c74fe12e8abfec6e544c9ced54fa83f97612326c170e2383acbcdab20658701",
+      "chunk_index": 92,
+      "flat_range": [
+        47104,
+        47616
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 473,
+        "direct_RTTOV_model_quality_nonzero": 34,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "c95fafc453cfb275ce8199badc59d6956018a061d9a61f673d4f69bde4297a6a",
+      "rttov_config_hash": "0600a99f1b2a545a",
+      "support_cells": 3311
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3bc8a047198d5f70ceed69d892d4892e3cb1c5638038769a36d8f6e0bbafd19b",
+      "chunk_index": 93,
+      "flat_range": [
+        47616,
+        48128
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 476,
+        "direct_RTTOV_model_quality_nonzero": 34,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "9ca796e57c49c005af9264f22d2bbf5b61f72c560accd4f0ce13565cb47282f7",
+      "rttov_config_hash": "b24cd21c5d64b64f",
+      "support_cells": 3332
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e31e954f27a4ecd3da7710f6c498d75f27eaa6b67fc5a5908a8c98a8c391c9c0",
+      "chunk_index": 94,
+      "flat_range": [
+        48128,
+        48640
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 474,
+        "direct_RTTOV_model_quality_nonzero": 34,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "199e18631a2d960b618fb7ac8d813dfbff0976df1e3eb436f4309ead9c9c0fad",
+      "rttov_config_hash": "67ca2288d1b069b4",
+      "support_cells": 3318
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "363fd9be54f505534145bd64498215808504b6aafe80889edff09ef61a6b3085",
+      "chunk_index": 95,
+      "flat_range": [
+        48640,
+        49152
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 474,
+        "direct_RTTOV_model_quality_nonzero": 34,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "a2f08302a7b53a45380dd74ad67dc755e94919803a11b05be0e57cd399e66f2a",
+      "rttov_config_hash": "2f07a6047aef56d0",
+      "support_cells": 3318
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e21e5e2f8418c36c25444543840da7f9eb1f285961b7b1d52100342747f8f86a",
+      "chunk_index": 96,
+      "flat_range": [
+        49152,
+        49664
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 465,
+        "direct_RTTOV_model_quality_nonzero": 45,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "8a6b5fdda2ab79b9c654bcd13352e4ea8baec50ddebe92c6464ee0482f0ae7e1",
+      "rttov_config_hash": "84e37add5b6d5df0",
+      "support_cells": 3255
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "680deb3cb295a47356ecf152bb64c799fe9b99ea8a6e5391d85b2d0609fe218e",
+      "chunk_index": 97,
+      "flat_range": [
+        49664,
+        50176
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 477,
+        "direct_RTTOV_model_quality_nonzero": 29,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "75ec8b426a4a3bbf51fde55d9dfaace6f7e5f18b74b34696ce7b9eb60ca91b04",
+      "rttov_config_hash": "d0c831a32b3d73a4",
+      "support_cells": 3339
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e9e2167f459a6045f68714fe40d6bd66022e33183d1fbf4be06d5c7a93f0cb01",
+      "chunk_index": 98,
+      "flat_range": [
+        50176,
+        50688
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 490,
+        "direct_RTTOV_model_quality_nonzero": 20,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "53ed7acb9415f01ceb6a05dbf3ea741d0249709bf24c7d14742da9c9f286cf3e",
+      "rttov_config_hash": "2540522481ce3c3e",
+      "support_cells": 3430
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3e2a626e642c362cbfa88706a69ac120bcfcaccd60fbcb68ebd000c46626b3ba",
+      "chunk_index": 99,
+      "flat_range": [
+        50688,
+        51200
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 497,
+        "direct_RTTOV_model_quality_nonzero": 12,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "fa3b6c6d30b154d2a08f0b0f0eb16b6e5bbf68050c0f3b13420e8d6c1e6611c3",
+      "rttov_config_hash": "f7af62797c16fe59",
+      "support_cells": 3479
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "614cf9970b185b45992b3c9ea16156619843e44f3c41c0422d5f1e8c7614a101",
+      "chunk_index": 100,
+      "flat_range": [
+        51200,
+        51712
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 497,
+        "direct_RTTOV_model_quality_nonzero": 13,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "f0bce24290b524a14444549522cd9ce0787a4a973d2b16787f26b7aa484a4ef5",
+      "rttov_config_hash": "0bf284bac47d04d2",
+      "support_cells": 3479
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "92eaa96fe6d91b2027a2b4f7f942599fdece1140a96e5017a29be6e089a38f6c",
+      "chunk_index": 101,
+      "flat_range": [
+        51712,
+        52224
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 494,
+        "direct_RTTOV_model_quality_nonzero": 12,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "e769237c7a565cfc93118d7f4ad801db65022d3a647c3499551c3b7b2de1c469",
+      "rttov_config_hash": "fc68f144bacce12a",
+      "support_cells": 3458
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "86149f50afd20ef1109fe35b2b5080029b2d09596a50ad1aa46ad267f7b8453f",
+      "chunk_index": 102,
+      "flat_range": [
+        52224,
+        52736
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 501,
+        "direct_RTTOV_model_quality_nonzero": 7,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "0cb95966bb835b32f094aa0c2a38802584ddc620ffa22c2439449c2d412d1133",
+      "rttov_config_hash": "e2e33d2cf5ecc206",
+      "support_cells": 3507
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e787dba7d301af30788c33245baac9f80a4f80079cab51dcc598c381acdb9d86",
+      "chunk_index": 103,
+      "flat_range": [
+        52736,
+        53248
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 510,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "ee8287845968d80653d4f694d7f03faddb1f6ac6f17a9536f76f279bc84f277f",
+      "rttov_config_hash": "fdcbbbf57c82102e",
+      "support_cells": 3570
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3e4490b68b9361c4bafb93fc7a8fa2a71bf7b6bf3969a46022e04654249367ec",
+      "chunk_index": 104,
+      "flat_range": [
+        53248,
+        53760
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 507,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "4f263ce7bad5af9c9cff73c2709ce0eb155c373b3bc2458e450a4faeda05d614",
+      "rttov_config_hash": "a1e2c60647fcddec",
+      "support_cells": 3549
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "78bb488fd92a26f0221d9a9a34ab7c00423310090c5b65df10ea09266b1f59f9",
+      "chunk_index": 105,
+      "flat_range": [
+        53760,
+        54272
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 507,
+        "native_checkpoint_profile_preflight_invalid": 5
+      },
+      "receipt_sha256": "6fabd8a0d69687b5b9f8313488c2ccb4b150e2e1e6ff1dcbc09f866f640b05ba",
+      "rttov_config_hash": "2f0076eb6e2b817d",
+      "support_cells": 3549
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3bbb8e6e44a0aed56014b1c7da5e31c5f1efba4c33a85c29dcf431776853a267",
+      "chunk_index": 106,
+      "flat_range": [
+        54272,
+        54784
+      ],
+      "profile_rows": 507,
+      "profile_valid_rows": 507,
+      "reason_counts": {
+        "admitted_with_support": 507,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "6e509ba91c74fa18bddd0ec64d3b77ba9f54d9265bd2045b6ae77e00ddf57050",
+      "rttov_config_hash": "ac1fdef440fc2362",
+      "support_cells": 3549
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a1d5c914331c65b5a5d3fe434ad6688da3c5ec9752684a8fbea3655ac3ad9ce1",
+      "chunk_index": 107,
+      "flat_range": [
+        54784,
+        55296
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "865ae0958b565f2d6dfdcd97b554694716307e7f0a0f969ce13987dc525d06b7",
+      "rttov_config_hash": "698b5e2f9c67c3ca",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "a9c892416945bfed7ef79abf3ae252bdbc2e1cfdd74ab89df3bca42c0bc9585c",
+      "chunk_index": 108,
+      "flat_range": [
+        55296,
+        55808
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "617664c3e01e9aa0ce7571534d5d66c0504951b91abfdf010aeaecfe6d19bbda",
+      "rttov_config_hash": "c64634655cecc3ad",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "31953c81768968783e25b767520f433bd06b203080d09377345de48cceadeade",
+      "chunk_index": 109,
+      "flat_range": [
+        55808,
+        56320
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 510,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "7b89fe89f84a7159db0979caee5ca4e504c64d153b7f454dfc800a19466ad7d8",
+      "rttov_config_hash": "87fbdd46bf297036",
+      "support_cells": 3570
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "94986107e89a84d7e63eb8af04940a2c43abf4c5bd6ff12dc1e06c2f0f4da2bf",
+      "chunk_index": 110,
+      "flat_range": [
+        56320,
+        56832
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "0b800cb2511817ce36519c806785fbd869abadad1598aa8d46346b8359e91da6",
+      "rttov_config_hash": "ce1c9f28399559aa",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "f45e40379c3b948f179ca10e4ded216f336d7348b696a885387c9263b8c57f85",
+      "chunk_index": 111,
+      "flat_range": [
+        56832,
+        57344
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 2
+      },
+      "receipt_sha256": "0817d1d04d17ffab26e18f4a98c454e7e0df0c83fece6173ccc08316b3dcee03",
+      "rttov_config_hash": "8143e1c464960047",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "fb3e49c51ac55c8d8f219ba3ba39032813be766981975157ea758e4a19454513",
+      "chunk_index": 112,
+      "flat_range": [
+        57344,
+        57856
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "21ed28fe021fa3a3d794905c8ee877471d41306aa1cf0c0bb457c801a345202f",
+      "rttov_config_hash": "ce2b2e8a58177829",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d1da03a6533b6fb08c7d0caa5da468846b0734ae59c3c1947be7a24c37477d02",
+      "chunk_index": 113,
+      "flat_range": [
+        57856,
+        58368
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "59728e39ca86f4eaf0e2222c95758e75f57c4dc25678b3cf88f86a49741a4063",
+      "rttov_config_hash": "9b7d29c91f608e6a",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3aba5599268818ecbf959eae7254c38b24e39918481e21904522f2caf499e8af",
+      "chunk_index": 114,
+      "flat_range": [
+        58368,
+        58880
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "d46a48066044f1e1d8060ad3ab291c88dbab076a089192212d988a51c44e91be",
+      "rttov_config_hash": "a5597b05f8ad3011",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "103f4552ab4df8dcb2fb9c816838fff6cbbcb3ceb97959d1bf6d519bc472cb5d",
+      "chunk_index": 115,
+      "flat_range": [
+        58880,
+        59392
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "8be9fc74f0c39468fbdc8fc8dcb1f9cde5476b72853c4360f47831435cf7dbcf",
+      "rttov_config_hash": "4507b76fca6ed870",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "53598fed0f26924aa13f55645891c4e8d5d8a7d03c7ee508504d3d07c6b81b73",
+      "chunk_index": 116,
+      "flat_range": [
+        59392,
+        59904
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "6e9f5738a5bae30e8697a1da28016c9d406104183c5ac40fb1a451507030e0f3",
+      "rttov_config_hash": "2d6e3ae634a3ee46",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "1f062bc33caab48f5a4c1d2681623b7ad02053da26889ae21e65ce5706e930e1",
+      "chunk_index": 117,
+      "flat_range": [
+        59904,
+        60416
+      ],
+      "profile_rows": 510,
+      "profile_valid_rows": 510,
+      "reason_counts": {
+        "admitted_with_support": 510,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 1
+      },
+      "receipt_sha256": "39dc95ef6ed4dbd49dcaa3b90ac00602d09e69ae0821f18f50e4cd73b6b668f5",
+      "rttov_config_hash": "5a87a589bbb3d0ab",
+      "support_cells": 3570
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "e49432e3502fece1a40038da4501844434b140320013066259704be62cd4c8df",
+      "chunk_index": 118,
+      "flat_range": [
+        60416,
+        60928
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "708d529adb77c089b314c49ce5d319174d4b9390c94364dc1d21d0378f69f300",
+      "rttov_config_hash": "786030b7786506df",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "8110af722d4736ff4174da0cc0e56ecee47544b2ecba4cf79a9b59558e39d876",
+      "chunk_index": 119,
+      "flat_range": [
+        60928,
+        61440
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "63e37f512f70bdabd03387f93d8541ae6d097f8edd836436bd87ae0f691cc4c4",
+      "rttov_config_hash": "697ba7972847d7d5",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "3fd70f3ceee73091365a02576034998fc69eca25936d6775e62fff2f70bf401b",
+      "chunk_index": 120,
+      "flat_range": [
+        61440,
+        61952
+      ],
+      "profile_rows": 509,
+      "profile_valid_rows": 509,
+      "reason_counts": {
+        "admitted_with_support": 509,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "371d55dd00d79442f3a482a6b827d96f8349db226302be35afa26ad45b25b2fe",
+      "rttov_config_hash": "df3692af1c56bcb9",
+      "support_cells": 3563
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "62676bfb4ad3d432ab65bf042b67d4b78791a8fce9572d52832ee58427f4bde4",
+      "chunk_index": 121,
+      "flat_range": [
+        61952,
+        62464
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 506,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "5542579e028c6ae4c528a63528457875ee9271c3dcf1ae4c19f03cb1d033c6c6",
+      "rttov_config_hash": "3cebad717605853e",
+      "support_cells": 3542
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "30c5c1e83a65a3ca064a985e0ab445584e03c7f5b88d4f09371b8127577a93d8",
+      "chunk_index": 122,
+      "flat_range": [
+        62464,
+        62976
+      ],
+      "profile_rows": 506,
+      "profile_valid_rows": 506,
+      "reason_counts": {
+        "admitted_with_support": 506,
+        "native_checkpoint_profile_preflight_invalid": 6
+      },
+      "receipt_sha256": "b28c1f7634ed4e9c55fd51009c05409ceaf93ed555b71216946f3bb3b5c67c4d",
+      "rttov_config_hash": "3610f9056ba3dec0",
+      "support_cells": 3542
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "6ed7e69273b81a8f00d46a845d0919daa982d54643bb7f1b725c0ad37f752382",
+      "chunk_index": 123,
+      "flat_range": [
+        62976,
+        63488
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "b1b7870ecc3f9aff9157b34fbd0f021450eb1acb3440a4bfb0719844bc1f2d86",
+      "rttov_config_hash": "d9573e15f4056cd2",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "79a2bd8e0bc5f162593d6ee3f30e0630475c27586773cba2b46e7993021aea78",
+      "chunk_index": 124,
+      "flat_range": [
+        63488,
+        64000
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "initial_negative_native_number_moment": 1,
+        "native_checkpoint_profile_preflight_invalid": 3
+      },
+      "receipt_sha256": "b1af0869646926c6431cc93a2e7852e601c5b91f7a0d0cbfd8d3239395dcdba0",
+      "rttov_config_hash": "ebd94ae45608a9bd",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "8ae69f5ea84c5e3e842d0dcc94d844283550f9b3f5b18b921a994beb8363fcee",
+      "chunk_index": 125,
+      "flat_range": [
+        64000,
+        64512
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "b9e12f1adac1d31f2276df62d2852fd031ab216071bd898c7e16349f48c95907",
+      "rttov_config_hash": "d28c4b566dae9548",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "d1bd785cf0efc25896514e3d9d88cea4a2615cff534b014ec593f23194ad4ab7",
+      "chunk_index": 126,
+      "flat_range": [
+        64512,
+        65024
+      ],
+      "profile_rows": 508,
+      "profile_valid_rows": 508,
+      "reason_counts": {
+        "admitted_with_support": 508,
+        "native_checkpoint_profile_preflight_invalid": 4
+      },
+      "receipt_sha256": "3a9c56ce392dce884124c0360b3f12e7b14223becd22b4e7587e44047691af0b",
+      "rttov_config_hash": "803d59543bb046d7",
+      "support_cells": 3556
+    },
+    {
+      "batch_rows": 512,
+      "capture_npz_sha256": "f96b8e9f04bd61079d34d42a6579bb4b68b98d486b55bfcef1a879ddb71be6ce",
+      "chunk_index": 127,
+      "flat_range": [
+        65024,
+        65536
+      ],
+      "profile_rows": 505,
+      "profile_valid_rows": 505,
+      "reason_counts": {
+        "admitted_with_support": 505,
+        "native_checkpoint_profile_preflight_invalid": 7
+      },
+      "receipt_sha256": "069e3591e8dc383bfd0a27905247a66ef74fa0dfc59fac6875e1673486e3d5c9",
+      "rttov_config_hash": "4aa7efc2a3b84cf0",
+      "support_cells": 3535
+    },
+    {
+      "batch_rows": 452,
+      "capture_npz_sha256": "8d484056ca110e9bc493eefd825dc331a1a45566d8659801d80d86cfbc30aaf1",
+      "chunk_index": 128,
+      "flat_range": [
+        65536,
+        65988
+      ],
+      "profile_rows": 231,
+      "profile_valid_rows": 231,
+      "reason_counts": {
+        "admitted_with_support": 231,
+        "initial_negative_native_number_moment": 16,
+        "native_checkpoint_profile_preflight_invalid": 205
+      },
+      "receipt_sha256": "09d0c5ae5212bf6d5c0a37fb1938607f552c02f99abad98348b745f99fe19903",
+      "rttov_config_hash": "294c6300ce05ce7a",
+      "support_cells": 1617
+    }
+  ],
+  "limits": [
+    "This is an observation-cost diagnostic for the actual 00:01 host checkpoint, not a forecast or physical conservation claim.",
+    "KO product nominal slot is 00:00; actual pixel UTC is unverified, with no temporal interpolation.",
+    "The packet contains no full 12-field checkpoint state and no private profile files.",
+    "One source-grounded RTTOV q_min-invalid observation row was excluded from the direct input; its native Q and the 512-column captured state remain unchanged.",
+    "Candidate fixed-support cost is undefined because candidate profile admissibility lost baseline-supported cells."
+  ],
+  "map_artifacts": {
+    "npz": {
+      "bytes": 6732,
+      "file": "native_full_physics_observation_support_maps.npz",
+      "sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4"
+    },
+    "png": {
+      "bytes": 112789,
+      "file": "native_full_physics_observation_support_maps.png",
+      "sha256": "a88b1802e961b6b27ced5729e824416f1823908af3bfadcc33d20cf1b4f0e8b1"
+    }
+  },
+  "packet": {
+    "array_shapes": {
+      "baseline_bt_kma_v3_0": [
+        65988,
+        7
+      ],
+      "channel_id": [
+        7
+      ],
+      "chunk_index": [
+        65988
+      ],
+      "chunk_local_row": [
+        65988
+      ],
+      "flat_index": [
+        65988
+      ],
+      "i_zero_based": [
+        65988
+      ],
+      "j_zero_based": [
+        65988
+      ],
+      "m0_mask": [
+        65988,
+        7
+      ],
+      "model_quality": [
+        65988,
+        7
+      ],
+      "obs_bt_k": [
+        65988,
+        7
+      ],
+      "outer_edge_ring": [
+        65988
+      ],
+      "profile_valid": [
+        65988
+      ],
+      "reason_code": [
+        65988
+      ],
+      "source_dqf": [
+        65988,
+        7
+      ],
+      "source_ko_coverage_all7": [
+        65988
+      ],
+      "source_owner_id": [
+        65988
+      ],
+      "source_qc_code": [
+        65988,
+        7
+      ],
+      "source_valid": [
+        65988,
+        7
+      ]
+    },
+    "bytes": 5998267,
+    "file": "native_full_physics_observation_baseline.npz",
+    "raw_full_state_copied": false,
+    "sha256": "c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144"
+  },
+  "producer": {
+    "logical_name": "Frozen independent reconstruction from all129 hash-pinned saved chunk outputs",
+    "reconstruction_source_file": "reconstruction_source.py.txt",
+    "reconstruction_source_sha256": "5d3a4ca387bdd905f6a4bdd2d7961a79f93080ac74b70413cc7d981b4088d946",
+    "reconstruction_receipt_file": "reconstruction_receipt.json",
+    "reconstruction_receipt_sha256": "43dbcec6af5c090c1d478858b82fff426ec42f5d46ea05c44997c19f71a12240",
+    "all_array_bytes_equal": true,
+    "NPZ_container_bytes_equal": true,
+    "model_calls": 0,
+    "RTTOV_calls": 0,
+    "exact_source_snapshot_retains_configured_local_paths": true,
+    "historical_first_write": {
+      "data_array_logic_changed_after_packet_write": false,
+      "exact_source_sha256_at_packet_write": "not captured before manifest metadata was finalized",
+      "logical_name": "offline native full-physics observation packet exporter",
+      "model_calls_during_export": 0,
+      "private_input_paths_redacted": true,
+      "reproduction_source_sha256": "6e9235d6e8d936e630feda277fb8b4e31053f332e1d2924b6b6973497be8a868"
+    },
+    "history_note": "The first writer source was not captured. This executed frozen reconstruction produces identical arrays and NPZ; it does not retroactively identify the first writer."
+  },
+  "provenance": {
+    "call_sources": {
+      "audit_source_pin_sha256": "748520d974500c1e1514f51d9a3398e098f4debd4dd946fbe032aa107babe320",
+      "domain_audit_sha256": "0f1fb5ecf954c8d71df1d3b7e6de2dae0f0e93cd5b9ecfeed7ccb8f0388a033d",
+      "prepared_run_authorization_sha256": "c7cd3a7c8bf12e61bab06e23cf07adc5ced3594fd80a11f2467aa71192278a47",
+      "qmin55_postprocess_recovery_sha256": "16fbe07fe89210fb69fc4ac75b8bd706119a282bd5c656a57d072b317aceaff4",
+      "qmin_chunk55_authorization_sha256": "ef8d98550baade9e22bc8ad4315fb46cb0f8a4991915d378a8ebeab2a70e9aed",
+      "qmin_inventory_sha256": "c78e774d88c719df280ab5943e42131c7d926e5f0c15688c2a0edc2866075263",
+      "remaining72_authorization_sha256": "95fc8d2cac24a677d9acadfdd9ae7ad73ee99d8f500c5ef551039672392638de",
+      "remaining72_plan_sha256": "ac5736d2f7ab860ac0ae55d380fef45189c33962c91c90669de7d04229479597",
+      "remaining72_receipt_sha256": "4bfb8aa7cb496ebf363267443d05e5c69967d7ac9489c922c7188289398d2c3b"
+    },
+    "host_checkpoint_producer": {
+      "MPI_ranks": 1,
+      "checkpoint_capture_sha256": "dc54f4685f057cb090d304695b211ebcf80e9558640bf08d0a4b2f56287e7f77",
+      "checkpoint_full_state_was_replayed": false,
+      "checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "control_family": "ANALYSIS_TQ",
+      "control_result_sha256": "bb5a718a1e72373ba85bc65ff141057f560ccadfdf0d53056bdc1623d9c6ac86",
+      "dt_seconds": 20,
+      "full_state_summary_sha256": "eef293a2a5df513893f58b13fc04c373aaac5c79da23c62a7d9d46f51b8b4bb0",
+      "host_executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0",
+      "host_namelist_sha256": "d8d4e869687059fe86c2a6d38e43f1189b053c3f32d0eeb0297524dc3e0b9358",
+      "host_runner_input_environment_sha256": "bc6db0c2a5dfe35dbe4451b290196bb4c82d02719878595a141864c7da201eaf",
+      "host_runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "host_step_protocol_source_sha256": "4cb5fbf483519fbf620b32684374447e2511559ee44aea7c8ec00754e8870520",
+      "host_stepper_source_sha256": "05d99842d1deae976136ff879813180a79befeebf9894454d9f64f8018e2e01b",
+      "host_time": "2025-07-19_00:01:00",
+      "initial_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+      "initial_checkpoint_time": "2025-07-19_00:00:40",
+      "itimestep": 3,
+      "launch_receipt_sha256": "ede45fbafbc37a36496a4db85cf5d12c622ca0b96ad15cefe7e5144168a63dcf",
+      "linked_library_candidate_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+      "live_session_sha256": "9e46e4e64974540487a2b8ff9a8035e0e49df412fad5356c97eeac6f5c11bc33",
+      "origin_kind": "restart",
+      "restart_lineage_note": "The initial 00:00:40 restart already contains prior unaccepted T/Q diagnostic-DA history; this checkpoint is a one-step no-new-analysis control, not a cold/no-DA-from-original-input experiment.",
+      "steps": 1,
+      "threads": 1
+    },
+    "public_code_sources": {
+      "ami_bt_coordinate.py": null,
+      "direct_saved_array_audit_v5.py": "7f5b9a9129da882e516e4e87061bf5c8384e3dd43374c700af8ee5e917f5cc5e",
+      "native_checkpoint_direct_payload.py": "05bfeaf50c307bd2c5e7d6543b7cd59f73c823acd0fce5a6e61c18d352be2d4c",
+      "native_checkpoint_observation.py": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+      "native_checkpoint_observation.py_at_execution": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+      "native_observation_batch.py_at_chunk55_qmin_recovery": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb",
+      "native_observation_batch.py_at_profile_preparation": "db299004e17737d0dbfcb1063c4c71e5b4177389725ec3d40e05076225a39b46",
+      "native_observation_batch.py_at_qmin_guarded_execution": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb",
+      "native_observation_batch.py_at_remaining72_execution": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb",
+      "packet_exporter_reproduction_source_sha256": "6e9235d6e8d936e630feda277fb8b4e31053f332e1d2924b6b6973497be8a868",
+      "replay.py": "d162c057578c17af86e9e39e97ebe23565a21e2896b70344ec183a3cc7ffe652",
+      "rttov_runner.py": null
+    },
+    "qmin_execution": {
+      "qmin_continuation_remaining72_receipt_sha256": "4bfb8aa7cb496ebf363267443d05e5c69967d7ac9489c922c7188289398d2c3b",
+      "qmin_filtered_case_receipt_sha256": "9f8d9e2b3413933975f8bfab6bc7a0f440bc625226c5c7c45c306a7159e6869a",
+      "qmin_postprocess_recovery_receipt_sha256": "16fbe07fe89210fb69fc4ac75b8bd706119a282bd5c656a57d072b317aceaff4",
+      "qmin_source_inventory_sha256": "c78e774d88c719df280ab5943e42131c7d926e5f0c15688c2a0edc2866075263"
+    },
+    "rttov14": {
+      "RTTOV_version": "14",
+      "coefficient_bytes": 1894428,
+      "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "environment_script_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "executable_bytes": 4184448,
+      "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "kma_calibration_bytes": 5827,
+      "kma_calibration_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+      "profile_levels": "66 RTTOV layers: 27 fixed upper reference + native 39-level profile",
+      "qmin_source_hashes_by_basename": {
+        "rttov_check_profiles.F90": "2f78df7a1774f8ca875f013befcdc52758e0582a2eabf4fbc03f6e79dc2784e7",
+        "rttov_convert_profile_units.F90": "785812e86ced00f58224de04a4d9b482b858f0a99fe9d3b492ea06b1d714823f",
+        "rttov_direct.F90": "63a0573505e1563c9f8837c23210adab96081d7eb828757e90d3673d7d72ed21",
+        "rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+        "rttov_kinds.F90": "66b7fee385e2a4dbee14b623481ce529d3c5adbc8fa57d8aaa4822f0a847b13a",
+        "rttov_populate_profiles_internal.F90": "f3e31f30c9822e23e48469a16da7526ed8e3f642ef10a6582ba19e980861d895",
+        "rttov_test.F90": "308d65c4ff85f0bcf70711d7fbe1a0ae05ac0be393bce466b0758b8667115b20"
+      },
+      "run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "runtime_selectors": {
+      "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+      "KDM6_QR_TRANSPORT": "actual_departure",
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "torch_threads": 1,
+      "with_k": false
+    },
+    "static_inputs": {
+      "case_manifest_bytes": 5126600,
+      "observation_bundle_bytes": 383261693,
+      "observation_bundle_sha256": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+      "observation_preflight_sha256": "b3f2bc237c580209b986a3486562dd1757f381b6ef3604a8731185e11d13ff1a",
+      "source_case_manifest_sha256": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d"
+    }
+  },
+  "publication_artifacts": {
+    "manifest_self_hash": "excluded by design",
+    "offline_replay": {
+      "file": "replay.py",
+      "bytes": 13000,
+      "sha256": "d162c057578c17af86e9e39e97ebe23565a21e2896b70344ec183a3cc7ffe652"
+    },
+    "readme": {
+      "file": "README.md",
+      "bytes": 3451,
+      "sha256": "40bfbb667611664df6391de5f6c18850a7c475259618caee434d247ad2e89926"
+    },
+    "support_maps_npz": {
+      "bytes": 6732,
+      "file": "native_full_physics_observation_support_maps.npz",
+      "sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4"
+    },
+    "support_maps_png": {
+      "bytes": 112789,
+      "file": "native_full_physics_observation_support_maps.png",
+      "sha256": "a88b1802e961b6b27ced5729e824416f1823908af3bfadcc33d20cf1b4f0e8b1"
+    },
+    "reconstruction_source": {
+      "file": "reconstruction_source.py.txt",
+      "bytes": 5778,
+      "sha256": "5d3a4ca387bdd905f6a4bdd2d7961a79f93080ac74b70413cc7d981b4088d946"
+    },
+    "reconstruction_receipt": {
+      "file": "reconstruction_receipt.json",
+      "bytes": 31129,
+      "sha256": "43dbcec6af5c090c1d478858b82fff426ec42f5d46ea05c44997c19f71a12240"
+    }
+  },
+  "reason_codebook": [
+    "admitted_with_support",
+    "direct_RTTOV_model_quality_nonzero",
+    "initial_negative_native_number_moment",
+    "native_checkpoint_profile_preflight_invalid",
+    "rttov_hard_qmin_input_minimum",
+    "no_channel_support_after_direct_quality",
+    "source_qc_or_observation_invalid"
+  ],
+  "references": {
+    "H1_host_pair_report": "../native_full_physics_forward_2026-10-25/REPORT.md",
+    "full_host_candidate_trial_summary": "../native_full_physics_trials_2026-10-25/README.md"
+  },
+  "request_ledger": {
+    "KDM_calls": 0,
+    "K_calls": 0,
+    "candidate_cost": "undefined; no intersection or zero-filled candidate objective exported",
+    "cleanup_calls": 0,
+    "direct_only_calls_executed_in_this_packet": 126,
+    "direct_request_count_including_4_reused_pilots": 130,
+    "filtered_chunk55_additional_requests_for_postprocess_recovery": 0,
+    "filtered_chunk55_direct_requests": 1,
+    "filtered_chunk55_postprocess_retries": 0,
+    "finish_calls": 0,
+    "host_steps": 0,
+    "new_direct_requests": 126,
+    "new_successful_direct_requests": 125,
+    "optimizer_calls": 0,
+    "pilot_chunk_ids_reused": [
+      0,
+      34,
+      40,
+      128
+    ],
+    "preserved_failed_attempts": 1,
+    "preserved_failed_original_chunk55": true,
+    "reused_pilot_direct_calls": 4,
+    "successful_unique_chunk_results": 129
+  },
+  "row_reason_counts": {
+    "admitted_with_support": 53906,
+    "direct_RTTOV_model_quality_nonzero": 11007,
+    "initial_negative_native_number_moment": 41,
+    "native_checkpoint_profile_preflight_invalid": 1033,
+    "no_channel_support_after_direct_quality": 0,
+    "rttov_hard_qmin_input_minimum": 1,
+    "source_qc_or_observation_invalid": 0
+  },
+  "schema": "kdm6.native_full_physics_observation_baseline_public_packet.v1",
+  "scope_and_limitations": [
+    "Baseline direct-observation cost only; no candidate objective, KDM K, gradient, or optimization result is exported.",
+    "Exactly one original unfiltered chunk55 direct request failed RTTOV q_min; the filtered chunk55 result came from a single direct call and was re-parsed from that call's saved radiance output without an additional RTTOV invocation.",
+    "The q_min-invalid native column is retained in full-domain arrays; only its observation profile is excluded from RTTOV and its native Q is unchanged.",
+    "Actual checkpoint is 00:01:00 versus nominal 00:00 KO slot; KO pixel UTC is unverified and no temporal interpolation is applied.",
+    "Full 12-field host checkpoint state and per-profile private case files are not included in the public packet.",
+    "Raw QN unit certification, physical water/energy closure, forecast skill, and unattended cycling are outside this packet."
+  ],
+  "status": "BASELINE_DIRECT_ONLY_FULL_NATIVE_DOMAIN_PACKET"
+}

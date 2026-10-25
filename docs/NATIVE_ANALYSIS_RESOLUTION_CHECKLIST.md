@@ -1,5 +1,10 @@
 # Native satellite analysis: resolution checklist
 
+> **Historical status:** the body below is the H1 plan/audit at UTC 2026-10-25 13:23:54. Its pending/unlaunched statements describe that cutoff. For current results and open work, use [the current progress record](NATIVE_ANALYSIS_PROGRESS_20261025.md).
+> Original source bytes and historical manifest pins are preserved in the [H1 source-resolution record](../harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json).
+
+## Historical H1 snapshot
+
 Baseline: main `340c9a1d969f4aaf25765a6c4a1a6eef96b910ae` (2026-10-25).
 Case: unchanged KO nominal 2025-07-19 00:00 and native MP137 checkpoint
 00:00:40; 65,988 columns, 39 mass levels, original 128 B512 plus B452.

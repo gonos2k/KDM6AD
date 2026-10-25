@@ -1,0 +1,39 @@
+{
+  "schema": "kdm6.rttov14_qmin_admission_source_inventory.v1",
+  "scope": "Code, tests, documented RT input domain and no-model saved-profile inventory. Resumed direct execution and complete domain cost are not claimed here.",
+  "historical_source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+  "artifacts": [
+    {
+      "path": "harness/native_observation_batch.py",
+      "bytes": 33109,
+      "sha256": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb"
+    },
+    {
+      "path": "harness/tests/test_native_observation_batch.py",
+      "bytes": 18040,
+      "sha256": "7ce56f4bdffab06ba29d2ce2ebc79d6cd8e802959d5345dcafd4298971378252"
+    },
+    {
+      "path": "docs/NATIVE_RTTOV_WATER_ADMISSION.md",
+      "bytes": 3357,
+      "sha256": "8713d388b646ccf2290987818dca7e5ee94b8648c8ebbd0c2f6eacb7920fcd99"
+    },
+    {
+      "path": "harness/evidence/native_rttov_water_admission_2026-10-25/qmin_precheck.json",
+      "bytes": 35769,
+      "sha256": "37297b04bd525a3a0d1026e7377f75917a7f12626a52f7c048dbbb1a3ccbfa29"
+    },
+    {
+      "path": ".github/workflows/oracle-ci.yml",
+      "bytes": 4276,
+      "sha256": "96f2eef029d70e77aff35a06ee7aaf3c40ef85eb0a45e48913ce919dbc35d728"
+    }
+  ],
+  "validation": {
+    "shared_and_checkpoint_tests": 9,
+    "native_candidate_and_satellite_runner_tests": 28,
+    "ruff": "passed",
+    "new_model_calls_from_inventory": 0,
+    "native_batch_CI_subset_local_passed": 71
+  }
+}

@@ -1,4 +1,6 @@
 """Mock-only tests for the selected-row native observation batch adapter."""
+# Imports after importorskip are intentional so Torch remains an optional dependency.
+# ruff: noqa: E402
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,6 +18,8 @@ from harness.native_batch_microphysics import (
 )
 from harness.native_observation_batch import (
     CHANNELS,
+    RTTOV_QMIN_PPMV_DRY,
+    _rttov_qmin_error,
     _optical_cloud_state,
     evaluate_observation_batch,
     profile_jvp,
@@ -234,6 +238,81 @@ def test_batch_observation_keeps_full_rows_and_records_per_row_reasons(tmp_path,
         "K_template_do_k": True,
         "K_template_do_direct": False,
     }
+
+
+def test_rttov_qmin_uses_dry_air_conversion_and_strict_boundary():
+    q_wet = torch.tensor(
+        [0.0, RTTOV_QMIN_PPMV_DRY, 2.0 * RTTOV_QMIN_PPMV_DRY],
+        dtype=DTYPE,
+        requires_grad=True,
+    )
+    before = q_wet.clone()
+    error = _rttov_qmin_error(q_wet)
+    assert error is not None and "RTTOV hard Q minimum" in error
+    assert torch.equal(q_wet, before)
+    assert q_wet.requires_grad
+
+    at_minimum = torch.tensor([RTTOV_QMIN_PPMV_DRY], dtype=DTYPE)
+    above_minimum = torch.tensor([2.0 * RTTOV_QMIN_PPMV_DRY], dtype=DTYPE)
+    assert _rttov_qmin_error(at_minimum) is None
+    assert _rttov_qmin_error(above_minimum) is None
+    assert "invalid denominator" in _rttov_qmin_error(torch.tensor([1.0e6], dtype=DTYPE))
+    with pytest.raises(TypeError, match="float64"):
+        _rttov_qmin_error(torch.tensor([0.0], dtype=torch.float32))
+
+
+def test_hard_qmin_row_is_excluded_before_direct_call_without_q_rewrite(tmp_path, monkeypatch):
+    from oracle.kdm6.obs import rttov_case_writer
+
+    block = _block()
+    output = _output(block)
+    qv = torch.cat(
+        (torch.zeros_like(output.native_profile.qv[:1]), output.native_profile.qv[1:]),
+        dim=0,
+    )
+    output = output._replace(
+        native_profile=output.native_profile._replace(qv=qv)
+    )
+    qv_before = output.native_profile.qv.detach().clone()
+    config = _config(tmp_path)
+    coef = tmp_path / "fake-coef.dat"
+    coef.write_text("fixed coef identity\n")
+    monkeypatch.setattr(rttov_case_writer, "_resolve_coef_path", lambda _: coef)
+    case_dir = tmp_path / "workspace" / "case_direct"
+    case_out = case_dir / "out"
+    case_out.mkdir(parents=True)
+    (case_out / "rttov_test.txt").write_text("&rttov_test_nml\n  defn%do_k = .TRUE.\n/\n")
+    seen = {}
+
+    def write_case(rin, out, **kwargs):
+        seen["nprofiles"] = rin.nprofiles
+        return case_out
+
+    def direct(case, nprofiles, *, channels, timeout, kma_bt):
+        seen["direct_nprofiles"] = nprofiles
+        return np.full((nprofiles, 7), 275.0), np.zeros((nprofiles, 7)), {
+            "bt_coordinate": "kma_v3_0"
+        }
+
+    monkeypatch.setattr(rttov_case_writer, "write_rttov_case", write_case)
+    monkeypatch.setattr(adapter_module, "_case_direct_radiance", direct)
+    monkeypatch.setattr(
+        rttov_case_writer,
+        "make_live_run_k",
+        lambda *args, **kwargs: pytest.fail("direct-value trial must not request K"),
+    )
+
+    result = evaluate_observation_batch(
+        block, output, config, tmp_path / "workspace", with_k=False
+    )
+
+    assert result["rows"].tolist() == [3]
+    assert seen == {"nprofiles": 1, "direct_nprofiles": 1}
+    assert "rttov_hard_qmin_invalid" in result["reasons"][0]
+    assert "below 9.9999999999999994e-12 ppmv" in result["reasons"][0]
+    assert torch.equal(output.native_profile.qv, qv_before)
+    assert result["receipt"]["direct_calls"] == 1
+    assert result["receipt"]["K_calls"] == 0
 
 
 def test_optical_number_quotient_and_profile_jvp_use_same_live_density(tmp_path, monkeypatch):

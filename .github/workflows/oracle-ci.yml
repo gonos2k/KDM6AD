@@ -78,6 +78,7 @@ jobs:
         run: python -m pytest -rs -q
           harness/tests/test_native_batch_microphysics.py
           harness/tests/test_native_observation_batch.py
+          harness/tests/test_native_checkpoint_observation.py
           harness/tests/test_run_native_satellite_case.py
           harness/tests/test_native_satellite_replay.py
           harness/tests/test_prepare_native_satellite_case.py

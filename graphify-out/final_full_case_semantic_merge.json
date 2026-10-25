@@ -1,0 +1,20 @@
+{
+  "fragments": [
+    {
+      "nodes": 18,
+      "edges": 25,
+      "hyperedges": 3
+    },
+    {
+      "nodes": 13,
+      "edges": 16,
+      "hyperedges": 4
+    }
+  ],
+  "replaced_semantic_edges": 29,
+  "scope": "H1 facts are historical; final baseline/trials/reconstruction are current. AST source remains authoritative.",
+  "preserved_parent_hyperedges": 38,
+  "final_hyperedges": 45,
+  "all_nodes_edges_valid": true,
+  "note": "CLI cluster exporter drops hyperedge metadata; unchanged parent hyperedges and new fragments restored after clustering."
+}
