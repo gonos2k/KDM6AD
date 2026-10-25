@@ -276,6 +276,14 @@ def main(argv=None):
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--plot-dir", type=Path)
     args = parser.parse_args(argv)
+    if args.output_json.exists() or args.output_json.is_symlink():
+        raise FileExistsError("analysis JSON requires a new path")
+    if args.plot_dir is not None:
+        if args.plot_dir.exists() or args.plot_dir.is_symlink():
+            raise FileExistsError("response plots require a fresh directory")
+        output, plots = args.output_json.resolve(), args.plot_dir.resolve()
+        if output == plots or output in plots.parents or plots in output.parents:
+            raise ValueError("JSON and plot output paths must not overlap")
     result = analyze(args.manifest)
     with args.output_json.open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)

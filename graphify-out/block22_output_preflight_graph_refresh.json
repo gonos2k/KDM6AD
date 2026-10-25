@@ -1,0 +1,31 @@
+{
+  "schema": "kdm6.block22_output_preflight_graph.v1",
+  "code_update": "graphify update .",
+  "graph_nodes": 22775,
+  "graph_edges": 45400,
+  "communities": 1725,
+  "semantic_nodes": 4,
+  "semantic_edges": 4,
+  "semantic_hyperedges": 1,
+  "semantic_sources": {
+    "harness/analyze_saved_block_response.py": "ace9ebc7c3ab4977d2cf2e82d52026735a1e2fb262d745ffcadafab8ae0630d1",
+    "harness/evidence/block22_output_preflight_2026-10-25/README.md": "5ad33531f7f8ded4610f38b7b878e9ed53cc8a4ff8fa096ddc2e5539b5bfe6f0",
+    "harness/evidence/block22_output_preflight_2026-10-25/validation.json": "2a0aac0f16e6c8d30ddd73d4adaa5d58d68b10914dceb6f83dd591363d258378",
+    "harness/tests/test_analyze_saved_block_response.py": "5c22e1a1085af766dcce56cd7b24c400c5d884ab49b8a07da96875e6e3186128"
+  },
+  "token_counts": {
+    "input": null,
+    "output": null
+  },
+  "inspected_calls": [
+    "main -> analyze",
+    "main -> plot_response",
+    "regression tests -> main"
+  ],
+  "limitations": [
+    "486 inherited AST extraction warnings (including external dataclasses source_file); relevant new source relationships checked against code.",
+    "Full graph HTML skipped above 5000-node visualization limit; raw graph/report retained outside wiki.",
+    "Graph is derived evidence, not executed model evidence."
+  ],
+  "source_order_verified": "Destination checks precede analyze; exclusive JSON creation and plot-directory checks remain."
+}
