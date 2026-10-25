@@ -1,0 +1,25 @@
+{
+  "schema": "kdm6.localized_ice_historical_source_resolution.v1",
+  "historical_manifest_sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3",
+  "sources": {
+    "libtorch/bridge/kdm6_c_api.cpp": {
+      "snapshot": "execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+      "sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+      "role": "Byte-identical pre-native-FP64-value-bridge source; historical manifest is unchanged.",
+      "available_at_revision": "c2f9214ab1452baf257633ad2da26ec216615c31"
+    },
+    "libtorch/bridge/kdm6_c_api.h": {
+      "snapshot": "execution_sources/kdm6_c_api.pre_native_fp64_value.h.txt",
+      "sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609",
+      "role": "Byte-identical pre-native-FP64-value-bridge source; historical manifest is unchanged.",
+      "available_at_revision": "c2f9214ab1452baf257633ad2da26ec216615c31"
+    },
+    "harness/tests/test_localized_ice_evidence.py": {
+      "snapshot": "execution_sources/test_localized_ice_evidence.original.py.txt",
+      "sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af",
+      "role": "Original historical evidence-test source, distinct from the current source-resolution validation.",
+      "available_at_revision": "340c9a1d969f4aaf25765a6c4a1a6eef96b910ae"
+    }
+  },
+  "scope": "Only the two explicitly named evolved C ABI files and the original self-pinned historical test resolve to exact archived sources. Available revisions identify matching Git bytes, not a new claim about the historical execution commit. All other original source/artifact SHA-256 checks remain unchanged."
+}

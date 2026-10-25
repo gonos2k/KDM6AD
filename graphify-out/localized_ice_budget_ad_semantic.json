@@ -4,34 +4,608 @@
   "input_tokens": null,
   "output_tokens": null,
   "nodes": [
-    {"id":"localized_ice_budget_ad_report","label":"Localized B512 ice budget and bounded first-order derivative evidence","file_type":"document","source_file":"docs/LOCALIZED_ICE_BUDGET_AD.md","source_location":"H1:Localized B512 ice-variant budget and first-order checks","confidence":"EXTRACTED","_origin":"semantic","scope":"Two original B512 blocks, two ice variants, saved trace audits and bounded norm_actual first-order products; no whole-domain repeat or host/RTTOV run."},
-    {"id":"localized_ice_trace_stage_ledger","label":"Verified stage water and applied ice-transfer ledger","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/stage_analysis.json","source_location":"/calls_by_mode_chunk","confidence":"EXTRACTED","_origin":"semantic","cases":["norm_actual_chunk034","norm_actual_chunk040","raw_actual_chunk034","raw_actual_chunk040"],"per_case_coverage":{"columns":512,"levels":39,"water_stage_rows":59904,"ice_recurrence_rows":19968,"bottom_records":512},"analysis_added_KDM_calls":0,"ice_boundary_roundoff_gate_count_per_case":512},
-    {"id":"localized_ice_main_qr_residual_witnesses","label":"Two large residual witnesses localize to main QR transport and surface accounting","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H1:Four original-block trace replays","confidence":"EXTRACTED","_origin":"semantic","witnesses":[{"flat_index":17662,"grid_1based":[113,76],"chunk":34,"row":254},{"flat_index":20488,"grid_1based":[131,88],"chunk":40,"row":8}],"causal_scope":"Main QR state change and surface precipitation accounting are localized; internal main-rain departures/arrivals are not traced, so no inner-rain causal rule or closed physical budget is established."},
-    {"id":"localized_ice_raw_clamp_crossing_failures","label":"Original raw-coordinate cloud-mass, number and mixed centered-FD gates remain failed","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H2:Original raw-direction failures retained","confidence":"EXTRACTED","_origin":"semantic","cases":["raw_034","raw_040"],"directions_failed":["cloud_mass","number","mixed"],"dot_checks_consistent":true,"failed_epsilon_trials_preserved":true,"explanation_scope":"Known entry clamp and density-clamp crossings explain concrete contributions, not every field discrepancy."},
-    {"id":"localized_ice_nn_one_sided_entry_clamp","label":"Full-B512 NN lower-clamp probe shows an inward-side Jacobian","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/nn_one_sided.json","source_location":"/results","confidence":"EXTRACTED","_origin":"semantic","baseline_NN":100000000.0,"direction":1000000.0,"epsilon":0.0001,"JVP_and_inward_FD":1000000.0,"outward_FD":0.0,"central_FD":500000.0,"interpretation":"Selected one-sided branch derivative; not a classical two-sided derivative at the clamp tie."},
-    {"id":"localized_ice_entry_interior_pair_family","label":"Paired entry-moment and restricted-NN directions define a bounded control subspace","file_type":"code","source_file":"harness/verify_localized_ice_ad.py","source_location":"L212-L250","confidence":"EXTRACTED","_origin":"semantic","family":"entry_interior_pairs","scope":"Pairs active entry moment components and restricts NCCN support to keep its epsilon envelope inside the entry clamp; it does not make every downstream limiter interior and is not an operational control transform."},
-    {"id":"localized_ice_pair_direction_results","label":"Paired-direction checks pass all case-direction gates while retaining failed epsilon trials","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json","source_location":"/entry_interior_pair_direction_case_gates","confidence":"EXTRACTED","_origin":"semantic","case_direction_gates":"16/16 pass","epsilon_trials":"66/80 pass; 14 failures retained","full_B512_per_trial":true,"whole_array_JVP_VJP_dot_checks":true},
-    {"id":"localized_ice_norm_actual_ad_operator","label":"norm_actual research verifier maps state and forcing to raw 12 plus thermo-finish 5 outputs","file_type":"code","source_file":"harness/verify_localized_ice_ad.py","source_location":"L1-L6; L150-L188; L360-L389","confidence":"EXTRACTED","_origin":"semantic","operator":"state+forcing KDM first derivatives plus existing thermo finish","outputs":"12 raw kernel state fields and 5 thermo-finish fields","batch_shape":[512,39],"C_ABI_dimensions":{"im":1,"kme":39,"jme":512}},
-    {"id":"localized_ice_finish_old_state_pullback","label":"Finish VJP adds its direct old-state cotangent before the kernel pullback is combined","file_type":"code","source_file":"harness/verify_localized_ice_ad.py","source_location":"L180-L188; L400-L408","confidence":"EXTRACTED","_origin":"semantic","mechanism":"finish_vjp returns old/new-state cotangents; the old-state cotangent is added to kernel state VJP, preserving the old-state term in the tendency expression."},
-    {"id":"localized_ice_derivative_scope_limits","label":"Derivative evidence excludes precipitation, water-budget, native-host, RTTOV, HVP and forecast claims","file_type":"document","source_file":"docs/LOCALIZED_ICE_BUDGET_AD.md","source_location":"H2:The differentiated operator; H3:Direction families and boundaries","confidence":"EXTRACTED","_origin":"semantic","limitations":["No precipitation-seed or water-closure derivative","No native preparation/EOS/profile or RK/memory derivative","No RTTOV cost, HVP, identifiability or forecast-skill certificate","Internal KDM limiter and schedule signatures are not exhaustively captured","Off-target zero is specific to tested vectors and cases","Number units and raw flux dimensions remain conditional"]},
-    {"id":"localized_ice_call_accounting_and_provenance","label":"512 localized KDM forward evaluations are attributed without a whole-domain repeat","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json","source_location":"/KDM_forward_calls_by_task; /whole_domain_repeats; /native_host_steps; /RTTOV_calls","confidence":"EXTRACTED","_origin":"semantic","KDM_forward_calls_total":512,"whole_domain_repeats":0,"native_host_steps":0,"RTTOV_calls":0,"physics_translation_units_rebuilt":0,"operational_install_changed":false},
-    {"id":"localized_ice_evidence_hash_manifest","label":"Evidence manifest pins current producer, verifier, reports and archived executed versions","file_type":"document","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json","source_location":"/source_sha256; /artifact_sha256; /raw_v1_executed_source_sha256; /final_pair_executed_source_sha256","confidence":"EXTRACTED","_origin":"semantic","provenance_note":"Raw failures use archived v1 verifier; final paired sweep uses current verifier source. They are distinct source roles."}
+    {
+      "id": "localized_ice_budget_ad_report",
+      "label": "Localized B512 ice budget and bounded first-order derivative evidence",
+      "file_type": "document",
+      "source_file": "docs/LOCALIZED_ICE_BUDGET_AD.md",
+      "source_location": "H1:Localized B512 ice-variant budget and first-order checks",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "scope": "Two original B512 blocks, two ice variants, saved trace audits and bounded norm_actual first-order products; no whole-domain repeat or host/RTTOV run."
+    },
+    {
+      "id": "localized_ice_trace_stage_ledger",
+      "label": "Verified stage water and applied ice-transfer ledger",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/stage_analysis.json",
+      "source_location": "/calls_by_mode_chunk",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "cases": [
+        "norm_actual_chunk034",
+        "norm_actual_chunk040",
+        "raw_actual_chunk034",
+        "raw_actual_chunk040"
+      ],
+      "per_case_coverage": {
+        "columns": 512,
+        "levels": 39,
+        "water_stage_rows": 59904,
+        "ice_recurrence_rows": 19968,
+        "bottom_records": 512
+      },
+      "analysis_added_KDM_calls": 0,
+      "ice_boundary_roundoff_gate_count_per_case": 512
+    },
+    {
+      "id": "localized_ice_main_qr_residual_witnesses",
+      "label": "Two large residual witnesses localize to main QR transport and surface accounting",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H1:Four original-block trace replays",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "witnesses": [
+        {
+          "flat_index": 17662,
+          "grid_1based": [
+            113,
+            76
+          ],
+          "chunk": 34,
+          "row": 254
+        },
+        {
+          "flat_index": 20488,
+          "grid_1based": [
+            131,
+            88
+          ],
+          "chunk": 40,
+          "row": 8
+        }
+      ],
+      "causal_scope": "Main QR state change and surface precipitation accounting are localized; internal main-rain departures/arrivals are not traced, so no inner-rain causal rule or closed physical budget is established."
+    },
+    {
+      "id": "localized_ice_raw_clamp_crossing_failures",
+      "label": "Original raw-coordinate cloud-mass, number and mixed centered-FD gates remain failed",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H2:Original raw-direction failures retained",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "cases": [
+        "raw_034",
+        "raw_040"
+      ],
+      "directions_failed": [
+        "cloud_mass",
+        "number",
+        "mixed"
+      ],
+      "dot_checks_consistent": true,
+      "failed_epsilon_trials_preserved": true,
+      "explanation_scope": "Known entry clamp and density-clamp crossings explain concrete contributions, not every field discrepancy."
+    },
+    {
+      "id": "localized_ice_nn_one_sided_entry_clamp",
+      "label": "Full-B512 NN lower-clamp probe shows an inward-side Jacobian",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/nn_one_sided.json",
+      "source_location": "/results",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "baseline_NN": 100000000.0,
+      "direction": 1000000.0,
+      "epsilon": 0.0001,
+      "JVP_and_inward_FD": 1000000.0,
+      "outward_FD": 0.0,
+      "central_FD": 500000.0,
+      "interpretation": "Selected one-sided branch derivative; not a classical two-sided derivative at the clamp tie."
+    },
+    {
+      "id": "localized_ice_entry_interior_pair_family",
+      "label": "Paired entry-moment and restricted-NN directions define a bounded control subspace",
+      "file_type": "code",
+      "source_file": "harness/verify_localized_ice_ad.py",
+      "source_location": "L212-L250",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "family": "entry_interior_pairs",
+      "scope": "Pairs active entry moment components and restricts NCCN support to keep its epsilon envelope inside the entry clamp; it does not make every downstream limiter interior and is not an operational control transform."
+    },
+    {
+      "id": "localized_ice_pair_direction_results",
+      "label": "Paired-direction checks pass all case-direction gates while retaining failed epsilon trials",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json",
+      "source_location": "/entry_interior_pair_direction_case_gates",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "case_direction_gates": "16/16 pass",
+      "epsilon_trials": "66/80 pass; 14 failures retained",
+      "full_B512_per_trial": true,
+      "whole_array_JVP_VJP_dot_checks": true
+    },
+    {
+      "id": "localized_ice_norm_actual_ad_operator",
+      "label": "norm_actual research verifier maps state and forcing to raw 12 plus thermo-finish 5 outputs",
+      "file_type": "code",
+      "source_file": "harness/verify_localized_ice_ad.py",
+      "source_location": "L1-L6; L150-L188; L360-L389",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "operator": "state+forcing KDM first derivatives plus existing thermo finish",
+      "outputs": "12 raw kernel state fields and 5 thermo-finish fields",
+      "batch_shape": [
+        512,
+        39
+      ],
+      "C_ABI_dimensions": {
+        "im": 1,
+        "kme": 39,
+        "jme": 512
+      }
+    },
+    {
+      "id": "localized_ice_finish_old_state_pullback",
+      "label": "Finish VJP adds its direct old-state cotangent before the kernel pullback is combined",
+      "file_type": "code",
+      "source_file": "harness/verify_localized_ice_ad.py",
+      "source_location": "L180-L188; L400-L408",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "mechanism": "finish_vjp returns old/new-state cotangents; the old-state cotangent is added to kernel state VJP, preserving the old-state term in the tendency expression."
+    },
+    {
+      "id": "localized_ice_derivative_scope_limits",
+      "label": "Derivative evidence excludes precipitation, water-budget, native-host, RTTOV, HVP and forecast claims",
+      "file_type": "document",
+      "source_file": "docs/LOCALIZED_ICE_BUDGET_AD.md",
+      "source_location": "H2:The differentiated operator; H3:Direction families and boundaries",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "limitations": [
+        "No precipitation-seed or water-closure derivative",
+        "No native preparation/EOS/profile or RK/memory derivative",
+        "No RTTOV cost, HVP, identifiability or forecast-skill certificate",
+        "Internal KDM limiter and schedule signatures are not exhaustively captured",
+        "Off-target zero is specific to tested vectors and cases",
+        "Number units and raw flux dimensions remain conditional"
+      ]
+    },
+    {
+      "id": "localized_ice_call_accounting_and_provenance",
+      "label": "512 localized KDM forward evaluations are attributed without a whole-domain repeat",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json",
+      "source_location": "/KDM_forward_calls_by_task; /whole_domain_repeats; /native_host_steps; /RTTOV_calls",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "KDM_forward_calls_total": 512,
+      "whole_domain_repeats": 0,
+      "native_host_steps": 0,
+      "RTTOV_calls": 0,
+      "physics_translation_units_rebuilt": 0,
+      "operational_install_changed": false
+    },
+    {
+      "id": "localized_ice_evidence_hash_manifest",
+      "label": "Evidence manifest pins current producer, verifier, reports and archived executed versions",
+      "file_type": "document",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+      "source_location": "/source_sha256; /artifact_sha256; /raw_v1_executed_source_sha256; /final_pair_executed_source_sha256",
+      "confidence": "EXTRACTED",
+      "_origin": "semantic",
+      "provenance_note": "Raw failures use archived v1 verifier; final paired sweep uses current verifier source. They are distinct source roles."
+    },
+    {
+      "id": "localized_ice_historical_source_resolution",
+      "label": "Historical inventory maps exactly three source paths to byte-identical archived sources while preserving the original manifest SHA",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+      "source_location": "/historical_manifest_sha256; /sources; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "historical_manifest_sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3",
+      "whitelisted_source_paths": [
+        "libtorch/bridge/kdm6_c_api.cpp",
+        "libtorch/bridge/kdm6_c_api.h",
+        "harness/tests/test_localized_ice_evidence.py"
+      ],
+      "source_count": 3,
+      "source_sha256": "127dee9c69fd80078339956e803beac280f298bb428fc9abd4dec786eca7e110",
+      "source_pins": {
+        "resolver": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+          "bytes": 1693,
+          "sha256": "127dee9c69fd80078339956e803beac280f298bb428fc9abd4dec786eca7e110"
+        },
+        "history_note": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/HISTORICAL_SOURCES.md",
+          "bytes": 849,
+          "sha256": "dcc6ca0287179fca9fae8d352d3327a9ca8eddcf8c3fe45ccab9c87d1164c4d5"
+        },
+        "manifest": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+          "bytes": 9105,
+          "sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3"
+        },
+        "cpp_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+          "bytes": 45081,
+          "sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69"
+        },
+        "header_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.h.txt",
+          "bytes": 23796,
+          "sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609"
+        },
+        "original_test_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/test_localized_ice_evidence.original.py.txt",
+          "bytes": 7782,
+          "sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af"
+        },
+        "current_test": {
+          "path": "harness/tests/test_localized_ice_evidence.py",
+          "bytes": 8429,
+          "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
+        }
+      }
+    },
+    {
+      "id": "localized_ice_historical_capi_source_pair",
+      "label": "Archived C API implementation and header are exact pre-native-FP64-value bytes required by the original evidence manifest",
+      "file_type": "code",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+      "source_location": "full archived C++ source; paired header archive in same evidence folder",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "cpp_path": "libtorch/bridge/kdm6_c_api.cpp",
+      "cpp_sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+      "header_path": "libtorch/bridge/kdm6_c_api.h",
+      "header_sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609",
+      "pre_native_fp64_value_entry": true,
+      "cpp_snapshot_sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+      "header_snapshot_sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609",
+      "source_pins": {
+        "resolver": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+          "bytes": 1693,
+          "sha256": "127dee9c69fd80078339956e803beac280f298bb428fc9abd4dec786eca7e110"
+        },
+        "history_note": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/HISTORICAL_SOURCES.md",
+          "bytes": 849,
+          "sha256": "dcc6ca0287179fca9fae8d352d3327a9ca8eddcf8c3fe45ccab9c87d1164c4d5"
+        },
+        "manifest": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+          "bytes": 9105,
+          "sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3"
+        },
+        "cpp_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+          "bytes": 45081,
+          "sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69"
+        },
+        "header_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.h.txt",
+          "bytes": 23796,
+          "sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609"
+        },
+        "original_test_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/test_localized_ice_evidence.original.py.txt",
+          "bytes": 7782,
+          "sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af"
+        },
+        "current_test": {
+          "path": "harness/tests/test_localized_ice_evidence.py",
+          "bytes": 8429,
+          "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
+        }
+      }
+    },
+    {
+      "id": "localized_ice_original_inventory_test_snapshot",
+      "label": "Archived original inventory test source retains the exact self-pinned historical test bytes",
+      "file_type": "code",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/test_localized_ice_evidence.original.py.txt",
+      "source_location": "full archived historical test source",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "original_manifest_test_sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af",
+      "available_at_revision": "340c9a1d969f4aaf25765a6c4a1a6eef96b910ae",
+      "available_revision_is_not_execution_commit_attestation": true,
+      "snapshot_sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af",
+      "source_pins": {
+        "resolver": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+          "bytes": 1693,
+          "sha256": "127dee9c69fd80078339956e803beac280f298bb428fc9abd4dec786eca7e110"
+        },
+        "history_note": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/HISTORICAL_SOURCES.md",
+          "bytes": 849,
+          "sha256": "dcc6ca0287179fca9fae8d352d3327a9ca8eddcf8c3fe45ccab9c87d1164c4d5"
+        },
+        "manifest": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+          "bytes": 9105,
+          "sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3"
+        },
+        "cpp_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+          "bytes": 45081,
+          "sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69"
+        },
+        "header_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.h.txt",
+          "bytes": 23796,
+          "sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609"
+        },
+        "original_test_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/test_localized_ice_evidence.original.py.txt",
+          "bytes": 7782,
+          "sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af"
+        },
+        "current_test": {
+          "path": "harness/tests/test_localized_ice_evidence.py",
+          "bytes": 8429,
+          "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
+        }
+      }
+    },
+    {
+      "id": "localized_ice_current_inventory_source_resolver_test",
+      "label": "Current inventory test resolves only the whitelisted evolved paths and retains strict SHA checks for every original source and artifact",
+      "file_type": "code",
+      "source_file": "harness/tests/test_localized_ice_evidence.py",
+      "source_location": "L174-L204",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "requires_historical_manifest_sha_match": true,
+      "exact_whitelist_size": 3,
+      "uses_archived_snapshot_for_only_whitelisted_paths": true,
+      "all_other_source_and_artifact_hash_checks_unchanged": true,
+      "current_test_sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173",
+      "source_pins": {
+        "resolver": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+          "bytes": 1693,
+          "sha256": "127dee9c69fd80078339956e803beac280f298bb428fc9abd4dec786eca7e110"
+        },
+        "history_note": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/HISTORICAL_SOURCES.md",
+          "bytes": 849,
+          "sha256": "dcc6ca0287179fca9fae8d352d3327a9ca8eddcf8c3fe45ccab9c87d1164c4d5"
+        },
+        "manifest": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+          "bytes": 9105,
+          "sha256": "61d9ef98d21afa9c82dda01fe3f30c93ea691ea253904c0d34f1afdffce412c3"
+        },
+        "cpp_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.cpp.txt",
+          "bytes": 45081,
+          "sha256": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69"
+        },
+        "header_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/kdm6_c_api.pre_native_fp64_value.h.txt",
+          "bytes": 23796,
+          "sha256": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609"
+        },
+        "original_test_snapshot": {
+          "path": "harness/evidence/localized_ice_budget_ad_2026-10-24/execution_sources/test_localized_ice_evidence.original.py.txt",
+          "bytes": 7782,
+          "sha256": "0a03ce5078e21649b25fcb7797a587e037c44aedafc65e73a0f2fb1ec35409af"
+        },
+        "current_test": {
+          "path": "harness/tests/test_localized_ice_evidence.py",
+          "bytes": 8429,
+          "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
+        }
+      }
+    }
   ],
   "edges": [
-    {"source":"localized_ice_trace_stage_ledger","target":"localized_ice_main_qr_residual_witnesses","relation":"supports_stage_localization_of","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H1:Four original-block trace replays","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_raw_clamp_crossing_failures","target":"localized_ice_nn_one_sided_entry_clamp","relation":"has_direct_boundary_probe","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/nn_probe_provenance.json","source_location":"/cases","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_entry_interior_pair_family","target":"localized_ice_pair_direction_results","relation":"tested_by","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json","source_location":"/entry_interior_pair_direction_case_gates","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_norm_actual_ad_operator","target":"localized_ice_finish_old_state_pullback","relation":"composes_with","source_file":"harness/verify_localized_ice_ad.py","source_location":"L180-L188","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_finish_old_state_pullback","target":"localized_ice_pair_direction_results","relation":"validated_with_full_B512_directions","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H2:Separate entry-interior/pair-direction evidence","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_derivative_scope_limits","target":"localized_ice_norm_actual_ad_operator","relation":"bounds_interpretation_of","source_file":"docs/LOCALIZED_ICE_BUDGET_AD.md","source_location":"H2:The differentiated operator","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_call_accounting_and_provenance","target":"localized_ice_budget_ad_report","relation":"bounds_execution_claims_of","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H3:Provenance, noninterference and validation","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_evidence_hash_manifest","target":"localized_ice_trace_stage_ledger","relation":"pins_producer_and_artifact_hashes_for","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json","source_location":"/source_sha256; /artifact_sha256","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_evidence_hash_manifest","target":"localized_ice_norm_actual_ad_operator","relation":"pins_executed_verifier_and_library_inputs_for","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json","source_location":"/source_sha256; /artifact_sha256","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"source":"localized_ice_budget_ad_report","target":"localized_ice_derivative_scope_limits","relation":"states_scope_limits_in","source_file":"docs/LOCALIZED_ICE_BUDGET_AD.md","source_location":"H3:Direction families and boundaries","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"}
+    {
+      "source": "localized_ice_trace_stage_ledger",
+      "target": "localized_ice_main_qr_residual_witnesses",
+      "relation": "supports_stage_localization_of",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H1:Four original-block trace replays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_raw_clamp_crossing_failures",
+      "target": "localized_ice_nn_one_sided_entry_clamp",
+      "relation": "has_direct_boundary_probe",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/nn_probe_provenance.json",
+      "source_location": "/cases",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_entry_interior_pair_family",
+      "target": "localized_ice_pair_direction_results",
+      "relation": "tested_by",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/validation.json",
+      "source_location": "/entry_interior_pair_direction_case_gates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_norm_actual_ad_operator",
+      "target": "localized_ice_finish_old_state_pullback",
+      "relation": "composes_with",
+      "source_file": "harness/verify_localized_ice_ad.py",
+      "source_location": "L180-L188",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_finish_old_state_pullback",
+      "target": "localized_ice_pair_direction_results",
+      "relation": "validated_with_full_B512_directions",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H2:Separate entry-interior/pair-direction evidence",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_derivative_scope_limits",
+      "target": "localized_ice_norm_actual_ad_operator",
+      "relation": "bounds_interpretation_of",
+      "source_file": "docs/LOCALIZED_ICE_BUDGET_AD.md",
+      "source_location": "H2:The differentiated operator",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_call_accounting_and_provenance",
+      "target": "localized_ice_budget_ad_report",
+      "relation": "bounds_execution_claims_of",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H3:Provenance, noninterference and validation",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_evidence_hash_manifest",
+      "target": "localized_ice_trace_stage_ledger",
+      "relation": "pins_producer_and_artifact_hashes_for",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+      "source_location": "/source_sha256; /artifact_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_evidence_hash_manifest",
+      "target": "localized_ice_norm_actual_ad_operator",
+      "relation": "pins_executed_verifier_and_library_inputs_for",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/manifest.json",
+      "source_location": "/source_sha256; /artifact_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_budget_ad_report",
+      "target": "localized_ice_derivative_scope_limits",
+      "relation": "states_scope_limits_in",
+      "source_file": "docs/LOCALIZED_ICE_BUDGET_AD.md",
+      "source_location": "H3:Direction families and boundaries",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_historical_source_resolution",
+      "target": "localized_ice_historical_capi_source_pair",
+      "relation": "resolves_two_manifest_pinned_C_API_source_paths_to_exact_archives",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+      "source_location": "/sources/libtorch/bridge/kdm6_c_api.cpp; /sources/libtorch/bridge/kdm6_c_api.h",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_historical_source_resolution",
+      "target": "localized_ice_original_inventory_test_snapshot",
+      "relation": "resolves_original_self_pinned_test_to_exact_archive",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/historical_source_resolution.json",
+      "source_location": "/sources/harness/tests/test_localized_ice_evidence.py",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_current_inventory_source_resolver_test",
+      "target": "localized_ice_historical_source_resolution",
+      "relation": "checks_historical_manifest_pin_and_exact_whitelist_before_resolving_sources",
+      "source_file": "harness/tests/test_localized_ice_evidence.py",
+      "source_location": "L174-L201",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_current_inventory_source_resolver_test",
+      "target": "localized_ice_original_inventory_test_snapshot",
+      "relation": "requires_original_historical_test_digest_without_relaxing_other_manifest_hashes",
+      "source_file": "harness/tests/test_localized_ice_evidence.py",
+      "source_location": "L178-L201",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
   ],
   "hyperedges": [
-    {"id":"localized_ice_budget_trace_to_witness_chain","label":"Frozen calls, verified traces and fixed-measure stage ledger support two bounded main-QR residual witnesses","nodes":["localized_ice_budget_ad_report","localized_ice_trace_stage_ledger","localized_ice_main_qr_residual_witnesses","localized_ice_call_accounting_and_provenance"],"relation":"supports_bounded_value_localization","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H1:Four original-block trace replays","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"id":"localized_ice_raw_failure_to_pair_control_chain","label":"Raw clamp failures, one-sided NN evidence and paired interior controls are distinct derivative evidence","nodes":["localized_ice_raw_clamp_crossing_failures","localized_ice_nn_one_sided_entry_clamp","localized_ice_entry_interior_pair_family","localized_ice_pair_direction_results","localized_ice_derivative_scope_limits"],"relation":"distinguishes_failed_raw_from_bounded_pair_evidence","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H2:Original raw-direction failures retained; H2:Separate entry-interior/pair-direction evidence","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"},
-    {"id":"localized_ice_ad_operator_finish_and_validation","label":"The raw state-forcing operator composes the applied thermo finish, explicit old-state pullback and full-block directional checks","nodes":["localized_ice_norm_actual_ad_operator","localized_ice_finish_old_state_pullback","localized_ice_entry_interior_pair_family","localized_ice_pair_direction_results","localized_ice_derivative_scope_limits"],"relation":"validates_bounded_first_order_operator_path","source_file":"harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md","source_location":"H2:B512 state+forcing and applied thermo-finish AD","confidence":"EXTRACTED","confidence_score":1.0,"_origin":"semantic"}
+    {
+      "id": "localized_ice_budget_trace_to_witness_chain",
+      "label": "Frozen calls, verified traces and fixed-measure stage ledger support two bounded main-QR residual witnesses",
+      "nodes": [
+        "localized_ice_budget_ad_report",
+        "localized_ice_trace_stage_ledger",
+        "localized_ice_main_qr_residual_witnesses",
+        "localized_ice_call_accounting_and_provenance"
+      ],
+      "relation": "supports_bounded_value_localization",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H1:Four original-block trace replays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "localized_ice_raw_failure_to_pair_control_chain",
+      "label": "Raw clamp failures, one-sided NN evidence and paired interior controls are distinct derivative evidence",
+      "nodes": [
+        "localized_ice_raw_clamp_crossing_failures",
+        "localized_ice_nn_one_sided_entry_clamp",
+        "localized_ice_entry_interior_pair_family",
+        "localized_ice_pair_direction_results",
+        "localized_ice_derivative_scope_limits"
+      ],
+      "relation": "distinguishes_failed_raw_from_bounded_pair_evidence",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H2:Original raw-direction failures retained; H2:Separate entry-interior/pair-direction evidence",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "localized_ice_ad_operator_finish_and_validation",
+      "label": "The raw state-forcing operator composes the applied thermo finish, explicit old-state pullback and full-block directional checks",
+      "nodes": [
+        "localized_ice_norm_actual_ad_operator",
+        "localized_ice_finish_old_state_pullback",
+        "localized_ice_entry_interior_pair_family",
+        "localized_ice_pair_direction_results",
+        "localized_ice_derivative_scope_limits"
+      ],
+      "relation": "validates_bounded_first_order_operator_path",
+      "source_file": "harness/evidence/localized_ice_budget_ad_2026-10-24/REPORT.md",
+      "source_location": "H2:B512 state+forcing and applied thermo-finish AD",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
   ]
 }

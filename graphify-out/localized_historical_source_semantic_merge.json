@@ -1,0 +1,8 @@
+{
+  "fragments": [
+    "full_physics_forward_semantic.json",
+    "native_analysis_progress_20261025_semantic.json",
+    "localized_ice_budget_ad_semantic.json"
+  ],
+  "source_resolution": "Explicit historical C ABI and test snapshots retain exact original inventory digests; no artifact or numerical criterion changed."
+}

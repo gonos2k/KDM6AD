@@ -1,0 +1,21 @@
+Traversal: BFS depth=2 | Start: ['Resolution', 'Source', 'Source'] | 28 nodes found
+
+NODE KDM6AD Differentiability Audit [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L6 community=545]
+NODE KDM6AD 20260610 Presentation Adversarial Review [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L12 community=461]
+NODE Codex Stale Nested Cwd Incident 2026-06-25 [src=wiki/experiences/Codex Stale Nested Cwd Incident 2026-06-25.md loc=L18 community=712]
+NODE Adversarial Findings [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L60 community=461]
+NODE Update (2026-09-27): S15 upstream attribution remains open [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L89 community=545]
+NODE Links [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L58 community=545]
+NODE Source [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L14 community=461]
+NODE What To Carry Into The Manuscript [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L137 community=461]
+NODE Links [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L159 community=461]
+NODE Outcome [src=wiki/experiences/Codex Stale Nested Cwd Incident 2026-06-25.md loc=L33 community=712]
+NODE Required Checks [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L22 community=545]
+NODE Manuscript Use [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L33 community=545]
+NODE Definition [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L8 community=545]
+NODE Update (2026-07-04): 점프 vs 꺾임 구분 + 이중경로 정정 [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L45 community=545]
+NODE Context [src=wiki/experiences/Codex Stale Nested Cwd Incident 2026-06-25.md loc=L20 community=712]
+NODE KDM6AD Differentiability Audit.md [src=wiki/concepts/KDM6AD Differentiability Audit.md loc=L1 community=545]
+NODE Updated Current Claim [src=wiki/sources/kdm6ad-20260610-presentation-adversarial-review.md loc=L153 community=461]
+NODE Root Cause [src=wiki/experiences/Codex Stale Nested Cwd Incident 2026-06-25.md loc=L39 community=712]
+... (truncated — 10 more nodes cut by ~700-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)
