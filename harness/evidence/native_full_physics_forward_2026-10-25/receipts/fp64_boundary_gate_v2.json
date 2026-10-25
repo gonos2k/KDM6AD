@@ -1,0 +1,558 @@
+{
+  "call_accounting": {
+    "RTTOV_calls": 0,
+    "direct_runtime_reference_forwards_preexisting": 3,
+    "fresh_CAPI_forward_requests_completed": 12,
+    "fresh_CAPI_refusal_entries": 9,
+    "fresh_dt0_identity_entries": 4,
+    "global_CAPI_entry_calls": 32,
+    "global_positive_dt_forward_requests_including_preexisting_references": 22,
+    "host_steps": 0,
+    "optimizer_calls": 0,
+    "preentry_ctypes_argument_error_CAPI_calls": 0,
+    "preentry_ctypes_argument_error_entries": 1,
+    "prior_CAPI_forward_requests_spent": 7,
+    "prior_CAPI_forwards_with_saved_outputs": 6,
+    "prior_fp64_ad_call_status": "one prior API return had rc/output unavailable; counted as spent, not claimed successful"
+  },
+  "case_results": {
+    "block00034": {
+      "artifacts": {
+        "legacy_old_f32": {
+          "bytes": 228470,
+          "path": "block00034.legacy_old_f32.npz",
+          "sha256": "61979ae778ec6c21b1d55bb3e2004afcb2671b9daea3b22eff778edc7b95b693"
+        },
+        "new_default_f32": {
+          "bytes": 228470,
+          "path": "block00034.new_default_f32.npz",
+          "sha256": "61979ae778ec6c21b1d55bb3e2004afcb2671b9daea3b22eff778edc7b95b693"
+        },
+        "new_fp64_value": {
+          "bytes": 231331,
+          "path": "block00034.new_fp64_value.npz",
+          "sha256": "a6509b10ca0fd380d467f05263c3e29552a0da5e6c0a1add04c20c489b1977bd"
+        },
+        "old_fp64_ad_value": {
+          "bytes": 351447,
+          "path": "block00034.old_fp64_ad_value.npz",
+          "sha256": "93dd599334a4155527462fc485ba0728a809fe37fe96d34c29fbd1e7bd1c2c56"
+        }
+      },
+      "comparison_status": {
+        "all_state_fields": true,
+        "new_fp64_value_vs_direct_runtime_all16_bitwise": true,
+        "new_fp64_value_vs_old_fp64_ad_state_writeback_bitwise": true,
+        "old_f32_vs_new_default_all16_bitwise": true,
+        "old_fp64_ad_vs_direct_runtime_all12_f64_bitwise": true,
+        "refusal_probes": {
+          "reject_param_grad_flags": {
+            "count": 1,
+            "expected_rc": -3,
+            "handle_null": true,
+            "outputs_untouched": true,
+            "rc": -3
+          },
+          "reject_value_only_unknown": {
+            "count": 1,
+            "expected_rc": -6,
+            "handle_null": true,
+            "outputs_untouched": true,
+            "rc": -6
+          },
+          "reject_value_only_zero": {
+            "count": 1,
+            "expected_rc": -6,
+            "handle_null": true,
+            "outputs_untouched": true,
+            "rc": -6
+          }
+        }
+      },
+      "fp_environment_status": "UNAVAILABLE for this case: capture metadata was not persisted by producer v6 before its known post-processing exception; do not infer or impute.",
+      "producer_source_sha256": "4f41090572b1e74c9d2f49eab04bf136f34a21dec7767e947be43c7c2f1d317d",
+      "producer_test_sha256": "28be403cebad8fb71a56ed584b34f12d7620cdb1fcc42f0d7948da92e9ed01fc",
+      "roundoff_observed": {
+        "combined_cast_error_kg_m2": 0.00029669800031055613,
+        "combined_half_ulp_bound_kg_m2": 0.001277847492682885,
+        "half_ulp_bound_validated": false,
+        "within_half_ulp_bound": true
+      }
+    },
+    "block00040": {
+      "artifacts": [
+        {
+          "block_id": "block00040",
+          "bytes": 233837,
+          "call_label": "legacy_old_f32",
+          "path": "block00040.legacy_old_f32.npz",
+          "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+          "sha256": "d2be0fca11db56cb575ce6644c12be497b0382a6d694148139f7c01b20601563"
+        },
+        {
+          "block_id": "block00040",
+          "bytes": 233837,
+          "call_label": "new_default_f32",
+          "path": "block00040.new_default_f32.npz",
+          "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+          "sha256": "d2be0fca11db56cb575ce6644c12be497b0382a6d694148139f7c01b20601563"
+        },
+        {
+          "block_id": "block00040",
+          "bytes": 237199,
+          "call_label": "new_fp64_value",
+          "path": "block00040.new_fp64_value.npz",
+          "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+          "sha256": "33a614573fe477c4a6b2d3330d498dc07ed4beb336bfc2bfca4ff8d50706a99a"
+        },
+        {
+          "block_id": "block00040",
+          "bytes": 365010,
+          "call_label": "old_fp64_ad_value",
+          "path": "block00040.old_fp64_ad_value.npz",
+          "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+          "sha256": "d2003d3644932d08152fa8936fbf7739cf6575ab4b853962192194bc06037836"
+        }
+      ],
+      "capture_metadata": {
+        "block_id": "block00040",
+        "bytes": 11760,
+        "path": "block00040.capture.json",
+        "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+        "sha256": "fab6e871334abc6056283284c182ce821539366948abc55deb8e5301a0d8c436"
+      },
+      "comparison_status": {
+        "all_state_fields": true,
+        "new_fp64_value_vs_direct_runtime_all16_bitwise": true,
+        "new_fp64_value_vs_old_fp64_ad_state_writeback_bitwise": true,
+        "old_f32_vs_new_default_all16_bitwise": true,
+        "old_fp64_ad_vs_direct_runtime_all12_f64_bitwise": true,
+        "refusal_probes": {
+          "parameter_flags_nonzero": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -3
+          },
+          "value_only_unknown": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -6
+          },
+          "value_only_zero": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -6
+          }
+        }
+      },
+      "fp_environment_status": "PASS: complete same-thread before/after probe snapshots persisted before comparisons; RN, FPCR=0, FZ/FZ16 off and binary32 normal/subnormal/signed-zero roundtrip preserved.",
+      "producer_source_sha256": "16d49ca76336483f02cc55c65b27b34947917373a9b0eb88c4119004d0a06685",
+      "producer_test_sha256": "37a4656ce05a53ecb4b8026b18430ab18a6745aee6bf7975e1a1f3702629a059",
+      "roundoff_observed": {
+        "combined_cast_error_kg_m2": 0.0002640747190730055,
+        "combined_half_ulp_bound_kg_m2": 0.0012317763511922421,
+        "half_ulp_bound_validated": true,
+        "within_half_ulp_bound": true
+      }
+    },
+    "block34_nonsquare_2x4": {
+      "artifacts": [
+        {
+          "block_id": "block34_nonsquare_2x4",
+          "bytes": 5311,
+          "call_label": "legacy_old_f32",
+          "path": "block34_nonsquare_2x4.legacy_old_f32.npz",
+          "request_sha256": "ad4ef652bc43be0653ab9704b7bfcd8ac78e2fd6b58835c656c5e0bb307410e3",
+          "sha256": "10bcfd2173fe5401423e2c326a3a7c1ca36c5d27326c4252d8b8d901f4bd6d45"
+        },
+        {
+          "block_id": "block34_nonsquare_2x4",
+          "bytes": 5311,
+          "call_label": "new_default_f32",
+          "path": "block34_nonsquare_2x4.new_default_f32.npz",
+          "request_sha256": "ad4ef652bc43be0653ab9704b7bfcd8ac78e2fd6b58835c656c5e0bb307410e3",
+          "sha256": "10bcfd2173fe5401423e2c326a3a7c1ca36c5d27326c4252d8b8d901f4bd6d45"
+        },
+        {
+          "block_id": "block34_nonsquare_2x4",
+          "bytes": 5380,
+          "call_label": "new_fp64_value",
+          "path": "block34_nonsquare_2x4.new_fp64_value.npz",
+          "request_sha256": "ad4ef652bc43be0653ab9704b7bfcd8ac78e2fd6b58835c656c5e0bb307410e3",
+          "sha256": "999ed71658f022d5937bb375ae8b9981dcf6798f391dccd78577c63896be6278"
+        },
+        {
+          "block_id": "block34_nonsquare_2x4",
+          "bytes": 8382,
+          "call_label": "old_fp64_ad_value",
+          "path": "block34_nonsquare_2x4.old_fp64_ad_value.npz",
+          "request_sha256": "ad4ef652bc43be0653ab9704b7bfcd8ac78e2fd6b58835c656c5e0bb307410e3",
+          "sha256": "6ee90e1c0323271faee3f05c81f3890cf8b71f93e5628e64e9967e36b3a2378b"
+        }
+      ],
+      "capture_metadata": {
+        "block_id": "block34_nonsquare_2x4",
+        "bytes": 11851,
+        "path": "block34_nonsquare_2x4.capture.json",
+        "request_sha256": "ad4ef652bc43be0653ab9704b7bfcd8ac78e2fd6b58835c656c5e0bb307410e3",
+        "sha256": "7b7b63d9e5f2c892d7e429f1bdf7c2e66a921b4da275474082166f24ce173d6c"
+      },
+      "comparison_status": {
+        "all_state_fields": true,
+        "new_fp64_value_vs_direct_runtime_all16_bitwise": true,
+        "new_fp64_value_vs_old_fp64_ad_state_writeback_bitwise": true,
+        "old_f32_vs_new_default_all16_bitwise": true,
+        "old_fp64_ad_vs_direct_runtime_all12_f64_bitwise": true,
+        "refusal_probes": {
+          "parameter_flags_nonzero": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -3
+          },
+          "value_only_unknown": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -6
+          },
+          "value_only_zero": {
+            "all_output_buffers_untouched": true,
+            "handle_null": true,
+            "rc": -6
+          }
+        }
+      },
+      "fp_environment_status": "PASS: complete same-thread before/after probe snapshots persisted before comparisons; RN, FPCR=0, FZ/FZ16 off and binary32 normal/subnormal/signed-zero roundtrip preserved.",
+      "producer_source_sha256": "16d49ca76336483f02cc55c65b27b34947917373a9b0eb88c4119004d0a06685",
+      "producer_test_sha256": "37a4656ce05a53ecb4b8026b18430ab18a6745aee6bf7975e1a1f3702629a059",
+      "roundoff_observed": {
+        "combined_cast_error_kg_m2": 8.11437220773127e-06,
+        "combined_half_ulp_bound_kg_m2": 2.3430034684086506e-05,
+        "half_ulp_bound_validated": true,
+        "within_half_ulp_bound": true
+      }
+    }
+  },
+  "dt0_identity": {
+    "all_precip_and_rhog_outputs_are_positive_zero": true,
+    "block_id": "dt0_roundtrip_2x4",
+    "call_output_artifacts": [
+      {
+        "block_id": "dt0_roundtrip_2x4",
+        "bytes": 645,
+        "call_label": "dt0_legacy_f32",
+        "path": "dt0_roundtrip_2x4.dt0_legacy_f32.npz",
+        "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+        "sha256": "108157cfea1adbdfad523ecdb40f48979fa86cb7dd75cbc6072f99c571c7dcd4"
+      },
+      {
+        "block_id": "dt0_roundtrip_2x4",
+        "bytes": 645,
+        "call_label": "dt0_new_default_f32",
+        "path": "dt0_roundtrip_2x4.dt0_new_default_f32.npz",
+        "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+        "sha256": "108157cfea1adbdfad523ecdb40f48979fa86cb7dd75cbc6072f99c571c7dcd4"
+      },
+      {
+        "block_id": "dt0_roundtrip_2x4",
+        "bytes": 645,
+        "call_label": "dt0_new_fp64_value",
+        "path": "dt0_roundtrip_2x4.dt0_new_fp64_value.npz",
+        "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+        "sha256": "108157cfea1adbdfad523ecdb40f48979fa86cb7dd75cbc6072f99c571c7dcd4"
+      },
+      {
+        "block_id": "dt0_roundtrip_2x4",
+        "bytes": 283,
+        "call_label": "dt0_old_fp64_ad_value",
+        "path": "dt0_roundtrip_2x4.dt0_old_fp64_ad_value.npz",
+        "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+        "sha256": "bbcdfa1f752b610f52ed7df3e97b2e67df9d6516befaadedab11357589f7b982"
+      }
+    ],
+    "capture_metadata": {
+      "block_id": "dt0_roundtrip_2x4",
+      "bytes": 8130,
+      "path": "dt0_roundtrip_2x4.capture.json",
+      "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+      "sha256": "ead2e2673c34c73fa65c869482f9a55778cf5eaf99d8164a8d0e45da37c5fdca"
+    },
+    "dimensions_im_kme_jme": [
+      2,
+      3,
+      4
+    ],
+    "dt_seconds": 0.0,
+    "float32_roundtrip_probe": {
+      "all_bits_preserved": true,
+      "input_bits_hex": [
+        "00000000",
+        "80000000",
+        "00000001",
+        "80000001",
+        "007fffff",
+        "00800000",
+        "3f800000",
+        "3f800001"
+      ],
+      "roundtrip_bits_hex": [
+        "00000000",
+        "80000000",
+        "00000001",
+        "80000001",
+        "007fffff",
+        "00800000",
+        "3f800000",
+        "3f800001"
+      ],
+      "signed_zero_preserved": true,
+      "subnormal_bits_preserved": true
+    },
+    "fp64_ad_dt0_identity_all_state_bits": true,
+    "fp_environment_threadinit_and_after_calls": {
+      "half_ulp_bound_environment_compatible": true,
+      "probe_library_sha256": "896d97b35a669f847b6f8d810949f78affef007271d39942095f9e7f0ccebd9e",
+      "snapshots": [
+        {
+          "fe_round_to_nearest": true,
+          "fe_tonearest": 0,
+          "fegetround": 0,
+          "float32_roundtrip": {
+            "all_bits_preserved": true,
+            "input_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "roundtrip_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "signed_zero_preserved": true,
+            "subnormal_bits_preserved": true
+          },
+          "fpcr": "0x0000000000000000",
+          "fpcr_fz16_bit19": false,
+          "fpcr_fz_bit24": false,
+          "fpcr_round_to_nearest": true,
+          "fpcr_rounding_mode_bits": 0,
+          "raw_fpcr_available": true
+        },
+        {
+          "fe_round_to_nearest": true,
+          "fe_tonearest": 0,
+          "fegetround": 0,
+          "float32_roundtrip": {
+            "all_bits_preserved": true,
+            "input_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "roundtrip_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "signed_zero_preserved": true,
+            "subnormal_bits_preserved": true
+          },
+          "fpcr": "0x0000000000000000",
+          "fpcr_fz16_bit19": false,
+          "fpcr_fz_bit24": false,
+          "fpcr_round_to_nearest": true,
+          "fpcr_rounding_mode_bits": 0,
+          "raw_fpcr_available": true
+        },
+        {
+          "fe_round_to_nearest": true,
+          "fe_tonearest": 0,
+          "fegetround": 0,
+          "float32_roundtrip": {
+            "all_bits_preserved": true,
+            "input_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "roundtrip_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "signed_zero_preserved": true,
+            "subnormal_bits_preserved": true
+          },
+          "fpcr": "0x0000000000000000",
+          "fpcr_fz16_bit19": false,
+          "fpcr_fz_bit24": false,
+          "fpcr_round_to_nearest": true,
+          "fpcr_rounding_mode_bits": 0,
+          "raw_fpcr_available": true
+        },
+        {
+          "fe_round_to_nearest": true,
+          "fe_tonearest": 0,
+          "fegetround": 0,
+          "float32_roundtrip": {
+            "all_bits_preserved": true,
+            "input_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "roundtrip_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "signed_zero_preserved": true,
+            "subnormal_bits_preserved": true
+          },
+          "fpcr": "0x0000000000000000",
+          "fpcr_fz16_bit19": false,
+          "fpcr_fz_bit24": false,
+          "fpcr_round_to_nearest": true,
+          "fpcr_rounding_mode_bits": 0,
+          "raw_fpcr_available": true
+        },
+        {
+          "fe_round_to_nearest": true,
+          "fe_tonearest": 0,
+          "fegetround": 0,
+          "float32_roundtrip": {
+            "all_bits_preserved": true,
+            "input_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "roundtrip_bits_hex": [
+              "00000000",
+              "80000000",
+              "00000001",
+              "80000001",
+              "007fffff",
+              "00800000",
+              "3f800000",
+              "3f800001"
+            ],
+            "signed_zero_preserved": true,
+            "subnormal_bits_preserved": true
+          },
+          "fpcr": "0x0000000000000000",
+          "fpcr_fz16_bit19": false,
+          "fpcr_fz_bit24": false,
+          "fpcr_round_to_nearest": true,
+          "fpcr_rounding_mode_bits": 0,
+          "raw_fpcr_available": true
+        }
+      ]
+    },
+    "legacy_dt0_identity_all_state_bits": true,
+    "legacy_vs_new_default_all16_bitwise": true,
+    "new_default_dt0_identity_all_state_bits": true,
+    "new_fp64_value_dt0_identity_all_state_bits": true,
+    "physics_selectors_by_path": {
+      "legacy_and_new_default_f32": {
+        "KDM6_ICE_FACTORIAL_MODE": "legacy",
+        "KDM6_QR_TRANSPORT": "legacy"
+      },
+      "new_fp64_value_and_old_fp64_ad_reference": {
+        "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+        "KDM6_QR_TRANSPORT": "actual_departure"
+      }
+    },
+    "request_sha256": "acaca84af9bca4c3dfeb2c0d8e67352228624903de850a78d4e57e2adebd9f62",
+    "scope": "dt=0 identity boundary test only; no microphysics state advance or conservation claim"
+  },
+  "gate_summary": {
+    "dt0_identity_and_codec": "PASS; preserves signed zero and binary32 subnormals; positive-zero precip/rhog",
+    "fp64_value_vs_direct_runtime_all16": "PASS in all three shapes",
+    "fp64_value_vs_old_fp64_ad_state": "PASS in all three shapes",
+    "measured_output_storage_roundoff": "PASS against reported half-ULP bounds; not physical closure",
+    "new_entry_refusals_and_untouched_buffers": "PASS in all three cases",
+    "old_f32_vs_new_default_all16": "PASS in all three shapes",
+    "old_fp64_ad_vs_direct_runtime_f64_state": "PASS in all three shapes",
+    "same_thread_fp_environment": "PASS for block40, nonsquare B8 and dt0; unavailable for block34 and explicitly left unclaimed"
+  },
+  "limits": [
+    "Block34 FP-environment snapshots were not persisted by producer v6 before the prior report-generation exception; its saved numerical outputs were analyzed offline, but no FP-environment pass is claimed for that case.",
+    "The half-ULP calculation concerns only final float32 storage rounding for six water state fields and precipitation. It is not a physical water-budget or conservation certification.",
+    "The fp64-value entry is a research-only widened-f64 value map with float32 writeback; this does not certify full f32 physics."
+  ],
+  "producer_and_execution": {
+    "all_10_file_backed_macho_section_payloads_match": true,
+    "block34_partial_suite_attempt_log_sha256": "4ec198055776978c33990e9dbb5f8f04d5a73b971810fdc6cda48fefe2bf6d4e",
+    "block34_partial_suite_manifest_sha256": "863dc1130280160352bc80f8e53300a98eab083c8cf2b4973ac4988d19ef2da1",
+    "bridge_build_receipt_sha256": "5db21c0c17c305c455a30e23e4cf926bbb1f79854ed9ab34739f7a04ee7ed59a",
+    "bridge_dso_sha256": "6524bcfedbf75b2ebfc95e9603dd2cd702be3f213d2759bfaa571d1be5121d4e",
+    "direct_reference_set_receipt_sha256": "0b33a50e515ccdefcec6e5acceaf009ba57422ac9955d868ad2dbf970ef0eef4",
+    "fresh_suite_case_producer_split": {
+      "block34": "4f41090572b1e74c9d2f49eab04bf136f34a21dec7767e947be43c7c2f1d317d",
+      "block40_and_nonsquare_and_dt0": "16d49ca76336483f02cc55c65b27b34947917373a9b0eb88c4119004d0a06685",
+      "execution_note": "The only change between these harness snapshots for kernel execution is durable capture metadata and FP-environment recording; every call used the exact same pinned DSO/input selectors. Per-case producer hashes remain explicit."
+    },
+    "host_copy_build_receipt_sha256": "bf9b6715870f0016cfd830a80649845f3d9fd5908a16967d900847d5c2131249",
+    "host_execution_copy_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+    "offline_analyzer_sha256": "f2246b058435d650da56135fcde514a106b43eebc660c060fe1fb4ae81b00ca6",
+    "producer_v6_source_sha256": "4f41090572b1e74c9d2f49eab04bf136f34a21dec7767e947be43c7c2f1d317d",
+    "producer_v6_test_sha256": "28be403cebad8fb71a56ed584b34f12d7620cdb1fcc42f0d7948da92e9ed01fc",
+    "producer_v7_source_sha256": "16d49ca76336483f02cc55c65b27b34947917373a9b0eb88c4119004d0a06685",
+    "producer_v7_test_sha256": "37a4656ce05a53ecb4b8026b18430ab18a6745aee6bf7975e1a1f3702629a059",
+    "remaining_suite_attempt_log_sha256": "6eedb88a40d57db5a45939ce8481584ab7e79a3f19d2d33fcfc03eeabb86dc56",
+    "remaining_suite_manifest_pin": "b0e4e1f1eae03eb5edc9b5d0a0cce51abfd2b69505643d40aa2857f3b6d8ced3",
+    "remaining_suite_manifest_sha256": "b0e4e1f1eae03eb5edc9b5d0a0cce51abfd2b69505643d40aa2857f3b6d8ced3",
+    "remaining_suite_result_sha256": "275e77da408906117f8389649ced9b34cc84932730a17971b55f4ec0a99b708b",
+    "saved_output_offline_analysis_sha256": "3cf3f1eadfd2d8f157caf101d490e8cc615fd83f088dbe1dc4404d2f29144b16"
+  },
+  "schema": "kdm6.native_fp64_value_only_boundary_final_gate.v2",
+  "scope": "C ABI precision boundary only; not a host step, RTTOV run, full-model physics certification, conservation closure or deployment qualification.",
+  "status": "ARITHMETIC_AND_ABI_CHECKS_PASS; BLOCK34_FP_ENV_CAPTURE_UNAVAILABLE",
+  "supersedes_draft_sha256": "b925a03a845419b40de6e484d3128ee0bff38b1e6b1d64714249288c5c85cdd6"
+}

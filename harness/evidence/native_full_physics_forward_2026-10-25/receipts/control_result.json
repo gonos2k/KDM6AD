@@ -1,0 +1,441 @@
+{
+  "control_ack_row_count": [
+    0
+  ],
+  "controller_sha256": "27014d50bb3646ff82175e72f985e160008309d13bb939edf30b0a633111efa7",
+  "created_at_utc": "2026-10-25T10:57:41.984919+00:00",
+  "effective_namelist_gate": {
+    "mismatches": {},
+    "passed": true,
+    "verified_values": {
+      "bl_pbl_physics": "11",
+      "cu_physics": "37",
+      "mp_physics": "137",
+      "no_mp_heating": "0",
+      "ra_lw_physics": "4",
+      "ra_sw_physics": "4",
+      "radt": "0.33333333333333331",
+      "restart": ".true.",
+      "run_seconds": "20",
+      "sf_surface_physics": "2",
+      "time_step": "20",
+      "use_q_diabatic": "0",
+      "use_theta_m": "1"
+    }
+  },
+  "effective_run_namelist": {
+    "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/runs/mp137_live_step_control_0min20s_hist0_1x1_20261025_195507_p2564/namelist.input",
+    "sha256": "d8d4e869687059fe86c2a6d38e43f1189b053c3f32d0eeb0297524dc3e0b9358"
+  },
+  "error": null,
+  "execution_root": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3",
+  "experiment_valid": {
+    "active_input_identity_complete": true,
+    "actual_proc_grid": "1x1",
+    "exit_code": 0,
+    "experiment_valid": true,
+    "invalid_reasons": [],
+    "model_completed": true,
+    "requested_proc_grid": "1x1"
+  },
+  "initial_ready_checkpoint": {
+    "origin_comparison": {
+      "numeric_element_mismatches": 1,
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/startup_origin_comparison.json",
+      "raw_bitwise_equal": false,
+      "scope": "all serialized fields; no claim of complete hidden host state",
+      "sha256": "3ffb9788b00174b1677bd727c4762d1c3f072cb7ae1c9bdd74b84a5a8fa78873"
+    },
+    "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+    "sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3"
+  },
+  "live_session_record": {
+    "adjustment_decisions": [],
+    "archive": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/runs/mp137_live_step_control_0min20s_hist0_1x1_20261025_195507_p2564",
+    "balance_scope": "native RK/dynamics response; no independent equilibrium or general balance certificate",
+    "capture_ready_checkpoint": true,
+    "clock_policy": "native physical time advances; analysis/observation time not assigned",
+    "command": [
+      "/opt/local/bin/python3",
+      "PUBLIC_WORKTREE/harness/run_ss_case.py",
+      "--case",
+      "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar",
+      "--mp",
+      "137",
+      "--minutes",
+      "0",
+      "--seconds",
+      "20",
+      "--history",
+      "0",
+      "--history-s",
+      "20",
+      "--np",
+      "1",
+      "--proc-grid",
+      "1x1",
+      "--fixed-dt",
+      "--label",
+      "live_step_control"
+    ],
+    "control_family": "ANALYSIS_TQ",
+    "controls": [
+      {
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "analysis_binding": {
+          "all_noop": true,
+          "background_arrays_read_once": [],
+          "background_variable_read_counts": {
+            "QVAPOR": 0,
+            "THM_2": 0
+          },
+          "effective_counts": {
+            "applied_components": 0,
+            "applied_points": 0,
+            "empty_points": 2573532,
+            "noop_points": 0,
+            "requested_nonzero_components": 0,
+            "requested_points": 0,
+            "zero_effect_components": 0
+          },
+          "native_layout": "i,k,j",
+          "no_applied_update": true,
+          "per_point_netcdf_reads": 0,
+          "source": "explicit empty update sequence"
+        },
+        "applied": [],
+        "command_sha256": "41d4bf97446fc1934244ee074dadef68a3e6509fabff206280fc1a4215328272",
+        "control_family": "ANALYSIS_TQ",
+        "generation": 0,
+        "input_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+        "model_time": "2025-07-19_00:00:40",
+        "output_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "output_itimestep": 3,
+        "output_time": "2025-07-19_00:01:00"
+      }
+    ],
+    "dt_seconds": 20,
+    "executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0",
+    "execution": {
+      "active_input_identity_complete": true,
+      "actual_proc_grid": "1x1",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "invalid_reasons": [],
+      "model_completed": true,
+      "requested_proc_grid": "1x1"
+    },
+    "initial_checkpoint": "PRIVATE_HOST_EVIDENCE/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40",
+    "initial_itimestep": 2,
+    "initial_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "initial_time": "2025-07-19_00:00:40",
+    "library_candidate_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+    "loaded_library_lines": [
+      "dyld[2566]: <824FB9F2-EEFE-37D0-A02C-B2BBE359F51A> PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/execution/lib/libkdm6_c.2.0.0.dylib"
+    ],
+    "namelist_sha256": "d8d4e869687059fe86c2a6d38e43f1189b053c3f32d0eeb0297524dc3e0b9358",
+    "origin_kind": "restart",
+    "protocol_source_sha256": "4cb5fbf483519fbf620b32684374447e2511559ee44aea7c8ec00754e8870520",
+    "radiation_cadence": "every_model_step",
+    "radt_minutes": 0.3333333333333333,
+    "returncode": 0,
+    "runner_input_environment_sha256": "bc6db0c2a5dfe35dbe4451b290196bb4c82d02719878595a141864c7da201eaf",
+    "runner_pid": 2564,
+    "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "scope": "owned_sequential_value_only_native_process",
+    "session": "93714d7fb8a74f2fb65a7c1b03abb50c",
+    "startup_checkpoint": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+    "startup_itimestep": 2,
+    "startup_origin_comparison": {
+      "numeric_element_mismatches": 1,
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/startup_origin_comparison.json",
+      "raw_bitwise_equal": false,
+      "scope": "all serialized fields; no claim of complete hidden host state",
+      "sha256": "3ffb9788b00174b1677bd727c4762d1c3f072cb7ae1c9bdd74b84a5a8fa78873"
+    },
+    "startup_scope": "actual post-boundary pre-solve state; source input remains separately pinned",
+    "startup_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "startup_variable_count": 652,
+    "state_carry_status": "not_run",
+    "state_contract": "one-use process-owned current state; file alone is not a complete working-state snapshot",
+    "status": "complete",
+    "stepper_source_sha256": "05d99842d1deae976136ff879813180a79befeebf9894454d9f64f8018e2e01b",
+    "steps": 1,
+    "working_initial_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3"
+  },
+  "loaded_library_lines": [
+    "dyld[2566]: <824FB9F2-EEFE-37D0-A02C-B2BBE359F51A> PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/execution/lib/libkdm6_c.2.0.0.dylib"
+  ],
+  "model_calls_requested": {
+    "KDM6_CAPI_forward_calls_expected_from_two_internal_tiles": 2,
+    "RTTOV": 0,
+    "native_host_steps": 1
+  },
+  "native_host_steps_completed": 1,
+  "native_trace": {
+    "bytes": 21818,
+    "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/native_trace.hex",
+    "record_count": 156,
+    "records_by_kind": {
+      "FINISH_POST": {
+        "levels": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "record_count": 39,
+        "selected_i_j": [
+          [
+            156,
+            21
+          ]
+        ],
+        "steps": [
+          3
+        ]
+      },
+      "FINISH_PRE": {
+        "levels": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "record_count": 39,
+        "selected_i_j": [
+          [
+            156,
+            21
+          ]
+        ],
+        "steps": [
+          3
+        ]
+      },
+      "MP_INPUT": {
+        "levels": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "record_count": 39,
+        "selected_i_j": [
+          [
+            156,
+            21
+          ]
+        ],
+        "steps": [
+          3
+        ]
+      },
+      "MP_OUTPUT": {
+        "levels": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        "record_count": 39,
+        "selected_i_j": [
+          [
+            156,
+            21
+          ]
+        ],
+        "steps": [
+          3
+        ]
+      }
+    },
+    "scope": "single selected-column trace; it does not count global tile invocations",
+    "selected_column_i1_j1": [
+      156,
+      21
+    ],
+    "sha256": "1dd7d6a836ae1ef85da522e5dad1902d5c56cdfc1f37b7d546d71c97a1554127"
+  },
+  "no_analysis_control_confirmed": true,
+  "physics_call_trace": {
+    "expected_internal_tiles": 2,
+    "expected_scope": "two internal-tile CAPI calls per host timestep if both tile patches enter MP137",
+    "observed_kdm6ad_wrapper_entry_markers": 2,
+    "observed_microphysics_driver_kdm6ad_markers": 2,
+    "rsl_out_path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/runs/mp137_live_step_control_0min20s_hist0_1x1_20261025_195507_p2564/rsl.out.0000",
+    "rsl_out_sha256": "f7ca099ab28f1e41408ed5df9d03d8c66d51a3ad87e734299af3d1cdff625051"
+  },
+  "plan_sha256": "fcde0e70a35bd0498b4a2fe836dc86a5a6822fc352b3d116dff77acfcfc4b041",
+  "ready_boundary": {
+    "bounds": [
+      1,
+      234,
+      1,
+      39,
+      1,
+      282
+    ],
+    "capture_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "domain": 1,
+    "origin_comparison": {
+      "numeric_element_mismatches": 1,
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/startup_origin_comparison.json",
+      "raw_bitwise_equal": false,
+      "scope": "all serialized fields; no claim of complete hidden host state",
+      "sha256": "3ffb9788b00174b1677bd727c4762d1c3f072cb7ae1c9bdd74b84a5a8fa78873"
+    },
+    "step": 2,
+    "time": "2025-07-19_00:00:40"
+  },
+  "runner_process_started": true,
+  "runtime_mode_flags": {
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure"
+  },
+  "schema": "kdm6.native_full_physics_forward_control_result.v1",
+  "status": "CONTROL_STEP_COMPLETE",
+  "stepper_case": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar",
+  "traceback": null,
+  "validation_passed": true
+}

@@ -1,0 +1,84 @@
+{
+  "RTTOV_calls": 0,
+  "model_calls": 0,
+  "numeric_elements_compared": 322426586,
+  "producer_sha256": "c1b88f8b8a5e6cb81fa665d461f1b0f998481a44d5c774443eccfa8d8beb729b",
+  "raw_numeric_mismatches": 26454541,
+  "ready_measure_analysis_water_kg": 25669966.556135986,
+  "reviewed_summary_sha256": "5ca7bfa824c2cb952117cda2c2d3844d130080e5b1a85174bb060778e9d2d742",
+  "scope": "Independent serialized-output arithmetic; READY density and geometric thickness reconstructed in declared float32 order. Not a closed water budget, actual-temperature reconstruction, full-host derivative or cloud efficacy certificate.",
+  "selected_fields": {
+    "H_DIABATIC": {
+      "changed_elements": 133345,
+      "max_abs_difference": 0.025800636038184166,
+      "signed_difference_sum_f64": 0.15775796125025401
+    },
+    "P": {
+      "changed_elements": 573556,
+      "max_abs_difference": 110.51300048828125,
+      "signed_difference_sum_f64": 279.8532283306122
+    },
+    "QCLOUD": {
+      "changed_elements": 117938,
+      "max_abs_difference": 0.00012931472883792594,
+      "signed_difference_sum_f64": 0.0015751294596860839
+    },
+    "QC_DIABATIC": {
+      "changed_elements": 557213,
+      "max_abs_difference": 6.434304850699846e-06,
+      "signed_difference_sum_f64": 7.875312877138828e-05
+    },
+    "QGRAUP": {
+      "changed_elements": 16173,
+      "max_abs_difference": 1.489817805122584e-06,
+      "signed_difference_sum_f64": -7.359164085145659e-07
+    },
+    "QICE": {
+      "changed_elements": 113123,
+      "max_abs_difference": 2.9976945370435715e-08,
+      "signed_difference_sum_f64": 1.23279795731722e-05
+    },
+    "QRAIN": {
+      "changed_elements": 72600,
+      "max_abs_difference": 6.417451731977053e-05,
+      "signed_difference_sum_f64": -3.840308275144757e-05
+    },
+    "QSNOW": {
+      "changed_elements": 128301,
+      "max_abs_difference": 0.00016878220776561648,
+      "signed_difference_sum_f64": -0.00013490208416859297
+    },
+    "QVAPOR": {
+      "changed_elements": 1028385,
+      "max_abs_difference": 0.0001687814947217703,
+      "signed_difference_sum_f64": 0.0019092986021382874
+    },
+    "QV_DIABATIC": {
+      "changed_elements": 117605,
+      "max_abs_difference": 8.439109478786122e-06,
+      "signed_difference_sum_f64": -7.069413630121124e-05
+    },
+    "RHO": {
+      "changed_elements": 503675,
+      "max_abs_difference": 0.0013328790664672852,
+      "signed_difference_sum_f64": 0.0011246949434280396
+    },
+    "T": {
+      "changed_elements": 184890,
+      "max_abs_difference": 0.60284423828125,
+      "signed_difference_sum_f64": -1.18743896484375
+    },
+    "THM_2": {
+      "changed_elements": 174736,
+      "max_abs_difference": 0.5159912109375,
+      "signed_difference_sum_f64": -0.243560791015625
+    }
+  },
+  "status": "SAVED_PAIR_ARITHMETIC_REVIEW_PASS",
+  "variables": 652,
+  "wire_counts": {
+    "qv_components": 508839,
+    "theta_components": 346604,
+    "union_points": 561407
+  }
+}

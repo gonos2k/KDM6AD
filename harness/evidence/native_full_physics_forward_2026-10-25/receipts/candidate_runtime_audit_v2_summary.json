@@ -1,0 +1,105 @@
+{
+  "actual_rsl_module_markers": {
+    "counts": {
+      "cumulus_driver": 1,
+      "kdm6ad": 2,
+      "microphysics_driver": 1,
+      "module_mp_kdm6ad": 2,
+      "moist_physics_finish": 1,
+      "pbl_driver": 1,
+      "radiation_driver": 1,
+      "rrtmg_lw": 2,
+      "rrtmg_sw": 2,
+      "shallow_cumulus_driver": 1,
+      "surface_driver": 1
+    },
+    "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/analysis_candidate_v1/live_process/live_m5ql1361/rsl.out.0000",
+    "scope": "source-log markers; counts prove the named calls were reached, not their per-call CABI dimensions",
+    "sha256": "b9e158fe1729c31be651fa40456ed30ff37e69454c0ba476468cd363bece80f6"
+  },
+  "analysis_ack": {
+    "ack_sha256": "6adc74d59538393a856d85cd4734c0f5dd5cf3ab62009db165035598edc2e18b",
+    "binding_counts": {
+      "applied_components": 855443,
+      "applied_points": 561407,
+      "empty_points": 2012125,
+      "noop_points": 0,
+      "requested_nonzero_components": 855443,
+      "requested_points": 561407,
+      "zero_effect_components": 0
+    },
+    "rows_expected_and_accepted": 561407
+  },
+  "candidate_result_sha256": "be8a06a312c42c63079c96919a6c5417c0024922fb9b8a1f45f9266ad5a48686",
+  "candidate_status": "CANDIDATE_STEP_COMPLETE",
+  "candidate_steps_completed": 1,
+  "control_result_sha256": "bb5a718a1e72373ba85bc65ff141057f560ccadfdf0d53056bdc1623d9c6ac86",
+  "experiment_valid": {
+    "active_input_identity_complete": true,
+    "actual_proc_grid": "1x1",
+    "exit_code": 0,
+    "experiment_valid": true,
+    "invalid_reasons": [],
+    "model_completed": true,
+    "requested_proc_grid": "1x1"
+  },
+  "external_calls": {
+    "host_step": "one; includes the two internal microphysics wrapper entries shown by RSL",
+    "optimizer_calls": 0,
+    "rttov_calls": 0,
+    "standalone_kdm_calls": 0
+  },
+  "host_runner_returncode": 0,
+  "loaded_experimental_dso": [
+    {
+      "exists": true,
+      "loader_line": "dyld[7390]: <824FB9F2-EEFE-37D0-A02C-B2BBE359F51A> PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/execution/lib/libkdm6_c.2.0.0.dylib",
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/execution/lib/libkdm6_c.2.0.0.dylib",
+      "sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63"
+    }
+  ],
+  "namelist_gate": {
+    "expected_values": {
+      "bl_pbl_physics": "11",
+      "cu_physics": "37",
+      "mp_physics": "137",
+      "no_mp_heating": "0",
+      "ra_lw_physics": "4",
+      "ra_sw_physics": "4",
+      "radt": "0.33333333333333331",
+      "sf_surface_physics": "2",
+      "use_q_diabatic": "0",
+      "use_theta_m": "1"
+    },
+    "mismatches": {},
+    "passed": true
+  },
+  "output": {
+    "full_domain_dimensions": [
+      234,
+      282,
+      39
+    ],
+    "itimestep": 3,
+    "serialized_variable_count": 652,
+    "sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+    "time": "2025-07-19_00:01:00"
+  },
+  "paired_field_difference_summary_included": false,
+  "plan_sha256": "cde3f2ab128b4a9771de6dcf575ccf0f91222931f5c442607de8e30198116e5f",
+  "ready_gate": {
+    "candidate_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "control_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "mismatches": 0,
+    "numeric_elements_compared": 322426586,
+    "passed": null,
+    "raw_bitwise_equal": true,
+    "variables": null
+  },
+  "runtime_selectors": {
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure"
+  },
+  "schema": "kdm6.native_full_physics_analysis_candidate_runtime_audit.v1",
+  "scope_note": "Execution and protocol facts only. The separate paired-response numerical summary is omitted pending its field audit."
+}

@@ -5,16 +5,12 @@ container. It is not WRF and its outputs are not native-model evidence.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import json
 from dataclasses import replace
 import os
 from pathlib import Path
-import shutil
 import struct
-import sys
 import textwrap
-import time
 
 import netCDF4 as nc
 import numpy as np
@@ -32,7 +28,7 @@ from harness.native_live_stepper import (
 )
 from harness.native_step_control import HeatingUpdate
 from harness.native_step_control import StepReady
-from harness.native_analysis_control import AnalysisUpdate, apply_pair
+from harness.native_analysis_control import AnalysisUpdate
 from harness.native_analysis_increment import NativeAnalysisIncrement
 
 
@@ -164,7 +160,8 @@ def _fake_runner_source():
         nsteps = seconds // 20
         mode = os.environ.get('FAKE_MODE', 'ok')
         family = os.environ.get('KDM6AD_STEP_CONTROL_FAMILY', 'H_RATE')
-        cold = os.environ.get('KDM6AD_STEP_CONTROL_CAPTURE_INITIAL') == '1'
+        capture_ready = os.environ.get('KDM6AD_STEP_CONTROL_CAPTURE_INITIAL') == '1'
+        cold = (case / 'wrfinput_d01').is_file()
         root = Path(os.environ['KDM6AD_STEP_CONTROL_ROOT'])
         src = case / 'wrfinput_d01' if cold else next(case.glob('checkpoint_input_*'))
         with nc.Dataset(src) as ds:
@@ -184,6 +181,15 @@ def _fake_runner_source():
                 ds.createVariable('QNCCN', 'f4', ds['QVAPOR'].dimensions)[:] = np.ones(shape, np.float32)
                 ds.createVariable('SYNTHETIC_MEMORY', 'i8', ('Time',))[:] = [2**53 + 17]
                 ds.setncattr('PHYSICS_CONTEXT', 'synthetic cold startup only')
+            src = startup
+        elif capture_ready:
+            startup = case / ('wrfrst_d01_' + stamp)
+            shutil.copy2(src, startup)
+            with nc.Dataset(startup, 'r+') as ds:
+                ds['THM_2'][0, 0, 0, 0] += np.float32(0.5)
+                ds['H_DIABATIC'][:] += np.float32(2.0)
+                if mode == 'ready_structure_mismatch':
+                    ds.createVariable('UNEXPECTED_STATE', 'i4', ('Time',))[:] = [1]
             src = startup
         if mode == 'exit_before_ready':
             raise SystemExit(7)
@@ -324,7 +330,7 @@ def make_stepper(tmp_path, monkeypatch):
 
     def build(*, mode="ok", steps=2, h_value=1.0, timestep=6,
               stepra=1, radiation_every_step=True, control_family="H_RATE",
-              include_thm2=True):
+              include_thm2=True, capture_ready_checkpoint=False):
         state_path = tmp_path / f"input_{mode}_{steps}.nc"
         _restart(state_path, h_value=h_value, timestep=timestep, stepra=stepra,
                  include_thm2=include_thm2)
@@ -350,7 +356,8 @@ def make_stepper(tmp_path, monkeypatch):
         return NativeLiveStepper(initial=initial, external=ext, executable=pins[0],
             library=pins[1], runner=pins[2], work_root=tmp_path / "work",
             steps=steps, radiation_every_step=radiation_every_step,
-            control_family=control_family, timeout_seconds=3)
+            control_family=control_family, capture_ready_checkpoint=capture_ready_checkpoint,
+            timeout_seconds=3)
     return build
 
 
@@ -909,3 +916,46 @@ def test_proposal_exception_closes_process_before_another_command(make_stepper):
     assert stepper._closed
     assert stepper._record["state_carry_status"] == "rejected_or_failed"
     assert stepper._record["status"] == "failed"
+
+
+def test_restart_ready_capture_uses_actual_state_and_refuses_original_binding(make_stepper):
+    stepper = make_stepper(steps=1, control_family="ANALYSIS_TQ", capture_ready_checkpoint=True)
+    origin = stepper.origin
+    stale = _increment(origin)
+    with stepper:
+        ready = stepper.current.checkpoint
+        assert ready.itimestep == origin.itimestep == 6
+        assert ready.time == origin.time == T0
+        assert ready.file.sha256 != origin.file.sha256
+        assert stepper.base.reference is ready
+        assert stepper.initial is ready
+        with nc.Dataset(origin.file.path) as old, nc.Dataset(ready.file.path) as actual:
+            assert float(old["THM_2"][0, 0, 0, 0]) == 300.0
+            assert float(actual["THM_2"][0, 0, 0, 0]) == 300.5
+            assert float(actual["H_DIABATIC"][0, 0, 0, 0]) == 3.0
+        proof = stepper._record["startup_origin_comparison"]
+        assert proof["raw_bitwise_equal"] is False
+        assert proof["numeric_element_mismatches"] == 9
+        with pytest.raises(ValueError, match="time/geometry/background"):
+            stepper.advance(stepper.current, stale)
+        after = stepper.advance(stepper.current, _increment(ready))
+        assert after.checkpoint.time == T1
+        assert after.checkpoint.itimestep == 7
+        with nc.Dataset(after.checkpoint.file.path) as ds:
+            assert float(ds["THM_2"][0, 0, 0, 0]) == 300.875
+    assert stepper._record["initial_sha256"] == origin.file.sha256
+    assert stepper._record["working_initial_sha256"] == ready.file.sha256
+    origin.file.verify()
+
+
+def test_restart_ready_capture_refuses_structural_mismatch_before_control(make_stepper):
+    stepper = make_stepper(steps=1, control_family="ANALYSIS_TQ",
+                           capture_ready_checkpoint=True, mode="ready_structure_mismatch")
+    with pytest.raises(ValueError, match="ready checkpoint structure"):
+        with stepper:
+            pytest.fail("incompatible ready state must be refused before control")
+    assert stepper._record["status"] == "failed"
+    assert not list(stepper.control_root.glob("command_*.txt"))
+    report = json.loads((stepper.case / "startup_origin_comparison.json").read_text())
+    assert report["extra_variables"] == ["UNEXPECTED_STATE"]
+    stepper.origin.file.verify()

@@ -1,0 +1,64 @@
+{
+  "analysis_binding": {
+    "all_noop": false,
+    "background_arrays_read_once": [
+      "THM_2",
+      "QVAPOR"
+    ],
+    "background_checkpoint_id": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "background_variable_read_counts": {
+      "QVAPOR": 1,
+      "THM_2": 1
+    },
+    "delta_qv_sha256": "93d7e8899d6e77e00e10cafcb3a1ee1ffda0ffcb0d6d7e0ff5dd3bcdb9513553",
+    "delta_theta_m_sha256": "d1483342ba7b9e05e8cfccb794a3e9156962ff61ed7b7fd000101c9eee6f5904",
+    "effective_counts": {
+      "applied_components": 855443,
+      "applied_points": 561407,
+      "empty_points": 2012125,
+      "noop_points": 0,
+      "requested_nonzero_components": 855443,
+      "requested_points": 561407,
+      "zero_effect_components": 0
+    },
+    "effective_delta_qv_sha256": "93d7e8899d6e77e00e10cafcb3a1ee1ffda0ffcb0d6d7e0ff5dd3bcdb9513553",
+    "effective_delta_theta_m_sha256": "d1483342ba7b9e05e8cfccb794a3e9156962ff61ed7b7fd000101c9eee6f5904",
+    "effective_qv_sha256": "4157f9b150d6082299d288ec92d599f5447a76a986afb0a6064dc715ac0a1948",
+    "effective_theta_m_sha256": "794c1f8f7d21d3c07b7c0569916e9d03faf4943f82c3271a380f84695273fbc8",
+    "geometry_id": "fae3092edfcc74862ba3777e461909d5578e2bf9614c392ebe64e5ec89d403b1",
+    "model_valid_time": "2025-07-19_00:00:40",
+    "native_layout": "i,k,j",
+    "no_applied_update": false,
+    "per_point_netcdf_reads": 0,
+    "posterior_checkpoint_id": "PR448 restricted accepted candidate; alpha=1.0"
+  },
+  "analysis_wire_rows": 561407,
+  "candidate_prepare_counts": {
+    "applied_components": 855443,
+    "applied_points": 561407,
+    "empty_points": 894114,
+    "noop_points": 1118011,
+    "requested_nonzero_components": 3358836,
+    "requested_points": 1679418,
+    "zero_effect_components": 2503393
+  },
+  "controller_sha256": "92c81287eac3fb99e5ed1bdcb50e2b24feb44ad0c4c24bfc92ca9c91f5acd4a5",
+  "created_at_utc": "2026-10-25T11:39:48.747720+00:00",
+  "excluded_private_payload": "large embedded live_session_record and raw model/session data omitted; source hash pins the original receipt",
+  "native_host_steps_completed": 1,
+  "output_checkpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+  "output_itimestep": 3,
+  "output_time": "2025-07-19_00:01:00",
+  "plan_sha256": "cde3f2ab128b4a9771de6dcf575ccf0f91222931f5c442607de8e30198116e5f",
+  "preflight_checks": {
+    "candidate_npz_sha256": "891cc2dd0e8d32bd878d5fa4f1e085fab495fd8fccf8fc2f02b62e57b418b5f5",
+    "control_ready_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "control_result_status": "CONTROL_STEP_COMPLETE",
+    "controller_sha256": "92c81287eac3fb99e5ed1bdcb50e2b24feb44ad0c4c24bfc92ca9c91f5acd4a5",
+    "origin_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "runtime_asset_count": 79,
+    "source_pin_count": 7
+  },
+  "schema": "kdm6.native_full_physics_analysis_candidate_result.v1",
+  "status": "CANDIDATE_STEP_COMPLETE"
+}

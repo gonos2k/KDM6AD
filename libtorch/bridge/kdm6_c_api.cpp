@@ -356,6 +356,170 @@ extern "C" int kdm6_step_c(
     }
 }
 
+#ifdef KDM6_ENABLE_NATIVE_FP64_VALUE_BRIDGE
+// Explicit experimental value bridge. The operational entry above is unchanged.
+// See docs/NATIVE_FP64_VALUE_BRIDGE.md; this is not an extension of packed AD.
+extern "C" int kdm6_native_fp64_value_c(
+    const float* th, const float* qv, const float* qc, const float* qr,
+    const float* qi, const float* qs, const float* qg,
+    const float* nccn, const float* nc, const float* ni, const float* nr,
+    const float* bg,
+    const float* rho, const float* pii, const float* p, const float* delz,
+    int im, int kme, int jme, double dt,
+    int param_grad_flags, int value_only,
+    float* th_out, float* qv_out, float* qc_out, float* qr_out,
+    float* qi_out, float* qs_out, float* qg_out,
+    float* nccn_out, float* nc_out, float* ni_out, float* nr_out,
+    float* bg_out,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    float* rain_increment,
+    float* snow_increment,
+    float* graupel_increment,
+    float* rhog_out
+) {
+    // Defensive ABI: guarantee the output handle is NULL on EVERY error path, so a caller
+    // that forgets to check the return code never reads an uninitialized handle.
+    if (handle) *handle = nullptr;
+    if (im <= 0 || kme <= 0 || jme <= 0 ||
+        invalid_fortran_shape(im, kme, jme)) return KDM6_ERR_INVALID_DIM;
+    // This separate experimental entry is forward-only. No AD handle or
+    // quantization derivative is provided, including when value_only is zero.
+    if (value_only != 1) return KDM6_ERR_INVALID_ARG;
+    // Note: `xland` deliberately excluded from null check — it's optional.
+    if (any_null({th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg,
+                  rho, pii, p, delz,
+                  th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out,
+                  nccn_out, nc_out, ni_out, nr_out, bg_out, handle})) {
+        return KDM6_ERR_NULL_POINTER;
+    }
+    // param_grad_flags is RESERVED (see kdm6_c_api.h): physics-parameter grads are
+    // not wired into the forward graph (kdm6_fn uses baked-in constants), so a
+    // non-zero flag would silently have no effect. Reject it loudly instead.
+    if (param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+    // Match the public Python boundary: dt may be non-positive (the runtime's
+    // documented no-op), but NaN/Inf is outside the scalar contract. ncmin is a
+    // non-negative regime floor; reject malformed values before any tensor work.
+    if (invalid_operational_dt(dt) || invalid_operational_ncmin(ncmin_land) ||
+        invalid_operational_ncmin(ncmin_sea))
+        return KDM6_ERR_INVALID_ARG;
+
+    // RAII: restore the caller's (Fortran host) FP env on every return path.
+    // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
+    // verified a no-op on this build (ARM FPCR unchanged), kept to insulate the host dynamics.
+    FpEnvGuard kdm6_fpenv_guard;
+
+    // Fail-closed thread fence (PR1-A): single-thread pinning is a precondition
+    // for bitwise determinism. Refuse BEFORE any tensor creation — the handle is
+    // already NULL (top of function) and no output buffer has been written yet.
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
+
+    try {
+        kdm6::FortranArrayDescriptor desc{
+            th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg, im, kme, jme};
+        // Decode REAL4 storage first; never reinterpret a float buffer as double.
+        auto state32 = kdm6::from_fortran_arrays(desc, /*requires_grad=*/false);
+        auto state_in = kdm6::map_state(state32, [](const torch::Tensor& value) {
+            return value.to(torch::kFloat64);
+        });
+
+        auto forcing = kdm6::forcing_from_fortran_arrays(rho, pii, p, delz, im, kme, jme);
+        forcing.rho = forcing.rho.to(torch::kFloat64);
+        forcing.pii = forcing.pii.to(torch::kFloat64);
+        forcing.p = forcing.p.to(torch::kFloat64);
+        forcing.delz = forcing.delz.to(torch::kFloat64);
+
+        auto params = kdm6::make_parameters(param_grad_flags);
+
+        // Optional xland → Tensor conversion (state.cpp layout convention):
+        // Fortran xland(im, jme) is column-major float*; C-order view is
+        // (jme, im); permute({1, 0}) gives (im, jme); reshape to flat
+        // (im*jme,) batch matches state batch index = i*jme + j.
+        c10::optional<torch::Tensor> xland_t = c10::nullopt;
+        if (xland != nullptr) {
+            auto opts = torch::TensorOptions().dtype(torch::kFloat32);
+            auto view2d = torch::from_blob(const_cast<float*>(xland),
+                                           {jme, im}, opts)
+                              .permute({1, 0})
+                              .contiguous();
+            const int64_t ncol = static_cast<int64_t>(im) *
+                                 static_cast<int64_t>(jme);
+            xland_t = view2d.reshape({ncol});
+        }
+
+        auto result = kdm6::kdm6_step(state_in, forcing, params, dt, value_only != 0,
+                                      xland_t, ncmin_land, ncmin_sea);
+
+        // Value-only output admission before any REAL4 buffer is written.
+        // The existing FP64 physical map is unchanged; overflow at writeback
+        // is invalid rather than an implicit clipping/repair operation.
+        auto require_finite_real4 = [](const torch::Tensor& value) {
+            TORCH_CHECK(torch::isfinite(value).all().item<bool>() &&
+                        torch::isfinite(value.to(torch::kFloat32)).all().item<bool>(),
+                        "native FP64 value bridge: nonfinite or unrepresentable REAL4 output");
+        };
+        for (const auto* field : result.state_out.fields()) require_finite_real4(*field);
+        require_finite_real4(result.rain_increment);
+        require_finite_real4(result.snow_increment);
+        require_finite_real4(result.graupel_increment);
+        if (result.rhog.defined()) require_finite_real4(result.rhog);
+
+        kdm6::to_fortran_arrays(result.state_out, im, jme,
+                                th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out,
+                                nccn_out, nc_out, ni_out, nr_out, bg_out);
+
+        // diag_rhog/RHOPO3D — graupel density from the last ProgB (optional out;
+        // NULL → discard). Same (im, kme, jme) column-major layout as bg_out.
+        // intent(out) contract: when rhog_out is supplied it is ALWAYS written —
+        // zeros if the result tensor is (defensively) undefined — so the Fortran
+        // caller never copies uninitialized memory into diag_rhog.
+        if (rhog_out != nullptr) {
+            if (result.rhog.defined()) {
+                kdm6::copy_back_to_fortran(result.rhog, im, jme, rhog_out);
+            } else {
+                const size_t n_rhog = static_cast<size_t>(im) * kme * jme;
+                for (size_t idx = 0; idx < n_rhog; ++idx) rhog_out[idx] = 0.0f;
+            }
+        }
+
+        // Copy-back sedimentation surface increments — (im*jme,) Tensor →
+        // Fortran column-major float*(im, jme). Reuses the same (im, jme) ↔
+        // batch-flat layout convention as xland staging (state.cpp:67-72):
+        //   batch index B = i*jme + j; Fortran memory = (i, j) column-major.
+        // So tensor[B] at index i*jme+j maps to fortran[i + im*j].
+        auto copy_increment = [im, jme](const torch::Tensor& inc, float* dst) {
+            if (dst == nullptr) return;
+            auto inc_cpu = inc.contiguous().to(torch::kCPU, torch::kFloat32);
+            auto inc_2d = inc_cpu.reshape({im, jme}); // (im, jme) C-order
+            const float* src = inc_2d.data_ptr<float>();
+            // Transpose to Fortran (im, jme) column-major: dst[i + im*j] = src[i*jme + j]
+            for (int i = 0; i < im; ++i) {
+                for (int j = 0; j < jme; ++j) {
+                    dst[i + im * j] = src[i * jme + j];
+                }
+            }
+        };
+        copy_increment(result.rain_increment,    rain_increment);
+        copy_increment(result.snow_increment,    snow_increment);
+        copy_increment(result.graupel_increment, graupel_increment);
+
+        *handle = nullptr;  // This entry never creates a derivative handle.
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_native_fp64_value_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) {
+        std::fprintf(stderr, "kdm6_native_fp64_value_c: unknown non-std exception\n");
+        return KDM6_ERR_INTERNAL;
+    }
+}
+#endif
+
+
 // ── PR2: stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ──────────────────────────
 // v2 is ADDITIVE: kdm6_step_c (above) is untouched. kdm6_step_v2_c reads the
 // options struct and calls the SAME internal physics core (kdm6::kdm6_step),

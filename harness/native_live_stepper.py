@@ -131,6 +131,7 @@ class NativeLiveStepper:
                  work_root: str | Path, steps: int, dt_seconds: int = 20,
                  trace_column: tuple[int, int] | None = None,
                  radiation_every_step: bool = True, control_family: str = 'H_RATE',
+                 capture_ready_checkpoint: bool = False,
                  timeout_seconds: float = 3600):
         if type(steps) is not int or not 1 <= steps <= 1_000_000:
             raise ValueError('steps must be a positive bounded integer')
@@ -138,7 +139,10 @@ class NativeLiveStepper:
             raise ValueError('live native pilot currently requires fixed dt=20 s')
         if type(radiation_every_step) is not bool:
             raise ValueError('radiation_every_step must be an explicit Boolean')
+        if type(capture_ready_checkpoint) is not bool:
+            raise ValueError('capture_ready_checkpoint must be an explicit Boolean')
         self.radiation_every_step = radiation_every_step
+        self.capture_ready_checkpoint = capture_ready_checkpoint
         external.verify()
         if any(key.startswith('KDM6AD_STEP_CONTROL_') for key, _ in external.environment):
             raise ValueError('step-control environment is owned by the live session')
@@ -186,6 +190,7 @@ class NativeLiveStepper:
             'control_family': control_family, 'initial_checkpoint': str(initial.file.path),
             'initial_sha256': initial.file.sha256, 'initial_time': initial.time,
             'initial_itimestep': initial.itimestep, 'dt_seconds': dt_seconds,
+            'capture_ready_checkpoint': capture_ready_checkpoint,
             'radiation_cadence': 'every_model_step' if radiation_every_step else 'prescribed_template',
             'radt_minutes': dt_seconds / 60 if radiation_every_step else None,
             'steps': steps, 'controls': [], 'state_carry_status': 'not_run',
@@ -260,7 +265,10 @@ class NativeLiveStepper:
             env = dict(self.external.environment)
             env['KDM6AD_STEP_CONTROL_ROOT'] = str(self.control_root)
             env['KDM6AD_STEP_CONTROL_FAMILY'] = self.control_family
-            if self.cold_start:
+            if self.cold_start or self.capture_ready_checkpoint:
+                capture_path = self.case / ('wrfrst_d01_' + self.origin.time)
+                if capture_path.exists() or capture_path.is_symlink():
+                    raise FileExistsError('ready checkpoint capture requires a fresh path')
                 env['KDM6AD_STEP_CONTROL_CAPTURE_INITIAL'] = '1'
             if self.trace_column:
                 env.update(KDM6AD_NATIVE_TRACE_FILE=str(self.case / 'native_trace.hex'),
@@ -282,9 +290,31 @@ class NativeLiveStepper:
             self._record.update(status='running', runner_pid=self.process.pid)
             self._save()
             ready = self._await_ready(0)
-            if self.cold_start:
+            if self.cold_start or self.capture_ready_checkpoint:
                 startup = NativeCheckpoint.capture(self.case / ('wrfrst_d01_' + self.origin.time),
-                    expected_time=self.origin.time, expected_itimestep=0, receipt=self.case / 'live_session.json')
+                    expected_time=self.origin.time, expected_itimestep=self.origin.itimestep,
+                    receipt=self.case / 'live_session.json')
+                if not self.cold_start:
+                    import netCDF4
+                    from harness.native_replay_compare import compare_frames
+                    with netCDF4.Dataset(self.origin.file.path) as old, netCDF4.Dataset(startup.file.path) as ready_ds:
+                        old.set_auto_maskandscale(False)
+                        ready_ds.set_auto_maskandscale(False)
+                        comparison = compare_frames(old, ready_ds, 0, 0, self.origin.time)
+                    comparison_path = self.case / 'startup_origin_comparison.json'
+                    with comparison_path.open('x') as stream:
+                        json.dump(comparison, stream, indent=2, allow_nan=False)
+                        stream.write('\n')
+                    self._record['startup_origin_comparison'] = {
+                        'path': str(comparison_path),
+                        'sha256': file_sha256(comparison_path),
+                        'raw_bitwise_equal': comparison['raw_bitwise_equal'],
+                        'numeric_element_mismatches': comparison['numeric_element_mismatches'],
+                        'scope': 'all serialized fields; no claim of complete hidden host state',
+                    }
+                    if startup.schema != self.origin.schema:
+                        self._save()
+                        raise ValueError('ready checkpoint structure differs from the origin; see startup_origin_comparison.json')
                 self.base = NativeHostTransition(reference=startup, executable=self.executable,
                     library=self.library, runner=self.runner, work_root=self.case / 'validation',
                     dt_seconds=self.dt_seconds, trace_column=self.trace_column, timeout_seconds=self.timeout_seconds)
@@ -292,7 +322,10 @@ class NativeLiveStepper:
                     self._require_radiation_step(startup)
                 self.initial = startup
                 self._record.update(startup_checkpoint=str(startup.file.path), startup_sha256=startup.file.sha256,
-                    startup_variable_count=len(startup.fields))
+                    startup_variable_count=len(startup.fields),
+                    startup_scope='actual post-boundary pre-solve state; source input remains separately pinned',
+                    startup_itimestep=startup.itimestep,
+                    working_initial_sha256=startup.file.sha256)
                 self._save()
             self.current = LiveState(self.initial, self.session, 0, ready)
             return self

@@ -1,0 +1,442 @@
+{
+  "schema": "kdm6.native_full_physics_forward_interim_snapshot.v1",
+  "status": "CONTROL_AND_CANDIDATE_HOST_STEPS_COMPLETE; INDEPENDENT_SAVED_FIELD_ARITHMETIC_PASS; CANDIDATE_RTTOV_AND_DOMAIN_PENDING",
+  "snapshot_cutoff_utc": "2026-10-25T13:23:54Z",
+  "as_of": "2026-10-25",
+  "final_publication": false,
+  "scope": {
+    "control_and_candidate_host_steps": 2,
+    "same_post_LBC_ready_state": true,
+    "candidate_saved_field_arithmetic_review_complete": true,
+    "candidate_physical_interpretation_complete": false,
+    "candidate_RTTOV_complete": false,
+    "paired_observation_cost_complete": false,
+    "full_domain_C7_complete": false,
+    "C4_effective_direction_calls": 0,
+    "fixed_prior_optimizer_iterations": 0,
+    "full_host_AD_implemented": false,
+    "cloud_efficacy_claimed": false
+  },
+  "domain": {
+    "nx": 234,
+    "ny": 282,
+    "levels": 39,
+    "columns": 65988,
+    "cells_per_mass_level_field": 2573532,
+    "direct_MP_interior_columns": 64960,
+    "outer_ring_columns_in_full_host_output": 1028
+  },
+  "paired_host_values": {
+    "control_status": "CONTROL_STEP_COMPLETE",
+    "candidate_status": "CANDIDATE_STEP_COMPLETE",
+    "host_steps_each": 1,
+    "ready_time": "2025-07-19_00:00:40",
+    "ready_itimestep": 2,
+    "ready_match_passed": true,
+    "ready_variables_compared": 652,
+    "ready_numeric_elements_compared": 322426586,
+    "ready_mismatches": 0,
+    "shared_ready_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "candidate_applied_rows": 561407,
+    "candidate_changed_components": 855443,
+    "candidate_remaining_requested_noops": 0,
+    "candidate_empty_points": 2012125,
+    "candidate_output_time": "2025-07-19_00:01:00",
+    "candidate_output_itimestep": 3,
+    "candidate_output_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+    "paired_summary_sha256": "5ca7bfa824c2cb952117cda2c2d3844d130080e5b1a85174bb060778e9d2d742",
+    "independent_pair_audit_status": "SAVED_PAIR_ARITHMETIC_REVIEW_PASS",
+    "independent_pair_audit_sha256": "645d25695454d586437c684fdf3a3c11e9f30aee6190501ad71db7239610119d",
+    "raw_value_differences": 26454541,
+    "numeric_elements_compared": 322426586,
+    "selected_field_metrics_reproduced": 13,
+    "paired_saved_field_arithmetic_summary_included": true,
+    "physical_T_or_process_cause_claimed": false,
+    "candidate_RTTOV_complete": false,
+    "candidate_J_host_cost_complete": false
+  },
+  "analysis_input_water_diagnostic": {
+    "scope": "READY40 analysis-input-only; not a closed full-step water budget",
+    "signed_added_water_kg": 25669966.556135986,
+    "rho_source": "REAL4(1 / REAL4(AL + ALB)) in recorded operation order, using READY40 AL/ALB; source contract is WRF inverse total dry density",
+    "DELZ_source": "module_big_step_utilities_em.F computes Z_AT_W=(PHB+PH_2)/g then DZ8W=Z_AT_W(k+1)-Z_AT_W(k); reproduced each REAL4 operation at the READY boundary",
+    "AREA2D_source": "READY40 AREA2D field",
+    "independently_reproduced": true
+  },
+  "observation_pilot": {
+    "status": "PILOT_PASS_NONZERO_FRESH_SUPPORT",
+    "control_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "chunks": [
+      0,
+      34,
+      40,
+      128
+    ],
+    "source_columns": 1988,
+    "direct_RTTOV_calls": 4,
+    "fresh_M_host0_channel_cells": 8218,
+    "previous_microphysics_support_reused": false,
+    "candidate_RTTOV_calls": 0,
+    "remaining_observation_chunks_in_progress": 125
+  },
+  "control_endpoint_tendency_audit_v2": {
+    "status": "COMPLETED",
+    "audit_sha256": "68ffd56ce031efba2052bb23dbcfda2596a4ccd91b2205f2ba453a4afedd7ece",
+    "producer_sha256": "063af5168c28a21e175ed7875bcb7dcda3c570bddd05ee2d62deef7e98aaed9b",
+    "summary_sha256": "2eb01f33f26de5c8dbb395051d16ff1dd8c63453ca832c7b903c5e8cc666db6e",
+    "reproduces_v1_metrics": true,
+    "field_rates": {
+      "H_DIABATIC": {
+        "state_units": "K s-1",
+        "endpoint_rate_units": "K s-2",
+        "mean_over_dt": -2.4407839545762382e-06,
+        "range_over_dt": [
+          -0.006549170264042914,
+          0.005251394570495904
+        ],
+        "nonzero_cells": 636751
+      },
+      "QCLOUD": {
+        "state_units": "kg kg-1",
+        "endpoint_rate_units": "kg kg-1 s-1",
+        "mean_over_dt": 8.180660737955487e-09,
+        "range_over_dt": [
+          -4.0390822687186303e-05,
+          5.187603528611362e-05
+        ],
+        "nonzero_cells": 169901
+      },
+      "QICE": {
+        "state_units": "kg kg-1",
+        "endpoint_rate_units": "kg kg-1 s-1",
+        "mean_over_dt": 1.702468553663149e-09,
+        "range_over_dt": [
+          -2.7110057999379933e-05,
+          4.062011721543968e-05
+        ],
+        "nonzero_cells": 122845
+      },
+      "QSNOW": {
+        "state_units": "kg kg-1",
+        "endpoint_rate_units": "kg kg-1 s-1",
+        "mean_over_dt": -1.5022322659081072e-09,
+        "range_over_dt": [
+          -1.3780617155134679e-05,
+          4.2504153680056336e-05
+        ],
+        "nonzero_cells": 154537
+      },
+      "QVAPOR": {
+        "state_units": "kg kg-1",
+        "endpoint_rate_units": "kg kg-1 s-1",
+        "mean_over_dt": 1.0127266958200947e-08,
+        "range_over_dt": [
+          -5.059763789176941e-05,
+          1.7579924315214156e-05
+        ],
+        "nonzero_cells": 2570389
+      },
+      "THM_2": {
+        "state_units": "K",
+        "endpoint_rate_units": "K s-1",
+        "mean_over_dt": -5.993844588652548e-05,
+        "range_over_dt": [
+          -0.1240203857421875,
+          0.224591064453125
+        ],
+        "nonzero_cells": 2569487
+      }
+    },
+    "actual_T_reconstructed": false,
+    "H_DIABATIC_delta_over_dt_units": "K s-2",
+    "physical_budget_or_conservation_certified": false,
+    "candidate_endpoint_audited": false
+  },
+  "fp64_bridge": {
+    "KDM_symbol": "kdm6_native_fp64_value_c",
+    "operational_symbol": "kdm6_step_c",
+    "default_exports": 14,
+    "experimental_exports": 15,
+    "bridge_source_DSO_sha256": "6524bcfedbf75b2ebfc95e9603dd2cd702be3f213d2759bfaa571d1be5121d4e",
+    "host_loaded_DSO_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+    "host_executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0",
+    "changed_archive_members": [
+      "kdm6_iso_c.o"
+    ],
+    "unchanged_archive_members": 376,
+    "operational_install_modified": false
+  },
+  "C_API_boundary_gate_v2": {
+    "status": "ARITHMETIC_AND_ABI_CHECKS_PASS; BLOCK34_FP_ENV_CAPTURE_UNAVAILABLE",
+    "input_cases": [
+      "block00034",
+      "block00040",
+      "block34_nonsquare_2x4"
+    ],
+    "accounting": {
+      "RTTOV_calls": 0,
+      "direct_runtime_reference_forwards_preexisting": 3,
+      "fresh_CAPI_forward_requests_completed": 12,
+      "fresh_CAPI_refusal_entries": 9,
+      "fresh_dt0_identity_entries": 4,
+      "global_CAPI_entry_calls": 32,
+      "global_positive_dt_forward_requests_including_preexisting_references": 22,
+      "host_steps": 0,
+      "optimizer_calls": 0,
+      "preentry_ctypes_argument_error_CAPI_calls": 0,
+      "preentry_ctypes_argument_error_entries": 1,
+      "prior_CAPI_forward_requests_spent": 7,
+      "prior_CAPI_forwards_with_saved_outputs": 6,
+      "prior_fp64_ad_call_status": "one prior API return had rc/output unavailable; counted as spent, not claimed successful"
+    },
+    "block34_FP_environment": "unavailable; not fully certified"
+  },
+  "executed_source_pins": {
+    "control_controller_sha256": "27014d50bb3646ff82175e72f985e160008309d13bb939edf30b0a633111efa7",
+    "control_plan_sha256": "fcde0e70a35bd0498b4a2fe836dc86a5a6822fc352b3d116dff77acfcfc4b041",
+    "control_namelist_sha256": "d8d4e869687059fe86c2a6d38e43f1189b053c3f32d0eeb0297524dc3e0b9358",
+    "candidate_controller_sha256": "92c81287eac3fb99e5ed1bdcb50e2b24feb44ad0c4c24bfc92ca9c91f5acd4a5",
+    "candidate_plan_sha256": "cde3f2ab128b4a9771de6dcf575ccf0f91222931f5c442607de8e30198116e5f",
+    "candidate_result_sha256": "be8a06a312c42c63079c96919a6c5417c0024922fb9b8a1f45f9266ad5a48686",
+    "candidate_ready_comparison_sha256": "e890897ccc28d5e9073871b26ba8da8eac3dca2580ebaafc6bf54a8b67ef5828",
+    "candidate_launch_receipt_sha256": "ce6e85b2a2ade3b302e5299d71a3dc2fb6b441ce57f86caa3569a3f40f7be3c2",
+    "candidate_runtime_audit_sha256": "6b63cbcd6db411b4b770b43b1452ac075fefb9167750499adc9f2ad775db2c9d",
+    "pilot_runner_sha256": "2c337fc2b484efd9565334e2731cde8b3a4e40322cf2e534b904712382dece7b",
+    "pilot_attempt_ledger_sha256": "d52305196f9a016180175596943d775e8343da99249eb39db4a6dfb2e20fd098",
+    "endpoint_audit_v2_source_hashes": {
+      "WRF_executable": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0",
+      "actual_qr_source": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+      "executed_KDM_DSO": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+      "execution_controller": "27014d50bb3646ff82175e72f985e160008309d13bb939edf30b0a633111efa7",
+      "fp64_boundary_gate": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+      "producer": "063af5168c28a21e175ed7875bcb7dcda3c570bddd05ee2d62deef7e98aaed9b"
+    },
+    "pair_summary_producer_sha256": "c3e018194a8f55f2c76759a1c4462d0298cbc7b3a63cebe51fbf58cf024e0dfa",
+    "independent_pair_audit_producer_sha256": "c1b88f8b8a5e6cb81fa665d461f1b0f998481a44d5c774443eccfa8d8beb729b",
+    "boundary_gate_producer_v7_sha256": "16d49ca76336483f02cc55c65b27b34947917373a9b0eb88c4119004d0a06685"
+  },
+  "current_public_sources": [
+    {
+      "path": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "bytes": 21341,
+      "sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "bytes": 15118,
+      "sha256": "6c9717d59b7d368f0f5a2079a4edea89188d43e4fdcd05b417414c09188a4e72",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "docs/NATIVE_FP64_VALUE_BRIDGE.md",
+      "bytes": 3514,
+      "sha256": "41040914bf5c8003c9ad45f5e3cf235f548d6bee42a4acd100b0c6f57ac445d7",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "libtorch/bridge/kdm6_c_api.cpp",
+      "bytes": 53706,
+      "sha256": "9f1780de844474de588cbe5bb174488676f69f5bf3a9db6ab864255809a1da2c",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "libtorch/bridge/kdm6_c_api.h",
+      "bytes": 25182,
+      "sha256": "de9ca99da4a77af741a875fd4c69de39c68525dbcd781e900144585bb1fd9481",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "harness/native_live_stepper.py",
+      "bytes": 37795,
+      "sha256": "05d99842d1deae976136ff879813180a79befeebf9894454d9f64f8018e2e01b",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "harness/native_checkpoint_observation.py",
+      "bytes": 20887,
+      "sha256": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "harness/native_fp64_value_only_boundary.py",
+      "bytes": 83154,
+      "sha256": "fa3f7646d36a12d918d18506a6bda5bae046962bd537a6548c4df91ae768a06b",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "harness/tests/test_native_checkpoint_observation.py",
+      "bytes": 4342,
+      "sha256": "a9d82e7ee9e41416d3a22c8494707ef99facfba576a11c21746358f36754825d",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    },
+    {
+      "path": "harness/tests/test_native_fp64_value_only_boundary.py",
+      "bytes": 12267,
+      "sha256": "ee315f3d1b6af52f07b005466844cb105043c628e136735fb363aefaf4500633",
+      "meaning": "current public worktree snapshot; executed versions are separately receipt-pinned"
+    }
+  ],
+  "redaction_and_limits": {
+    "copies": "Absolute private/local paths are redacted from receipt copies; original private source hashes are retained per artifact.",
+    "omitted": [
+      "full checkpoints/restarts",
+      "raw host streams",
+      "private executables/DSOs",
+      "large profile/RTTOV arrays",
+      "unreviewed paired_response_summary_v1"
+    ],
+    "scope": "Interim metadata packet verifies saved-field arithmetic, not actual temperature, closed budgets, candidate RTTOV/cost, full domain, or cloud efficacy."
+  },
+  "artifacts": [
+    {
+      "path": "REPORT.md",
+      "bytes": 8461,
+      "sha256": "24d7777be2530c495ade4931e3d9a0caa454a3876f2d8bd201aca93305ebe01b"
+    },
+    {
+      "path": "receipts/candidate_launch_receipt.json",
+      "bytes": 52975,
+      "sha256": "0974ff2e987030ba19b284efd392b02cf4f2106798067cb20167d2a2cd4424e5",
+      "original_private_source_sha256": "ce6e85b2a2ade3b302e5299d71a3dc2fb6b441ce57f86caa3569a3f40f7be3c2",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/candidate_ready_comparison.json",
+      "bytes": 483248,
+      "sha256": "e890897ccc28d5e9073871b26ba8da8eac3dca2580ebaafc6bf54a8b67ef5828",
+      "original_private_source_sha256": "e890897ccc28d5e9073871b26ba8da8eac3dca2580ebaafc6bf54a8b67ef5828",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/candidate_runtime_audit_v2_summary.json",
+      "bytes": 3824,
+      "sha256": "4f4dc80621e7f8be7718956e0c8a3fb0fd3f2728caf4f9e1c6efc34cd28b4bd6",
+      "original_private_source_sha256": "6b63cbcd6db411b4b770b43b1452ac075fefb9167750499adc9f2ad775db2c9d",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/candidate_step_summary.json",
+      "bytes": 2992,
+      "sha256": "a780d47395f1c26d761915e3631aa0402fc9532d0b351f325f9bb20d11c22ca8",
+      "original_private_source_sha256": "be8a06a312c42c63079c96919a6c5417c0024922fb9b8a1f45f9266ad5a48686",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/control_result.json",
+      "bytes": 13139,
+      "sha256": "14c045d1bc36875b6487cb842a27f70dcf0c38d9c9aaba578fc91da4818d399d",
+      "original_private_source_sha256": "bb5a718a1e72373ba85bc65ff141057f560ccadfdf0d53056bdc1623d9c6ac86",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/endpoint_tendency_audit.json",
+      "bytes": 13481,
+      "sha256": "78125ff608c8444883c86a31ddc32fee75523fe8752c6eb9657c098f82d44490",
+      "original_private_source_sha256": "74e85b71ae454ee800b3d31a9b939db8fa4aa074522804075965ccdcb8f834d0",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/endpoint_tendency_audit_v2.json",
+      "bytes": 11546,
+      "sha256": "bc7acc8e5f96241368ec0578fce1b08063d4349cedb0e2b6bde7a349a2878934",
+      "original_private_source_sha256": "68ffd56ce031efba2052bb23dbcfda2596a4ccd91b2205f2ba453a4afedd7ece",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/endpoint_tendency_audit_v2_receipt.json",
+      "bytes": 2588,
+      "sha256": "902add95c070db99e9b1af4f687e1676ccd72ea44541f8d71ac96fe52692cf13",
+      "original_private_source_sha256": "d5ed1b348cb5f7101d222c79c1cb655419f591c973f77c7fc8eb5a3b22ec9ee7",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/endpoint_tendency_summary.md",
+      "bytes": 819,
+      "sha256": "d69ed41ec68c4b17120ba1570ecf8698bb9e0cfee61f06db69352c647d9901dd",
+      "original_private_source_sha256": "29da6e9e2822d1d9e20941555841f39abd99ac597fd1e83524a5eb7b1e336a49",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained.",
+      "curation_note": "Public curated Markdown copy removes trailing hard-break spaces; original private summary bytes and hash are preserved."
+    },
+    {
+      "path": "receipts/endpoint_tendency_summary_v2.md",
+      "bytes": 445,
+      "sha256": "2eb01f33f26de5c8dbb395051d16ff1dd8c63453ca832c7b903c5e8cc666db6e",
+      "original_private_source_sha256": "2eb01f33f26de5c8dbb395051d16ff1dd8c63453ca832c7b903c5e8cc666db6e",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/fp64_boundary_gate_v2.json",
+      "bytes": 22656,
+      "sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+      "original_private_source_sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/fp64_bridge_build_receipt.json",
+      "bytes": 14113,
+      "sha256": "d82b77d41a1f143eb89b76a750d2a30e213734078356f2fc209907f7c91d1ce7",
+      "original_private_source_sha256": "5db21c0c17c305c455a30e23e4cf926bbb1f79854ed9ab34739f7a04ee7ed59a",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/full_state_summary.json",
+      "bytes": 13133,
+      "sha256": "142efacc82c3f15b690c23b28b834368657b1b0c16c41c6b911bb9b57febb07b",
+      "original_private_source_sha256": "eef293a2a5df513893f58b13fc04c373aaac5c79da23c62a7d9d46f51b8b4bb0",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/independent_pair_audit_result_v1.json",
+      "bytes": 2942,
+      "sha256": "1764f6a930d3bd5811f46a0c6ce82e06074873d2c4a914f4ad0086f71ef8e213",
+      "original_private_source_sha256": "645d25695454d586437c684fdf3a3c11e9f30aee6190501ad71db7239610119d",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/paired_response_summary_v2.json",
+      "bytes": 605963,
+      "sha256": "312400ed645503def9324b2ce2421deffe6baaf74c9524788cd4933e86eef4ce",
+      "original_private_source_sha256": "5ca7bfa824c2cb952117cda2c2d3844d130080e5b1a85174bb060778e9d2d742",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/pilot_audit.json",
+      "bytes": 13475,
+      "sha256": "09bb9567eb01548139539ecc59450c5e95ce77c0f139061cb39a26b3477c780e",
+      "original_private_source_sha256": "09bb9567eb01548139539ecc59450c5e95ce77c0f139061cb39a26b3477c780e",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/pilot_summary.json",
+      "bytes": 2071,
+      "sha256": "61c22e737ebef0239204327e90fafb340fb2897748591cdcbf23f99aa5d26d3d",
+      "original_private_source_sha256": "61c22e737ebef0239204327e90fafb340fb2897748591cdcbf23f99aa5d26d3d",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/private_iso_overlay_receipt.json",
+      "bytes": 1337,
+      "sha256": "9b28411ef4f54badb2b2dcf1814e52bab6ce9a1bc2338ba2a7c4eed8479480e0",
+      "original_private_source_sha256": "39f5fa1358481f0485852082ccba5286b8fd534e862f0dedcb3dbe20e9badbee",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/private_wrf_build_receipt.json",
+      "bytes": 135690,
+      "sha256": "ecacbde9ddd3aadc9e83f9faa878c0bd8019d98bd6b82a696f6087cb231bd5b6",
+      "original_private_source_sha256": "bf9b6715870f0016cfd830a80649845f3d9fd5908a16967d900847d5c2131249",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    },
+    {
+      "path": "receipts/ready_origin_comparison.json",
+      "bytes": 483058,
+      "sha256": "bbe50dc3c1f7df2c6d5368404c92509956b19921eba9170abe7ae4d32af10bef",
+      "original_private_source_sha256": "3ffb9788b00174b1677bd727c4762d1c3f072cb7ae1c9bdd74b84a5a8fa78873",
+      "note": "Redacted/curated metadata receipt; original private source SHA retained."
+    }
+  ],
+  "self_reference_note": "Hashes current REPORT.md and receipts/* but not this manifest. Interim snapshot only; not final full-domain publication.",
+  "artifact_count": 21,
+  "artifact_bytes": 1887956
+}

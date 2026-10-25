@@ -133,6 +133,37 @@ KDM6_C_API int kdm6_step_c(
     float* rhog_out
 );
 
+#ifdef KDM6_ENABLE_NATIVE_FP64_VALUE_BRIDGE
+/* Optional experimental native value adapter: REAL4 storage is decoded,
+ * widened exactly, evaluated by the FP64 kernel, then rounded to REAL4 once.
+ * Requires value_only=1 and param_grad_flags=0; *handle is always NULL.
+ * All forward state/precipitation/RHOG layouts match kdm6_step_c. No packed
+ * AD ABI, operational entry, or core ABI version is changed. It is available
+ * only in a separately admitted experimental build/export list and native
+ * ISO binding. See docs/NATIVE_FP64_VALUE_BRIDGE.md. */
+KDM6_C_API int kdm6_native_fp64_value_c(
+    const float* th, const float* qv, const float* qc, const float* qr,
+    const float* qi, const float* qs, const float* qg,
+    const float* nccn, const float* nc, const float* ni, const float* nr,
+    const float* bg,
+    const float* rho, const float* pii, const float* p, const float* delz,
+    int im, int kme, int jme, double dt,
+    int param_grad_flags, int value_only,
+    float* th_out, float* qv_out, float* qc_out, float* qr_out,
+    float* qi_out, float* qs_out, float* qg_out,
+    float* nccn_out, float* nc_out, float* ni_out, float* nr_out,
+    float* bg_out,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    float* rain_increment,
+    float* snow_increment,
+    float* graupel_increment,
+    float* rhog_out
+);
+#endif
+
 /* ══ Stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ═══════════════════════════════
  *
  * v1 kdm6_step_c grew by APPENDING trailing C parameters, which is not binary-

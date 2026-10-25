@@ -1,0 +1,440 @@
+{
+  "fields": {
+    "H_DIABATIC": {
+      "changed_elements": 636751,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.13098340528085828,
+      "output_max": 0.105027936398983,
+      "output_min": -0.029996270313858986,
+      "output_nonzero": 509129,
+      "output_sha256": "12ecc802e8d24c16192184d830369529baa317571f60c00a3853d86d7c1ac8d9",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.13494302332401276,
+      "ready_min": -0.018105875700712204,
+      "ready_nonzero": 579804,
+      "ready_sha256": "adf279207641e718f1a95c5dfb62e753a1d1f0f0e7335ddad5fbc3612cf6fa1b",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "P": {
+      "changed_elements": 2571605,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 2104.7650756835938,
+      "output_max": 2341.359375,
+      "output_min": -588.4815673828125,
+      "output_nonzero": 2573532,
+      "output_sha256": "b772f2caede3e754e16368f2b7a26dcd828469b3960372ed4ef15db98a4ed9ad",
+      "raw_bitwise_equal": false,
+      "ready_max": 2629.59033203125,
+      "ready_min": -976.16552734375,
+      "ready_nonzero": 2573532,
+      "ready_sha256": "9a2a97c6d173439d4ce543f054372867b7d9a63a5b6d0fe19a7f61b0219ec75c",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "PHB": {
+      "changed_elements": 0,
+      "dimensions": [
+        "Time",
+        "bottom_top_stag",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2639520,
+      "max_abs_change": 0.0,
+      "output_max": 195224.25,
+      "output_min": -143.42970275878906,
+      "output_nonzero": 2607699,
+      "output_sha256": "e47b96c1f1ad96fb47ff99d43db320fe3747111e1da4778d42bc035671557745",
+      "raw_bitwise_equal": true,
+      "ready_max": 195224.25,
+      "ready_min": -143.42970275878906,
+      "ready_nonzero": 2607699,
+      "ready_sha256": "e47b96c1f1ad96fb47ff99d43db320fe3747111e1da4778d42bc035671557745",
+      "shape": [
+        1,
+        40,
+        282,
+        234
+      ]
+    },
+    "QCLOUD": {
+      "changed_elements": 169901,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.0010375207057222724,
+      "output_max": 0.001132026081904769,
+      "output_min": 0.0,
+      "output_nonzero": 163271,
+      "output_sha256": "b365310934e8e8e64e24ffd1bb14ba8ce12b11a99586f52c9faad20629b2d05a",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.0013264836743474007,
+      "ready_min": 0.0,
+      "ready_nonzero": 160444,
+      "ready_sha256": "9480d7964e6b5adb1bf9a8da66f0a3ff03b7cd52152e3d9df25733d608ea704b",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QC_DIABATIC": {
+      "changed_elements": 744034,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 6.438070704462007e-05,
+      "output_max": 5.155959661351517e-05,
+      "output_min": -3.830089190159924e-05,
+      "output_nonzero": 719477,
+      "output_sha256": "2c6823dcc659351554844763ce33a0263f35a6153cd90de516169c16de3fc945",
+      "raw_bitwise_equal": false,
+      "ready_max": 6.632417353102937e-05,
+      "ready_min": -4.1605158912716433e-05,
+      "ready_nonzero": 719211,
+      "ready_sha256": "bbc025b692ee4c46e6492b22b7747df3022e45cc8167c14b6bffc51fe61e7527",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QGRAUP": {
+      "changed_elements": 19117,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.000172297227436502,
+      "output_max": 0.0003628050326369703,
+      "output_min": 0.0,
+      "output_nonzero": 18504,
+      "output_sha256": "ec6a0348eba294da755801ef1e2976309e4993eaa5be310236f66e4bc8a4c4a4",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.00036070530768483877,
+      "ready_min": 0.0,
+      "ready_nonzero": 17517,
+      "ready_sha256": "f75f5b1066173d84dc5eae01a7aaf8f6fb2291e742251343d26ac3c559401fc1",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QICE": {
+      "changed_elements": 122845,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.0008124023443087935,
+      "output_max": 0.0008124023443087935,
+      "output_min": 0.0,
+      "output_nonzero": 122590,
+      "output_sha256": "ab46528580cf7d081d67e8788665e6279e8feb5e4494c407d38a2f27aa01f80f",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.0007972390740178525,
+      "ready_min": 0.0,
+      "ready_nonzero": 113313,
+      "ready_sha256": "36fe7c31740922a44ebf8f7940c143c39f9ae1818b0dfb3c9442b6f3ed7f4e88",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QRAIN": {
+      "changed_elements": 100452,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.0022027467493899167,
+      "output_max": 0.0024685696698725224,
+      "output_min": 0.0,
+      "output_nonzero": 94494,
+      "output_sha256": "7ba11e0927b6d723b23824480a1267735eacec1e0a8b0df981067ad552213b13",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.0014440270606428385,
+      "ready_min": 0.0,
+      "ready_nonzero": 84732,
+      "ready_sha256": "ab992754049de7ee1c71bd8a85bdec9eeab4666bea0bb896c534053234c25519",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QSNOW": {
+      "changed_elements": 154537,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.0008500830736011267,
+      "output_max": 0.0043080528266727924,
+      "output_min": 0.0,
+      "output_nonzero": 152613,
+      "output_sha256": "835aff8da42dca2aa298976482c22448aeaeabe3a70abf705e0280a03a4e7753",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.004440776538103819,
+      "ready_min": 0.0,
+      "ready_nonzero": 111540,
+      "ready_sha256": "e94bfb803d9ac5829c3dc1ae36ffe10919099808a646f6ed0e19be5bc9b72a73",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QVAPOR": {
+      "changed_elements": 2570389,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.0010119527578353882,
+      "output_max": 0.023290622979402542,
+      "output_min": 0.0,
+      "output_nonzero": 2573531,
+      "output_sha256": "bf67d75dd4df66a834e9b62d6e7505c09c4703fb85fa39dfe10d95ccd1f98ab1",
+      "raw_bitwise_equal": false,
+      "ready_max": 0.02328752912580967,
+      "ready_min": 1.8103659726875776e-07,
+      "ready_nonzero": 2573532,
+      "ready_sha256": "6438d6ec3ed0b6980f641f03ea626b829c0fca85d177cafcae53828f0f4bffca",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "QV_DIABATIC": {
+      "changed_elements": 512952,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 6.438074774450797e-05,
+      "output_max": 1.5066936612129211e-05,
+      "output_min": -5.1559600251493976e-05,
+      "output_nonzero": 509129,
+      "output_sha256": "dc65ba2104a359299743c54cc62a680384440c7d70843efeb48e5b6f2508e5e5",
+      "raw_bitwise_equal": false,
+      "ready_max": 7.782689863233827e-06,
+      "ready_min": -6.632423173869029e-05,
+      "ready_nonzero": 471065,
+      "ready_sha256": "f358083609b3e19495c3cc3198f87d1c0ec12c3c05622b8672ae4578a3277f9e",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "RHO": {
+      "changed_elements": 2570561,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 0.019574642181396484,
+      "output_max": 1.189477801322937,
+      "output_min": 0.08690060675144196,
+      "output_nonzero": 2573532,
+      "output_sha256": "1c90e70a28939085e7878569027d99f8867729225f7cd02563345e766b8bcac0",
+      "raw_bitwise_equal": false,
+      "ready_max": 1.1894718408584595,
+      "ready_min": 0.08689113706350327,
+      "ready_nonzero": 2573532,
+      "ready_sha256": "5a3a0899e6ce133d8a536608ce33126b993a233c3228cc82c7619cc7eaa4959d",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "T": {
+      "changed_elements": 2569857,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 4.39581298828125,
+      "output_max": 190.57968139648438,
+      "output_min": -9.42315673828125,
+      "output_nonzero": 2573531,
+      "output_sha256": "767a0d97094bf24883f3d2c5a5bacf8b099092f2f880a2a84827c8c699a3525c",
+      "raw_bitwise_equal": false,
+      "ready_max": 190.59173583984375,
+      "ready_min": -9.433380126953125,
+      "ready_nonzero": 2573532,
+      "ready_sha256": "63322e134e4d9502b2cb45a68d613edf042876ef183263c85d434c0784f7b2c7",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    },
+    "THM_2": {
+      "changed_elements": 2569487,
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "dtype": "<f4",
+      "elements": 2573532,
+      "max_abs_change": 4.4918212890625,
+      "output_max": 190.58282470703125,
+      "output_min": -4.281132698059082,
+      "output_nonzero": 2573532,
+      "output_sha256": "a56823b3893262fb276a32d6dbc07cd8febf0705f9914a590d7f8429770330b2",
+      "raw_bitwise_equal": false,
+      "ready_max": 190.59487915039062,
+      "ready_min": -4.293560028076172,
+      "ready_nonzero": 2573532,
+      "ready_sha256": "e0a63d1b96f97b27c091321e2e91bf1e4df02ba52fdcebeff39f681ed74eee01",
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ]
+    }
+  },
+  "global_metadata": {
+    "origin": {
+      "MP_PHYSICS": 137,
+      "Times": "2025-07-19_00:00:40",
+      "USE_THETA_M": 1
+    },
+    "output": {
+      "MP_PHYSICS": 137,
+      "Times": "2025-07-19_00:01:00",
+      "USE_THETA_M": 1
+    },
+    "ready": {
+      "MP_PHYSICS": 137,
+      "Times": "2025-07-19_00:00:40",
+      "USE_THETA_M": 1
+    }
+  },
+  "native_module_call_evidence": {
+    "marker_counts": {
+      "CALL rrtmg_lw": 2,
+      "CALL rrtmg_sw": 2,
+      "call moist_physics_finish": 1,
+      "call pbl_driver": 1,
+      "call radiation_driver": 1,
+      "in NOAH DRV": 2,
+      "in SHINHONG PBL": 2,
+      "in ksas_cps": 2,
+      "microphysics_driver: calling kdm6ad": 2,
+      "module_mp_kdm6ad: entering kdm6ad wrapper": 2
+    },
+    "rsl_path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/runs/mp137_live_step_control_0min20s_hist0_1x1_20261025_195507_p2564/rsl.out.0000",
+    "rsl_sha256": "f7ca099ab28f1e41408ed5df9d03d8c66d51a3ad87e734299af3d1cdff625051"
+  },
+  "numerical_output_scope": {
+    "additional_analysis_increment_at_40s": false,
+    "boundary_ring_columns": 1028,
+    "captured_full_ready_and_output_restarts": true,
+    "columns": 65988,
+    "expected_interior_mp_columns": 64960,
+    "native_grid": [
+      234,
+      282,
+      39
+    ]
+  },
+  "origin_checkpoint": "PRIVATE_HOST_EVIDENCE/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40",
+  "origin_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "output_checkpoint": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00",
+  "output_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "ready_capture": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+  "ready_capture_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+  "ready_origin_WE_JUST_D01_LBC": {
+    "origin": 0,
+    "ready": 1
+  },
+  "schema": "kdm6.native_full_physics_forward_offline_checkpoint_summary.v1",
+  "scope": "full serialized restart arrays, read-only post-run summary; not a conservation or forecast certificate",
+  "status": "COMPLETE_ONE_CONTROL_STEP"
+}
