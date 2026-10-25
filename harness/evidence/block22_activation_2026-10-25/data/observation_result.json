@@ -1,0 +1,1132 @@
+{
+  "calls": {
+    "eps_1e-02_minus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.30091778570977,
+        279.823638387015,
+        261.9086901794801,
+        281.60649085825753,
+        280.2489256305968,
+        276.86210309654297,
+        265.6020558597908
+      ],
+      "epsilon": 0.01,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-02_minus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "f086d617b4766459",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": -1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-02_minus/target_observation.npz",
+      "target_npz_sha256": "d47006b5ed1085af21f183886a20c1d5ae3833e25323f7d73f9908952b208f92",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-02_plus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.02663600874263,
+        271.3140515730577,
+        256.6383499786403,
+        273.6045835913737,
+        271.24440931426744,
+        267.9372313315571,
+        260.1869147159015
+      ],
+      "epsilon": 0.01,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-02_plus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "b9583acd3a23208e",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": 1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-02_plus/target_observation.npz",
+      "target_npz_sha256": "2919ceeda7bf68516c9a5ff692b7c68a64de86e9ded0f97bbadde5c2ddb06d7b",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-03_minus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.2970404873272,
+        279.6762755946256,
+        261.8014424904643,
+        281.4423035340289,
+        280.10216375111406,
+        276.7463967924717,
+        265.5355574783021
+      ],
+      "epsilon": 0.001,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-03_minus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "0402c13758c1a5d1",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": -1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-03_minus/target_observation.npz",
+      "target_npz_sha256": "2457e046bcde8f325553e96236cdd4c6bc439d3a80c39e7e1a0a7c4435e28547",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-03_plus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.09681600625242,
+        273.43944517842203,
+        257.92206303772593,
+        275.5751575882873,
+        273.5009381012459,
+        270.15021560591623,
+        261.4712833372689
+      ],
+      "epsilon": 0.001,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-03_plus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "defb6e32bffaf1d2",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": 1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-03_plus/target_observation.npz",
+      "target_npz_sha256": "3d27e03c892e7613ec008d317fce9d563a68416c1a940983f01e5ba6baae925b",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-04_minus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.17909040167237,
+        275.9017016672034,
+        259.42273907273943,
+        277.874078537269,
+        276.18924621683334,
+        272.93446449013965,
+        263.17736854159347
+      ],
+      "epsilon": 0.0001,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-04_minus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "f6bb7813eaca4012",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": -1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-04_minus/target_observation.npz",
+      "target_npz_sha256": "31e293a65ebf8fd18b7b98678e01e58589414c9875f07c03267721cd57b6c2c8",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-04_plus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.14471443130168,
+        274.8684843707487,
+        258.79484360290905,
+        276.9164335965532,
+        275.07660497808564,
+        271.7881192977304,
+        262.46950238224355
+      ],
+      "epsilon": 0.0001,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-04_plus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "5e5da566c72209f8",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": 1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-04_plus/target_observation.npz",
+      "target_npz_sha256": "ed7c175237c2b5504e3dd90684258c2b572e15390b93cfde67e65aad4c86a80f",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-05_minus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.1599125975479,
+        275.3295201391333,
+        259.074542593922,
+        277.34101727939105,
+        275.5715286251171,
+        272.3005369761414,
+        262.7853863759096
+      ],
+      "epsilon": 1e-05,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-05_minus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "1f1c66a91c3c5fbc",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": -1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-05_minus/target_observation.npz",
+      "target_npz_sha256": "7abfe836e466037622f0fcfaba70ba65bb1f9a9d33baa07604a8a42b443a8e95",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-05_plus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.1563668647789,
+        275.2229899098983,
+        259.01233638196004,
+        277.2481819164081,
+        275.46284632379695,
+        272.1869110032881,
+        262.71491959270094
+      ],
+      "epsilon": 1e-05,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-05_plus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "1b1eecc7b38359bb",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": 1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-05_plus/target_observation.npz",
+      "target_npz_sha256": "4bbc668d2c6a2e7dfd3d274d5172eb5b4d3601328a614eaebc8143e001565f25",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-06_minus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.1582587235583,
+        275.2799028605489,
+        259.0457327090908,
+        277.2981333303355,
+        275.52129340878065,
+        272.2479407338147,
+        262.75273859261625
+      ],
+      "epsilon": 1e-06,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-06_minus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "50830e1113c80cc9",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": -1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-06_minus/target_observation.npz",
+      "target_npz_sha256": "a2083157916b3fef026f2f7df44c6b02b6311b77f2d2849d3623adb6b697489c",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "eps_1e-06_plus": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "bt_kma_v3_0": [
+        251.15790456043857,
+        275.26926131959226,
+        259.03951713880537,
+        277.28885620872614,
+        275.51043295003336,
+        272.23658697901095,
+        262.7456976937702
+      ],
+      "epsilon": 1e-06,
+      "fixed_support_mask_matches_baseline": true,
+      "quality_matches_baseline_support": true,
+      "reasons": "initial_admission:eligible",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-06_plus/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "7b9d40599f1aaf77",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "sign": 1,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/fd_observation_v1/direct_run_v1/eps_1e-06_plus/target_observation.npz",
+      "target_npz_sha256": "d1a05d00bd2d273f05f639ca129c640cf0128ff420c07c87fdde8775b8e5c2ee",
+      "target_profile_fields_match_saved_FD_endpoint_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "target_quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "epsilon_results": [
+    {
+      "BT_FD_K": [
+        -13.714088848357164,
+        -425.4793406978649,
+        -263.5170100419913,
+        -400.0953633441924,
+        -450.2258158164665,
+        -446.243588249294,
+        -270.75705719446717
+      ],
+      "BT_JVP_K": [
+        -177.07949382430954,
+        -5320.7126434758065,
+        -3107.7597083255287,
+        -4638.528509571267,
+        -5430.190246121158,
+        -5676.832875983402,
+        -3520.420318946322
+      ],
+      "BT_all_seven_pass": false,
+      "BT_tolerance_ratio_by_channel": [
+        30751.743925922285,
+        30667.777821721174,
+        30506.888779024866,
+        30458.17104066276,
+        30569.611124065872,
+        30713.07009190583,
+        30769.649261919207
+      ],
+      "CFRAC_changed_coordinates": {
+        "minus_vs_baseline": 0,
+        "plus_vs_baseline": 0
+      },
+      "epsilon": 0.01,
+      "observation_gate_common_pass": false,
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 148.07424969373355,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 1.669715655715299e-09,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 30259.227458021865,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 366.7682873632408,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 366.159124578449,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 1010.3397562695259,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 443.5078250013657,
+          "passed": false
+        }
+      },
+      "quality_and_fixed_mask_stable": true,
+      "target_cost_huber_numerator_fd": -2270.032264192633,
+      "target_cost_huber_numerator_jvp": -27871.523796247795,
+      "target_cost_pass": false,
+      "target_cost_tolerance_ratio": 30618.456568823836
+    },
+    {
+      "BT_FD_K": [
+        -100.11224053738488,
+        -3118.415208101794,
+        -1939.6897263691812,
+        -2933.5729728707915,
+        -3300.612824934092,
+        -3298.0905932777487,
+        -2032.1370705165975
+      ],
+      "BT_JVP_K": [
+        -177.07949382430954,
+        -5320.7126434758065,
+        -3107.7597083255287,
+        -4638.528509571267,
+        -5430.190246121158,
+        -5676.832875983402,
+        -3520.420318946322
+      ],
+      "BT_all_seven_pass": false,
+      "BT_tolerance_ratio_by_channel": [
+        14488.24042097233,
+        13797.007061352782,
+        12528.530370198236,
+        12252.12845453854,
+        13072.453535636318,
+        13967.542554075726,
+        14091.907335618956
+      ],
+      "CFRAC_changed_coordinates": {
+        "minus_vs_baseline": 0,
+        "plus_vs_baseline": 0
+      },
+      "epsilon": 0.001,
+      "observation_gate_common_pass": false,
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 87.18173340319936,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 6.189163146723405e-08,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 7456.3160330081355,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 216.52912224438876,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 216.16785096266864,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 593.7685695216788,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 262.0837997294553,
+          "passed": false
+        }
+      },
+      "quality_and_fixed_mask_stable": true,
+      "target_cost_huber_numerator_fd": -16722.63063660759,
+      "target_cost_huber_numerator_jvp": -27871.523796247795,
+      "target_cost_pass": false,
+      "target_cost_tolerance_ratio": 13333.672398402558
+    },
+    {
+      "BT_FD_K": [
+        -171.879851853447,
+        -5166.086482273328,
+        -3139.477349151889,
+        -4788.224703578976,
+        -5563.206193738494,
+        -5731.725962046141,
+        -3539.3307967495957
+      ],
+      "BT_JVP_K": [
+        -177.07949382430954,
+        -5320.7126434758065,
+        -3107.7597083255287,
+        -4638.528509571267,
+        -5430.190246121158,
+        -5676.832875983402,
+        -3520.420318946322
+      ],
+      "BT_all_seven_pass": false,
+      "BT_tolerance_ratio_by_channel": [
+        978.7755150362441,
+        968.7057723055276,
+        336.76133457177036,
+        1042.1133290777877,
+        796.9980799745011,
+        319.2353300086331,
+        178.098413779769
+      ],
+      "CFRAC_changed_coordinates": {
+        "minus_vs_baseline": 0,
+        "plus_vs_baseline": 0
+      },
+      "epsilon": 0.0001,
+      "observation_gate_common_pass": false,
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.752851418225269,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 7.668453358195124e-07,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2278.044666704498,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 6.863529620587806,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 6.852087946763666,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 18.689337818183695,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 8.318948648402678,
+          "passed": false
+        }
+      },
+      "quality_and_fixed_mask_stable": true,
+      "target_cost_huber_numerator_fd": -28099.93133939187,
+      "target_cost_huber_numerator_jvp": -27871.523796247795,
+      "target_cost_pass": false,
+      "target_cost_tolerance_ratio": 270.94673610396063
+    },
+    {
+      "BT_FD_K": [
+        -177.28663844991385,
+        -5326.511461751693,
+        -3110.3105980974983,
+        -4641.7681491476515,
+        -5434.115066006484,
+        -5681.298642664955,
+        -3523.3391604322146
+      ],
+      "BT_JVP_K": [
+        -177.07949382430954,
+        -5320.7126434758065,
+        -3107.7597083255287,
+        -4638.528509571267,
+        -5430.190246121158,
+        -5676.832875983402,
+        -3520.420318946322
+      ],
+      "BT_all_seven_pass": false,
+      "BT_tolerance_ratio_by_channel": [
+        38.9471419361771,
+        36.28902928702872,
+        27.33799319109841,
+        23.264405858898524,
+        24.075184256622236,
+        26.201558836100208,
+        27.614346096532458
+      ],
+      "CFRAC_changed_coordinates": {
+        "minus_vs_baseline": 0,
+        "plus_vs_baseline": 0
+      },
+      "epsilon": 1e-05,
+      "observation_gate_common_pass": false,
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.1635750292765178,
+          "passed": true
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 4.315351928258831e-06,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 21.963509901523526,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.404870420333703,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 2.13887301268425,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 39.306293092075464,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.8802630930441279,
+          "passed": true
+        }
+      },
+      "quality_and_fixed_mask_stable": true,
+      "target_cost_huber_numerator_fd": -27894.62971655041,
+      "target_cost_huber_numerator_jvp": -27871.523796247795,
+      "target_cost_pass": false,
+      "target_cost_tolerance_ratio": 27.61095386614557
+    },
+    {
+      "BT_FD_K": [
+        -177.08155986895235,
+        -5320.770478306258,
+        -3107.7851427312453,
+        -4638.560804664849,
+        -5430.229373644124,
+        -5676.877401867841,
+        -3520.449423035643
+      ],
+      "BT_JVP_K": [
+        -177.07949382430954,
+        -5320.7126434758065,
+        -3107.7597083255287,
+        -4638.528509571267,
+        -5430.190246121158,
+        -5676.832875983402,
+        -3520.420318946322
+      ],
+      "BT_all_seven_pass": true,
+      "BT_tolerance_ratio_by_channel": [
+        0.38890568377810303,
+        0.3623211278905499,
+        0.27280310382332057,
+        0.23207694958801778,
+        0.24018335059596463,
+        0.26144585407799686,
+        0.27557169618791993
+      ],
+      "CFRAC_changed_coordinates": {
+        "minus_vs_baseline": 0,
+        "plus_vs_baseline": 0
+      },
+      "epsilon": 1e-06,
+      "observation_gate_common_pass": false,
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.958600985641339,
+          "passed": true
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.271290601132869e-05,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 8.157612631370379,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 20.586349862208838,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 16.750706031777295,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 215.5597165071425,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 4.279416849976217,
+          "passed": false
+        }
+      },
+      "quality_and_fixed_mask_stable": true,
+      "target_cost_huber_numerator_fd": -27871.754184118916,
+      "target_cost_huber_numerator_jvp": -27871.523796247795,
+      "target_cost_pass": true,
+      "target_cost_tolerance_ratio": 0.27553327147818
+    }
+  ],
+  "receipt_sha256": "32693cb8277793e2b33f40369b7acfa54ab1ebe56017fcd9cc2edb37d54daf12"
+}

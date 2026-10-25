@@ -1,0 +1,15 @@
+{
+  "call1_tsv_rows_exactly_identical": true,
+  "corrected_call1_record_count": 1422,
+  "corrected_call1_rows_sha256": "a4712ce5a290aedeb3538fcb4a83b0657eb5f034a5e89746216fbe913d723f21",
+  "corrected_trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+  "corrected_trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471",
+  "created_at_utc": "2026-10-25T02:28:33.843435+00:00",
+  "first_difference": null,
+  "header_identical": true,
+  "orphan_call1_record_count": 1422,
+  "orphan_call1_rows_sha256": "a4712ce5a290aedeb3538fcb4a83b0657eb5f034a5e89746216fbe913d723f21",
+  "orphan_trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v9/activation_trace.tsv",
+  "orphan_trace_sha256": "0b17ba2626a82ae112b3c218365264db36e2a357566f0b31cefecf23597f2213",
+  "schema": "kdm6.block22_centered_fd_orphan_trace_prefix_compare.v1"
+}

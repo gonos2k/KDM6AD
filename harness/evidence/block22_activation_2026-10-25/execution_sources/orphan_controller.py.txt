@@ -1,0 +1,967 @@
+"""Prepare or execute the fixed full-B block22 centered-FD experiment.
+
+``--prepare`` writes a source-bound launch plan only. ``--execute`` is a
+separate explicit action and requires that plan to match all pinned inputs,
+the accepted full-B direction proof, the trace-on AD baseline, and this file.
+Each endpoint rebuilds from the original baseline and invokes the same native
+full-B kernel and finish path. No RTTOV, host, optimizer, or state update is
+performed here.
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import time
+import traceback
+
+import numpy as np
+
+RESEARCH = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025"
+)
+DRIVER_DIR = RESEARCH / "driver_v1"
+PREP_DIR = RESEARCH / "input_prep_v1"
+PARENT = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4"
+)
+SOURCE_V2 = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2"
+)
+OBSERVER_BUILD = RESEARCH / "overlay_final_build_v1"
+OBSERVER_DSO = OBSERVER_BUILD / "libkdm6_actual_qr_block22_observer.2.0.0.dylib"
+OBSERVER_DSO_SHA256 = "53abe03ba228bf6ec04f649a4da89c0f7b3e748d31bc49d8694cf5b5f35a0370"
+OBSERVER_SOURCE_RECEIPT = RESEARCH / "overlay_final/source_receipt.json"
+OBSERVER_SOURCE_RECEIPT_SHA256 = (
+    "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c"
+)
+ACTUAL_DIRECTION_PROOF = RESEARCH / "ACTUAL_DIRECTION_PROOF_v1.json"
+EXPERIMENT_PLAN = RESEARCH / "EXPERIMENT_PLAN_v2.json"
+INPUT_NPZ = PREP_DIR / "block22_fullB_inputs.npz"
+PREPARATION = PREP_DIR / "BLOCK22_PREPARATION.json"
+AD_DIR = DRIVER_DIR / "ad_execution_v1/ad_trace_on"
+AD_RECEIPT = AD_DIR / "jvp_vjp_receipt.json"
+AD_PRODUCTS = AD_DIR / "block22_actual_jvp_vjp.npz"
+AD_TRACE = AD_DIR / "activation_trace.tsv"
+VALUE_DIR = DRIVER_DIR / "execution_v1/trace_on"
+VALUE_PRODUCTS = VALUE_DIR / "values.npz"
+VALUE_NONINTERFERENCE = DRIVER_DIR / "execution_v1/VALUE_NONINTERFERENCE.json"
+PROFILE_JVP_DIR = RESEARCH / "observation_prep_v1"
+PROFILE_JVP_RECEIPT = PROFILE_JVP_DIR / "actual_candidate_profile_jvp_v2.json"
+PROFILE_JVP_NPZ = PROFILE_JVP_DIR / "actual_candidate_profile_jvp_v2.npz"
+TRACE_READER = Path(
+    "/private/tmp/KDM6AD-block22-activation-20261025/harness/analyze_activation_trace.py"
+)
+PYTHON = "/opt/local/bin/python3"
+BATCH = 512
+LEVELS = 39
+TARGET_ROW = 368
+EPSILONS = (1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5, 1.0e-6)
+TRACE_ENV = "KDM6_BLOCK22_ACTIVATION_TRACE"
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _write_json_new(path: Path, payload: dict) -> str:
+    encoded = (
+        json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n"
+    ).encode()
+    with Path(path).open("xb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _source_pins() -> dict[str, str]:
+    paths = {
+        "runner": Path(__file__),
+        "input_bundle": INPUT_NPZ,
+        "preparation": PREPARATION,
+        "direction_proof": ACTUAL_DIRECTION_PROOF,
+        "experiment_plan": EXPERIMENT_PLAN,
+        "source_receipt": OBSERVER_SOURCE_RECEIPT,
+        "observer_dso": OBSERVER_DSO,
+        "observer_build_receipt": OBSERVER_BUILD / "build_receipt.json",
+        "ad_runner": DRIVER_DIR / "run_block22_actual_ad.py",
+        "ad_receipt": AD_RECEIPT,
+        "ad_products": AD_PRODUCTS,
+        "ad_trace": AD_TRACE,
+        "value_products": VALUE_PRODUCTS,
+        "value_noninterference": VALUE_NONINTERFERENCE,
+        "candidate_profile_jvp_receipt": PROFILE_JVP_RECEIPT,
+        "candidate_profile_jvp_products": PROFILE_JVP_NPZ,
+        "trace_reader": TRACE_READER,
+        "parent_manifest": PARENT / "CASE_MANIFEST.json",
+        "parent_baseline_receipt": PARENT / "baseline/chunk_00022/receipt.json",
+        "parent_trial_receipt": PARENT / "TRIAL_alpha_0p25/chunk_00022/receipt.json",
+        "source_v2_prep": SOURCE_V2 / "harness/prepare_native_satellite_case.py",
+        "source_v2_batch": SOURCE_V2 / "harness/native_batch_microphysics.py",
+        "source_v2_observation_batch": SOURCE_V2
+        / "harness/native_observation_batch.py",
+        "source_v2_native_prep": SOURCE_V2 / "oracle/kdm6/native_prep.py",
+        "source_v2_native_finish": SOURCE_V2 / "oracle/kdm6/native_finish.py",
+        "source_v2_local_ad_verify": SOURCE_V2 / "harness/verify_localized_ice_ad.py",
+    }
+    return {name: file_sha256(path) for name, path in paths.items()}
+
+
+def _prepare(output_dir: Path) -> None:
+    if output_dir.is_symlink() or output_dir.exists():
+        raise FileExistsError(f"output directory must be new: {output_dir}")
+    if not OBSERVER_DSO.is_file() or file_sha256(OBSERVER_DSO) != OBSERVER_DSO_SHA256:
+        raise ValueError("reviewed observer DSO is unavailable or changed")
+    if file_sha256(OBSERVER_SOURCE_RECEIPT) != OBSERVER_SOURCE_RECEIPT_SHA256:
+        raise ValueError("observer source receipt changed")
+    experiment = json.loads(EXPERIMENT_PLAN.read_text())
+    if experiment.get("schema") != "kdm6.block22_activation_experiment_plan.v2":
+        raise ValueError("the controller requires the reviewed v2 experiment plan")
+    if experiment.get("local_FD", {}).get("epsilons") != list(EPSILONS):
+        raise ValueError(
+            "controller epsilon set differs from the frozen experiment plan"
+        )
+    profile_receipt = json.loads(PROFILE_JVP_RECEIPT.read_text())
+    if (
+        profile_receipt.get("schema")
+        != "kdm6.block22_actual_candidate_profile_jvp_replay.v2"
+    ):
+        raise ValueError("candidate profile JVP receipt has unexpected schema")
+    if profile_receipt.get("profile_jvp_npz_sha256") != file_sha256(PROFILE_JVP_NPZ):
+        raise ValueError("candidate profile JVP products differ from receipt")
+    if profile_receipt.get("actual_direction_ad_npz_sha256") != file_sha256(
+        AD_PRODUCTS
+    ):
+        raise ValueError("candidate profile JVP is not tied to the pinned AD products")
+    if profile_receipt.get("input_bundle_sha256") != file_sha256(INPUT_NPZ):
+        raise ValueError("candidate profile JVP used a different full-B input bundle")
+    if profile_receipt.get("direction_proof_sha256") != file_sha256(
+        ACTUAL_DIRECTION_PROOF
+    ):
+        raise ValueError("candidate profile JVP used a different direction proof")
+    if (
+        profile_receipt.get("new_KDM_calls") != 0
+        or profile_receipt.get("new_RTTOV_calls") != 0
+    ):
+        raise ValueError("candidate profile JVP replay must have zero KDM/RTTOV calls")
+    if not AD_TRACE.is_file() or not AD_PRODUCTS.is_file():
+        raise ValueError("trace-on AD baseline products are not complete")
+    value_noninterference = json.loads(VALUE_NONINTERFERENCE.read_text())
+    if value_noninterference.get("passed") is not True:
+        raise ValueError("trace-on value noninterference receipt did not pass")
+    if value_noninterference["modes"]["trace_on"]["values_npz_sha256"] != file_sha256(
+        VALUE_PRODUCTS
+    ):
+        raise ValueError("trace-on value products differ from noninterference receipt")
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=False, exist_ok=False)
+    receipt = {
+        "schema": "kdm6.block22_centered_fd_launch.v2",
+        "status": "PREPARED_NOT_EXECUTED",
+        "prepared_at_utc": datetime.now(timezone.utc).isoformat(),
+        "worktree": "/private/tmp/KDM6AD-block22-activation-20261025",
+        "plan_sha256": file_sha256(EXPERIMENT_PLAN),
+        "source_pins": _source_pins(),
+        "domain": {
+            "chunk_index": 22,
+            "flat_start0": 11264,
+            "flat_stop0": 11776,
+            "B": BATCH,
+            "L": LEVELS,
+            "target_row0": TARGET_ROW,
+            "target_flat0": 11632,
+            "target_level_bottom0": 17,
+        },
+        "direction": {
+            "baseline": "original source_v2 block22 baseline",
+            "recipe": "parent alpha025 accepted delta divided by 0.25",
+            "proof_sha256": file_sha256(ACTUAL_DIRECTION_PROOF),
+            "direction_theta_sha256": "3f29e5faf40e2a9c502c11efb420ce65e45d0e823c9c605f44e1778c44e24fce",
+            "direction_qv_sha256": "a86c10acd09594842a0ebc1ee836170800cdc9367d3d94d28399460dbb891735",
+            "scope": "full B512 theta_m and QV perturbations; all other inputs fixed",
+        },
+        "fd": {
+            "scheme": "centered; each endpoint is rebuilt once from baseline",
+            "epsilons": list(EPSILONS),
+            "endpoint_count": 10,
+            "endpoint_order": [
+                {"epsilon": eps, "sign": sign} for eps in EPSILONS for sign in (1, -1)
+            ],
+            "endpoint_calls": {
+                "fullB_KDM_forward": 1,
+                "fullB_KDM_JVP": 0,
+                "fullB_KDM_VJP": 0,
+                "RTTOV": 0,
+            },
+        },
+        "capture": [
+            "full-B12 raw ABI inputs, forcing and outputs",
+            "full-B native profile, cloud state, rho_d and 5 finish fields",
+            "full-B post-physics profile rows and nine RTTOV profile fields including CFRAC",
+            "source QC/DQF and parent fixed support/quality arrays",
+            "full-B schedule/branch trace and comparison with AD baseline trace call 1",
+            "target 17 raw/finish and eight candidate-direction profile central-difference diagnostics at one common epsilon",
+        ],
+        "rttov_status": "not executed by this controller; direct observation pilot is a separate reviewed step",
+        "execution_command": [
+            PYTHON,
+            str(Path(__file__).resolve()),
+            "--execute",
+            "--output",
+            str(output_dir.resolve()),
+        ],
+    }
+    digest = _write_json_new(output_dir / "launch_plan.json", receipt)
+    print(
+        json.dumps(
+            {
+                "status": receipt["status"],
+                "launch_plan": str(output_dir / "launch_plan.json"),
+                "sha256": digest,
+            }
+        )
+    )
+
+
+def _load_trace_reader():
+    spec = importlib.util.spec_from_file_location(
+        "activation_trace_reader", TRACE_READER
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load pinned activation trace reader")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _execute(output_dir: Path) -> int:
+    plan_path = output_dir / "launch_plan.json"
+    if not plan_path.is_file() or plan_path.is_symlink():
+        raise FileNotFoundError("run --prepare first to create a pinned launch plan")
+    plan = json.loads(plan_path.read_text())
+    if plan.get("schema") != "kdm6.block22_centered_fd_launch.v2":
+        raise ValueError("launch plan schema mismatch")
+    if plan.get("status") != "PREPARED_NOT_EXECUTED":
+        raise ValueError("launch plan is not in the prepared state")
+    if plan.get("source_pins") != _source_pins():
+        raise ValueError("one or more source/input/AD pins changed after preparation")
+    if plan.get("plan_sha256") != file_sha256(EXPERIMENT_PLAN):
+        raise ValueError("fixed experiment plan changed")
+    experiment = json.loads(EXPERIMENT_PLAN.read_text())
+    if experiment.get("schema") != "kdm6.block22_activation_experiment_plan.v2":
+        raise ValueError("the controller requires the reviewed v2 experiment plan")
+    if experiment.get("local_FD", {}).get("epsilons") != list(EPSILONS):
+        raise ValueError(
+            "controller epsilon set differs from the frozen experiment plan"
+        )
+    if plan.get("domain", {}).get("B") != BATCH or plan.get("fd", {}).get(
+        "epsilons"
+    ) != list(EPSILONS):
+        raise ValueError("launch plan has wrong block shape or epsilon set")
+    trace_path = output_dir / "activation_trace.tsv"
+    if trace_path.exists() or trace_path.is_symlink():
+        raise FileExistsError("trace output must not preexist")
+    endpoint_dir = output_dir / "endpoints"
+    if endpoint_dir.exists() or endpoint_dir.is_symlink():
+        raise FileExistsError("endpoint output directory must not preexist")
+    endpoint_dir.mkdir()
+    _write_json_new(
+        output_dir / "execution_started.json",
+        {
+            "schema": "kdm6.block22_centered_fd_execution.v1",
+            "status": "RUNNING",
+            "started_at_utc": datetime.now(timezone.utc).isoformat(),
+            "launch_plan_sha256": file_sha256(plan_path),
+            "runner_sha256": file_sha256(Path(__file__)),
+        },
+    )
+
+    # Frozen source_v2 is inserted before any checkout modules; only the
+    # specifically pinned trace reader is loaded by file path below.
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(DRIVER_DIR))
+    from run_block22_actual_ad import RecordingBatchKernel, numpy_copy, same_bits
+    from harness.native_batch_microphysics import (
+        BatchPrepGeometry,
+        NativeBatchMicrophysics,
+        make_batch_kernel,
+    )
+    from harness.native_observation_batch import (
+        _block_arrays,
+        _profile_arrays,
+        _selected_profile_context,
+        _validate_selected_inputs,
+    )
+    from harness.prepare_native_satellite_case import load_case_block, load_case_config
+    from harness.run_native_candidate_observation import (
+        EXPERIMENT,
+        _runtime_environment,
+    )
+    from oracle.kdm6.native_finish import FinishConfig, ZeroOutConfig
+    from oracle.kdm6.native_prep import NativePrepConfig
+    from harness.verify_localized_ice_ad import ATOL, RTOL, SCALES
+    import torch
+
+    parent_manifest = json.loads((PARENT / "CASE_MANIFEST.json").read_text())
+    with np.load(INPUT_NPZ, allow_pickle=False) as archive:
+        data = {name: archive[name] for name in archive.files}
+    with np.load(AD_PRODUCTS, allow_pickle=False) as archive:
+        ad = {name: archive[name] for name in archive.files}
+    with np.load(PROFILE_JVP_NPZ, allow_pickle=False) as archive:
+        profile_jvp = {name: archive[name] for name in archive.files}
+    ad_receipt = json.loads(AD_RECEIPT.read_text())
+    if ad_receipt.get("instrumentation_mode") != "trace_on":
+        raise ValueError("AD comparison products are not from trace-on mode")
+    if ad_receipt.get("product_npz_sha256") != file_sha256(AD_PRODUCTS):
+        raise ValueError("AD comparison products differ from receipt")
+    if ad_receipt.get("candidate_library_sha256") != OBSERVER_DSO_SHA256:
+        raise ValueError("AD baseline DSO differs from reviewed observer library")
+    profile_receipt = json.loads(PROFILE_JVP_RECEIPT.read_text())
+    if profile_receipt.get("profile_jvp_npz_sha256") != file_sha256(PROFILE_JVP_NPZ):
+        raise ValueError("candidate profile JVP products differ from receipt")
+    if profile_receipt.get("actual_direction_ad_npz_sha256") != file_sha256(
+        AD_PRODUCTS
+    ):
+        raise ValueError(
+            "candidate profile JVP differs from the saved direction replay"
+        )
+    if profile_receipt.get("input_bundle_sha256") != file_sha256(INPUT_NPZ):
+        raise ValueError("candidate profile JVP input bundle pin differs")
+    if profile_receipt.get("direction_proof_sha256") != file_sha256(
+        ACTUAL_DIRECTION_PROOF
+    ):
+        raise ValueError("candidate profile JVP direction proof pin differs")
+    if (
+        profile_receipt.get("new_KDM_calls") != 0
+        or profile_receipt.get("new_RTTOV_calls") != 0
+    ):
+        raise ValueError("candidate profile JVP replay receipt has model calls")
+    for field, length in (
+        ("T", 66),
+        ("Q", 66),
+        ("P", 66),
+        ("P_HALF", 67),
+        ("HYDRO6", 66),
+        ("HYDRO7", 66),
+        ("HYDRO_DEFF6", 66),
+        ("HYDRO_DEFF7", 66),
+    ):
+        tangent = profile_jvp.get(f"JVP_{field}")
+        if (
+            tangent is None
+            or tangent.shape != (1, length)
+            or not np.isfinite(tangent).all()
+        ):
+            raise ValueError(
+                f"candidate profile JVP {field} has invalid shape or values"
+            )
+    if data["block__flat_indices"].shape != (BATCH,) or data["block__rest"].shape != (
+        10,
+        BATCH,
+        LEVELS,
+    ):
+        raise ValueError("input bundle is not the original full B512/L39 block")
+    if (
+        data["block__flat_indices"].tobytes()
+        != np.arange(11264, 11776, dtype=np.int32).tobytes()
+    ):
+        raise ValueError("input block flat indices differ from original chunk22")
+
+    candidate = data["parent_alpha025__delta_theta"]
+    candidate_q = data["parent_alpha025__delta_qv"]
+    direction_theta = np.ascontiguousarray(candidate / 0.25, dtype=np.float64)
+    direction_qv = np.ascontiguousarray(candidate_q / 0.25, dtype=np.float64)
+    direction_proof = json.loads(ACTUAL_DIRECTION_PROOF.read_text())
+    for key, direction in (("theta", direction_theta), ("qv", direction_qv)):
+        if (
+            hashlib.sha256(direction.tobytes()).hexdigest()
+            != direction_proof[key]["direction_sha256"]
+        ):
+            raise ValueError(f"full-B accepted direction proof differs for {key}")
+
+    config = load_case_config(parent_manifest["case_preparation"]["paths"])
+    config["paths"]["candidate_library"] = OBSERVER_DSO
+    block = load_case_block(config, 22)
+    for key in ("theta_m", "qv", "mu", "ph", "xland", "flat_indices"):
+        if not same_bits(np.asarray(block[key]), data[f"block__{key}"]):
+            raise ValueError(f"source_v2 block {key} differs from prepared bundle")
+    if not same_bits(block["packet_state"], data["block__packet_state"]):
+        raise ValueError("source_v2 state packet differs from prepared bundle")
+    if not same_bits(block["packet_forcing"], data["block__packet_forcing"]):
+        raise ValueError("source_v2 forcing packet differs from prepared bundle")
+    if np.asarray(block["packet_state"]).shape != (12, BATCH, LEVELS):
+        raise ValueError("prepared KDM state shape mismatch")
+    base_theta = np.ascontiguousarray(
+        data["parent_baseline__theta_m"], dtype=np.float64
+    )
+    base_qv = np.ascontiguousarray(data["parent_baseline__qv"], dtype=np.float64)
+    base_theta_bytes, base_qv_bytes = base_theta.tobytes(), base_qv.tobytes()
+    mu_np = np.ascontiguousarray(data["block__mu"], dtype=np.float64)
+    ph_np = np.ascontiguousarray(data["block__ph"], dtype=np.float64)
+    rest_np = np.ascontiguousarray(data["block__rest"], dtype=np.float64)
+
+    parent_base_receipt = json.loads(
+        (PARENT / "baseline/chunk_00022/receipt.json").read_text()
+    )
+    parent_base_path = Path(parent_base_receipt["artifact"])
+    if file_sha256(parent_base_path) != parent_base_receipt["artifact_sha256"]:
+        raise ValueError("parent baseline result changed")
+    with np.load(parent_base_path, allow_pickle=False) as archive:
+        baseline_support = {
+            name: archive[name]
+            for name in (
+                "quality",
+                "mask",
+                "weights",
+                "profile_valid",
+                "profile_rows",
+                "profile_CFRAC",
+            )
+        }
+        source_arrays = {
+            name: archive[name]
+            for name in ("source_dqf", "source_qc", "source_eligible", "flat_index")
+        }
+    baseline_profile_rows = baseline_support["profile_rows"]
+    baseline_target_positions = np.flatnonzero(baseline_profile_rows == TARGET_ROW)
+    if baseline_target_positions.size != 1:
+        raise ValueError("trace-on value baseline lacks exactly one target profile row")
+    baseline_target_cfrac = baseline_support["profile_CFRAC"][
+        int(baseline_target_positions[0])
+    ]
+
+    L = LEVELS
+    geometry = BatchPrepGeometry(
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__phb"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c3h"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c4h"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c3f"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c4f"])),
+    )
+    base_kernel = make_batch_kernel(OBSERVER_DSO, data["block__xland"], L)
+    kernel = RecordingBatchKernel(base_kernel)
+    torch.set_num_threads(1)
+    runtime = _runtime_environment(EXPERIMENT)
+    endpoints = []
+    start_time = time.monotonic()
+    trace_reader = _load_trace_reader()
+
+    try:
+        with runtime:
+            os.environ[TRACE_ENV] = str(trace_path)
+            for eps_index, epsilon in enumerate(EPSILONS):
+                for sign in (1, -1):
+                    tag = f"eps_{epsilon:.0e}_{'plus' if sign > 0 else 'minus'}"
+                    case_output = endpoint_dir / tag
+                    case_output.mkdir()
+                    theta_step = epsilon * direction_theta
+                    qv_step = epsilon * direction_qv
+                    if sign > 0:
+                        theta_np = np.ascontiguousarray(base_theta + theta_step)
+                        qv_np = np.ascontiguousarray(base_qv + qv_step)
+                    else:
+                        theta_np = np.ascontiguousarray(base_theta - theta_step)
+                        qv_np = np.ascontiguousarray(base_qv - qv_step)
+                    if not np.isfinite(theta_np).all() or not np.isfinite(qv_np).all():
+                        raise ValueError(f"nonfinite endpoint input for {tag}")
+                    kernel.capture = {}
+                    previous_forwards = kernel.forward_calls
+                    theta = torch.from_numpy(theta_np)
+                    qv = torch.from_numpy(qv_np)
+                    mu = torch.from_numpy(mu_np)
+                    ph = torch.from_numpy(ph_np)
+                    rest = torch.from_numpy(rest_np)
+                    with torch.no_grad():
+                        output = NativeBatchMicrophysics(
+                            kernel,
+                            geometry,
+                            NativePrepConfig(**config["prep_configuration"]),
+                            FinishConfig(**config["finish_configuration"]),
+                            ZeroOutConfig(**config["zero_out_configuration"]),
+                        )(theta, qv, mu, ph, rest)
+                    if kernel.forward_calls - previous_forwards != 1:
+                        raise RuntimeError(
+                            "each FD endpoint must issue exactly one full-B KDM call"
+                        )
+
+                    native = {
+                        name: numpy_copy(value)
+                        for name, value in output.native_profile._asdict().items()
+                    }
+                    cloud = {
+                        name: numpy_copy(value)
+                        for name, value in output.cloud_state._asdict().items()
+                    }
+                    finish = np.stack(
+                        [numpy_copy(value) for value in output.finish], axis=0
+                    )
+                    rho_d = numpy_copy(output.rho_d)
+                    capture = dict(kernel.capture)
+                    if not np.isfinite(capture["abi_raw_state_output"]).all():
+                        raise ValueError(f"nonfinite raw KDM output at {tag}")
+
+                    (_, _, _, _, _, _, cost_eligible, negative_nc, negative_ni, _) = (
+                        _block_arrays(block)
+                    )
+                    candidates = np.flatnonzero(cost_eligible).astype(np.int64)
+                    invalid = _validate_selected_inputs(
+                        block, output, config, candidates
+                    )
+                    profile_valid = np.asarray(cost_eligible, dtype=bool).copy()
+                    for bad_row in invalid:
+                        profile_valid[int(bad_row)] = False
+                    profile_rows = np.flatnonzero(profile_valid).astype(np.int64)
+                    profile_products = {}
+                    if profile_rows.size:
+                        profiles = _selected_profile_context(
+                            block, output, profile_rows, config
+                        )
+                        profile_products = {
+                            "profile_" + name: numpy_copy(value)
+                            for name, value in _profile_arrays(profiles).items()
+                        }
+
+                    products = {
+                        "theta_m_input": theta_np,
+                        "qv_input": qv_np,
+                        "abi_state_input": capture["abi_state_input"],
+                        "abi_forcing_input": capture["abi_forcing_input"],
+                        "abi_raw_state_output": capture["abi_raw_state_output"],
+                        "finish": finish,
+                        "rho_d": rho_d,
+                        "profile_valid": profile_valid,
+                        "profile_rows": profile_rows,
+                        "profile_invalid_rows": np.asarray(
+                            sorted(invalid), dtype=np.int32
+                        ),
+                        "initial_cost_eligible": cost_eligible,
+                        "initial_negative_nc": negative_nc,
+                        "initial_negative_ni": negative_ni,
+                        "source_dqf": source_arrays["source_dqf"],
+                        "source_qc": source_arrays["source_qc"],
+                        "source_eligible": source_arrays["source_eligible"],
+                        "baseline_quality": baseline_support["quality"],
+                        "baseline_mask": baseline_support["mask"],
+                        "baseline_weights": baseline_support["weights"],
+                        "baseline_profile_valid": baseline_support["profile_valid"],
+                        "baseline_profile_rows": baseline_support["profile_rows"],
+                        "baseline_target_CFRAC": baseline_target_cfrac,
+                    }
+                    products.update(
+                        {"native_" + name: value for name, value in native.items()}
+                    )
+                    products.update(
+                        {"cloud_" + name: value for name, value in cloud.items()}
+                    )
+                    products.update(profile_products)
+                    products_path = case_output / "endpoint.npz"
+                    with products_path.open("xb") as stream:
+                        np.savez_compressed(stream, **products)
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    endpoint_receipt = {
+                        "schema": "kdm6.block22_centered_fd_endpoint.v1",
+                        "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+                        "epsilon": epsilon,
+                        "sign": sign,
+                        "tag": tag,
+                        "trace_call_ordinal": 1
+                        + 2 * eps_index
+                        + (0 if sign > 0 else 1),
+                        "fullB_KDM_calls": 1,
+                        "RTTOV_calls": 0,
+                        "profile_builder_calls": int(profile_rows.size > 0),
+                        "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+                        "invalid_profile_rows": {
+                            str(key): value for key, value in invalid.items()
+                        },
+                        "endpoint_npz": str(products_path),
+                        "endpoint_npz_sha256": file_sha256(products_path),
+                        "trace_path": str(trace_path),
+                        "trace_source_receipt": str(OBSERVER_SOURCE_RECEIPT),
+                    }
+                    _write_json_new(case_output / "receipt.json", endpoint_receipt)
+                    endpoints.append(endpoint_receipt)
+                    print(
+                        json.dumps(
+                            {
+                                "endpoint": tag,
+                                "status": endpoint_receipt["status"],
+                                "npz_sha256": endpoint_receipt["endpoint_npz_sha256"],
+                            }
+                        )
+                    )
+    except Exception:
+        _write_json_new(
+            output_dir / "execution_failure.json",
+            {
+                "schema": "kdm6.block22_centered_fd_failure.v1",
+                "status": "FAILED",
+                "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+                "completed_endpoints": endpoints,
+                "trace_path": str(trace_path),
+                "exception": traceback.format_exc(),
+            },
+        )
+        raise
+
+    if (
+        len(endpoints) != 10
+        or base_theta.tobytes() != base_theta_bytes
+        or base_qv.tobytes() != base_qv_bytes
+    ):
+        raise RuntimeError(
+            "endpoint coverage or baseline-input immutability check failed"
+        )
+
+    parsed_trace = trace_reader.read_trace(trace_path, OBSERVER_SOURCE_RECEIPT)
+    if sorted(parsed_trace["calls"]) != list(range(1, 11)):
+        raise ValueError(
+            "activation trace must contain exactly ten ordered endpoint calls"
+        )
+    baseline_trace = trace_reader.read_trace(AD_TRACE, OBSERVER_SOURCE_RECEIPT)
+    if 1 not in baseline_trace["calls"]:
+        raise ValueError("trace-on AD baseline has no first call to compare")
+    branch_comparisons = []
+    for endpoint in endpoints:
+        ordinal = endpoint["trace_call_ordinal"]
+        comparison = trace_reader.compare_trace_calls(
+            baseline_trace, 1, parsed_trace, ordinal
+        )
+        mask_changes = comparison["calls"][0]["mask_changes"]
+        target_changes = [
+            {
+                "stage": item["stage"],
+                "field": item["field"],
+                "changed_target_levels": len(item["target_row_changed_levels"]),
+                "base_true_target_levels": item["base_true_target_levels"],
+                "probe_true_target_levels": item["probe_true_target_levels"],
+            }
+            for item in mask_changes
+            if item["target_row_changed_levels"]
+        ]
+        comparison["endpoint"] = endpoint["tag"]
+        comparison["target_row0"] = TARGET_ROW
+        comparison["target_mask_changes"] = target_changes
+        branch_comparisons.append(comparison)
+        endpoint["target_mask_change_count"] = int(
+            sum(item["changed_target_levels"] for item in target_changes)
+        )
+
+    endpoint_arrays = {}
+    for endpoint in endpoints:
+        with np.load(endpoint["endpoint_npz"], allow_pickle=False) as archive:
+            endpoint_arrays[endpoint["tag"]] = {
+                key: archive[key] for key in archive.files
+            }
+        sample = endpoint_arrays[endpoint["tag"]]
+        if not same_bits(
+            sample["abi_state_input"][2:], ad["baseline__abi_state_input"][2:]
+        ):
+            raise ValueError(f"fixed state rows changed at {endpoint['tag']}")
+        if not same_bits(sample["abi_state_input"][1], sample["qv_input"]):
+            raise ValueError(
+                f"QV ABI state differs from endpoint input at {endpoint['tag']}"
+            )
+        rows = sample["profile_rows"]
+        if rows.ndim != 1 or np.unique(rows).size != rows.size:
+            raise ValueError(f"profile row ownership is invalid at {endpoint['tag']}")
+    per_epsilon = []
+    experiment = json.loads(EXPERIMENT_PLAN.read_text())
+    profile_atol = float(experiment["local_FD"]["profile_coordinate_atol"])
+    profile_rtol = float(experiment["local_FD"]["profile_coordinate_rtol"])
+    for epsilon in EPSILONS:
+        plus_tag, minus_tag = f"eps_{epsilon:.0e}_plus", f"eps_{epsilon:.0e}_minus"
+        plus, minus = endpoint_arrays[plus_tag], endpoint_arrays[minus_tag]
+        raw_fd = (plus["abi_raw_state_output"] - minus["abi_raw_state_output"]) / (
+            2.0 * epsilon
+        )
+        finish_fd = (plus["finish"] - minus["finish"]) / (2.0 * epsilon)
+        forcing_fd = (plus["abi_forcing_input"] - minus["abi_forcing_input"]) / (
+            2.0 * epsilon
+        )
+        forcing_ref = ad["baseline__abi_forcing_direction"]
+        forcing_signal = np.maximum(np.abs(forcing_fd), np.abs(forcing_ref))
+        forcing_ratio_by_field = np.max(
+            np.abs(forcing_fd - forcing_ref) / (1.0e-8 + 3.0e-5 * forcing_signal),
+            axis=(1, 2),
+        )
+        forcing_prep_pass = bool(np.all(forcing_ratio_by_field <= 1.0))
+        raw_ref = ad["baseline__abi_raw_state_jvp"]
+        finish_ref = ad["baseline__tangent_finish"]
+        fd17 = np.concatenate((raw_fd, finish_fd), axis=0)
+        ref17 = np.concatenate((raw_ref, finish_ref), axis=0)
+        scale17 = np.asarray(SCALES, dtype=np.float64).reshape(17, 1, 1)
+        atol17 = np.asarray(ATOL, dtype=np.float64).reshape(17, 1, 1)
+        rtol17 = np.asarray(RTOL, dtype=np.float64).reshape(17, 1, 1)
+        scaled_error = np.abs((fd17 - ref17) / scale17)
+        scaled_signal = np.maximum(np.abs(fd17 / scale17), np.abs(ref17 / scale17))
+        allB_ratio_by_output = np.max(scaled_error, axis=(1, 2)) / (
+            atol17[:, 0, 0] + rtol17[:, 0, 0] * np.max(scaled_signal, axis=(1, 2))
+        )
+        target_err = np.max(scaled_error[:, TARGET_ROW, :], axis=1)
+        target_signal = np.max(scaled_signal[:, TARGET_ROW, :], axis=1)
+        target_ratio_by_output = target_err / (
+            atol17[:, 0, 0] + rtol17[:, 0, 0] * target_signal
+        )
+        target_pass = bool(np.all(target_ratio_by_output <= 1.0))
+        plus_pos = np.flatnonzero(plus["profile_rows"] == TARGET_ROW)
+        minus_pos = np.flatnonzero(minus["profile_rows"] == TARGET_ROW)
+        profile_valid = bool(
+            plus["profile_valid"][TARGET_ROW]
+            and minus["profile_valid"][TARGET_ROW]
+            and plus_pos.size == 1
+            and minus_pos.size == 1
+        )
+        profile_results = {}
+        profile_fd_values = {}
+        if profile_valid:
+            for field in experiment["local_FD"]["profile_fields"]:
+                plus_profile = plus[f"profile_{field}"][int(plus_pos[0])]
+                minus_profile = minus[f"profile_{field}"][int(minus_pos[0])]
+                profile_fd = (plus_profile - minus_profile) / (2.0 * epsilon)
+                profile_tangent = profile_jvp[f"JVP_{field}"][0]
+                if profile_fd.shape != profile_tangent.shape:
+                    raise ValueError(f"profile FD shape mismatch for {field}")
+                tolerance = profile_atol + profile_rtol * np.maximum(
+                    np.abs(profile_fd), np.abs(profile_tangent)
+                )
+                coordinate_ratio = np.abs(profile_fd - profile_tangent) / tolerance
+                field_max = float(np.max(coordinate_ratio))
+                profile_results[field] = {
+                    "max_coordinate_tolerance_ratio": field_max,
+                    "coordinate_count": int(coordinate_ratio.size),
+                    "passed": field_max <= 1.0,
+                }
+                profile_fd_values[field] = profile_fd
+        profile_pass = bool(
+            profile_valid
+            and len(profile_results) == len(experiment["local_FD"]["profile_fields"])
+            and all(item["passed"] for item in profile_results.values())
+        )
+        profile_fd_values["CFRAC_plus"] = (
+            plus["profile_CFRAC"][int(plus_pos[0])] if profile_valid else np.array([])
+        )
+        profile_fd_values["CFRAC_minus"] = (
+            minus["profile_CFRAC"][int(minus_pos[0])] if profile_valid else np.array([])
+        )
+        profile_fd_values["CFRAC_baseline"] = plus["baseline_target_CFRAC"]
+        cfrac_plus_changes = (
+            int(
+                np.count_nonzero(
+                    profile_fd_values["CFRAC_plus"]
+                    != profile_fd_values["CFRAC_baseline"]
+                )
+            )
+            if profile_valid
+            else None
+        )
+        cfrac_minus_changes = (
+            int(
+                np.count_nonzero(
+                    profile_fd_values["CFRAC_minus"]
+                    != profile_fd_values["CFRAC_baseline"]
+                )
+            )
+            if profile_valid
+            else None
+        )
+        cfrac_exact_both = bool(
+            profile_valid
+            and same_bits(
+                profile_fd_values["CFRAC_plus"], profile_fd_values["CFRAC_baseline"]
+            )
+            and same_bits(
+                profile_fd_values["CFRAC_minus"], profile_fd_values["CFRAC_baseline"]
+            )
+        )
+        profile_common = target_pass and profile_pass and cfrac_exact_both
+        per_epsilon.append(
+            {
+                "epsilon": epsilon,
+                "target_row0": TARGET_ROW,
+                "target_output_max_ratio": float(np.max(target_ratio_by_output)),
+                "target_pass_all_17_outputs": target_pass,
+                "target_ratio_by_output": target_ratio_by_output.tolist(),
+                "forcing_input_JVP_diagnostic_max_ratio": float(
+                    np.max(forcing_ratio_by_field)
+                ),
+                "forcing_input_JVP_diagnostic_ratio_by_field": forcing_ratio_by_field.tolist(),
+                "forcing_input_JVP_diagnostic_pass": forcing_prep_pass,
+                "profile_valid_at_both_endpoints": profile_valid,
+                "profile_pass_all_8_fields": profile_pass,
+                "profile_max_ratio": max(
+                    (
+                        item["max_coordinate_tolerance_ratio"]
+                        for item in profile_results.values()
+                    ),
+                    default=None,
+                ),
+                "profile_by_field": profile_results,
+                "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": cfrac_plus_changes,
+                "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": cfrac_minus_changes,
+                "target_profile_CFRAC_exact_bits_at_both_endpoints": cfrac_exact_both,
+                "target_mask_change_count_plus": next(
+                    item["target_mask_change_count"]
+                    for item in endpoints
+                    if item["tag"] == plus_tag
+                ),
+                "target_mask_change_count_minus": next(
+                    item["target_mask_change_count"]
+                    for item in endpoints
+                    if item["tag"] == minus_tag
+                ),
+                "fullB_profile_valid_changed_rows_plus": int(
+                    np.count_nonzero(
+                        plus["profile_valid"] != baseline_support["profile_valid"]
+                    )
+                ),
+                "fullB_profile_valid_changed_rows_minus": int(
+                    np.count_nonzero(
+                        minus["profile_valid"] != baseline_support["profile_valid"]
+                    )
+                ),
+                "target_state_finish_profile_common_pass": profile_common,
+                "fullB_max_ratio": float(np.max(allB_ratio_by_output)),
+                "fullB_ratio_by_output": allB_ratio_by_output.tolist(),
+                "raw12_fd_fullB": raw_fd,
+                "finish5_fd_fullB": finish_fd,
+                "forcing4_fd_fullB": forcing_fd,
+                "profile_fd_values": profile_fd_values,
+            }
+        )
+        del (
+            fd17,
+            ref17,
+            scale17,
+            atol17,
+            rtol17,
+            scaled_error,
+            scaled_signal,
+            forcing_signal,
+        )
+
+    best_common = [
+        item["epsilon"]
+        for item in per_epsilon
+        if item["target_state_finish_profile_common_pass"]
+    ]
+    summary = {
+        "schema": "kdm6.block22_centered_fd_result.v2",
+        "status": "COMPLETE_ALL_ENDPOINTS",
+        "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "elapsed_seconds": time.monotonic() - start_time,
+        "launch_plan_sha256": file_sha256(plan_path),
+        "runner_sha256": file_sha256(Path(__file__)),
+        "endpoint_count": len(endpoints),
+        "fullB_KDM_calls": len(endpoints),
+        "RTTOV_calls": 0,
+        "branch_and_schedule_comparison_scope": "full-B512 captured boolean masks and schedule vectors vs AD trace-on baseline KDM call 1; not complete internal branch proof",
+        "branch_and_schedule_comparisons": branch_comparisons,
+        "target_primary_scope": "row 368: raw ABI state 12 plus native finish 5 at 39 levels and eight differentiable RTTOV profile fields at 66/67 levels; all 25 KDM/profile categories must pass at one common epsilon. BT7 and Huber cost remain pending direct RTTOV.",
+        "profile_tolerances": {
+            "absolute": profile_atol,
+            "relative": profile_rtol,
+            "units": experiment["local_FD"]["profile_units"],
+        },
+        "forcing_input_JVP_diagnostic_only": {
+            "absolute_per_coordinate": 1.0e-8,
+            "relative_per_coordinate": 3.0e-5,
+            "envelope": "abs(FD-JVP)/(1e-8+3e-5*max(abs(FD),abs(JVP)))",
+            "scope": "DEN, PII, P, DELZ over B512/L39; reported only and excluded from the 33-category acceptance gate",
+        },
+        "tolerances_imported": {
+            "source": str(SOURCE_V2 / "harness/verify_localized_ice_ad.py"),
+            "state_atol": float(ATOL[0]),
+            "state_rtol": float(RTOL[0]),
+            "finish_atol": float(ATOL[12]),
+            "finish_rtol": float(RTOL[12]),
+        },
+        "target_state_finish_profile_common_passing_epsilons": best_common,
+        "target_state_finish_profile_common_epsilon_passed": bool(best_common),
+        "full_33_category_acceptance_complete": False,
+        "observation_status": "No endpoint RTTOV was run; target BT/cost FD pending separate reviewed pilot/controller",
+        "per_epsilon": [
+            {
+                key: value
+                for key, value in item.items()
+                if key
+                not in (
+                    "raw12_fd_fullB",
+                    "finish5_fd_fullB",
+                    "forcing4_fd_fullB",
+                    "profile_fd_values",
+                )
+            }
+            for item in per_epsilon
+        ],
+        "endpoints": endpoints,
+    }
+    _write_json_new(output_dir / "centered_fd_summary.json", summary)
+    fd_bundle = {}
+    for item in per_epsilon:
+        eps_tag = f"{item['epsilon']:.0e}"
+        fd_bundle[f"eps_{eps_tag}__raw12_fd_fullB"] = item["raw12_fd_fullB"]
+        fd_bundle[f"eps_{eps_tag}__finish5_fd_fullB"] = item["finish5_fd_fullB"]
+        fd_bundle[f"eps_{eps_tag}__forcing4_fd_fullB"] = item["forcing4_fd_fullB"]
+        for field, value in item["profile_fd_values"].items():
+            fd_bundle[f"eps_{eps_tag}__target_profile_{field}"] = value
+    bundle_path = output_dir / "centered_fd_fullB.npz"
+    with bundle_path.open("xb") as stream:
+        np.savez_compressed(stream, **fd_bundle)
+        stream.flush()
+        os.fsync(stream.fileno())
+    _write_json_new(
+        output_dir / "execution_complete.json",
+        {
+            "schema": "kdm6.block22_centered_fd_execution.v1",
+            "status": "COMPLETE_ALL_ENDPOINTS",
+            "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "launch_plan_sha256": file_sha256(plan_path),
+            "summary_sha256": file_sha256(output_dir / "centered_fd_summary.json"),
+            "fullB_fd_bundle": str(bundle_path),
+            "fullB_fd_bundle_sha256": file_sha256(bundle_path),
+            "endpoint_count": len(endpoints),
+            "fullB_KDM_calls": len(endpoints),
+            "RTTOV_calls": 0,
+        },
+    )
+    print(
+        json.dumps(
+            {
+                "status": summary["status"],
+                "endpoints": len(endpoints),
+                "target_state_finish_profile_common_passing_epsilons": best_common,
+                "summary": str(output_dir / "centered_fd_summary.json"),
+            }
+        )
+    )
+    return 0 if best_common else 2
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--prepare", action="store_true")
+    action.add_argument("--execute", action="store_true")
+    parser.add_argument("--output", required=True, type=Path)
+    args = parser.parse_args(argv)
+    if args.prepare:
+        _prepare(args.output)
+        return 0
+    return _execute(args.output)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

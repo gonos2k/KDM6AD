@@ -1,0 +1,12 @@
+{
+  "theta": {
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "direction_sha256": "3f29e5faf40e2a9c502c11efb420ce65e45d0e823c9c605f44e1778c44e24fce"
+  },
+  "qv": {
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "direction_sha256": "a86c10acd09594842a0ebc1ee836170800cdc9367d3d94d28399460dbb891735"
+  }
+}

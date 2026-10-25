@@ -1,0 +1,12 @@
+{
+  "KDM6_calls": 0,
+  "RTTOV_calls": 0,
+  "chunks": 129,
+  "columns": 65988,
+  "completed_at_utc": "2026-10-25T06:14:00.794251+00:00",
+  "input_manifest_sha256": "e89e816e606b1f2b061c04d5c6509b9a0e83d0b170501fe667d0ed3a35e6c8b8",
+  "output_manifest": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/extraction_v1/export_v1/output_manifest.json",
+  "output_manifest_sha256": "66a358255ed136c809ecf83d174e5bbbe7bd89f9b62b8e2efbd0405eb3cbf077",
+  "schema": "kdm6.native_cloud_efficacy_export_completion.v1",
+  "status": "COMPLETE_ALL_NATIVE_COLUMNS"
+}

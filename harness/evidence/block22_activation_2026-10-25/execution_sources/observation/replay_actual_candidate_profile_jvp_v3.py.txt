@@ -1,0 +1,268 @@
+"""Saved-data native-prep/profile JVP replay and baseline K contraction.
+
+No KDM or RTTOV execution occurs here.  The missing tangent dry density is
+reconstructed with the pinned analytic native-prep JVP from saved full-B
+primal/tangent arrays, then mapped through the existing profile JVP.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+PARENT = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+PILOT_HELPER = RESEARCH / "observation_prep_v1/prepare_target_rttov_pilot.py"
+JVP_NPZ = RESEARCH / "observation_prep_v1/actual_candidate_profile_jvp_v3.npz"
+JVP_JSON = RESEARCH / "observation_prep_v1/actual_candidate_profile_jvp_v3.json"
+AD_NPZ = RESEARCH / "driver_v1/ad_execution_v1/ad_control/block22_actual_jvp_vjp.npz"
+AD_RECEIPT = RESEARCH / "driver_v1/ad_execution_v1/ad_control/jvp_vjp_receipt.json"
+AD_SHA = "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af"
+TARGET = 368
+PROFILE_FIELDS = ("T", "Q", "P", "P_HALF", "HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7")
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def same_bits(left, right):
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def write_json_new(path, payload):
+    encoded = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def write_receipt_new(path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    write_json_new(path, result)
+    return result
+
+
+def saved_data_profile_jvp():
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(RESEARCH / "observation_prep_v1"))
+    import torch
+    from oracle.kdm6 import native_prep
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import profile_jvp
+    import prepare_target_rttov_pilot as pilot
+
+    if sha(AD_NPZ) != AD_SHA:
+        raise ValueError("saved actual-candidate JVP/VJP NPZ hash changed")
+    ad_receipt = json.loads(AD_RECEIPT.read_text())
+    if ad_receipt.get("product_npz_sha256") != AD_SHA or ad_receipt.get("input_processor_KDM_calls") != 0:
+        raise ValueError("saved direction receipt does not bind the expected no-new-KDM artifact")
+    preflight, prep, arrays, block, config, value_receipt = pilot.preflight()
+    with np.load(pilot.VALUES, allow_pickle=False) as z:
+        value_arrays = {key: z[key] for key in z.files}
+    with np.load(AD_NPZ, allow_pickle=False) as z:
+        ad = {key: z[key] for key in z.files}
+    primal, primal_arrays = pilot.load_saved_output(
+        "baseline", torch, NativeProfile, CloudProfile, NativeBatchOutput, value_arrays
+    )
+    for key, expected in (
+        ("baseline__primal_native_thm_pert", primal_arrays["native_after_thm_pert"]),
+        ("baseline__primal_native_qv", primal_arrays["native_after_qv"]),
+        ("baseline__primal_native_p_center_Pa", primal_arrays["native_after_p_center_Pa"]),
+        ("baseline__primal_native_phi_interfaces", primal_arrays["native_after_phi_interfaces"]),
+        ("baseline__primal_rho_d", primal_arrays["rho_d"]),
+    ):
+        if not same_bits(ad[key], expected):
+            raise ValueError(f"saved AD primal mismatch for {key}")
+    for name in ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg"):
+        if not same_bits(ad["baseline__primal_cloud_" + name], primal_arrays["cloud_" + name]):
+            raise ValueError(f"saved AD cloud primal mismatch for {name}")
+
+    cfg = config["prep_configuration"]
+    prep_config = native_prep.NativePrepConfig(**{
+        name: float(cfg[name]) for name in ("ptop", "rd", "p0", "t0", "alpha", "gamma", "kappa", "g")
+    })
+    geometry = native_prep.FrozenPrepGeometry(**{
+        name: torch.as_tensor(block["geometry"][name][TARGET].copy(), dtype=torch.float64)
+        for name in ("phb", "c3h", "c4h", "c3f", "c4f")
+    })
+    mu = torch.as_tensor(float(block["mu"][TARGET]), dtype=torch.float64)
+    ph = torch.as_tensor(block["ph"][TARGET].copy(), dtype=torch.float64)
+    prep_state = native_prep.NativePrepState(
+        primal.native_profile.thm_pert[TARGET], primal.native_profile.qv[TARGET], mu, ph
+    )
+    prep_primal = native_prep.native_prep(prep_state, geometry, prep_config)
+    if not same_bits(prep_primal.rho.detach().cpu().numpy(), primal.rho_d[TARGET].detach().cpu().numpy()):
+        raise ValueError("native prep rho does not reproduce saved baseline rho_d")
+    prep_direction = native_prep.NativePrepState(
+        torch.as_tensor(ad["baseline__tangent_native_thm_pert"][TARGET].copy(), dtype=torch.float64),
+        torch.as_tensor(ad["baseline__tangent_native_qv"][TARGET].copy(), dtype=torch.float64),
+        torch.zeros_like(mu),
+        torch.as_tensor(ad["baseline__tangent_native_phi_interfaces"][TARGET].copy(), dtype=torch.float64),
+    )
+    rho_direction = native_prep.native_prep_jvp(
+        prep_state, geometry, prep_direction, prep_config
+    ).rho
+    tangent_native = NativeProfile(
+        torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_native_thm_pert"])),
+        torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_native_qv"])),
+        torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_native_p_center_Pa"])),
+        torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_native_phi_interfaces"])),
+    )
+    tangent_cloud = CloudProfile(*(torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_cloud_" + name]))
+                                   for name in ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg")))
+    rho_full = torch.zeros_like(primal.rho_d)
+    rho_full[TARGET] = rho_direction
+    tangent_finish = tuple(torch.from_numpy(np.ascontiguousarray(ad["baseline__tangent_finish"][n])) for n in range(5))
+    tangent = NativeBatchOutput(tangent_native, tangent_cloud, rho_full, tangent_finish)
+    profile_direction = profile_jvp(
+        block, primal, tangent, config, np.asarray([TARGET], dtype=np.int64)
+    )
+    if set(profile_direction) != set(PROFILE_FIELDS):
+        raise ValueError("profile JVP returned an unexpected field set")
+    for name, value in profile_direction.items():
+        if not np.isfinite(value).all():
+            raise ValueError(f"nonfinite actual-candidate profile JVP field {name}")
+
+    return {
+        "profile_direction": profile_direction,
+        "rho_direction_target": rho_direction.detach().cpu().numpy().copy(),
+        "preflight": preflight,
+        "prep": prep,
+        "arrays": arrays,
+        "block": block,
+        "config": config,
+        "value_receipt": value_receipt,
+        "ad_receipt": ad_receipt,
+    }
+
+
+def contract_baseline_k(k_npz: Path, pilot_receipt_path: Path, profile_jvp_npz: Path = JVP_NPZ):
+    pilot_receipt = json.loads(pilot_receipt_path.read_text())
+    claimed = pilot_receipt.get("receipt_sha256")
+    payload = dict(pilot_receipt)
+    payload.pop("receipt_sha256", None)
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    if hashlib.sha256(canonical).hexdigest() != claimed:
+        raise ValueError("RTTOV pilot receipt digest mismatch")
+    if pilot_receipt.get("schema") != "kdm6.block22_target_observation_pilot_result.v1" or pilot_receipt.get("new_KDM_calls") != 0:
+        raise ValueError("pilot receipt has unexpected schema or new KDM calls")
+    baseline_call = pilot_receipt.get("calls", {}).get("baseline", {})
+    if (baseline_call.get("mode") != "K" or baseline_call.get("K_calls") != 1
+            or baseline_call.get("direct_calls") != 0 or baseline_call.get("K_recovered") != 0
+            or baseline_call.get("rows") != [TARGET]):
+        raise ValueError("baseline receipt does not prove one fresh target-row K call")
+    if sha(k_npz) != baseline_call.get("target_npz_sha256"):
+        raise ValueError("baseline K NPZ differs from the pilot receipt")
+    jvp_receipt = json.loads(JVP_JSON.read_text())
+    jvp_payload = dict(jvp_receipt)
+    jvp_claimed = jvp_payload.pop("receipt_sha256", None)
+    jvp_canonical = (json.dumps(jvp_payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    if hashlib.sha256(jvp_canonical).hexdigest() != jvp_claimed:
+        raise ValueError("actual-candidate profile JVP receipt digest mismatch")
+    if sha(profile_jvp_npz) != jvp_receipt.get("profile_jvp_npz_sha256"):
+        raise ValueError("actual-candidate profile JVP NPZ differs from its receipt")
+    with np.load(k_npz, allow_pickle=False) as k_archive:
+        k_values = {key: k_archive[key] for key in k_archive.files}
+    with np.load(profile_jvp_npz, allow_pickle=False) as j_archive:
+        j_values = {key: j_archive[key] for key in j_archive.files}
+    predicted = []
+    for channel in range(7):
+        products = []
+        for name in PROFILE_FIELDS:
+            kval = np.asarray(k_values["K_" + name], dtype=np.float64)
+            tangent = np.asarray(j_values["JVP_" + name], dtype=np.float64)
+            if kval.ndim != 3 or kval.shape[:2] != (1, 7) or tangent.shape != (1, kval.shape[2]):
+                raise ValueError(f"K/profile JVP shape mismatch for {name}")
+            products.extend(float(kval[0, channel, level] * tangent[0, level])
+                            for level in range(kval.shape[2]))
+        predicted.append(math.fsum(products))
+    parent_record = json.loads((RESEARCH / "driver_v1/execution_v1/trace_on/execution.json").read_text())
+    baseline_record = next(item for item in parent_record["value_calls"] if item["state"] == "baseline")
+    with np.load(baseline_record["parent_reference_npz"], allow_pickle=False) as parent:
+        old_k = {name: same_bits(k_values["K_" + name], parent["K_" + name][TARGET:TARGET + 1])
+                 for name in PROFILE_FIELDS}
+        old_target_bt = parent["bt"][TARGET].copy()
+    return {
+        "schema": "kdm6.block22_baseline_K_actual_candidate_profile_jvp.v1",
+        "scope": "One fresh baseline K call contracted with the saved actual-candidate native direction; first-order local projection only. No tangent is taken through RTTOV K.",
+        "new_KDM_calls": 0,
+        "new_RTTOV_calls": 0,
+        "pilot_receipt_sha256": sha(pilot_receipt_path),
+        "profile_jvp_receipt_sha256": sha(JVP_JSON),
+        "K_profile_fields_match_parent_bits": old_k,
+        "K_actual_direction_profile_jvp_K": predicted,
+        "parent_baseline_bt_kma_v3_0": old_target_bt.tolist(),
+        "historical_parent_bt_jvp_used": False,
+    }
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    replay = sub.add_parser("replay", help="compute actual-candidate profile JVP from saved arrays only")
+    replay.add_argument("--output-npz", type=Path, default=JVP_NPZ)
+    replay.add_argument("--output-json", type=Path, default=JVP_JSON)
+    contract = sub.add_parser("contract", help="contract a completed baseline K receipt with saved actual profile JVP")
+    contract.add_argument("--k-npz", type=Path, required=True)
+    contract.add_argument("--pilot-receipt", type=Path, required=True)
+    contract.add_argument("--output-json", type=Path, required=True)
+    args = parser.parse_args(argv)
+    if args.command == "replay":
+        if args.output_npz.exists() or args.output_json.exists():
+            raise FileExistsError("profile-JVP output must be new")
+        result = saved_data_profile_jvp()
+        arrays = {"rho_d_tangent_target": result["rho_direction_target"]}
+        arrays.update({"JVP_" + name: value for name, value in result["profile_direction"].items()})
+        with args.output_npz.open("xb") as stream:
+            np.savez(stream, **arrays)
+        receipt = {
+            "schema": "kdm6.block22_actual_candidate_profile_jvp_replay.v3",
+            "status": "SAVED_DATA_REPLAY_COMPLETE",
+            "producer_sha256": sha(Path(__file__)),
+            "target_row0": TARGET,
+            "target_flat0": 11632,
+            "native_ijk1": [167, 50, 18],
+            "input_bundle_sha256": result["preflight"]["input_bundle_sha256"],
+            "full_B_value_npz_sha256": result["preflight"]["saved_value_npz_sha256"],
+            "actual_direction_ad_npz_sha256": sha(AD_NPZ),
+            "direction_proof_sha256": result["ad_receipt"]["accepted_direction_proof_sha256"],
+            "preflight_producer_sha256": result["preflight"]["producer_sha256"],
+            "profile_jvp_npz_sha256": sha(args.output_npz),
+            "profile_fields": {name: list(value.shape) for name, value in result["profile_direction"].items()},
+            "rho_d_tangent_target_finite": bool(np.isfinite(result["rho_direction_target"]).all()),
+            "reference_scope": "No comparison against the historical sinusoidal-probe profile JVP; this is the saved actual-candidate direction, to be checked against new centered FD endpoint profiles.",
+            "new_KDM_calls": 0,
+            "new_RTTOV_calls": 0,
+        }
+        receipt = write_receipt_new(args.output_json, receipt)
+        print(json.dumps(receipt, indent=2))
+    else:
+        if args.output_json.exists() or args.output_json.is_symlink():
+            raise FileExistsError(args.output_json)
+        result = contract_baseline_k(args.k_npz, args.pilot_receipt)
+        result["k_npz_sha256"] = sha(args.k_npz)
+        result["profile_jvp_npz_sha256"] = sha(JVP_NPZ)
+        result = write_receipt_new(args.output_json, result)
+        print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

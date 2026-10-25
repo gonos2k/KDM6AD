@@ -1,0 +1,63 @@
+{
+  "schema": "kdm6.block22_trace_raw_ABI_binding.v1",
+  "checks": [
+    {
+      "call": 1,
+      "level_bottom0": 4,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 1,
+      "level_bottom0": 16,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 1,
+      "level_bottom0": 17,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 1,
+      "level_bottom0": 18,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 2,
+      "level_bottom0": 4,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 2,
+      "level_bottom0": 16,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 2,
+      "level_bottom0": 17,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    },
+    {
+      "call": 2,
+      "level_bottom0": 18,
+      "qv_qc_nc_nccn_bits_equal": true,
+      "theta_dry_from_trace_T_div_PII_residual_K": 0.0,
+      "theta_dry_bits_equal": true
+    }
+  ],
+  "captured_field_bit_matches": 32,
+  "scope": "C++ trace physical T and raw ABI dry theta are separate; division by captured PII follows the runtime conversion. No model rerun."
+}

@@ -1,0 +1,185 @@
+"""Recover the completed baseline target K product from saved RTTOV files.
+
+This parser-only recovery performs no RTTOV or KDM execution. It is for the
+single K run already recorded in FAILED_AFTER_BASELINE_K_RECEIPT.json.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+PARENT = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+HELPER_DIR = RESEARCH / "observation_prep_v1"
+CASE = HELPER_DIR / "pilot_v2/baseline/case_k"
+ATTEMPT = HELPER_DIR / "pilot_v2/FAILED_AFTER_BASELINE_K_RECEIPT.json"
+OUTPUT_NPZ = HELPER_DIR / "pilot_v2/baseline/target_observation.npz"
+OUTPUT_JSON = HELPER_DIR / "pilot_v2/baseline/K_RECOVERY_RECEIPT.json"
+TARGET_ROW = 368
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+PROFILE_FIELDS = ("T", "Q", "P", "P_HALF", "HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7")
+PROFILE_MAP = {name: "profile_" + name for name in PROFILE_FIELDS + ("CFRAC",)}
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def same_bits(left, right):
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def write_json_new(path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    encoded = (json.dumps(result, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return result
+
+
+def main():
+    if OUTPUT_NPZ.exists() or OUTPUT_JSON.exists():
+        raise FileExistsError("baseline recovered output must be new")
+    if not ATTEMPT.is_file():
+        raise FileNotFoundError(ATTEMPT)
+    attempt = json.loads(ATTEMPT.read_text())
+    if attempt.get("completed_model_calls") != {
+        "KDM_forward": 0, "KDM_JVP": 0, "KDM_VJP": 0,
+        "RTTOV_K": 1, "RTTOV_direct": 0, "K_recovered": 0,
+    }:
+        raise ValueError("failed-attempt receipt does not bind exactly one fresh baseline K call")
+    out_dir = CASE / "out"
+    for name in ("k/profiles_k.txt", "k/radiance.txt", "rttov_test.txt", "run.sh"):
+        if not (out_dir / name).is_file():
+            raise FileNotFoundError(out_dir / name)
+    if sha(out_dir / "k/profiles_k.txt") != attempt["case_k_profiles_sha256"] or sha(out_dir / "k/radiance.txt") != attempt["case_k_radiance_sha256"]:
+        raise ValueError("completed RTTOV K files differ from the failed-attempt receipt")
+
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(HELPER_DIR))
+    import torch
+    from oracle.kdm6.obs.rttov_runner import parse_rttov_k_case
+    from oracle.kdm6.obs.rttov_case_writer import _resolve_coef_path, add_cloud_k_slots
+    from oracle.kdm6.obs._rttov_reference.rttov_ascii import parse_rttov_ascii_blocks
+    from oracle.kdm6.obs.ami_bt_coordinate import read_ami_filters, read_kma_calibration, transform_rttov_to_kma
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import PROFILE_FIELDS as AD_PROFILE_FIELDS, _profile_arrays, _selected_profile_context, _integer_quality, _read_namelist_flag
+    import prepare_target_rttov_pilot as pilot
+
+    if _read_namelist_flag(out_dir / "rttov_test.txt", "do_k") is not True or _read_namelist_flag(out_dir / "rttov_test.txt", "do_direct") is not False:
+        raise ValueError("saved baseline case flags do not prove a K-only RTTOV run")
+    result = parse_rttov_k_case(out_dir, nchannels=len(CHANNELS), expected_nprofiles=1)
+    k = result.k
+    add_cloud_k_slots(k, nlay=len(k["T"][0][0]))
+    blocks = parse_rttov_ascii_blocks(out_dir / "k" / "radiance.txt")
+    if "RADIANCE%TOTAL" not in blocks:
+        raise ValueError("saved fresh-K radiance lacks TOTAL required for KMA v3.0")
+    total = np.asarray(blocks["RADIANCE%TOTAL"], dtype=np.float64)
+    if total.size != len(CHANNELS):
+        raise ValueError("saved K-run TOTAL radiance is not one profile by seven channels")
+    bt, k, transform_metadata = transform_rttov_to_kma(
+        result.bt,
+        total.reshape(1, len(CHANNELS)),
+        k,
+        CHANNELS,
+        read_ami_filters(_resolve_coef_path(CASE)),
+        read_kma_calibration(),
+    )
+    bt = np.asarray(bt, dtype=np.float64).reshape(1, len(CHANNELS))
+    quality = _integer_quality(result.rad_quality, (1, len(CHANNELS)))
+    if not np.isfinite(bt).all() or not np.array_equal(quality, np.zeros((1, 7), dtype=np.int32)):
+        raise ValueError("saved fresh baseline K is not finite strict-zero quality")
+
+    preflight, prep, arrays, block, config, value_receipt = pilot.preflight()
+    with np.load(pilot.VALUES, allow_pickle=False) as archive:
+        value_arrays = {name: archive[name] for name in archive.files}
+    output, _ = pilot.load_saved_output(
+        "baseline", torch, NativeProfile, CloudProfile, NativeBatchOutput, value_arrays
+    )
+    profiles = _selected_profile_context(block, output, np.asarray([TARGET_ROW], dtype=np.int64), config)
+    profile_arrays = _profile_arrays(profiles)
+    parent_record = next(row for row in value_receipt["value_calls"] if row["state"] == "baseline")
+    with np.load(parent_record["parent_reference_npz"], allow_pickle=False) as parent:
+        bt_equal = same_bits(bt[0], parent["bt"][TARGET_ROW])
+        quality_equal = same_bits(quality[0], parent["quality"][TARGET_ROW])
+        k_equal = {
+            name: same_bits(np.asarray(k[name], dtype=np.float64), parent["K_" + name][TARGET_ROW:TARGET_ROW + 1])
+            for name in PROFILE_FIELDS
+        }
+        profile_equal = {
+            name: same_bits(profile_arrays[name], parent[PROFILE_MAP[name]][TARGET_ROW:TARGET_ROW + 1])
+            for name in PROFILE_MAP
+        }
+        parent_mask = parent["mask"][TARGET_ROW].copy()
+    if set(PROFILE_FIELDS) - set(k):
+        raise ValueError(f"fresh K output misses profile fields: {sorted(set(PROFILE_FIELDS)-set(k))}")
+    if not bt_equal or not quality_equal or not all(k_equal.values()) or not all(profile_equal.values()):
+        raise ValueError("recovered K output failed exact comparison with the saved full-batch baseline")
+    if not bool(parent_mask.all()):
+        raise ValueError("target parent baseline support is not all seven channels")
+
+    payload = {"bt": bt[0], "quality": quality[0], "parent_support_mask": parent_mask}
+    payload.update({"profile_" + name: value for name, value in profile_arrays.items()})
+    for name, value in k.items():
+        payload["K_" + name] = np.asarray(value, dtype=np.float64)
+    with OUTPUT_NPZ.open("xb") as stream:
+        np.savez(stream, **payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+    raw_outputs = {
+        name: {"sha256": sha(out_dir / name), "bytes": (out_dir / name).stat().st_size}
+        for name in ("k/profiles_k.txt", "k/radiance.txt", "rttov_test.txt", "run.sh",
+                     "run.stdout.log", "run.stderr.log")
+    }
+    receipt = {
+        "schema": "kdm6.block22_baseline_k_saved_output_recovery.v1",
+        "status": "ONE_FRESH_K_PARSED_AND_RECONSTRUCTED_NO_RERUN",
+        "attempt_receipt_sha256": sha(ATTEMPT),
+        "pilot_helper_source_snapshot_sha256": "42816f2d011f0e1a33bda45568cee05a81b68e3866913e1723ad8ff66b2992b2",
+        "input_bundle_sha256": preflight["input_bundle_sha256"],
+        "saved_fullB_values_sha256": preflight["saved_value_npz_sha256"],
+        "target_row0": TARGET_ROW,
+        "target_flat0": 11632,
+        "native_ijk1": [167, 50, 18],
+        "profile_nprofiles": 1,
+        "channels": list(CHANNELS),
+        "fresh_RTTOV_K_calls_already_completed": 1,
+        "additional_RTTOV_calls_for_recovery": 0,
+        "additional_KDM_calls_for_recovery": 0,
+        "bt_matches_parent_bitwise": bt_equal,
+        "quality_matches_parent_bitwise": quality_equal,
+        "K_profile_fields_match_parent_bitwise": k_equal,
+        "profile_fields_match_parent_bitwise": profile_equal,
+        "target_support_all_channels": bool(parent_mask.all()),
+        "KMA_transform_metadata": np.asarray(transform_metadata).tolist(),
+        "fixed_or_uncontracted_K_fields": sorted(set(k) - set(PROFILE_FIELDS)),
+        "fixed_or_uncontracted_scope": "RTTOV emitted additional O3/CO2/surface/diagnostic K blocks; only the eight live differentiable observation-profile fields are contracted. O3/CO2 remain fixed reference inputs here.",
+        "raw_case_outputs": raw_outputs,
+        "recovered_target_npz": str(OUTPUT_NPZ),
+        "recovered_target_npz_sha256": sha(OUTPUT_NPZ),
+        "observation_profile_source": "pinned full-B saved physics outputs rebuilt through source_v2 native profile builder; bitwise equal to parent full-batch target profile",
+        "producer_sha256": sha(Path(__file__)),
+    }
+    receipt = write_json_new(OUTPUT_JSON, receipt)
+    print(json.dumps(receipt, indent=2))
+
+
+if __name__ == "__main__":
+    main()

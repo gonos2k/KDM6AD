@@ -1,0 +1,939 @@
+"""Export saved baseline and accepted-candidate native cloud fields offline.
+
+This reads only source-pinned result packets, replay audit arrays, and the
+original native preparation inputs. It makes no KDM, RTTOV, optimizer, host,
+or external-data calls. One output NPZ is written for each original B512/final
+452 block.
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import traceback
+
+import numpy as np
+
+RESEARCH = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/extraction_v1"
+)
+BASE_CASE = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024"
+)
+BASE_RUN = BASE_CASE / "RUN_v4"
+CANDIDATE_RUN = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/RUN_v1"
+)
+BASE_STAGE = BASE_RUN / "baseline"
+CANDIDATE_STAGE = CANDIDATE_RUN / "RESTRICTED_alpha_1p0"
+BASE_AUDIT = BASE_RUN / "APPLIED_PHYSICS_AUDIT"
+BASE_SOURCE = BASE_CASE / "source_v3"
+CANDIDATE_SOURCE = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2"
+)
+NX = 234
+NY = 282
+LEVELS = 39
+NCOLUMNS = NX * NY
+CHUNK_COUNT = math.ceil(NCOLUMNS / 512)
+ARRAY_LIMIT = 50 * 1024 * 1024
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def write_json_new(path: Path, data: dict) -> str:
+    payload = (
+        json.dumps(data, sort_keys=True, indent=2, allow_nan=False) + "\n"
+    ).encode()
+    with Path(path).open("xb") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(payload).hexdigest()
+
+
+def same_bits(left, right) -> bool:
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def _receipt_for(stage: Path, index: int) -> Path:
+    return stage / f"chunk_{index:05d}" / "receipt.json"
+
+
+def _verify_case_and_result(receipt_path: Path, *, index: int, start: int, stop: int):
+    if not receipt_path.is_file() or receipt_path.is_symlink():
+        raise FileNotFoundError(receipt_path)
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = json.loads(receipt_bytes)
+    expected = {
+        "chunk_index": index,
+        "start": start,
+        "stop": stop,
+        "columns": stop - start,
+    }
+    if any(receipt.get(key) != value for key, value in expected.items()):
+        raise ValueError(f"receipt range/index mismatch: {receipt_path}")
+    artifact = Path(receipt["artifact"])
+    if not artifact.is_file() or artifact.is_symlink():
+        raise FileNotFoundError(artifact)
+    artifact_hash = sha256_file(artifact)
+    if artifact_hash != receipt.get("artifact_sha256"):
+        raise ValueError(f"result NPZ differs from receipt: {artifact}")
+    with np.load(artifact, allow_pickle=False) as archive:
+        arrays = {name: archive[name] for name in archive.files}
+    needed = {
+        "flat_index",
+        "profile_valid",
+        "quality",
+        "mask",
+        "weights",
+        "source_eligible",
+        "source_dqf",
+        "source_qc",
+        "profile_rows",
+        "profile_T",
+        "theta_m",
+        "qv",
+        "rho_d",
+        "native_after_thm_pert",
+        "native_after_qv",
+        "native_after_p_center_Pa",
+        "native_after_phi_interfaces",
+        "cloud_qc",
+        "cloud_qi",
+        "cloud_qs",
+        "cloud_qr",
+        "cloud_qg",
+        "initial_negative_nc",
+        "initial_negative_ni",
+    }
+    if needed - set(arrays):
+        raise ValueError(
+            f"result NPZ missing fields {sorted(needed - set(arrays))}: {artifact}"
+        )
+    columns = stop - start
+    expected_shapes = {
+        "flat_index": (columns,),
+        "profile_valid": (columns,),
+        "quality": (columns, 7),
+        "mask": (columns, 7),
+        "weights": (columns, 7),
+        "source_eligible": (columns, 7),
+        "source_dqf": (columns, 7),
+        "source_qc": (columns, 7),
+        "theta_m": (columns, LEVELS),
+        "qv": (columns, LEVELS),
+        "rho_d": (columns, LEVELS),
+        "native_after_thm_pert": (columns, LEVELS),
+        "native_after_qv": (columns, LEVELS),
+        "native_after_p_center_Pa": (columns, LEVELS),
+        "native_after_phi_interfaces": (columns, LEVELS + 1),
+        "cloud_qc": (columns, LEVELS),
+        "cloud_qi": (columns, LEVELS),
+        "cloud_qs": (columns, LEVELS),
+        "cloud_qr": (columns, LEVELS),
+        "cloud_qg": (columns, LEVELS),
+        "initial_negative_nc": (columns,),
+        "initial_negative_ni": (columns,),
+    }
+    for name, shape in expected_shapes.items():
+        if arrays[name].shape != shape:
+            raise ValueError(
+                f"{name} shape {arrays[name].shape} != {shape} in {artifact}"
+            )
+        if arrays[name].dtype.kind in "fi" and not np.isfinite(arrays[name]).all():
+            raise ValueError(f"{name} contains nonfinite values in {artifact}")
+    expected_flat = np.arange(start, stop, dtype=np.int32)
+    if arrays["flat_index"].dtype != np.int32 or not np.array_equal(
+        arrays["flat_index"], expected_flat
+    ):
+        raise ValueError(f"flat-index sequence mismatch in {artifact}")
+    profile_rows = arrays["profile_rows"]
+    valid_rows = np.flatnonzero(arrays["profile_valid"]).astype(np.int64)
+    if (
+        profile_rows.dtype != np.int64
+        or profile_rows.ndim != 1
+        or not np.array_equal(profile_rows, valid_rows)
+    ):
+        raise ValueError(
+            f"profile_rows do not exactly enumerate profile_valid rows: {artifact}"
+        )
+    if arrays["profile_T"].shape != (profile_rows.size, LEVELS + 27):
+        raise ValueError(f"stored profile_T shape mismatch in {artifact}")
+    if not np.isfinite(arrays["profile_T"]).all():
+        raise ValueError(f"stored profile_T contains nonfinite values in {artifact}")
+    return receipt, receipt_bytes, artifact, artifact_hash, arrays
+
+
+def _input_inventory(base_manifest, candidate_manifest):
+    items = []
+    packet_root = Path(base_manifest["case_preparation"]["paths"]["packets"])
+    packet_chunks = base_manifest["case_preparation"]["packet_manifest"]["chunks"]
+    if len(packet_chunks) != CHUNK_COUNT:
+        raise ValueError("pinned fp64 packet manifest is not 129 chunks")
+    for index in range(CHUNK_COUNT):
+        start = index * 512
+        stop = min(start + 512, NCOLUMNS)
+        base_path = _receipt_for(BASE_STAGE, index)
+        candidate_path = _receipt_for(CANDIDATE_STAGE, index)
+        base_receipt, _, base_artifact, base_artifact_hash, base_arrays = (
+            _verify_case_and_result(base_path, index=index, start=start, stop=stop)
+        )
+        (
+            candidate_receipt,
+            _,
+            candidate_artifact,
+            candidate_artifact_hash,
+            candidate_arrays,
+        ) = _verify_case_and_result(candidate_path, index=index, start=start, stop=stop)
+        if not same_bits(base_arrays["flat_index"], candidate_arrays["flat_index"]):
+            raise ValueError(
+                f"baseline/candidate source indices differ in chunk {index}"
+            )
+        audit_path = BASE_AUDIT / f"baseline_chunk_{index:05d}.npz"
+        if not audit_path.is_file() or audit_path.is_symlink():
+            raise FileNotFoundError(audit_path)
+        audit_hash = sha256_file(audit_path)
+        packet = packet_chunks[index]
+        if (
+            packet.get("start_flat") != start
+            or packet.get("stop_flat_exclusive") != stop
+        ):
+            raise ValueError(f"packet manifest range mismatch at chunk {index}")
+        packet_path = packet_root / packet["path"]
+        if not packet_path.is_file() or packet_path.is_symlink():
+            raise FileNotFoundError(packet_path)
+        packet_hash = sha256_file(packet_path)
+        if packet_hash != packet.get(
+            "sha256"
+        ) or packet_path.stat().st_size != packet.get("bytes"):
+            raise ValueError(
+                f"fp64 source packet differs from manifest at chunk {index}"
+            )
+        items.append(
+            {
+                "chunk_index": index,
+                "start_flat": start,
+                "stop_flat_exclusive": stop,
+                "columns": stop - start,
+                "baseline_receipt": str(base_path),
+                "baseline_receipt_sha256": sha256_file(base_path),
+                "baseline_artifact": str(base_artifact),
+                "baseline_artifact_sha256": base_artifact_hash,
+                "candidate_receipt": str(candidate_path),
+                "candidate_receipt_sha256": sha256_file(candidate_path),
+                "candidate_artifact": str(candidate_artifact),
+                "candidate_artifact_sha256": candidate_artifact_hash,
+                "baseline_applied_physics_audit": str(audit_path),
+                "baseline_applied_physics_audit_sha256": audit_hash,
+                "source_packet": str(packet_path),
+                "source_packet_sha256": packet_hash,
+                "source_packet_bytes": packet_path.stat().st_size,
+                "baseline_support_preserved": bool(
+                    base_receipt.get("support_preserved")
+                ),
+                "candidate_support_preserved": bool(
+                    candidate_receipt.get("support_preserved")
+                ),
+                "baseline_profile_rows": int(base_arrays["profile_rows"].size),
+                "candidate_profile_rows": int(candidate_arrays["profile_rows"].size),
+            }
+        )
+    starts = [item["start_flat"] for item in items]
+    stops = [item["stop_flat_exclusive"] for item in items]
+    if starts != [i * 512 for i in range(CHUNK_COUNT)]:
+        raise ValueError("chunk starts are not the original sorted 512-column plan")
+    if stops[-1] != NCOLUMNS or sum(item["columns"] for item in items) != NCOLUMNS:
+        raise ValueError("chunk coverage does not equal the complete native domain")
+    return items
+
+
+def _source_map_hashes() -> dict[str, str]:
+    source_paths = {
+        "baseline_native_batch_microphysics": BASE_SOURCE
+        / "harness/native_batch_microphysics.py",
+        "candidate_native_batch_microphysics": CANDIDATE_SOURCE
+        / "harness/native_batch_microphysics.py",
+        "baseline_native_observation_batch": BASE_SOURCE
+        / "harness/native_observation_batch.py",
+        "candidate_native_observation_batch": CANDIDATE_SOURCE
+        / "harness/native_observation_batch.py",
+        "baseline_case_packet_loader": BASE_SOURCE
+        / "harness/prepare_native_satellite_case.py",
+        "candidate_case_packet_loader": CANDIDATE_SOURCE
+        / "harness/prepare_native_satellite_case.py",
+        "baseline_native_prep": BASE_SOURCE / "oracle/kdm6/native_prep.py",
+        "candidate_native_prep": CANDIDATE_SOURCE / "oracle/kdm6/native_prep.py",
+        "baseline_native_finish": BASE_SOURCE / "oracle/kdm6/native_finish.py",
+        "candidate_native_finish": CANDIDATE_SOURCE / "oracle/kdm6/native_finish.py",
+        "baseline_native_profile_builder": BASE_SOURCE
+        / "oracle/kdm6/obs/native_profile_builder.py",
+        "candidate_native_profile_builder": CANDIDATE_SOURCE
+        / "oracle/kdm6/obs/native_profile_builder.py",
+        "baseline_native_cloud_profile": BASE_SOURCE
+        / "oracle/kdm6/obs/native_cloud_profile.py",
+        "candidate_native_cloud_profile": CANDIDATE_SOURCE
+        / "oracle/kdm6/obs/native_cloud_profile.py",
+        "baseline_native_batch_profile": BASE_SOURCE
+        / "oracle/kdm6/obs/native_batch_profile.py",
+        "candidate_native_batch_profile": CANDIDATE_SOURCE
+        / "oracle/kdm6/obs/native_batch_profile.py",
+        "saved_physics_auditor": BASE_CASE / "audit_saved_case_physics.py",
+    }
+    return {name: sha256_file(path) for name, path in source_paths.items()}
+
+
+def prepare(output_dir: Path) -> dict:
+    if output_dir.exists() or output_dir.is_symlink():
+        raise FileExistsError(f"export directory must be new: {output_dir}")
+    if not (BASE_RUN / "FINAL.json").is_file():
+        raise FileNotFoundError("baseline RUN_v4 final receipt is missing")
+    candidate_final = CANDIDATE_RUN / "FINAL.json"
+    candidate_confirmation = CANDIDATE_RUN / "CONFIRMATION.json"
+    if not candidate_final.is_file() or not candidate_confirmation.is_file():
+        raise FileNotFoundError("restricted candidate run is not finalized")
+    final = json.loads(candidate_final.read_text())
+    confirmation = json.loads(candidate_confirmation.read_text())
+    if (
+        final.get("status") != "RESTRICTED_UPDATE_ACCEPTED"
+        or final.get("blocks") != CHUNK_COUNT
+    ):
+        raise ValueError("candidate run is not the accepted full-domain 129-block run")
+    if (
+        confirmation.get("status") != "RESTRICTED_UPDATE_ACCEPTED"
+        or confirmation.get("selected_alpha") != 1.0
+    ):
+        raise ValueError("candidate confirmation is not accepted alpha=1.0")
+    base_manifest_path = BASE_RUN / "CASE_MANIFEST.json"
+    candidate_manifest_path = CANDIDATE_RUN / "CASE_MANIFEST.json"
+    base_manifest = json.loads(base_manifest_path.read_text())
+    candidate_manifest = json.loads(candidate_manifest_path.read_text())
+    if confirmation.get("parent_run_id") != base_manifest.get("run_id"):
+        raise ValueError("accepted candidate is not parented to baseline RUN_v4")
+    base_preparation = base_manifest["case_preparation"]
+    candidate_preparation = candidate_manifest["case_preparation"]
+    if (
+        base_preparation["packet_manifest_sha256"]
+        != candidate_preparation["packet_manifest_sha256"]
+        or base_preparation["grid"] != candidate_preparation["grid"]
+        or base_preparation["checkpoint_time"]
+        != candidate_preparation["checkpoint_time"]
+        or base_preparation["prep_configuration"]
+        != candidate_preparation["prep_configuration"]
+        or base_preparation["finish_configuration"]
+        != candidate_preparation["finish_configuration"]
+    ):
+        raise ValueError(
+            "baseline and accepted candidate do not share the same native inputs/config"
+        )
+    if (
+        final.get("native_columns") != NCOLUMNS
+        or confirmation.get("processed_columns") != NCOLUMNS
+    ):
+        raise ValueError("accepted candidate did not process all native columns")
+    inventory = _input_inventory(base_manifest, candidate_manifest)
+    source_hashes = _source_map_hashes()
+    for baseline_name, candidate_name in (
+        ("baseline_native_batch_microphysics", "candidate_native_batch_microphysics"),
+        ("baseline_native_observation_batch", "candidate_native_observation_batch"),
+        ("baseline_case_packet_loader", "candidate_case_packet_loader"),
+        ("baseline_native_prep", "candidate_native_prep"),
+        ("baseline_native_finish", "candidate_native_finish"),
+        ("baseline_native_profile_builder", "candidate_native_profile_builder"),
+        ("baseline_native_cloud_profile", "candidate_native_cloud_profile"),
+        ("baseline_native_batch_profile", "candidate_native_batch_profile"),
+    ):
+        if source_hashes[baseline_name] != source_hashes[candidate_name]:
+            raise ValueError(
+                f"baseline/candidate profile or prep source differs: {baseline_name}"
+            )
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=False, exist_ok=False)
+    manifest = {
+        "schema": "kdm6.native_cloud_efficacy_export.v1",
+        "status": "PREPARED_OFFLINE_INPUTS_VERIFIED",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "domain": {"nx": NX, "ny": NY, "levels": LEVELS, "columns": NCOLUMNS},
+        "chunk_plan": {
+            "chunk_count": CHUNK_COUNT,
+            "columns_per_chunk": 512,
+            "final_chunk_columns": 452,
+        },
+        "baseline_run_id": base_manifest["run_id"],
+        "candidate_run_id": candidate_manifest["run_id"],
+        "candidate_stage": "RESTRICTED_alpha_1p0",
+        "candidate_alpha": 1.0,
+        "baseline_case_manifest": str(base_manifest_path),
+        "baseline_case_manifest_sha256": sha256_file(base_manifest_path),
+        "baseline_final_sha256": sha256_file(BASE_RUN / "FINAL.json"),
+        "candidate_case_manifest": str(candidate_manifest_path),
+        "candidate_case_manifest_sha256": sha256_file(candidate_manifest_path),
+        "candidate_final_sha256": sha256_file(candidate_final),
+        "candidate_confirmation_sha256": sha256_file(candidate_confirmation),
+        "baseline_applied_audit_ledger": str(BASE_AUDIT / "ledger.json"),
+        "baseline_applied_audit_ledger_sha256": sha256_file(BASE_AUDIT / "ledger.json"),
+        "packet_manifest_sha256": base_preparation["packet_manifest_sha256"],
+        "baseline_verified_sources": base_preparation["verified_sources"],
+        "candidate_verified_sources": candidate_preparation["verified_sources"],
+        "source_code_sha256": source_hashes,
+        "chunks": inventory,
+        "source_scope": "saved native baseline RUN_v4 and accepted restricted alpha=1.0 RUN_v1 results; no external model or reanalysis inputs",
+        "calls": {"KDM6": 0, "RTTOV": 0, "optimizer": 0, "host": 0},
+    }
+    write_json_new(output_dir / "input_manifest.json", manifest)
+    return manifest
+
+
+def _load_torch_sources():
+    sys.path.insert(0, str(CANDIDATE_SOURCE))
+    from harness.prepare_native_satellite_case import load_case_block, load_case_config
+    from harness.native_batch_microphysics import (
+        BatchPrepGeometry,
+        NativeBatchMicrophysics,
+    )
+    from harness.native_observation_batch import _native_profile_config, _native_upper
+    from oracle.kdm6.native_finish import FinishConfig, ZeroOutConfig
+    from oracle.kdm6.native_prep import NativePrepConfig
+    from oracle.kdm6.obs.native_profile_builder import (
+        FrozenNativeProfileGeometry,
+        NativeObservationState,
+        native_to_rttov_profile,
+    )
+    import torch
+
+    return {
+        "load_case_block": load_case_block,
+        "load_case_config": load_case_config,
+        "BatchPrepGeometry": BatchPrepGeometry,
+        "NativeBatchMicrophysics": NativeBatchMicrophysics,
+        "_native_profile_config": _native_profile_config,
+        "_native_upper": _native_upper,
+        "FinishConfig": FinishConfig,
+        "ZeroOutConfig": ZeroOutConfig,
+        "NativePrepConfig": NativePrepConfig,
+        "FrozenNativeProfileGeometry": FrozenNativeProfileGeometry,
+        "NativeObservationState": NativeObservationState,
+        "native_to_rttov_profile": native_to_rttov_profile,
+        "torch": torch,
+    }
+
+
+def _result_receipts(inventory_item):
+    with np.load(inventory_item["baseline_artifact"], allow_pickle=False) as archive:
+        baseline = {name: archive[name] for name in archive.files}
+    with np.load(inventory_item["candidate_artifact"], allow_pickle=False) as archive:
+        candidate = {name: archive[name] for name in archive.files}
+    with np.load(
+        inventory_item["baseline_applied_physics_audit"], allow_pickle=False
+    ) as archive:
+        audit = {name: archive[name] for name in archive.files}
+    return baseline, candidate, audit
+
+
+def _replay_physical_fields(
+    index: int, item: dict, config, block, baseline, candidate, audit, source
+):
+    torch = source["torch"]
+    batch_geometry = source["BatchPrepGeometry"](
+        *(
+            torch.from_numpy(np.ascontiguousarray(block["geometry"][name]))
+            for name in ("phb", "c3h", "c4h", "c3f", "c4f")
+        )
+    )
+
+    class PrepOnlyKernel:
+        B = int(block["B"])
+        L = int(block["L"])
+
+    prep_model = source["NativeBatchMicrophysics"](
+        PrepOnlyKernel(),
+        batch_geometry,
+        source["NativePrepConfig"](**config["prep_configuration"]),
+        source["FinishConfig"](**config["finish_configuration"]),
+        source["ZeroOutConfig"](**config["zero_out_configuration"]),
+    )
+    mu = torch.from_numpy(np.ascontiguousarray(block["mu"], dtype=np.float64))
+    ph = torch.from_numpy(np.ascontiguousarray(block["ph"], dtype=np.float64))
+    prep_values = {}
+    outputs = {"baseline": baseline, "candidate": candidate}
+    prep_matches_applied_forcing = None
+    density_posteos_matches_den = {}
+    for label, result in outputs.items():
+        theta = torch.from_numpy(
+            np.ascontiguousarray(result["theta_m"], dtype=np.float64)
+        )
+        qv = torch.from_numpy(np.ascontiguousarray(result["qv"], dtype=np.float64))
+        with torch.no_grad():
+            prepared = prep_model._prep_batch(theta, qv, mu, ph)
+        rho_den = np.ascontiguousarray(prepared.rho.numpy(), dtype=np.float64)
+        delz = np.ascontiguousarray(prepared.delz.numpy(), dtype=np.float64)
+        rho_posteos = np.ascontiguousarray(result["rho_d"], dtype=np.float64)
+        density_posteos_matches_den[label] = same_bits(rho_posteos, rho_den)
+        prep_values[label] = {
+            "rho_DEN": rho_den,
+            "DELZ": delz,
+            "postEOS_rho_d": rho_posteos,
+            "theta_dry": np.ascontiguousarray(prepared.th.numpy(), dtype=np.float64),
+            "pressure_initial_Pa": np.ascontiguousarray(
+                prepared.p.numpy(), dtype=np.float64
+            ),
+        }
+        if label == "candidate":
+            actual = result.get("applied_forcing")
+            if actual is None or actual.shape != (4, block["B"], LEVELS):
+                raise ValueError(f"candidate chunk {index} lacks full applied_forcing")
+            den_bit = same_bits(rho_den, actual[0])
+            delz_bit = same_bits(delz, actual[3])
+            if not den_bit or not delz_bit:
+                raise ValueError(
+                    f"candidate chunk {index} preparation replay differs from actual ABI DEN/DELZ"
+                )
+            prep_matches_applied_forcing = {"DEN": den_bit, "DELZ": delz_bit}
+    base_weight = prep_values["baseline"]["rho_DEN"] * prep_values["baseline"]["DELZ"]
+    audit_weight = audit["weights_kg_m2_by_level"]
+    audit_weight_exact = same_bits(base_weight, audit_weight)
+    if not audit_weight_exact:
+        raise ValueError(
+            f"baseline chunk {index} DEN*DELZ differs from saved applied physics audit"
+        )
+    delz_same = same_bits(
+        prep_values["baseline"]["DELZ"], prep_values["candidate"]["DELZ"]
+    )
+    phi_same = same_bits(
+        baseline["native_after_phi_interfaces"],
+        candidate["native_after_phi_interfaces"],
+    )
+    if not delz_same or not phi_same:
+        raise ValueError(
+            f"chunk {index} vertical geometry changed in accepted candidate"
+        )
+
+    native_config = source["_native_profile_config"](config)
+    upper = source["_native_upper"](block, device=torch.device("cpu"))
+    profile_geometry = source["FrozenNativeProfileGeometry"](
+        fnm=torch.from_numpy(np.ascontiguousarray(block["fnm"], dtype=np.float64)),
+        fnp=torch.from_numpy(np.ascontiguousarray(block["fnp"], dtype=np.float64)),
+    )
+    physical = {}
+    profile_checks = {}
+    for label, result in outputs.items():
+        batch_size = block["B"]
+        temp_native = np.empty((batch_size, LEVELS), dtype=np.float64)
+        p8w_bottomfirst = np.empty((batch_size, LEVELS + 1), dtype=np.float64)
+        helper_ok = np.ones(batch_size, dtype=np.bool_)
+        states = (
+            np.asarray(result["native_after_thm_pert"], dtype=np.float64),
+            np.asarray(result["native_after_qv"], dtype=np.float64),
+            np.asarray(result["native_after_p_center_Pa"], dtype=np.float64),
+            np.asarray(result["native_after_phi_interfaces"], dtype=np.float64),
+        )
+        stored_rows = np.asarray(result["profile_rows"], dtype=np.int64)
+        stored_profile_t = np.asarray(result["profile_T"], dtype=np.float64)
+        if not np.array_equal(stored_rows, np.flatnonzero(result["profile_valid"])):
+            raise ValueError(
+                f"chunk {index} {label} profile rows do not equal profile_valid"
+            )
+        profile_pos = {int(row): pos for pos, row in enumerate(stored_rows)}
+        per_row_abs = []
+        for row in range(batch_size):
+            native = source["NativeObservationState"](
+                torch.from_numpy(np.ascontiguousarray(states[0][row])),
+                torch.from_numpy(np.ascontiguousarray(states[1][row])),
+                torch.from_numpy(np.ascontiguousarray(states[2][row])),
+                torch.from_numpy(np.ascontiguousarray(states[3][row])),
+            )
+            try:
+                profile = source["native_to_rttov_profile"](
+                    native, profile_geometry, native_config, upper
+                )
+                native_rttov_t = profile.t_lay[-LEVELS:]
+                native_rttov_p_half = profile.p_half[-(LEVELS + 1) :]
+                temp_native[row] = torch.flip(native_rttov_t, dims=(0,)).numpy()
+                p8w_bottomfirst[row] = torch.flip(
+                    native_rttov_p_half * 100.0, dims=(0,)
+                ).numpy()
+                if row in profile_pos:
+                    saved_native_t = stored_profile_t[profile_pos[row], -LEVELS:]
+                    actual_native_t = native_rttov_t.numpy()
+                    per_row_abs.append(
+                        float(np.max(np.abs(actual_native_t - saved_native_t)))
+                    )
+                    if not same_bits(actual_native_t, saved_native_t):
+                        raise ValueError(
+                            f"chunk {index} {label} saved profile_T differs at profile_valid row {row}"
+                        )
+            except Exception:
+                if bool(result["profile_valid"][row]):
+                    raise
+                helper_ok[row] = False
+                p = torch.from_numpy(np.ascontiguousarray(states[2][row]))
+                thm = torch.from_numpy(np.ascontiguousarray(states[0][row]))
+                qv = torch.from_numpy(np.ascontiguousarray(states[1][row]))
+                pii = (p / float(native_config.p0)).pow(float(native_config.kappa))
+                theta_dry = (thm + float(native_config.t0)) / (
+                    1.0 + float(native_config.alpha) * qv
+                )
+                temp_native[row] = (theta_dry * pii).numpy()
+                # The unsupported profile row has an explicit false flag and
+                # native interface pressure is left unavailable, not fabricated.
+                p8w_bottomfirst[row] = np.nan
+        if not np.isfinite(temp_native).all():
+            raise ValueError(
+                f"chunk {index} {label} temperature contains nonfinite values"
+            )
+        profile_checks[label] = {
+            "profile_valid_rows": int(stored_rows.size),
+            "profile_T_native39_bitwise_matches": True,
+            "profile_T_max_abs_difference_K": max(per_row_abs, default=0.0),
+            "native_temperature_helper_succeeded_rows": int(helper_ok.sum()),
+            "native_temperature_formula_fallback_rows": int((~helper_ok).sum()),
+        }
+        rho = prep_values[label]["rho_DEN"]
+        delz = prep_values[label]["DELZ"]
+        qc = np.asarray(result["cloud_qc"], dtype=np.float64)
+        qi = np.asarray(result["cloud_qi"], dtype=np.float64)
+        qs = np.asarray(result["cloud_qs"], dtype=np.float64)
+        qr = np.asarray(result["cloud_qr"], dtype=np.float64)
+        qg = np.asarray(result["cloud_qg"], dtype=np.float64)
+        layer_mass = rho * delz
+        lwp = np.sum(layer_mass * qc, axis=1, dtype=np.float64)
+        iwp_ice = np.sum(layer_mass * qi, axis=1, dtype=np.float64)
+        iwp_optical = np.sum(layer_mass * (qi + qs), axis=1, dtype=np.float64)
+        qg_column = np.sum(layer_mass * qg, axis=1, dtype=np.float64)
+        physical[label] = {
+            "temperature_native_K_bottomfirst": temp_native,
+            "qv_kgkg_dry": np.asarray(result["native_after_qv"], dtype=np.float64),
+            "qc_kgkg": qc,
+            "qi_kgkg": qi,
+            "qs_kgkg": qs,
+            "qr_kgkg": qr,
+            "qg_kgkg": qg,
+            "pressure_center_Pa": np.asarray(
+                result["native_after_p_center_Pa"], dtype=np.float64
+            ),
+            "rho_DEN_kg_m3": rho,
+            "rho_postEOS_kg_m3": prep_values[label]["postEOS_rho_d"],
+            "delz_m": delz,
+            "phi_interfaces_m2_s2": np.asarray(
+                result["native_after_phi_interfaces"], dtype=np.float64
+            ),
+            "pressure_interface_Pa_bottomfirst": p8w_bottomfirst,
+            "lwp_QC_kg_m2": lwp,
+            "iwp_ice_QI_kg_m2": iwp_ice,
+            "iwp_optical_QI_plus_QS_kg_m2": iwp_optical,
+            "qg_column_mass_kg_m2_optional": qg_column,
+            "rho_postEOS_vs_DEN_exact": same_bits(
+                prep_values[label]["postEOS_rho_d"], rho
+            ),
+            "temperature_helper_success": helper_ok,
+            "profile_valid": np.asarray(result["profile_valid"], dtype=np.bool_),
+            "profile_rows": stored_rows,
+            "quality": np.asarray(result["quality"], dtype=np.int32),
+            "mask": np.asarray(result["mask"], dtype=np.bool_),
+            "weights": np.asarray(result["weights"], dtype=np.float64),
+            "source_eligible": np.asarray(result["source_eligible"], dtype=np.bool_),
+            "source_dqf": np.asarray(result["source_dqf"]),
+            "source_qc": np.asarray(result["source_qc"], dtype=np.float64),
+            "initial_negative_nc": np.asarray(
+                result["initial_negative_nc"], dtype=np.bool_
+            ),
+            "initial_negative_ni": np.asarray(
+                result["initial_negative_ni"], dtype=np.bool_
+            ),
+            "profile_T_RTTOV_order_stored_native39": stored_profile_t[:, -LEVELS:],
+        }
+    gates = {
+        "baseline_rho_postEOS_equals_replayed_actual_DEN_bitwise": density_posteos_matches_den[
+            "baseline"
+        ],
+        "candidate_rho_postEOS_equals_applied_DEN_bitwise": density_posteos_matches_den[
+            "candidate"
+        ],
+        "candidate_applied_DEN_DELZ_matches_prep_replay_bitwise": prep_matches_applied_forcing,
+        "baseline_replayed_DEN_times_DELZ_matches_applied_audit_bitwise": audit_weight_exact,
+        "baseline_candidate_DELZ_bitwise_equal": delz_same,
+        "baseline_candidate_phi_interfaces_bitwise_equal": phi_same,
+    }
+    if not all(
+        gates[key]
+        for key in (
+            "baseline_rho_postEOS_equals_replayed_actual_DEN_bitwise",
+            "candidate_rho_postEOS_equals_applied_DEN_bitwise",
+            "candidate_applied_DEN_DELZ_matches_prep_replay_bitwise",
+            "baseline_replayed_DEN_times_DELZ_matches_applied_audit_bitwise",
+            "baseline_candidate_DELZ_bitwise_equal",
+            "baseline_candidate_phi_interfaces_bitwise_equal",
+        )
+    ):
+        raise ValueError(f"chunk {index} density/geometry gate failed: {gates}")
+    return physical, profile_checks, gates
+
+
+def extract(output_dir: Path) -> dict:
+    manifest_path = output_dir / "input_manifest.json"
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        raise FileNotFoundError("run --prepare before --extract")
+    manifest = json.loads(manifest_path.read_text())
+    if manifest.get("schema") != "kdm6.native_cloud_efficacy_export.v1":
+        raise ValueError("wrong extraction input manifest schema")
+    if manifest.get("status") != "PREPARED_OFFLINE_INPUTS_VERIFIED":
+        raise ValueError("input manifest is not prepared")
+    input_sha = sha256_file(manifest_path)
+    base_manifest = json.loads((BASE_RUN / "CASE_MANIFEST.json").read_text())
+    config_api = _load_torch_sources()
+    config_api["torch"].set_num_threads(1)
+    config = config_api["load_case_config"](base_manifest["case_preparation"]["paths"])
+    source_hashes = _source_map_hashes()
+    if manifest.get("source_code_sha256") != source_hashes:
+        raise ValueError("profile/preparation source pins changed after preflight")
+    if not manifest.get("chunks") or len(manifest["chunks"]) != CHUNK_COUNT:
+        raise ValueError("prepared input manifest does not contain all 129 chunks")
+    output_dir.joinpath("chunks").mkdir(exist_ok=False)
+    output_records = []
+    try:
+        for item in manifest["chunks"]:
+            index = int(item["chunk_index"])
+            block = config_api["load_case_block"](config, index)
+            if (
+                sha256_file(Path(item["baseline_artifact"]))
+                != item["baseline_artifact_sha256"]
+            ):
+                raise ValueError(
+                    f"baseline result changed after preflight at chunk {index}"
+                )
+            if (
+                sha256_file(Path(item["candidate_artifact"]))
+                != item["candidate_artifact_sha256"]
+            ):
+                raise ValueError(
+                    f"candidate result changed after preflight at chunk {index}"
+                )
+            if (
+                sha256_file(Path(item["baseline_applied_physics_audit"]))
+                != item["baseline_applied_physics_audit_sha256"]
+            ):
+                raise ValueError(
+                    f"baseline applied-physics audit changed at chunk {index}"
+                )
+            baseline, candidate, audit = _result_receipts(item)
+            expected_index = np.arange(
+                item["start_flat"], item["stop_flat_exclusive"], dtype=np.int32
+            )
+            if not same_bits(baseline["flat_index"], expected_index) or not same_bits(
+                candidate["flat_index"], expected_index
+            ):
+                raise ValueError(f"full-domain index mismatch at chunk {index}")
+            if not same_bits(block["flat_indices"], expected_index):
+                raise ValueError(f"source packet index mismatch at chunk {index}")
+            physical, profile_checks, gates = _replay_physical_fields(
+                index, item, config, block, baseline, candidate, audit, config_api
+            )
+            output_arrays = {"flat_index": expected_index}
+            for state, arrays in physical.items():
+                output_arrays[f"{state}__flat_index"] = expected_index
+                for field, values in arrays.items():
+                    output_arrays[f"{state}__{field}"] = np.asarray(values)
+            output_arrays["baseline__observation_bt_K"] = baseline["obs_bt"]
+            output_arrays["candidate__observation_bt_K"] = candidate["obs_bt"]
+            if not same_bits(baseline["obs_bt"], candidate["obs_bt"]):
+                raise ValueError(
+                    f"observations changed between baseline/candidate chunk {index}"
+                )
+            path = output_dir / "chunks" / f"chunk_{index:05d}.npz"
+            with path.open("xb") as stream:
+                np.savez_compressed(stream, **output_arrays)
+                stream.flush()
+                os.fsync(stream.fileno())
+            byte_size = path.stat().st_size
+            if byte_size > ARRAY_LIMIT:
+                raise ValueError(f"chunk export exceeds 50 MiB: {path} ({byte_size})")
+            output_records.append(
+                {
+                    "chunk_index": index,
+                    "start_flat": item["start_flat"],
+                    "stop_flat_exclusive": item["stop_flat_exclusive"],
+                    "columns": item["columns"],
+                    "path": str(path),
+                    "bytes": byte_size,
+                    "sha256": sha256_file(path),
+                    "profile_checks": profile_checks,
+                    "geometry_density_gates": gates,
+                    "baseline_profile_valid": int(baseline["profile_valid"].sum()),
+                    "candidate_profile_valid": int(candidate["profile_valid"].sum()),
+                    "baseline_supported_channel_count": int(baseline["mask"].sum()),
+                    "candidate_supported_channel_count": int(candidate["mask"].sum()),
+                    "baseline_quality_flag_counts": {
+                        str(int(k)): int(v)
+                        for k, v in zip(
+                            *np.unique(baseline["quality"], return_counts=True)
+                        )
+                    },
+                    "candidate_quality_flag_counts": {
+                        str(int(k)): int(v)
+                        for k, v in zip(
+                            *np.unique(candidate["quality"], return_counts=True)
+                        )
+                    },
+                }
+            )
+    except Exception:
+        write_json_new(
+            output_dir / "extraction_failure.json",
+            {
+                "schema": "kdm6.native_cloud_efficacy_extraction_failure.v1",
+                "status": "FAILED_OFFLINE_EXTRACTION",
+                "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+                "input_manifest_sha256": input_sha,
+                "completed_chunks": output_records,
+                "KDM6_calls": 0,
+                "RTTOV_calls": 0,
+                "exception": traceback.format_exc(),
+            },
+        )
+        raise
+    if len(output_records) != CHUNK_COUNT:
+        raise ValueError("export chunk coverage is incomplete")
+    all_indices = np.concatenate(
+        [
+            np.arange(item["start_flat"], item["stop_flat_exclusive"], dtype=np.int32)
+            for item in output_records
+        ]
+    )
+    if not np.array_equal(all_indices, np.arange(NCOLUMNS, dtype=np.int32)):
+        raise ValueError(
+            "exported flat-index coverage contains gaps, duplicates, or reorder"
+        )
+    summary = {
+        "schema": "kdm6.native_cloud_efficacy_export_summary.v1",
+        "status": "COMPLETE_ALL_NATIVE_COLUMNS",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "input_manifest_sha256": input_sha,
+        "baseline_run_id": manifest["baseline_run_id"],
+        "candidate_run_id": manifest["candidate_run_id"],
+        "candidate_stage": manifest["candidate_stage"],
+        "candidate_alpha": 1.0,
+        "domain": {"nx": NX, "ny": NY, "levels": LEVELS, "columns": NCOLUMNS},
+        "chunk_count": CHUNK_COUNT,
+        "columns_verified": int(all_indices.size),
+        "unique_flat_indices": int(np.unique(all_indices).size),
+        "index_coverage_complete": True,
+        "input_shas_and_receipts": manifest["chunks"],
+        "source_code_sha256": source_hashes,
+        "temperature_provenance": {
+            "formula_source": "oracle/kdm6/obs/native_profile_builder.py:native_to_rttov_profile",
+            "expression_order": "pii=(P_center_Pa/p0).pow(kappa); theta_dry=(THM_after+T0)/(1+alpha*QV_after); T_native=theta_dry*pii; RTTOV reverses the 39 native levels, then prepends fixed upper-reference levels.",
+            "stored_profile_verification": "for every profile_valid row, native_to_rttov_profile T[-39:] is compared bitwise to stored profile_T[-39:]",
+            "physical_export_order": "native bottom-first; stored RTTOV native segment is top-first",
+        },
+        "density_and_layer_thickness": {
+            "baseline_DEN": "offline replay of the exact NativeBatchMicrophysics._prep_batch using saved baseline T/Q and fixed native geometry; DEN*DELZ bitwise checked against APPLIED_PHYSICS_AUDIT weights",
+            "candidate_DEN_DELZ": "direct saved same-call applied_forcing rows 0 and 3, bitwise checked against source prep replay",
+            "rho_postEOS": "saved rho_d preserved separately and bitwise checked against same-call DEN",
+            "DELZ": "same-call thickness in meters, bitwise fixed between baseline and candidate",
+        },
+        "column_integrals": {
+            "lwp_QC": "sum((DEN*DELZ)*QC) in kg m-2; QC retained as kg kg-1 dry-air layer mixing ratio",
+            "iwp_ice": "sum((DEN*DELZ)*QI) in kg m-2",
+            "iwp_optical": "sum((DEN*DELZ)*(QI+QS)) in kg m-2, matching the QI+QS ice optical mapping",
+            "qg_optional": "sum((DEN*DELZ)*QG) in kg m-2, reported separately; not folded into optical IWP",
+            "limitations": [
+                "No column-area or domain-total water budget is claimed.",
+                "These are offline KDM state diagnostics, not forecast or host-cycle validation.",
+                "No synthetic number floors or external data are used.",
+            ],
+        },
+        "output_chunks": output_records,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+        "optimizer_calls": 0,
+        "host_calls": 0,
+    }
+    output_manifest_path = output_dir / "output_manifest.json"
+    output_manifest_sha = write_json_new(output_manifest_path, summary)
+    completion = {
+        "schema": "kdm6.native_cloud_efficacy_export_completion.v1",
+        "status": summary["status"],
+        "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "input_manifest_sha256": input_sha,
+        "output_manifest": str(output_manifest_path),
+        "output_manifest_sha256": output_manifest_sha,
+        "chunks": CHUNK_COUNT,
+        "columns": NCOLUMNS,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+    }
+    completion_sha = write_json_new(output_dir / "completion.json", completion)
+    return {
+        "manifest_sha256": output_manifest_sha,
+        "completion_sha256": completion_sha,
+        "summary": summary,
+    }
+
+
+def run(output_dir: Path) -> None:
+    manifest = prepare(output_dir)
+    source_dir = output_dir / "execution_sources"
+    source_dir.mkdir(exist_ok=False)
+    snapshot = source_dir / "extract_native_cloud_efficacy.py.txt"
+    script_path = Path(__file__).resolve()
+    with snapshot.open("xb") as stream:
+        stream.write(script_path.read_bytes())
+        stream.flush()
+        os.fsync(stream.fileno())
+    input_receipt = {
+        "schema": "kdm6.native_cloud_efficacy_extraction_inputs.v1",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "producer": str(script_path),
+        "producer_sha256": sha256_file(script_path),
+        "producer_snapshot": str(snapshot),
+        "producer_snapshot_sha256": sha256_file(snapshot),
+        "input_manifest_sha256": sha256_file(output_dir / "input_manifest.json"),
+        "baseline_run_id": manifest["baseline_run_id"],
+        "candidate_run_id": manifest["candidate_run_id"],
+        "baseline_final_sha256": manifest["baseline_final_sha256"],
+        "candidate_final_sha256": manifest["candidate_final_sha256"],
+        "candidate_confirmation_sha256": manifest["candidate_confirmation_sha256"],
+        "call_counts": {"KDM6": 0, "RTTOV": 0, "optimizer": 0, "host": 0},
+    }
+    write_json_new(output_dir / "execution_receipt.json", input_receipt)
+    result = extract(output_dir)
+    print(
+        json.dumps(
+            {
+                "status": result["summary"]["status"],
+                "columns": NCOLUMNS,
+                "chunks": CHUNK_COUNT,
+                "output_manifest_sha256": result["manifest_sha256"],
+                "completion_sha256": result["completion_sha256"],
+                "output_dir": str(output_dir),
+                "KDM6_calls": 0,
+                "RTTOV_calls": 0,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", required=True, type=Path)
+    args = parser.parse_args(argv)
+    run(args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,5848 @@
+{
+  "RTTOV_calls": 0,
+  "branch_and_schedule_comparison_scope": "full-B512 captured boolean masks and schedule vectors vs AD trace-on baseline KDM call 1; not complete internal branch proof",
+  "branch_and_schedule_comparisons": [
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 1,
+              "field": "pcond_positive",
+              "probe_true_cells": 342,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-02_plus",
+      "probe_call": 1,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [
+        {
+          "base_true_target_levels": [],
+          "changed_target_levels": 1,
+          "field": "pcond_positive",
+          "probe_true_target_levels": [
+            17
+          ],
+          "stage": "post_satadj"
+        }
+      ],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 1,
+              "field": "sw_positive",
+              "probe_true_cells": 348,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 1,
+              "field": "raw_zero",
+              "probe_true_cells": 1074,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 1,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10769,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                17,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 1,
+              "field": "nccn_below_min",
+              "probe_true_cells": 34,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10769
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-02_minus",
+      "probe_call": 2,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [
+        {
+          "base_true_target_levels": [
+            17
+          ],
+          "changed_target_levels": 1,
+          "field": "sw_positive",
+          "probe_true_target_levels": [],
+          "stage": "activation_fraction"
+        },
+        {
+          "base_true_target_levels": [
+            4
+          ],
+          "changed_target_levels": 1,
+          "field": "raw_zero",
+          "probe_true_target_levels": [
+            4,
+            17
+          ],
+          "stage": "activation_pre_gate"
+        },
+        {
+          "base_true_target_levels": [
+            10,
+            11,
+            15,
+            19,
+            20,
+            21,
+            22,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "changed_target_levels": 1,
+          "field": "nccn_at_min",
+          "probe_true_target_levels": [
+            10,
+            11,
+            15,
+            17,
+            19,
+            20,
+            21,
+            22,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "stage": "post_satadj"
+        },
+        {
+          "base_true_target_levels": [
+            17
+          ],
+          "changed_target_levels": 1,
+          "field": "nccn_below_min",
+          "probe_true_target_levels": [],
+          "stage": "post_satadj"
+        }
+      ],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-03_plus",
+      "probe_call": 3,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 1,
+              "field": "sw_positive",
+              "probe_true_cells": 348,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 1,
+              "field": "raw_zero",
+              "probe_true_cells": 1074,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 1,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10769,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                17,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 1,
+              "field": "nccn_below_min",
+              "probe_true_cells": 34,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": [
+                17
+              ]
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10769
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-03_minus",
+      "probe_call": 4,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [
+        {
+          "base_true_target_levels": [
+            17
+          ],
+          "changed_target_levels": 1,
+          "field": "sw_positive",
+          "probe_true_target_levels": [],
+          "stage": "activation_fraction"
+        },
+        {
+          "base_true_target_levels": [
+            4
+          ],
+          "changed_target_levels": 1,
+          "field": "raw_zero",
+          "probe_true_target_levels": [
+            4,
+            17
+          ],
+          "stage": "activation_pre_gate"
+        },
+        {
+          "base_true_target_levels": [
+            10,
+            11,
+            15,
+            19,
+            20,
+            21,
+            22,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "changed_target_levels": 1,
+          "field": "nccn_at_min",
+          "probe_true_target_levels": [
+            10,
+            11,
+            15,
+            17,
+            19,
+            20,
+            21,
+            22,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "stage": "post_satadj"
+        },
+        {
+          "base_true_target_levels": [
+            17
+          ],
+          "changed_target_levels": 1,
+          "field": "nccn_below_min",
+          "probe_true_target_levels": [],
+          "stage": "post_satadj"
+        }
+      ],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-04_plus",
+      "probe_call": 5,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-04_minus",
+      "probe_call": 6,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-05_plus",
+      "probe_call": 7,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-05_minus",
+      "probe_call": 8,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-06_plus",
+      "probe_call": 9,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    },
+    {
+      "base_call": 1,
+      "base_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e"
+      },
+      "calls": [
+        {
+          "call": 1,
+          "mask_changes": [
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "fraction_saturated",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_at_zero",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 349,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "sw_positive",
+              "probe_true_cells": 349,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "sw_ratio_at_one",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_fraction",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "qv_cap_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_gated",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1073,
+              "base_true_target_levels": [
+                4
+              ],
+              "changed_cells": 0,
+              "field": "raw_zero",
+              "probe_true_cells": 1073,
+              "probe_true_target_levels": [
+                4
+              ],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_cap",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "reservoir_tie",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "activation_pre_gate",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_absolute_cap_would_apply",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_at_absolute_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 4,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nc_snap_changed",
+              "probe_true_cells": 4,
+              "probe_true_target_levels": [],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nc_snap_gate",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "final_dsd_before_absolute_cap",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 18843,
+              "base_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "complete_evap",
+              "probe_true_cells": 18843,
+              "probe_true_target_levels": [
+                0,
+                1,
+                2,
+                3,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_above_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "nccn_at_max",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 10768,
+              "base_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "changed_cells": 0,
+              "field": "nccn_at_min",
+              "probe_true_cells": 10768,
+              "probe_true_target_levels": [
+                10,
+                11,
+                15,
+                19,
+                20,
+                21,
+                22,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 35,
+              "base_true_target_levels": [
+                17
+              ],
+              "changed_cells": 0,
+              "field": "nccn_below_min",
+              "probe_true_cells": 35,
+              "probe_true_target_levels": [
+                17
+              ],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 341,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "pcond_positive",
+              "probe_true_cells": 341,
+              "probe_true_target_levels": [],
+              "stage": "post_satadj",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 1125,
+              "base_true_target_levels": [
+                4,
+                17
+              ],
+              "changed_cells": 0,
+              "field": "keep_qc",
+              "probe_true_cells": 1125,
+              "probe_true_target_levels": [
+                4,
+                17
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 0,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qg",
+              "probe_true_cells": 0,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 859,
+              "base_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "changed_cells": 0,
+              "field": "keep_qi",
+              "probe_true_cells": 859,
+              "probe_true_target_levels": [
+                17,
+                20,
+                21
+              ],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 83,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qr",
+              "probe_true_cells": 83,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            },
+            {
+              "base_true_cells": 376,
+              "base_true_target_levels": [],
+              "changed_cells": 0,
+              "field": "keep_qs",
+              "probe_true_cells": 376,
+              "probe_true_target_levels": [],
+              "stage": "threshold_masks",
+              "target_row0": 368,
+              "target_row_changed_levels": []
+            }
+          ],
+          "recorded_tie_counts": {
+            "activation_fraction.sw_at_zero": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_fraction.sw_ratio_at_one": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_gated.qv_cap_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "activation_pre_gate.reservoir_tie": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "final_dsd_before_absolute_cap.nc_at_absolute_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.complete_evap": {
+              "base_tie_cells": 18843,
+              "probe_tie_cells": 18843
+            },
+            "post_satadj.nccn_at_max": {
+              "base_tie_cells": 0,
+              "probe_tie_cells": 0
+            },
+            "post_satadj.nccn_at_min": {
+              "base_tie_cells": 10768,
+              "probe_tie_cells": 10768
+            }
+          },
+          "schedule_changes": {
+            "mstep_ice": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            },
+            "mstep_main": {
+              "base_max": 1,
+              "changed_rows": 0,
+              "probe_max": 1
+            }
+          }
+        }
+      ],
+      "endpoint": "eps_1e-06_minus",
+      "probe_call": 10,
+      "probe_trace": {
+        "source_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+        "trace_name": "activation_trace.tsv",
+        "trace_sha256": "2528a8e105cbe0350df06c18ceb3e42be984bc77f7116ccfe92fd29953f7b471"
+      },
+      "scope": "captured masks and recorded equality predicates only; not complete finite-difference or internal-branch proof",
+      "target_mask_changes": [],
+      "target_row0": 368
+    }
+  ],
+  "completed_at_utc": "2026-10-25T02:28:09.447397+00:00",
+  "elapsed_seconds": 56.51974012516439,
+  "endpoint_count": 10,
+  "endpoints": [
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-02_plus/endpoint.npz",
+      "endpoint_npz_sha256": "d69fdf428b11e738703b62f2255d9116a7cd4beb5903965b869c65bbfa1f20d7",
+      "epsilon": 0.01,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": 1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-02_plus",
+      "target_mask_change_count": 1,
+      "trace_call_ordinal": 1,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-02_minus/endpoint.npz",
+      "endpoint_npz_sha256": "4b8174b2ecd4c1eaaff6cb3981a7fe4d9da3770ccc42f63e041c7f15a3f5769e",
+      "epsilon": 0.01,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": -1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-02_minus",
+      "target_mask_change_count": 4,
+      "trace_call_ordinal": 2,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-03_plus/endpoint.npz",
+      "endpoint_npz_sha256": "164443ecda3552379fba8e4b09d96edcba87c0f9d472e05a862c513ba8c6f09b",
+      "epsilon": 0.001,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": 1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-03_plus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 3,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-03_minus/endpoint.npz",
+      "endpoint_npz_sha256": "41c746839b2f3b6edd285b92fe27282fa57d141668086f9273765fbf712ea4ae",
+      "epsilon": 0.001,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": -1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-03_minus",
+      "target_mask_change_count": 4,
+      "trace_call_ordinal": 4,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-04_plus/endpoint.npz",
+      "endpoint_npz_sha256": "caecace685272312527f44898f094efca9b43e92ac4e11b8376bba563215e6fd",
+      "epsilon": 0.0001,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": 1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-04_plus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 5,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-04_minus/endpoint.npz",
+      "endpoint_npz_sha256": "aef7a3f3e6fc82ef08f0be1a532a2e0a435e13b5068313e29fc243135eea0b9a",
+      "epsilon": 0.0001,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": -1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-04_minus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 6,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-05_plus/endpoint.npz",
+      "endpoint_npz_sha256": "5182fd569e08a964374496223f70ff8778fdf2158a1241519893cfc24131ca14",
+      "epsilon": 1e-05,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": 1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-05_plus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 7,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-05_minus/endpoint.npz",
+      "endpoint_npz_sha256": "e5bdd166f551d647b180cfd1c3a915497a9bbea0c5a83d85caa99c84d6039a32",
+      "epsilon": 1e-05,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": -1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-05_minus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 8,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-06_plus/endpoint.npz",
+      "endpoint_npz_sha256": "889329b043a8e4c3710e8d9e98235604fcbbec5f433ba6cd9615bf38a8fa2c66",
+      "epsilon": 1e-06,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": 1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-06_plus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 9,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    },
+    {
+      "RTTOV_calls": 0,
+      "endpoint_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/endpoints/eps_1e-06_minus/endpoint.npz",
+      "endpoint_npz_sha256": "3df3fe501ed515e07578eff9ea07fe41fd3fb7c16e18d3cc340498c98cf12ee7",
+      "epsilon": 1e-06,
+      "fullB_KDM_calls": 1,
+      "invalid_profile_rows": {},
+      "profile_builder_calls": 1,
+      "quality_status": "RTTOV quality not evaluated; saved baseline fixed support and source QC/DQF",
+      "schema": "kdm6.block22_centered_fd_endpoint.v1",
+      "sign": -1,
+      "status": "KDM_AND_PROFILE_BUILDER_COMPLETE",
+      "tag": "eps_1e-06_minus",
+      "target_mask_change_count": 0,
+      "trace_call_ordinal": 10,
+      "trace_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/activation_trace.tsv",
+      "trace_source_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json"
+    }
+  ],
+  "forcing_input_JVP_diagnostic_only": {
+    "absolute_per_coordinate": 1e-08,
+    "envelope": "abs(FD-JVP)/(1e-8+3e-5*max(abs(FD),abs(JVP)))",
+    "relative_per_coordinate": 3e-05,
+    "scope": "DEN, PII, P, DELZ over B512/L39; reported only and excluded from the 33-category acceptance gate"
+  },
+  "fullB_KDM_calls": 10,
+  "full_33_category_acceptance_complete": false,
+  "launch_plan_sha256": "4f16e12178f9870063f3890bd7fbdaf3eeac1929d283c2c00d28ac4f32be0e71",
+  "observation_status": "No endpoint RTTOV was run; target BT/cost FD pending separate reviewed pilot/controller",
+  "per_epsilon": [
+    {
+      "epsilon": 0.01,
+      "forcing_input_JVP_diagnostic_max_ratio": 0.36709786351962065,
+      "forcing_input_JVP_diagnostic_pass": true,
+      "forcing_input_JVP_diagnostic_ratio_by_field": [
+        0.0,
+        1.4316342187639835e-06,
+        0.36709786351962065,
+        0.0
+      ],
+      "fullB_max_ratio": 26895.230328255035,
+      "fullB_profile_valid_changed_rows_minus": 0,
+      "fullB_profile_valid_changed_rows_plus": 0,
+      "fullB_ratio_by_output": [
+        476.61005153348526,
+        986.2586745549717,
+        148.38377681768262,
+        6.694447978331441e-08,
+        1.3461973119330636e-05,
+        1.7338786549799693e-07,
+        0.0,
+        0.0013656943247407074,
+        26895.230328255035,
+        0.00025857582109979936,
+        5.927960520550814e-10,
+        4.766249860147151e-12,
+        3661.101033505314,
+        1489.1390612575074,
+        1489.0739554158374,
+        1489.0740124070155,
+        4766.103918174577
+      ],
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 148.07424969373355,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 1.669715655715299e-09,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 30259.227458021865,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 366.7682873632408,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 366.159124578449,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 1010.3397562695259,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 443.5078250013657,
+          "passed": false
+        }
+      },
+      "profile_max_ratio": 30259.227458021865,
+      "profile_pass_all_8_fields": false,
+      "profile_valid_at_both_endpoints": true,
+      "target_mask_change_count_minus": 4,
+      "target_mask_change_count_plus": 1,
+      "target_output_max_ratio": 26895.230328255035,
+      "target_pass_all_17_outputs": false,
+      "target_profile_CFRAC_exact_bits_at_both_endpoints": true,
+      "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": 0,
+      "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": 0,
+      "target_ratio_by_output": [
+        476.61005153348526,
+        986.2586745549717,
+        148.38377681768262,
+        0.0,
+        3.33208759402026e-08,
+        0.0,
+        0.0,
+        0.0,
+        26895.230328255035,
+        3.7926561079900553e-07,
+        0.0,
+        0.0,
+        3661.101033505314,
+        1489.1390612575074,
+        1489.0739554158374,
+        1489.0740124070155,
+        4766.103918174577
+      ],
+      "target_row0": 368,
+      "target_state_finish_profile_common_pass": false
+    },
+    {
+      "epsilon": 0.001,
+      "forcing_input_JVP_diagnostic_max_ratio": 3.9991802494489748,
+      "forcing_input_JVP_diagnostic_pass": false,
+      "forcing_input_JVP_diagnostic_ratio_by_field": [
+        0.0,
+        1.6284452260689794e-05,
+        3.9991802494489748,
+        0.0
+      ],
+      "fullB_max_ratio": 15766.956162286464,
+      "fullB_profile_valid_changed_rows_minus": 0,
+      "fullB_profile_valid_changed_rows_plus": 0,
+      "fullB_ratio_by_output": [
+        281.76109527165755,
+        579.6163484502792,
+        87.36430890630074,
+        3.411526958282256e-07,
+        0.000137950511774121,
+        1.2332103963566662e-06,
+        0.0,
+        0.001381217653881257,
+        15766.956162286464,
+        0.00264969933271746,
+        9.687717515384333e-09,
+        5.834262096585982e-11,
+        2161.3875781329107,
+        876.7699981420495,
+        876.7317025114755,
+        876.7317353226612,
+        2817.6120320193854
+      ],
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 87.18173340319936,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 6.189163146723405e-08,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 7456.3160330081355,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 216.52912224438876,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 216.16785096266864,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 593.7685695216788,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 262.0837997294553,
+          "passed": false
+        }
+      },
+      "profile_max_ratio": 7456.3160330081355,
+      "profile_pass_all_8_fields": false,
+      "profile_valid_at_both_endpoints": true,
+      "target_mask_change_count_minus": 4,
+      "target_mask_change_count_plus": 0,
+      "target_output_max_ratio": 15766.956162286464,
+      "target_pass_all_17_outputs": false,
+      "target_profile_CFRAC_exact_bits_at_both_endpoints": true,
+      "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": 0,
+      "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": 0,
+      "target_ratio_by_output": [
+        281.76109527165755,
+        579.6163484502792,
+        87.36430890630074,
+        0.0,
+        1.3809531060874014e-07,
+        0.0,
+        0.0,
+        0.0,
+        15766.956162286464,
+        4.995820240949192e-06,
+        0.0,
+        0.0,
+        2161.3875781329107,
+        876.7699981420495,
+        876.7317025114755,
+        876.7317353226612,
+        2817.6120320193854
+      ],
+      "target_row0": 368,
+      "target_state_finish_profile_common_pass": false
+    },
+    {
+      "epsilon": 0.0001,
+      "forcing_input_JVP_diagnostic_max_ratio": 37.10021819013711,
+      "forcing_input_JVP_diagnostic_pass": false,
+      "forcing_input_JVP_diagnostic_ratio_by_field": [
+        0.0,
+        0.00017378998324042228,
+        37.10021819013711,
+        0.0
+      ],
+      "fullB_max_ratio": 489.00818155457165,
+      "fullB_profile_valid_changed_rows_minus": 0,
+      "fullB_profile_valid_changed_rows_plus": 0,
+      "fullB_ratio_by_output": [
+        8.948905397682992,
+        18.244117644025724,
+        2.7586315785412125,
+        5.431808432280909e-06,
+        0.0017133101198385046,
+        2.7761406484815863e-05,
+        0.0,
+        0.016806652179006197,
+        489.00818155457165,
+        0.032915883385936304,
+        4.3793673002869026e-08,
+        2.981563301046863e-10,
+        68.51176077954332,
+        27.684633005441267,
+        27.684101239196817,
+        27.6841006442818,
+        89.4890012802889
+      ],
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.752851418225269,
+          "passed": false
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 7.668453358195124e-07,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2278.044666704498,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 6.863529620587806,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 6.852087946763666,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 18.689337818183695,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 8.318948648402678,
+          "passed": false
+        }
+      },
+      "profile_max_ratio": 2278.044666704498,
+      "profile_pass_all_8_fields": false,
+      "profile_valid_at_both_endpoints": true,
+      "target_mask_change_count_minus": 0,
+      "target_mask_change_count_plus": 0,
+      "target_output_max_ratio": 489.00818155457165,
+      "target_pass_all_17_outputs": false,
+      "target_profile_CFRAC_exact_bits_at_both_endpoints": true,
+      "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": 0,
+      "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": 0,
+      "target_ratio_by_output": [
+        8.948905397682992,
+        18.244117644025724,
+        2.7586315785412125,
+        0.0,
+        1.711791711127162e-06,
+        0.0,
+        0.0,
+        0.0,
+        489.00818155457165,
+        5.794088720209031e-05,
+        0.0,
+        0.0,
+        68.51176077954332,
+        27.684633005441267,
+        27.684101239196817,
+        27.6841006442818,
+        89.4890012802889
+      ],
+      "target_row0": 368,
+      "target_state_finish_profile_common_pass": false
+    },
+    {
+      "epsilon": 1e-05,
+      "forcing_input_JVP_diagnostic_max_ratio": 343.6576839247956,
+      "forcing_input_JVP_diagnostic_pass": false,
+      "forcing_input_JVP_diagnostic_ratio_by_field": [
+        0.0,
+        0.001464598415889839,
+        343.6576839247956,
+        0.0
+      ],
+      "fullB_max_ratio": 4.654430858101664,
+      "fullB_profile_valid_changed_rows_minus": 0,
+      "fullB_profile_valid_changed_rows_plus": 0,
+      "fullB_ratio_by_output": [
+        0.08362273877495764,
+        0.1708935776581342,
+        0.025838170378176133,
+        5.5112104395592584e-05,
+        0.015695637360962016,
+        0.00022447617726644592,
+        0.0,
+        0.48528369999937176,
+        4.654430858101664,
+        0.3014537020128713,
+        1.1806588559190256e-06,
+        1.1564369733383812e-09,
+        0.6576885994607675,
+        0.2596496650349151,
+        0.25929899159488223,
+        0.2592975858891281,
+        0.8633657825493212
+      ],
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.1635750292765178,
+          "passed": true
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 4.315351928258831e-06,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 21.963509901523526,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.404870420333703,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 2.13887301268425,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 39.306293092075464,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.8802630930441279,
+          "passed": true
+        }
+      },
+      "profile_max_ratio": 39.306293092075464,
+      "profile_pass_all_8_fields": false,
+      "profile_valid_at_both_endpoints": true,
+      "target_mask_change_count_minus": 0,
+      "target_mask_change_count_plus": 0,
+      "target_output_max_ratio": 4.654430858101664,
+      "target_pass_all_17_outputs": false,
+      "target_profile_CFRAC_exact_bits_at_both_endpoints": true,
+      "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": 0,
+      "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": 0,
+      "target_ratio_by_output": [
+        0.08362273877495764,
+        0.1708935776581342,
+        0.025838170378176133,
+        0.0,
+        9.643622809705642e-06,
+        0.0,
+        0.0,
+        0.0,
+        4.654430858101664,
+        0.00040953696363487275,
+        0.0,
+        0.0,
+        0.6576885994607675,
+        0.2596496650349151,
+        0.25929899159488223,
+        0.2592975858891281,
+        0.8633657825493212
+      ],
+      "target_row0": 368,
+      "target_state_finish_profile_common_pass": false
+    },
+    {
+      "epsilon": 1e-06,
+      "forcing_input_JVP_diagnostic_max_ratio": 3064.520924099632,
+      "forcing_input_JVP_diagnostic_pass": false,
+      "forcing_input_JVP_diagnostic_ratio_by_field": [
+        0.0,
+        0.014831328500901856,
+        3064.520924099632,
+        0.0
+      ],
+      "fullB_max_ratio": 5.187924546335653,
+      "fullB_profile_valid_changed_rows_minus": 0,
+      "fullB_profile_valid_changed_rows_plus": 0,
+      "fullB_ratio_by_output": [
+        0.0403268398035767,
+        0.06443487456297117,
+        0.010032327529515777,
+        0.0007305064179555606,
+        0.10225458737310301,
+        0.0027343556114518756,
+        0.0,
+        5.187924546335653,
+        0.04604737963209639,
+        1.9687019766497262,
+        1.4254608459454826e-05,
+        5.91175655917335e-09,
+        0.34431258902557577,
+        0.11758583243142604,
+        0.10097319671025459,
+        0.1006792728869661,
+        0.42529903798237884
+      ],
+      "profile_by_field": {
+        "HYDRO6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.958600985641339,
+          "passed": true
+        },
+        "HYDRO7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 2.271290601132869e-05,
+          "passed": true
+        },
+        "HYDRO_DEFF6": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 8.157612631370379,
+          "passed": false
+        },
+        "HYDRO_DEFF7": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 0.0,
+          "passed": true
+        },
+        "P": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 20.586349862208838,
+          "passed": false
+        },
+        "P_HALF": {
+          "coordinate_count": 67,
+          "max_coordinate_tolerance_ratio": 16.750706031777295,
+          "passed": false
+        },
+        "Q": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 215.5597165071425,
+          "passed": false
+        },
+        "T": {
+          "coordinate_count": 66,
+          "max_coordinate_tolerance_ratio": 4.279416849976217,
+          "passed": false
+        }
+      },
+      "profile_max_ratio": 215.5597165071425,
+      "profile_pass_all_8_fields": false,
+      "profile_valid_at_both_endpoints": true,
+      "target_mask_change_count_minus": 0,
+      "target_mask_change_count_plus": 0,
+      "target_output_max_ratio": 0.19068905827117916,
+      "target_pass_all_17_outputs": true,
+      "target_profile_CFRAC_exact_bits_at_both_endpoints": true,
+      "target_profile_CFRAC_minus_changed_coordinates_vs_baseline": 0,
+      "target_profile_CFRAC_plus_changed_coordinates_vs_baseline": 0,
+      "target_ratio_by_output": [
+        0.019068899600095425,
+        0.024529664394541427,
+        0.003509290239872116,
+        0.0,
+        5.043973616687372e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.04604737963209639,
+        0.002505911211751771,
+        0.0,
+        0.0,
+        0.1647315481108443,
+        0.06333920166739332,
+        0.04129566182129794,
+        0.03521736756512368,
+        0.19068905827117916
+      ],
+      "target_row0": 368,
+      "target_state_finish_profile_common_pass": false
+    }
+  ],
+  "prior_orphaned_KDM6_calls": 1,
+  "profile_tolerances": {
+    "absolute": 1e-08,
+    "relative": 3e-05,
+    "units": [
+      "K",
+      "ppmv",
+      "hPa",
+      "hPa",
+      "g/m3",
+      "g/m3",
+      "um",
+      "um"
+    ]
+  },
+  "runner_sha256": "f3250bc2518bcdee2a8abed63fc2a54db83090f56f4b05faf361b5aec6ef96d7",
+  "schema": "kdm6.block22_centered_fd_result.v2",
+  "status": "COMPLETE_ALL_ENDPOINTS",
+  "target_primary_scope": "row 368: raw ABI state 12 plus native finish 5 at 39 levels and eight differentiable RTTOV profile fields at 66/67 levels; all 25 KDM/profile categories must pass at one common epsilon. BT7 and Huber cost remain pending direct RTTOV.",
+  "target_state_finish_profile_common_epsilon_passed": false,
+  "target_state_finish_profile_common_passing_epsilons": [],
+  "tolerances_imported": {
+    "finish_atol": 1e-09,
+    "finish_rtol": 3e-06,
+    "source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2/harness/verify_localized_ice_ad.py",
+    "state_atol": 1e-08,
+    "state_rtol": 3e-05
+  },
+  "total_campaign_KDM6_calls_including_orphan": 11
+}

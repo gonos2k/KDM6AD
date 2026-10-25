@@ -1,0 +1,536 @@
+"""Prepare and run ten target-only RTTOV direct calls from full-B FD outputs.
+
+Preflight is saved-data/profile-only. The explicit run phase reads the ten
+already-computed B512 KDM endpoint outputs and evaluates RTTOV for row 368
+only; it never invokes KDM.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import time
+
+import numpy as np
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+RUN_V4 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4")
+HELPER_DIR = RESEARCH / "observation_prep_v1"
+PILOT_DIR = HELPER_DIR / "pilot_v2"
+PILOT_RECEIPT = PILOT_DIR / "PILOT_RECEIPT.json"
+BASELINE_K_NPZ = PILOT_DIR / "baseline/target_observation.npz"
+BASELINE_K_RECEIPT = PILOT_DIR / "baseline/K_RECOVERY_RECEIPT.json"
+PROFILE_JVP_NPZ = HELPER_DIR / "actual_candidate_profile_jvp_v3.npz"
+PROFILE_JVP_RECEIPT = HELPER_DIR / "actual_candidate_profile_jvp_v3.json"
+HUBER_SEED = PILOT_DIR / "TARGET_HUBER_SEED.json"
+PLAN = RESEARCH / "EXPERIMENT_PLAN_v2.json"
+TARGET = 368
+FLAT = 11632
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+NATIVE_FIELDS = ("thm_pert", "qv", "p_center_Pa", "phi_interfaces")
+CLOUD_FIELDS = ("qc", "qr", "qi", "qs", "qg", "nn", "nc", "ni", "nr", "bg")
+PROFILE_FIELDS = ("T", "Q", "P", "P_HALF", "HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC")
+DIFFERENTIABLE_PROFILE_FIELDS = PROFILE_FIELDS[:-1]
+ENDPOINT_TAGS = tuple(
+    f"eps_{epsilon:.0e}_{suffix}"
+    for epsilon in (1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5, 1.0e-6)
+    for suffix in ("plus", "minus")
+)
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def same_bits(left, right):
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def write_json_new(path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    encoded = (json.dumps(result, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return result
+
+
+def _load_endpoint_set(endpoint_root):
+    endpoint_root = Path(endpoint_root)
+    completion_path = endpoint_root / "execution_complete.json"
+    plan_path = endpoint_root / "launch_plan.json"
+    summary_path = endpoint_root / "centered_fd_summary.json"
+    if not all(path.is_file() for path in (completion_path, plan_path, summary_path)):
+        raise FileNotFoundError("FD endpoint root lacks completion, launch-plan, or summary receipt")
+    completion = json.loads(completion_path.read_text())
+    launch = json.loads(plan_path.read_text())
+    summary = json.loads(summary_path.read_text())
+    if completion.get("status") != "COMPLETE_ALL_ENDPOINTS" or completion.get("endpoint_count") != 10:
+        raise ValueError("FD completion receipt must bind ten complete endpoints")
+    if completion.get("RTTOV_calls") != 0 or summary.get("RTTOV_calls") != 0:
+        raise ValueError("KDM FD endpoints must be RTTOV-free")
+    if summary.get("status") != "COMPLETE_ALL_ENDPOINTS" or summary.get("endpoint_count") != 10:
+        raise ValueError("centered-FD summary does not certify ten endpoints")
+    endpoints = {}
+    expected = set(ENDPOINT_TAGS)
+    for tag in ENDPOINT_TAGS:
+        receipt_path = endpoint_root / "endpoints" / tag / "receipt.json"
+        if not receipt_path.is_file():
+            raise FileNotFoundError(receipt_path)
+        receipt = json.loads(receipt_path.read_text())
+        if receipt.get("tag") != tag or receipt.get("status") != "KDM_AND_PROFILE_BUILDER_COMPLETE":
+            raise ValueError(f"endpoint receipt failed status/tag for {tag}")
+        if receipt.get("fullB_KDM_calls") != 1 or receipt.get("RTTOV_calls") != 0:
+            raise ValueError(f"endpoint call count differs from plan for {tag}")
+        npz_path = Path(receipt["endpoint_npz"])
+        if npz_path.resolve() != (endpoint_root / "endpoints" / tag / "endpoint.npz").resolve():
+            raise ValueError(f"endpoint NPZ path escapes expected tag directory for {tag}")
+        if sha(npz_path) != receipt.get("endpoint_npz_sha256"):
+            raise ValueError(f"endpoint NPZ hash differs for {tag}")
+        endpoints[tag] = (receipt, npz_path)
+    if set(endpoints) != expected:
+        raise ValueError("endpoint tag set differs from plan")
+    if summary.get("endpoint_count") != len(endpoints):
+        raise ValueError("summary endpoint count differs from endpoint receipts")
+    return endpoint_root, completion_path, plan_path, summary_path, completion, launch, summary, endpoints
+
+
+def _output_from_endpoint(arrays, torch, NativeProfile, CloudProfile, NativeBatchOutput):
+    native = NativeProfile(*(torch.from_numpy(np.ascontiguousarray(arrays["native_" + name])) for name in NATIVE_FIELDS))
+    cloud = CloudProfile(*(torch.from_numpy(np.ascontiguousarray(arrays["cloud_" + name])) for name in CLOUD_FIELDS))
+    finish_array = arrays["finish"]
+    if finish_array.shape != (5, 512, 39):
+        raise ValueError("endpoint finish must be 5x512x39")
+    finish = tuple(torch.from_numpy(np.ascontiguousarray(finish_array[index])) for index in range(5))
+    return NativeBatchOutput(native, cloud, torch.from_numpy(np.ascontiguousarray(arrays["rho_d"])), finish)
+
+
+def preflight(endpoint_root):
+    endpoint_root, completion_path, launch_path, summary_path, completion, launch, summary, endpoints = _load_endpoint_set(endpoint_root)
+    if launch.get("domain", {}).get("B") != 512 or launch.get("domain", {}).get("L") != 39:
+        raise ValueError("FD launch plan must use full B512 by L39")
+    if launch.get("fd", {}).get("endpoint_count") != 10:
+        raise ValueError("FD launch plan endpoint count differs")
+    if launch.get("direction", {}).get("proof_sha256") != "c106fcff537acdac68ec0f1546a39dea69a35245318a578cfc8299ee1a93df1e":
+        raise ValueError("FD endpoint direction proof differs from the approved actual candidate direction")
+    if sha(PLAN) != launch.get("plan_sha256"):
+        raise ValueError("FD launch plan does not bind the current plan-v2 bytes")
+
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(HELPER_DIR))
+    import torch
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import _validate_selected_inputs, _selected_profile_context, _profile_arrays
+    import prepare_target_rttov_pilot as pilot
+
+    base_preflight, prep, input_arrays, block, config, value_receipt = pilot.preflight()
+    if base_preflight["target_row0"] != TARGET or base_preflight["target_flat0"] != FLAT:
+        raise ValueError("target observation preflight differs from FD endpoint target")
+    with np.load(pilot.VALUES, allow_pickle=False) as z:
+        saved_values = {key: z[key] for key in z.files}
+    with np.load(pilot.AD_VALUES, allow_pickle=False) as z:
+        ad_values = {key: z[key] for key in z.files}
+    with np.load(PROFILE_JVP_NPZ, allow_pickle=False) as z:
+        profile_jvp = {key: z[key] for key in z.files}
+    jvp_receipt = json.loads(PROFILE_JVP_RECEIPT.read_text())
+    if sha(PROFILE_JVP_NPZ) != jvp_receipt.get("profile_jvp_npz_sha256") or jvp_receipt.get("direction_proof_sha256") != launch["direction"]["proof_sha256"]:
+        raise ValueError("actual-direction profile JVP does not bind FD direction")
+    with np.load(BASELINE_K_NPZ, allow_pickle=False) as z:
+        baseline_pilot = {key: z[key] for key in z.files}
+    baseline_pilot_receipt = json.loads(BASELINE_K_RECEIPT.read_text())
+    if sha(BASELINE_K_NPZ) != baseline_pilot_receipt["recovered_target_npz_sha256"]:
+        raise ValueError("baseline K pilot NPZ hash differs from its receipt")
+    if sha(PILOT_RECEIPT) != json.loads(PILOT_RECEIPT.read_text()).get("receipt_sha256"):
+        pilot_receipt = json.loads(PILOT_RECEIPT.read_text())
+        p = dict(pilot_receipt); claimed = p.pop("receipt_sha256", None)
+        canonical = (json.dumps(p, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+        if hashlib.sha256(canonical).hexdigest() != claimed:
+            raise ValueError("fresh baseline K/direct pilot receipt digest mismatch")
+
+    fixed_support = baseline_pilot_receipt["target_support_all_channels"]
+    if fixed_support is not True or not np.array_equal(baseline_pilot["quality"], np.zeros(7, dtype=np.int32)):
+        raise ValueError("baseline K pilot does not establish strict target seven-channel support")
+    if set("JVP_" + name for name in DIFFERENTIABLE_PROFILE_FIELDS) - set(profile_jvp):
+        raise ValueError("actual direction profile JVP NPZ lacks required differentiable fields")
+
+    endpoint_checks = {}
+    target_candidate_profiles = {}
+    target_endpoint_arrays = {}
+    direction_theta = np.asarray(ad_values["baseline__direction_theta_m"], dtype=np.float64)
+    direction_qv = np.asarray(ad_values["baseline__direction_qv"], dtype=np.float64)
+    base_theta = np.asarray(input_arrays["block__theta_m"], dtype=np.float64)
+    base_qv = np.asarray(input_arrays["block__qv"], dtype=np.float64)
+    for tag, (receipt, npz_path) in endpoints.items():
+        epsilon, sign = float(receipt["epsilon"]), int(receipt["sign"])
+        if tag != f"eps_{epsilon:.0e}_{'plus' if sign > 0 else 'minus'}":
+            raise ValueError(f"endpoint tag/sign/epsilon mismatch for {tag}")
+        with np.load(npz_path, allow_pickle=False) as z:
+            arr = {key: z[key] for key in z.files}
+        if arr["theta_m_input"].shape != (512, 39) or arr["qv_input"].shape != (512, 39):
+            raise ValueError(f"endpoint input is not full B512x39 for {tag}")
+        if not same_bits(arr["theta_m_input"], np.ascontiguousarray(base_theta + sign * epsilon * direction_theta)):
+            raise ValueError(f"endpoint theta input differs from actual candidate direction for {tag}")
+        if not same_bits(arr["qv_input"], np.ascontiguousarray(base_qv + sign * epsilon * direction_qv)):
+            raise ValueError(f"endpoint QV input differs from actual candidate direction for {tag}")
+        if arr["abi_state_input"].shape != (12, 512, 39) or arr["abi_forcing_input"].shape != (4, 512, 39) or arr["abi_raw_state_output"].shape != (12, 512, 39):
+            raise ValueError(f"endpoint ABI arrays have wrong full-B shape for {tag}")
+        if not same_bits(arr["abi_state_input"][2:], ad_values["baseline__abi_state_input"][2:]):
+            raise ValueError(f"fixed KDM rest state changed at endpoint {tag}")
+        if not np.isfinite(arr["abi_forcing_input"]).all():
+            raise ValueError(f"endpoint prepared forcing contains nonfinite values at {tag}")
+        for field, shape in (("rho_d", (512, 39)), ("finish", (5, 512, 39)),
+                             ("native_thm_pert", (512, 39)), ("native_qv", (512, 39)),
+                             ("native_p_center_Pa", (512, 39)), ("native_phi_interfaces", (512, 40))):
+            if arr.get(field, np.empty(0)).shape != shape:
+                raise ValueError(f"endpoint {field} shape differs for {tag}")
+        output = _output_from_endpoint(arr, torch, NativeProfile, CloudProfile, NativeBatchOutput)
+        invalid = _validate_selected_inputs(block, output, config, np.asarray([TARGET], dtype=np.int64))
+        if invalid:
+            raise ValueError(f"target row fails pure profile validation at {tag}: {invalid}")
+        selected = _selected_profile_context(block, output, np.asarray([TARGET], dtype=np.int64), config)
+        selected_arrays = _profile_arrays(selected)
+        saved_rows = np.asarray(arr["profile_rows"], dtype=np.int64)
+        at = np.flatnonzero(saved_rows == TARGET)
+        if at.size != 1 or not bool(arr["profile_valid"][TARGET]):
+            raise ValueError(f"target profile row is absent/invalid in saved endpoint {tag}")
+        saved_profiles = {name: arr["profile_" + name][int(at[0]):int(at[0]) + 1] for name in PROFILE_FIELDS}
+        profile_equal = {name: same_bits(selected_arrays[name], saved_profiles[name]) for name in PROFILE_FIELDS}
+        if not all(profile_equal.values()):
+            raise ValueError(f"target endpoint profile does not reproduce saved profile rows for {tag}")
+        support_equal = bool(np.array_equal(arr["baseline_mask"][TARGET], baseline_pilot["parent_support_mask"]))
+        source_equal = (
+            same_bits(arr["source_dqf"][TARGET], input_arrays["block__obs_dqf"][TARGET])
+            and same_bits(arr["source_qc"][TARGET], input_arrays["block__obs_qc_raw"][TARGET])
+        )
+        if not support_equal or not source_equal:
+            raise ValueError(f"endpoint changed fixed source/support inputs at {tag}")
+        endpoint_checks[tag] = {
+            "epsilon": epsilon, "sign": sign,
+            "endpoint_npz_sha256": sha(npz_path),
+            "profile_rows_contains_target": True,
+            "profile_valid_target": True,
+            "target_saved_profile_matches_rebuild_bits": profile_equal,
+            "baseline_support_target_equal": support_equal,
+            "source_qc_dqf_target_equal": source_equal,
+            "baseline_CFRAC_exact": same_bits(saved_profiles["CFRAC"], baseline_pilot["profile_CFRAC"]),
+            "target_CFRAC_values": saved_profiles["CFRAC"][0].tolist(),
+        }
+        target_candidate_profiles[tag] = selected_arrays
+        target_endpoint_arrays[tag] = arr
+
+    return {
+        "endpoint_root": endpoint_root,
+        "completion": completion,
+        "launch": launch,
+        "summary": summary,
+        "endpoints": endpoints,
+        "endpoint_checks": endpoint_checks,
+        "candidate_profiles": target_candidate_profiles,
+        "endpoint_arrays": target_endpoint_arrays,
+        "block": block,
+        "config": config,
+        "baseline_pilot": baseline_pilot,
+        "profile_jvp": profile_jvp,
+        "baseline_pilot_receipt": baseline_pilot_receipt,
+        "value_receipt": value_receipt,
+        "preflight": base_preflight,
+        "ad_values": ad_values,
+    }
+
+
+def _verify_payload_digest(record, label):
+    claimed = record.get("receipt_sha256")
+    payload = dict(record)
+    payload.pop("receipt_sha256", None)
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    if hashlib.sha256(canonical).hexdigest() != claimed:
+        raise ValueError(f"{label} receipt payload digest mismatch")
+
+
+def run_direct(preflight_result, endpoint_root, output_root, preflight_path):
+    if output_root.exists() or output_root.is_symlink():
+        raise FileExistsError(f"direct-FD output must be new: {output_root}")
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(HELPER_DIR))
+    import torch
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import evaluate_observation_batch
+    from harness.run_native_candidate_observation import EXPERIMENT, _runtime_environment
+    from harness.native_satellite_objective import objective_chunk
+    import prepare_target_rttov_pilot as pilot
+
+    fresh = preflight(endpoint_root)
+    for key in ("completion", "launch", "summary"):
+        if fresh[key] != preflight_result[key]:
+            raise ValueError(f"FD endpoint {key} changed after preflight")
+    pilot_receipt = json.loads(PILOT_RECEIPT.read_text())
+    _verify_payload_digest(pilot_receipt, "fresh baseline K pilot")
+    if pilot_receipt.get("new_KDM_calls") != 0 or pilot_receipt.get("calls", {}).get("baseline", {}).get("K_calls") != 1:
+        raise ValueError("fresh baseline K pilot no longer satisfies the no-KDM, one-K contract")
+    baseline_call = pilot_receipt["calls"]["baseline"]
+    if baseline_call.get("K_profile_fields_match_parent_bitwise") != {name: True for name in DIFFERENTIABLE_PROFILE_FIELDS}:
+        raise ValueError("baseline K profile K arrays differ from the parent reference")
+
+    block = dict(fresh["block"])
+    admission = dict(block["initial_admission"])
+    target_only = np.zeros(512, dtype=np.bool_)
+    target_only[TARGET] = True
+    admission["cost_eligible"] = target_only
+    block["initial_admission"] = admission
+    output_root.mkdir(parents=True, exist_ok=False)
+    baseline_huber = json.loads(HUBER_SEED.read_text())
+    _verify_payload_digest(baseline_huber, "target Huber seed")
+    if baseline_huber.get("target_row0") != TARGET:
+        raise ValueError("target Huber seed is not bound to row 368")
+    with np.load(BASELINE_K_NPZ, allow_pickle=False) as z:
+        baseline_bt = z["bt"].reshape(1, 7).copy()
+        baseline_quality = z["quality"].copy()
+        baseline_support = z["parent_support_mask"].copy()
+        baseline_cfrac = z["profile_CFRAC"].copy()
+    if not np.array_equal(baseline_support, np.ones(7, dtype=np.bool_)) or not np.array_equal(baseline_quality, np.zeros(7, dtype=np.int32)):
+        raise ValueError("baseline target support or quality is not strict seven-channel support")
+
+    calls = {}
+    outputs = {}
+    value_receipt = json.loads(pilot.VALUE_RECEIPT.read_text())
+    alpha_reference = next(item for item in value_receipt["value_calls"] if item["state"] == "alpha025")
+    with np.load(alpha_reference["parent_reference_npz"], allow_pickle=False) as parent:
+        parent_alpha_bt = parent["bt"][TARGET].copy()
+        parent_alpha_quality = parent["quality"][TARGET].copy()
+        parent_alpha_mask = parent["mask"][TARGET].copy()
+
+    from harness.native_observation_batch import PROFILE_FIELDS
+    torch.set_num_threads(1)
+    with _runtime_environment(EXPERIMENT):
+        for tag in ENDPOINT_TAGS:
+            receipt, npz_path = fresh["endpoints"][tag]
+            with np.load(npz_path, allow_pickle=False) as z:
+                arrays = {key: z[key] for key in z.files}
+            output = _output_from_endpoint(arrays, torch, NativeProfile, CloudProfile, NativeBatchOutput)
+            workspace = output_root / tag
+            workspace.mkdir(parents=False, exist_ok=False)
+            result = evaluate_observation_batch(block, output, fresh["config"], workspace, with_k=False)
+            if result["rows"].tolist() != [TARGET] or not bool(result["profile_valid"][TARGET]):
+                raise RuntimeError(f"RTTOV direct endpoint row was not admitted for {tag}: {result['reasons'][TARGET]}")
+            call_receipt = result["receipt"]
+            if call_receipt.get("direct_calls") != 1 or call_receipt.get("K_calls") != 0 or call_receipt.get("K_recovered") != 0:
+                raise RuntimeError(f"endpoint {tag} did not use one direct-only RTTOV call: {call_receipt}")
+            bt = result["bt"].detach().cpu().numpy()[TARGET]
+            quality = result["quality"][TARGET]
+            if bt.shape != (7,) or not np.isfinite(bt).all():
+                raise RuntimeError(f"endpoint {tag} target BT is not seven finite values")
+            support_equal = bool(np.array_equal(result["baseline_valid_mask"][TARGET], baseline_support))
+            quality_equal = bool(np.array_equal(quality, baseline_quality))
+            profile_equal = {
+                name: same_bits(result["profile_arrays"][name], arrays["profile_" + name][
+                    int(np.flatnonzero(arrays["profile_rows"] == TARGET)[0]):
+                    int(np.flatnonzero(arrays["profile_rows"] == TARGET)[0]) + 1
+                ])
+                for name in PROFILE_FIELDS
+            }
+            target_out = {"bt": bt, "quality": quality}
+            target_out.update({"profile_" + name: value for name, value in result["profile_arrays"].items()})
+            target_npz = workspace / "target_observation.npz"
+            with target_npz.open("xb") as stream:
+                np.savez(stream, **target_out)
+                stream.flush()
+                os.fsync(stream.fileno())
+            calls[tag] = {
+                "epsilon": float(receipt["epsilon"]),
+                "sign": int(receipt["sign"]),
+                "RTTOV_direct_calls": 1,
+                "RTTOV_K_calls": 0,
+                "K_recovered": 0,
+                "target_quality": quality.tolist(),
+                "quality_matches_baseline_support": quality_equal,
+                "fixed_support_mask_matches_baseline": support_equal,
+                "bt_kma_v3_0": bt.tolist(),
+                "target_profile_fields_match_saved_FD_endpoint_bitwise": profile_equal,
+                "reasons": str(result["reasons"][TARGET]),
+                "rttov_receipt": call_receipt,
+                "target_npz": str(target_npz),
+                "target_npz_sha256": sha(target_npz),
+            }
+            outputs[tag] = {"bt": bt, "quality": quality, "profile": result["profile_arrays"]}
+
+    # Target-only fixed-support Huber numerators and centered differences.
+    obs = np.asarray(block["obs_bt"][TARGET:TARGET + 1], dtype=np.float64)
+    weights = np.asarray(fresh["baseline_pilot"]["parent_support_mask"], dtype=np.bool_)
+    parent_archive = Path(alpha_reference["parent_reference_npz"])
+    with np.load(parent_archive, allow_pickle=False) as archive:
+        target_weights = np.asarray(archive["weights"][TARGET:TARGET + 1], dtype=np.float64)
+    support = {"m0": baseline_support.reshape(1, 7), "weights": target_weights}
+    cost_by_tag = {}
+    for tag, value in outputs.items():
+        objective = objective_chunk(value["bt"].reshape(1, 7), obs, support)
+        cost_by_tag[tag] = float(objective["numerator"])
+    jvp_receipt = json.loads(PROFILE_JVP_RECEIPT.read_text())
+    _verify_payload_digest(jvp_receipt, "actual-candidate profile JVP")
+    with np.load(PROFILE_JVP_NPZ, allow_pickle=False) as z:
+        profile_jvp = {key: z[key] for key in z.files}
+    contract_path = PILOT_DIR / "BASELINE_K_ACTUAL_PROFILE_JVP_CONTRACTION.json"
+    contraction = json.loads(contract_path.read_text())
+    predicted_bt_jvp = np.asarray(contraction["K_actual_direction_profile_jvp_K"], dtype=np.float64)
+    predicted_cost_numerator = float(baseline_huber["target_cost_directional_numerator_from_Huber_seed"])
+    huber_rtol, huber_atol = 3.0e-5, 1.0e-8
+    objective_tolerances = json.loads(PLAN.read_text())["local_FD"]
+    epsilon_results = []
+    for epsilon in (1.0e-2, 1.0e-3, 1.0e-4, 1.0e-5, 1.0e-6):
+        plus_tag, minus_tag = f"eps_{epsilon:.0e}_plus", f"eps_{epsilon:.0e}_minus"
+        plus, minus = outputs[plus_tag], outputs[minus_tag]
+        bt_fd = (plus["bt"] - minus["bt"]) / (2.0 * epsilon)
+        bt_ratio = np.abs(bt_fd - predicted_bt_jvp) / (
+            huber_atol + huber_rtol * np.maximum(np.abs(bt_fd), np.abs(predicted_bt_jvp))
+        )
+        profile_gate = {}
+        cfrac_changes = {}
+        for field in DIFFERENTIABLE_PROFILE_FIELDS:
+            pfd = (plus["profile"][field][0] - minus["profile"][field][0]) / (2.0 * epsilon)
+            reference = profile_jvp["JVP_" + field][0]
+            ratio = np.abs(pfd - reference) / (
+                float(objective_tolerances["profile_coordinate_atol"])
+                + float(objective_tolerances["profile_coordinate_rtol"]) * np.maximum(np.abs(pfd), np.abs(reference))
+            )
+            profile_gate[field] = {
+                "max_coordinate_tolerance_ratio": float(np.max(ratio)),
+                "passed": bool(np.all(ratio <= 1.0)),
+                "coordinate_count": int(ratio.size),
+            }
+        cfrac_changes["plus_vs_baseline"] = int(np.count_nonzero(plus["profile"]["CFRAC"][0] != baseline_cfrac[0]))
+        cfrac_changes["minus_vs_baseline"] = int(np.count_nonzero(minus["profile"]["CFRAC"][0] != baseline_cfrac[0]))
+        cost_fd = (cost_by_tag[plus_tag] - cost_by_tag[minus_tag]) / (2.0 * epsilon)
+        cost_ratio = abs(cost_fd - predicted_cost_numerator) / (
+            float(objective_tolerances["BT_cost_atol"])
+            + float(objective_tolerances["BT_cost_rtol"]) * max(abs(cost_fd), abs(predicted_cost_numerator))
+        )
+        strict_quality = bool(
+            np.array_equal(plus["quality"], np.zeros(7, dtype=np.int32))
+            and np.array_equal(minus["quality"], np.zeros(7, dtype=np.int32))
+            and calls[plus_tag]["fixed_support_mask_matches_baseline"]
+            and calls[minus_tag]["fixed_support_mask_matches_baseline"]
+        )
+        all_pass = bool(
+            np.all(bt_ratio <= 1.0)
+            and all(item["passed"] for item in profile_gate.values())
+            and cfrac_changes["plus_vs_baseline"] == 0
+            and cfrac_changes["minus_vs_baseline"] == 0
+            and strict_quality
+            and cost_ratio <= 1.0
+        )
+        epsilon_results.append({
+            "epsilon": epsilon,
+            "BT_FD_K": bt_fd.tolist(),
+            "BT_JVP_K": predicted_bt_jvp.tolist(),
+            "BT_tolerance_ratio_by_channel": bt_ratio.tolist(),
+            "BT_all_seven_pass": bool(np.all(bt_ratio <= 1.0)),
+            "profile_by_field": profile_gate,
+            "CFRAC_changed_coordinates": cfrac_changes,
+            "quality_and_fixed_mask_stable": strict_quality,
+            "target_cost_huber_numerator_fd": cost_fd,
+            "target_cost_huber_numerator_jvp": predicted_cost_numerator,
+            "target_cost_tolerance_ratio": float(cost_ratio),
+            "target_cost_pass": bool(cost_ratio <= 1.0),
+            "observation_gate_common_pass": all_pass,
+        })
+
+    return {"calls": calls, "epsilon_results": epsilon_results}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--endpoint-root", required=True, type=Path)
+    parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--run-direct", action="store_true")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--preflight-receipt", type=Path)
+    args = parser.parse_args(argv)
+    if args.preflight == args.run_direct:
+        parser.error("choose exactly one of --preflight or --run-direct")
+    result = preflight(args.endpoint_root)
+    fd_root = Path(args.endpoint_root)
+    if args.preflight:
+        output = args.output or (HELPER_DIR / "fd_observation_v1" / "PREFLIGHT_v3.json")
+        if output.exists() or output.is_symlink():
+            raise FileExistsError(output)
+        payload = {
+            "schema": "kdm6.block22_fd_observation_preflight.v1",
+            "status": "PREPARED_NO_RTTOV_CALLS",
+            "producer_sha256": sha(Path(__file__)),
+            "endpoint_root": str(fd_root),
+            "fd_launch_plan_sha256": sha(fd_root / "launch_plan.json"),
+            "fd_completion_sha256": sha(fd_root / "execution_complete.json"),
+            "fd_summary_sha256": sha(fd_root / "centered_fd_summary.json"),
+            "endpoint_count": 10,
+            "target_row0": TARGET,
+            "target_flat0": FLAT,
+            "channels": list(CHANNELS),
+            "fresh_baseline_K_pilot_receipt_sha256": sha(PILOT_RECEIPT),
+            "fresh_baseline_K_npz_sha256": sha(BASELINE_K_NPZ),
+            "actual_candidate_profile_jvp_npz_sha256": sha(PROFILE_JVP_NPZ),
+            "huber_target_seed_sha256": sha(HUBER_SEED),
+            "endpoint_checks": result["endpoint_checks"],
+            "planned_calls_after_root_review": {"RTTOV_direct": 10, "RTTOV_K": 0, "KDM": 0},
+            "support_contract": "Only observation row368 is passed to each N=1 direct call; full-B KDM endpoint arrays are retained and hash-bound; baseline source/mask/weights stay fixed.",
+        }
+        payload = write_json_new(output, payload)
+        print(json.dumps(payload, indent=2))
+        return
+    if args.output is None or args.preflight_receipt is None:
+        raise ValueError("--run-direct requires --output and the reviewed --preflight-receipt")
+    if os.environ.get("KDM6_ACTIVATION_FD_RTTOV_APPROVED") != "1":
+        raise RuntimeError("root review cue required for ten RTTOV direct calls")
+    if args.output.exists() or args.output.is_symlink():
+        raise FileExistsError(args.output)
+    saved_preflight = json.loads(args.preflight_receipt.read_text())
+    _verify_payload_digest(saved_preflight, "FD observation preflight")
+    if saved_preflight.get("status") != "PREPARED_NO_RTTOV_CALLS" or saved_preflight.get("endpoint_root") != str(args.endpoint_root):
+        raise ValueError("preflight receipt does not bind the requested endpoint root")
+    if saved_preflight.get("producer_sha256") != sha(Path(__file__)):
+        raise ValueError("preflight receipt source hash differs from this direct-call producer")
+    current = preflight(args.endpoint_root)
+    if current["endpoint_checks"] != saved_preflight.get("endpoint_checks"):
+        raise ValueError("endpoint files changed after observation preflight")
+    try:
+        result = run_direct(current, args.endpoint_root, args.output, args.preflight_receipt)
+    except Exception as exc:
+        if args.output.exists() and not (args.output / "DIRECT_FD_FAILURE.json").exists():
+            completed = sorted(args.output.glob("*/target_observation.npz"))
+            case_dirs = sorted(args.output.glob("*/case_direct"))
+            write_json_new(
+                args.output / "DIRECT_FD_FAILURE.json",
+                {
+                    "schema": "kdm6.block22_fd_target_observation_failure.v1",
+                    "status": "FAILED_NO_AUTOMATIC_RETRY",
+                    "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+                    "producer_sha256": sha(Path(__file__)),
+                    "endpoint_root": str(args.endpoint_root),
+                    "preflight_receipt_sha256": sha(args.preflight_receipt),
+                    "completed_target_result_npz_count": len(completed),
+                    "completed_target_result_npz": [str(path) for path in completed],
+                    "case_direct_dirs": [str(path) for path in case_dirs],
+                    "new_KDM_calls": 0,
+                    "exception": repr(exc),
+                },
+            )
+        raise
+    write_json_new(args.output / "DIRECT_FD_RESULT.json", result)
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

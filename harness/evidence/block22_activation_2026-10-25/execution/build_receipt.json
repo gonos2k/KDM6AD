@@ -1,0 +1,221 @@
+{
+  "KDM_or_RTTOV_calls": 0,
+  "actual_qr_sedimentation_member_preserved": true,
+  "archive_member14_1based_including_symdef": "sedimentation.cpp.o",
+  "archive_members": [
+    "__.SYMDEF",
+    "ops.cpp.o",
+    "slope.cpp.o",
+    "progb.cpp.o",
+    "warm.cpp.o",
+    "satadj.cpp.o",
+    "cold.cpp.o",
+    "melt_freeze.cpp.o",
+    "thermo.cpp.o",
+    "state.cpp.o",
+    "cloud_dsd.cpp.o",
+    "runtime.cpp.o",
+    "coordinator.cpp.o",
+    "sedimentation.cpp.o",
+    "sedimentation_conservative.cpp.o"
+  ],
+  "changed_member": "coordinator.cpp.o",
+  "compile_command": [
+    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+    "-DUSE_C10D_GLOO",
+    "-DUSE_DISTRIBUTED",
+    "-DUSE_RPC",
+    "-DUSE_TENSORPIPE",
+    "-I/private/tmp/KDM6AD-actual-qr-20261024/libtorch/include",
+    "-isystem",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/include",
+    "-isystem",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/include/torch/csrc/api/include",
+    "-O3",
+    "-DNDEBUG",
+    "-arch",
+    "arm64",
+    "-isysroot",
+    "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "-mmacosx-version-min=26.7",
+    "-fPIC",
+    "-fvisibility=hidden",
+    "-fvisibility-inlines-hidden",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-std=c++17",
+    "-c",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/coordinator.cpp",
+    "-o",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/coordinator.cpp.o"
+  ],
+  "compile_command_has_ffp_contract_off": true,
+  "created_at_utc": "2026-10-25T01:44:56.911731+00:00",
+  "exported_symbol_count": 14,
+  "exported_symbols_unchanged": true,
+  "isolated_outputs": {
+    "DSO": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/libkdm6_actual_qr_block22_observer.2.0.0.dylib",
+    "DSO_sha256": "53abe03ba228bf6ec04f649a4da89c0f7b3e748d31bc49d8694cf5b5f35a0370",
+    "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/libkdm6_actual_qr_block22.a",
+    "archive_sha256": "e91432fc492e505a6c9588f53d9a1f10e1e47797464abf02e6c708772d54fbcb",
+    "object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/coordinator.cpp.o",
+    "object_sha256": "fe5a500f8c24ef315f0d6e7066fe69983a504b541e3078a7b788e4202b05fc1d"
+  },
+  "link_command": [
+    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+    "-O3",
+    "-DNDEBUG",
+    "-arch",
+    "arm64",
+    "-isysroot",
+    "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "-mmacosx-version-min=26.7",
+    "-dynamiclib",
+    "-Wl,-headerpad_max_install_names",
+    "-Wl,-exported_symbols_list,/private/tmp/KDM6AD-actual-qr-20261024/libtorch/bridge/kdm6_c.exports",
+    "-compatibility_version",
+    "2.0.0",
+    "-current_version",
+    "2.0.0",
+    "-o",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/libkdm6_actual_qr_block22_observer.2.0.0.dylib",
+    "-install_name",
+    "@rpath/libkdm6_actual_qr_block22_observer.2.dylib",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/kdm6_c_api.cpp.o",
+    "-Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final_build_v1/libkdm6_actual_qr_block22.a",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+    "/opt/homebrew/lib/libc10.dylib"
+  ],
+  "member_changes": {
+    "__.SYMDEF": {
+      "archive_entry_index0_including_symdef": 0,
+      "change_allowed": true,
+      "changed": true,
+      "overlay_sha256": "5bd8c069be62673aaccc853ea8e8ae317117ea053f55d23d52f97b2f770210f0",
+      "parent_sha256": "cc9e1c8b08dc1ec233e1d6dfef69122443241ada37641dbcdb19de79d3b91ed1"
+    },
+    "cloud_dsd.cpp.o": {
+      "archive_entry_index0_including_symdef": 10,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9",
+      "parent_sha256": "6f8e74faadb1aad841f135a2358cde5aa7d5182f8da37aa3b0fc2fd1faa62ea9"
+    },
+    "cold.cpp.o": {
+      "archive_entry_index0_including_symdef": 6,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572",
+      "parent_sha256": "abe0a7b1fffe27608be40f2e1c4bdf256ca90ef99af3a09abd0d6d4015013572"
+    },
+    "coordinator.cpp.o": {
+      "archive_entry_index0_including_symdef": 12,
+      "change_allowed": true,
+      "changed": true,
+      "overlay_sha256": "fe5a500f8c24ef315f0d6e7066fe69983a504b541e3078a7b788e4202b05fc1d",
+      "parent_sha256": "7b3733f94b2a4280d0a0269e52a37121966a0f0cd1faca370718f91127181ca6"
+    },
+    "melt_freeze.cpp.o": {
+      "archive_entry_index0_including_symdef": 7,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd",
+      "parent_sha256": "fac59c19b908fdec15371b4eeabe651b5acfe6005960833e31ead04fd93558cd"
+    },
+    "ops.cpp.o": {
+      "archive_entry_index0_including_symdef": 1,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039",
+      "parent_sha256": "34b418203d63fff13dced37f5834208ad28a63e5e83ce7866f95715461e5c039"
+    },
+    "progb.cpp.o": {
+      "archive_entry_index0_including_symdef": 3,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b",
+      "parent_sha256": "b647b9f3a38722507fb91384950326f1099448d508654a3a05d3d005e39b598b"
+    },
+    "runtime.cpp.o": {
+      "archive_entry_index0_including_symdef": 11,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898",
+      "parent_sha256": "941fb29ef12b932806833fadb338f800473041ece5cc27b300db281c43983898"
+    },
+    "satadj.cpp.o": {
+      "archive_entry_index0_including_symdef": 5,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55",
+      "parent_sha256": "21af02911ee40d556a6c7b48414d7df8bd061f114c18bbc8db7d59b926201a55"
+    },
+    "sedimentation.cpp.o": {
+      "archive_entry_index0_including_symdef": 13,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "0c923f2ca613b0be71d13661e9eaa01f5c8ab93da5768cd6f82caf99c5bfa124",
+      "parent_sha256": "0c923f2ca613b0be71d13661e9eaa01f5c8ab93da5768cd6f82caf99c5bfa124"
+    },
+    "sedimentation_conservative.cpp.o": {
+      "archive_entry_index0_including_symdef": 14,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6",
+      "parent_sha256": "330dc333550f6d0e6c4861973f0fec8d1e2e0cf63079517d5aa365f63ad6eda6"
+    },
+    "slope.cpp.o": {
+      "archive_entry_index0_including_symdef": 2,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a",
+      "parent_sha256": "73db886d78ebda37595dd6b6ba4fa4472c49a4451bcb567b0519f98ef203039a"
+    },
+    "state.cpp.o": {
+      "archive_entry_index0_including_symdef": 9,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399",
+      "parent_sha256": "c52c3d812e88cd4b3ff561fda9318177c2e96bbce8996c69d6cf25c92fa3e399"
+    },
+    "thermo.cpp.o": {
+      "archive_entry_index0_including_symdef": 8,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0",
+      "parent_sha256": "8ba776f3d65f222848524eff7e53e4d39d20b925525540a60bfe85ed142735f0"
+    },
+    "warm.cpp.o": {
+      "archive_entry_index0_including_symdef": 4,
+      "change_allowed": false,
+      "changed": false,
+      "overlay_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858",
+      "parent_sha256": "7e84fa3a2af6200397ba12aefe5332c99a549427f96c6b08fa107dc8e65b9858"
+    }
+  },
+  "old_install_name": "@rpath/libkdm6_actual_qr.2.dylib",
+  "parent_build": {
+    "DSO": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.2.0.0.dylib",
+    "DSO_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+    "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.a",
+    "archive_sha256": "0c1b002f2a85bdcc5d82a53bf3d7b03471105df9f161ce8eb195e5ff4e64238a",
+    "build_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/receipt.json",
+    "build_receipt_sha256": "4cc1d0158b686cfa9c07684f37a16d24a843ad456eb5ae9b10f4b343b6aa725d",
+    "prepared_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/prepared.json",
+    "prepared_sha256": "93cb4f904415d6eedd6892222dc687076ddd1b6f810f4203860912cb566d59fb"
+  },
+  "schema": "kdm6.block22_activation_coordinator_build.v1",
+  "scope": "one coordinator translation unit; actual-QR sedimentation object and other archive members preserved",
+  "source": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/coordinator.cpp",
+    "review_receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/overlay_final/source_receipt.json",
+    "review_receipt_sha256": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+    "sha256": "fdeff2b8c306a2bcba2c6c9127d36836bce6629a2135d5d80a02175de0ec106f"
+  },
+  "source_public_install_changed": false
+}

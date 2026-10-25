@@ -1,0 +1,179 @@
+"""Run only the approved alpha=.25 direct RTTOV value call from saved B512 output.
+
+The completed baseline K call is never repeated. No KDM execution occurs.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+SOURCE_V2 = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2")
+HELPER_DIR = RESEARCH / "observation_prep_v1"
+BASELINE_K_RECOVERY = HELPER_DIR / "pilot_v2/baseline/K_RECOVERY_RECEIPT.json"
+PILOT_RECEIPT = HELPER_DIR / "pilot_v2/PILOT_RECEIPT.json"
+DIRECT_DIR = HELPER_DIR / "pilot_v2/alpha025"
+TARGET_ROW = 368
+PROFILE_FIELDS = ("T", "Q", "P", "P_HALF", "HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC")
+CHANNELS = (10, 11, 12, 13, 14, 15, 16)
+
+
+def sha(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def same_bits(left, right):
+    a, b = np.asarray(left), np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def json_new(path, payload):
+    canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    result = dict(payload)
+    result["receipt_sha256"] = hashlib.sha256(canonical).hexdigest()
+    encoded = (json.dumps(result, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return result
+
+
+def main():
+    if os.environ.get("KDM6_ACTIVATION_RTTOV_APPROVED") != "1":
+        raise RuntimeError("root review cue required for alpha.25 direct RTTOV")
+    if DIRECT_DIR.exists() or DIRECT_DIR.is_symlink() or PILOT_RECEIPT.exists():
+        raise FileExistsError("alpha.25 direct output and final pilot receipt must be new")
+    baseline = json.loads(BASELINE_K_RECOVERY.read_text())
+    if baseline.get("fresh_RTTOV_K_calls_already_completed") != 1 or baseline.get("additional_RTTOV_calls_for_recovery") != 0:
+        raise ValueError("baseline K recovery receipt does not prove one completed K call")
+
+    sys.path.insert(0, str(SOURCE_V2))
+    sys.path.insert(0, str(HELPER_DIR))
+    import torch
+    from harness.native_batch_microphysics import CloudProfile, NativeBatchOutput, NativeProfile
+    from harness.native_observation_batch import evaluate_observation_batch
+    from harness.prepare_native_satellite_case import load_case_config
+    from harness.run_native_candidate_observation import EXPERIMENT, _runtime_environment
+    import prepare_target_rttov_pilot as pilot
+
+    preflight, prep, arrays, block, config, value_receipt = pilot.preflight()
+    if sha(BASELINE_K_RECOVERY) != baseline["receipt_sha256"]:
+        # receipt_sha256 is the payload digest; verify canonical payload too below
+        payload = dict(baseline); payload.pop("receipt_sha256", None)
+        canonical = (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+        if hashlib.sha256(canonical).hexdigest() != baseline["receipt_sha256"]:
+            raise ValueError("baseline K recovery receipt digest mismatch")
+    with np.load(pilot.VALUES, allow_pickle=False) as z:
+        values = {name: z[name] for name in z.files}
+    output, _ = pilot.load_saved_output("alpha025", torch, NativeProfile, CloudProfile, NativeBatchOutput, values)
+    pilot_block = dict(block)
+    admission = dict(block["initial_admission"])
+    chosen = np.zeros(512, dtype=np.bool_)
+    chosen[TARGET_ROW] = True
+    admission["cost_eligible"] = chosen
+    pilot_block["initial_admission"] = admission
+    torch.set_num_threads(1)
+    DIRECT_DIR.mkdir(parents=True, exist_ok=False)
+
+    with _runtime_environment(EXPERIMENT):
+        result = evaluate_observation_batch(pilot_block, output, config, DIRECT_DIR, with_k=False)
+    if result["rows"].tolist() != [TARGET_ROW] or not bool(result["profile_valid"][TARGET_ROW]):
+        raise RuntimeError(f"target-only direct observation profile not admitted: {result['reasons'][TARGET_ROW]}")
+    if result["receipt"]["direct_calls"] != 1 or result["receipt"]["K_calls"] != 0 or result["receipt"]["K_recovered"] != 0:
+        raise RuntimeError(f"alpha.25 RTTOV call path differs from direct-only plan: {result['receipt']}")
+    if not bool(result["baseline_valid_mask"][TARGET_ROW].all()):
+        raise RuntimeError("alpha.25 target failed strict fixed-support quality on one or more channels")
+    bt = result["bt"].detach().cpu().numpy()[TARGET_ROW]
+    quality = result["quality"][TARGET_ROW]
+    if not np.isfinite(bt).all() or not np.array_equal(quality, np.zeros(7, dtype=np.int32)):
+        raise RuntimeError("alpha.25 target BT/quality is nonfinite or nonzero quality")
+
+    previous = next(item for item in value_receipt["value_calls"] if item["state"] == "alpha025")
+    with np.load(previous["parent_reference_npz"], allow_pickle=False) as parent:
+        parent_bt = parent["bt"][TARGET_ROW]
+        parent_quality = parent["quality"][TARGET_ROW]
+        parent_mask = parent["mask"][TARGET_ROW]
+        parent_profile_valid = bool(parent["profile_valid"][TARGET_ROW])
+        profile_matches = {
+            name: same_bits(result["profile_arrays"][name], parent["profile_" + name][TARGET_ROW:TARGET_ROW + 1])
+            for name in PROFILE_FIELDS
+        }
+    if not all(profile_matches.values()):
+        raise RuntimeError("alpha.25 RTTOV input profile differs from the saved full-batch target profile")
+    bt_diff = bt - parent_bt
+    arrays_out = {"bt": bt, "quality": quality}
+    arrays_out.update({"profile_" + name: value for name, value in result["profile_arrays"].items()})
+    npz_path = DIRECT_DIR / "target_observation.npz"
+    with npz_path.open("xb") as stream:
+        np.savez(stream, **arrays_out)
+        stream.flush()
+        os.fsync(stream.fileno())
+    value_call = result["receipt"]
+    direct_receipt = {
+        "schema": "kdm6.block22_alpha025_direct_target_receipt.v1",
+        "status": "ONE_DIRECT_RTTOV_CALL_COMPLETE_PENDING_ROOT_REVIEW",
+        "preflight_receipt_sha256": sha(HELPER_DIR / "PREFLIGHT_v3.json"),
+        "baseline_K_recovery_receipt_sha256": sha(BASELINE_K_RECOVERY),
+        "target_row0": TARGET_ROW,
+        "target_flat0": 11632,
+        "native_ijk1": [167, 50, 18],
+        "new_KDM_calls": 0,
+        "RTTOV_direct_calls": 1,
+        "RTTOV_K_calls": 0,
+        "K_recovered": 0,
+        "quality": quality.tolist(),
+        "quality_matches_parent": bool(np.array_equal(quality, parent_quality)),
+        "support_mask_matches_parent": bool(np.array_equal(result["baseline_valid_mask"][TARGET_ROW], parent_mask)),
+        "profile_valid_matches_parent": bool(bool(result["profile_valid"][TARGET_ROW]) == parent_profile_valid),
+        "bt_kma_v3_0": bt.tolist(),
+        "bt_matches_parent_bitwise": same_bits(bt, parent_bt),
+        "bt_abs_difference_per_channel": np.abs(bt_diff).tolist(),
+        "bt_max_abs_difference": float(np.max(np.abs(bt_diff))),
+        "profile_fields_match_parent_bitwise": profile_matches,
+        "rttov_receipt": value_call,
+        "target_npz": str(npz_path),
+        "target_npz_sha256": sha(npz_path),
+        "producer_sha256": sha(Path(__file__)),
+    }
+    direct_receipt = json_new(DIRECT_DIR / "DIRECT_RECEIPT.json", direct_receipt)
+    baseline_call = {
+        "mode": "K",
+        "K_calls": 1,
+        "direct_calls": 0,
+        "K_recovered": 0,
+        "rows": [TARGET_ROW],
+        "target_npz": str(HELPER_DIR / "pilot_v2/baseline/target_observation.npz"),
+        "target_npz_sha256": baseline["recovered_target_npz_sha256"],
+        "recovery_receipt_sha256": sha(BASELINE_K_RECOVERY),
+        "bt_kma_v3_0": np.load(baseline["recovered_target_npz"])["bt"].tolist(),
+        "quality": np.load(baseline["recovered_target_npz"])["quality"].tolist(),
+        "K_profile_fields_match_parent_bitwise": baseline["K_profile_fields_match_parent_bitwise"],
+    }
+    final_receipt = {
+        "schema": "kdm6.block22_target_observation_pilot_result.v1",
+        "status": "PILOT_COMPLETE_PENDING_ROOT_REVIEW",
+        "input_bundle_sha256": sha(HELPER_DIR.parent / "input_prep_v1/block22_fullB_inputs.npz"),
+        "saved_value_npz_sha256": sha(pilot.VALUES),
+        "saved_actual_direction_ad_npz_sha256": sha(pilot.AD_VALUES),
+        "preflight_receipt_sha256": sha(HELPER_DIR / "PREFLIGHT_v3.json"),
+        "new_KDM_calls": 0,
+        "calls": {"baseline": baseline_call, "alpha025": direct_receipt},
+        "selection_contract": preflight["selection_contract"],
+    }
+    json_new(PILOT_RECEIPT, final_receipt)
+    print(json.dumps(final_receipt, indent=2))
+
+
+if __name__ == "__main__":
+    main()

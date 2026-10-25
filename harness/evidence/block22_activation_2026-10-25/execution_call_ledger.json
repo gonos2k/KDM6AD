@@ -1,0 +1,20 @@
+{
+  "schema": "kdm6.block22_actual_call_ledger.v1",
+  "KDM_forward": 24,
+  "KDM_JVP": 7,
+  "KDM_VJP": 7,
+  "RTTOV_K": 1,
+  "RTTOV_direct": 11,
+  "host": 0,
+  "optimizer": 0,
+  "fixed_analysis_time": true,
+  "microphysics_tau_s": 20,
+  "forward_breakdown": {
+    "value_noninterference": 6,
+    "AD_noninterference": 6,
+    "serialized_FD": 10,
+    "unserialized_FD_orphan": 1,
+    "target_cost_VJP": 1
+  },
+  "scope": "Actual localized experiment calls only; parsing/copying/offline global efficacy extraction add zero calls. Historical parent runs are not recounted. The completed baseline K and its raw-output parser refer to one invocation, not two."
+}

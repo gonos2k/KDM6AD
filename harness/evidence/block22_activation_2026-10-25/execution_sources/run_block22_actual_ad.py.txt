@@ -1,0 +1,586 @@
+"""Run the source-bound full-B native T/Q JVP/VJP probe for block 22.
+
+This driver is intentionally one fresh Python process for one newly linked DSO.
+It reuses the existing BatchKernel ABI and NativeBatchMicrophysics prep/cleanup/
+finish/EOS map. It makes no RTTOV, host, or higher-order calls. The cotangent is
+one scalar native finished-theta value at the agreed target row/level; saved
+full-B ABI buffers permit an independent native dot replay.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import argparse
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import time
+
+import numpy as np
+
+RESEARCH = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025"
+)
+PREP_DIR = RESEARCH / "input_prep_v1"
+PARENT = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4"
+)
+SOURCE_V2 = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2"
+)
+OBSERVER_BUILD = RESEARCH / "overlay_final_build_v1"
+INPUT_NPZ = PREP_DIR / "block22_fullB_inputs.npz"
+PREPARATION = PREP_DIR / "BLOCK22_PREPARATION.json"
+ACTUAL_DIRECTION_PROOF = RESEARCH / "ACTUAL_DIRECTION_PROOF_v1.json"
+EXPERIMENT_PLAN = RESEARCH / "EXPERIMENT_PLAN_v1.json"
+OBSERVER_SOURCE_RECEIPT = RESEARCH / "overlay_final/source_receipt.json"
+PARENT_DSO = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/"
+    "build_final/libkdm6_actual_qr.2.0.0.dylib"
+)
+PARENT_DSO_SHA256 = "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99"
+OBSERVER_DSO = OBSERVER_BUILD / "libkdm6_actual_qr_block22_observer.2.0.0.dylib"
+OBSERVER_DSO_SHA256 = "53abe03ba228bf6ec04f649a4da89c0f7b3e748d31bc49d8694cf5b5f35a0370"
+
+
+def sha256_file(path):
+    result = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            result.update(block)
+    return result.hexdigest()
+
+
+def numpy_copy(value):
+    return np.array(value.detach().cpu().numpy(), copy=True)
+
+
+def finite_dot(left, right):
+    products = np.asarray(left, dtype=np.float64) * np.asarray(right, dtype=np.float64)
+    if not np.isfinite(products).all():
+        raise ValueError("nonfinite dot product operand")
+    return math.fsum(map(float, products.ravel()))
+
+
+def same_bits(left, right):
+    a = np.asarray(left)
+    b = np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+class RecordingBatchKernel:
+    """Copy the actual full-B NumPy buffers at the existing ABI boundary."""
+
+    def __init__(self, base_kernel):
+        self.base = base_kernel
+        self.B = base_kernel.B
+        self.L = base_kernel.L
+        self.capture = {}
+        self.jvp_calls = 0
+        self.vjp_calls = 0
+
+    @property
+    def forward_calls(self):
+        return self.base.forward_calls
+
+    def forward(self, state, forcing, *, record=False):
+        state_input = np.array(state, dtype=np.float64, order="C", copy=True)
+        forcing_input = np.array(forcing, dtype=np.float64, order="C", copy=True)
+        output, handle = self.base.forward(state, forcing, record=record)
+        self.capture.update(
+            abi_state_input=state_input,
+            abi_forcing_input=forcing_input,
+            abi_raw_state_output=np.array(
+                output, dtype=np.float64, order="C", copy=True
+            ),
+            abi_record_requested=bool(record),
+        )
+        return output, handle
+
+    def jvp(self, handle, state_direction, forcing_direction):
+        self.jvp_calls += 1
+        ds = np.array(state_direction, dtype=np.float64, order="C", copy=True)
+        df = np.array(forcing_direction, dtype=np.float64, order="C", copy=True)
+        output = self.base.jvp(handle, state_direction, forcing_direction)
+        self.capture.update(
+            abi_state_direction=ds,
+            abi_forcing_direction=df,
+            abi_raw_state_jvp=np.array(output, dtype=np.float64, order="C", copy=True),
+        )
+        return output
+
+    def vjp(self, handle, cotangent):
+        self.vjp_calls += 1
+        u = np.array(cotangent, dtype=np.float64, order="C", copy=True)
+        gs, gf = self.base.vjp(handle, cotangent)
+        self.capture.update(
+            abi_raw_state_cotangent=u,
+            abi_state_vjp=np.array(gs, dtype=np.float64, order="C", copy=True),
+            abi_forcing_vjp=np.array(gf, dtype=np.float64, order="C", copy=True),
+        )
+        return gs, gf
+
+    def close(self, handle):
+        return self.base.close(handle)
+
+
+def run(
+    output_dir: Path,
+    *,
+    mode: str,
+    compare_mode_dir: Path | None = None,
+):
+    if mode not in {"control", "trace_off", "trace_on"}:
+        raise ValueError(f"unsupported instrumentation mode: {mode}")
+    expected_compare_mode = {
+        "control": None,
+        "trace_off": "control",
+        "trace_on": "trace_off",
+    }[mode]
+    if expected_compare_mode is None and compare_mode_dir is not None:
+        raise ValueError("control is the first mode and cannot have a comparison input")
+    if expected_compare_mode is not None and compare_mode_dir is None:
+        raise ValueError(f"{mode} requires comparison against {expected_compare_mode}")
+    if output_dir.exists() or output_dir.is_symlink():
+        raise FileExistsError(output_dir)
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=False, exist_ok=False)
+    dso_path, dso_sha256 = (
+        (PARENT_DSO, PARENT_DSO_SHA256)
+        if mode == "control"
+        else (OBSERVER_DSO, OBSERVER_DSO_SHA256)
+    )
+    if (
+        sha256_file(INPUT_NPZ)
+        != json.loads(PREPARATION.read_text())["input_npz_sha256"]
+    ):
+        raise ValueError("prepared block22 input bundle changed")
+    if sha256_file(dso_path) != dso_sha256:
+        raise ValueError("selected DSO differs from its reviewed build receipt")
+    if mode != "control":
+        build_receipt_path = OBSERVER_BUILD / "build_receipt.json"
+        build_receipt = json.loads(build_receipt_path.read_text())
+        if build_receipt["isolated_outputs"]["DSO_sha256"] != dso_sha256:
+            raise ValueError("observer DSO hash differs from build receipt")
+
+    # Import only from the frozen source_v2 snapshot for this actual kernel map.
+    sys.path.insert(0, str(SOURCE_V2))
+    from harness.native_batch_microphysics import (
+        BatchPrepGeometry,
+        NativeBatchDirection,
+        NativeBatchMicrophysics,
+        make_batch_kernel,
+    )
+    from harness.run_native_candidate_observation import (
+        EXPERIMENT,
+        _runtime_environment,
+    )
+    from harness.prepare_native_satellite_case import load_case_config
+    from oracle.kdm6.native_finish import FinishConfig, ZeroOutConfig
+    from oracle.kdm6.native_prep import NativePrepConfig
+    import torch
+
+    parent_manifest = json.loads((PARENT / "CASE_MANIFEST.json").read_text())
+    with np.load(INPUT_NPZ, allow_pickle=False) as archive:
+        data = {name: archive[name] for name in archive.files}
+    B, L, row, level = 512, 39, 368, 17
+    if data["block__flat_indices"].shape != (B,):
+        raise ValueError("KDM ABI input must retain the entire B512 block")
+    if data["block__rest"].shape != (10, B, L):
+        raise ValueError("rest state must have original full-B shape")
+    if data["block__ph"].shape != (B, L + 1):
+        raise ValueError("PH interfaces must have original full-B shape")
+    if data["block__geometry__phb"].shape != (B, L + 1):
+        raise ValueError("PHB geometry must have original full-B shape")
+
+    candidate = data["parent_alpha025__delta_theta"]
+    candidate_q = data["parent_alpha025__delta_qv"]
+    direction_theta = np.ascontiguousarray(candidate / 0.25, dtype=np.float64)
+    direction_qv = np.ascontiguousarray(candidate_q / 0.25, dtype=np.float64)
+    direction_proof = json.loads(ACTUAL_DIRECTION_PROOF.read_text())
+    direction_hashes = {
+        "theta": hashlib.sha256(direction_theta.tobytes()).hexdigest(),
+        "qv": hashlib.sha256(direction_qv.tobytes()).hexdigest(),
+    }
+    for component in ("theta", "qv"):
+        if not direction_proof[component]["bitwise_equal"]:
+            raise ValueError(f"saved accepted-direction proof failed for {component}")
+        if (
+            direction_hashes[component]
+            != direction_proof[component]["direction_sha256"]
+        ):
+            raise ValueError(f"candidate direction differs from proof for {component}")
+    zero_ph = np.zeros_like(data["block__ph"])
+    zero_rest = np.zeros_like(data["block__rest"])
+    config = load_case_config(parent_manifest["case_preparation"]["paths"])
+    config["paths"]["candidate_library"] = dso_path
+    torch.set_num_threads(1)
+    trace_path = output_dir / "activation_trace.tsv"
+    os.environ.pop("KDM6_BLOCK22_ACTIVATION_TRACE", None)
+
+    geometry = BatchPrepGeometry(
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__phb"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c3h"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c4h"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c3f"])),
+        torch.from_numpy(np.ascontiguousarray(data["block__geometry__c4f"])),
+    )
+    base_kernel = make_batch_kernel(dso_path, data["block__xland"], L)
+    kernel = RecordingBatchKernel(base_kernel)
+    model = NativeBatchMicrophysics(
+        kernel,
+        geometry,
+        NativePrepConfig(**config["prep_configuration"]),
+        FinishConfig(**config["finish_configuration"]),
+        ZeroOutConfig(**config["zero_out_configuration"]),
+    )
+
+    states = (
+        ("baseline", data["parent_baseline__theta_m"], data["parent_baseline__qv"]),
+        ("alpha025", data["parent_alpha025__theta_m"], data["parent_alpha025__qv"]),
+    )
+    parent_stage = {"baseline": "baseline", "alpha025": "TRIAL_alpha_0p25"}
+    results = {}
+    source_env_sha = json.loads((PARENT / "CASE_MANIFEST.json").read_text())["runtime"][
+        "RT_environment_sha256"
+    ]
+    started = time.monotonic()
+
+    with _runtime_environment(EXPERIMENT):
+        os.environ.pop("KDM6_BLOCK22_ACTIVATION_TRACE", None)
+        if mode == "trace_on":
+            os.environ["KDM6_BLOCK22_ACTIVATION_TRACE"] = str(trace_path)
+        for label, theta_np, qv_np in states:
+            theta = torch.from_numpy(np.ascontiguousarray(theta_np)).requires_grad_(
+                True
+            )
+            qv = torch.from_numpy(np.ascontiguousarray(qv_np)).requires_grad_(True)
+            mu = torch.from_numpy(np.ascontiguousarray(data["block__mu"]))
+            ph = torch.from_numpy(np.ascontiguousarray(data["block__ph"]))
+            rest = torch.from_numpy(np.ascontiguousarray(data["block__rest"]))
+            dtheta = torch.from_numpy(direction_theta)
+            dqv = torch.from_numpy(direction_qv)
+            direction = NativeBatchDirection(
+                dtheta, dqv, torch.from_numpy(zero_ph), torch.from_numpy(zero_rest)
+            )
+            kernel.capture = {}
+            kernel.jvp_calls = 0
+            kernel.vjp_calls = 0
+            previous_forwards = kernel.forward_calls
+            primal, tangent = model.forward_with_jvp(
+                theta, qv, mu, ph, rest, direction=direction
+            )
+            if kernel.forward_calls - previous_forwards != 1 or kernel.jvp_calls != 1:
+                raise RuntimeError("expected exactly one full-B KDM forward and JVP")
+
+            seed = torch.zeros_like(primal.native_profile.thm_pert)
+            with torch.no_grad():
+                seed[row, level] = 1.0
+            scalar = (primal.native_profile.thm_pert * seed).sum()
+            gradient_theta, gradient_qv = torch.autograd.grad(
+                scalar, (theta, qv), retain_graph=False
+            )
+            if kernel.vjp_calls != 1:
+                raise RuntimeError("expected exactly one full-B KDM VJP")
+
+            primal_native = {
+                name: numpy_copy(value)
+                for name, value in primal.native_profile._asdict().items()
+            }
+            primal_cloud = {
+                name: numpy_copy(value)
+                for name, value in primal.cloud_state._asdict().items()
+            }
+            primal_finish = np.stack(
+                [numpy_copy(value) for value in primal.finish], axis=0
+            )
+            tangent_native = {
+                name: numpy_copy(value)
+                for name, value in tangent.native_profile._asdict().items()
+            }
+            tangent_cloud = {
+                name: numpy_copy(value)
+                for name, value in tangent.cloud_state._asdict().items()
+            }
+            tangent_finish = np.stack(
+                [numpy_copy(value) for value in tangent.finish], axis=0
+            )
+            expected_stage = parent_stage[label]
+            parent_receipt_path = (
+                PARENT / expected_stage / "chunk_00022" / "receipt.json"
+            )
+            parent_receipt = json.loads(parent_receipt_path.read_text())
+            parent_artifact = Path(parent_receipt["artifact"])
+            if sha256_file(parent_artifact) != parent_receipt["artifact_sha256"]:
+                raise ValueError(f"parent result changed: {parent_artifact}")
+            with np.load(parent_artifact, allow_pickle=False) as expected:
+                expected_arrays = {name: expected[name] for name in expected.files}
+            primal_arrays = {"finish": primal_finish, "rho_d": numpy_copy(primal.rho_d)}
+            primal_arrays.update(
+                {"native_after_" + name: value for name, value in primal_native.items()}
+            )
+            primal_arrays.update(
+                {"cloud_" + name: value for name, value in primal_cloud.items()}
+            )
+            expected_bit_equal = {
+                name: same_bits(value, expected_arrays[name])
+                for name, value in primal_arrays.items()
+                if name in expected_arrays
+            }
+            if len(expected_bit_equal) != len(primal_arrays):
+                missing = sorted(set(primal_arrays) - set(expected_bit_equal))
+                raise ValueError(
+                    f"parent NPZ lacks primal comparison fields: {missing}"
+                )
+
+            gradient_theta_np = numpy_copy(gradient_theta)
+            gradient_qv_np = numpy_copy(gradient_qv)
+            seed_np = numpy_copy(seed)
+            tangent_target = float(tangent_native["thm_pert"][row, level])
+            native_jvp_lhs = tangent_target
+            native_jvp_rhs = finite_dot(
+                gradient_theta_np, direction_theta
+            ) + finite_dot(gradient_qv_np, direction_qv)
+            native_dot_abs_error = abs(native_jvp_lhs - native_jvp_rhs)
+            native_dot_relative_error = native_dot_abs_error / max(
+                abs(native_jvp_lhs), abs(native_jvp_rhs), 1.0e-12
+            )
+
+            capture = dict(kernel.capture)
+            abi_lhs = finite_dot(
+                capture["abi_raw_state_cotangent"], capture["abi_raw_state_jvp"]
+            )
+            abi_rhs = finite_dot(
+                capture["abi_state_vjp"], capture["abi_state_direction"]
+            ) + finite_dot(capture["abi_forcing_vjp"], capture["abi_forcing_direction"])
+            abi_dot_abs_error = abs(abi_lhs - abi_rhs)
+            abi_dot_relative_error = abi_dot_abs_error / max(
+                abs(abi_lhs), abs(abi_rhs), 1.0e-12
+            )
+
+            products = {
+                "theta_m_input": theta_np,
+                "qv_input": qv_np,
+                "direction_theta_m": direction_theta,
+                "direction_qv": direction_qv,
+                "direction_ph": zero_ph,
+                "direction_rest": zero_rest,
+                "seed_native_thm_pert": seed_np,
+                "gradient_theta_m": gradient_theta_np,
+                "gradient_qv": gradient_qv_np,
+                "primal_finish": primal_finish,
+                "primal_rho_d": numpy_copy(primal.rho_d),
+                "tangent_finish": tangent_finish,
+            }
+            products.update(
+                {
+                    "primal_native_" + name: value
+                    for name, value in primal_native.items()
+                }
+            )
+            products.update(
+                {"primal_cloud_" + name: value for name, value in primal_cloud.items()}
+            )
+            products.update(
+                {
+                    "tangent_native_" + name: value
+                    for name, value in tangent_native.items()
+                }
+            )
+            products.update(
+                {
+                    "tangent_cloud_" + name: value
+                    for name, value in tangent_cloud.items()
+                }
+            )
+            products.update(
+                {
+                    name: value
+                    for name, value in capture.items()
+                    if isinstance(value, np.ndarray)
+                }
+            )
+            results[label] = {
+                "products": products,
+                "parent_reference": str(parent_artifact),
+                "parent_reference_sha256": sha256_file(parent_artifact),
+                "parent_reference_stage": expected_stage,
+                "parent_primal_exact_bytes": expected_bit_equal,
+                "parent_primal_all_exact": all(expected_bit_equal.values()),
+                "target_row0": row,
+                "target_level_bottom0": level,
+                "native_JVP_target_thm": native_jvp_lhs,
+                "native_VJP_dot_lhs": native_jvp_lhs,
+                "native_VJP_dot_rhs": native_jvp_rhs,
+                "native_dot_abs_error": native_dot_abs_error,
+                "native_dot_relative_error": native_dot_relative_error,
+                "ABI_dot_lhs": abi_lhs,
+                "ABI_dot_rhs": abi_rhs,
+                "ABI_dot_abs_error": abi_dot_abs_error,
+                "ABI_dot_relative_error": abi_dot_relative_error,
+                "abi_capture_shapes": {
+                    name: list(value.shape)
+                    for name, value in capture.items()
+                    if isinstance(value, np.ndarray)
+                },
+            }
+
+    # Save one compressed bundle with full-B raw C ABI input/output, JVP and VJP
+    # buffers for both basepoints. Every array is copied from its actual call.
+    all_products = {
+        f"{label}__{name}": value
+        for label, item in results.items()
+        for name, value in item["products"].items()
+    }
+    elapsed_seconds = time.monotonic() - started
+    if mode == "trace_on" and not trace_path.is_file():
+        raise RuntimeError("trace-on mode did not produce its requested trace")
+    if mode != "trace_on" and trace_path.exists():
+        raise RuntimeError("trace file appeared while tracing was disabled")
+    products_path = output_dir / "block22_actual_jvp_vjp.npz"
+    with products_path.open("xb") as stream:
+        np.savez_compressed(stream, **all_products)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+    receipt = {
+        "schema": "kdm6.block22_actual_direction_jvp_vjp.v1",
+        "status": "JVP_VJP_RECORDED",
+        "instrumentation_mode": mode,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id_parent": json.loads((PARENT / "CASE_MANIFEST.json").read_text())[
+            "run_id"
+        ],
+        "parent_chunk_index": 22,
+        "B": 512,
+        "L": 39,
+        "flat_range": [11264, 11776],
+        "target_seed": {"row0": row, "level_bottom0": level},
+        "input_bundle_path": str(INPUT_NPZ),
+        "input_bundle_sha256": sha256_file(INPUT_NPZ),
+        "source_v2_runner_sha256": sha256_file(
+            SOURCE_V2 / "harness/run_native_satellite_case.py"
+        ),
+        "source_v2_batch_adapter_sha256": sha256_file(
+            SOURCE_V2 / "harness/native_batch_microphysics.py"
+        ),
+        "candidate_library": str(dso_path),
+        "candidate_library_sha256": sha256_file(dso_path),
+        "overlay_build_receipt_sha256": sha256_file(
+            OBSERVER_BUILD / "build_receipt.json"
+        ),
+        "parent_runtime_environment_sha256": source_env_sha,
+        "accepted_direction_proof": str(ACTUAL_DIRECTION_PROOF),
+        "accepted_direction_proof_sha256": sha256_file(ACTUAL_DIRECTION_PROOF),
+        "experiment_plan": str(EXPERIMENT_PLAN),
+        "experiment_plan_sha256": sha256_file(EXPERIMENT_PLAN),
+        "observer_source_receipt": str(OBSERVER_SOURCE_RECEIPT),
+        "observer_source_receipt_sha256": sha256_file(OBSERVER_SOURCE_RECEIPT),
+        "direction_theta_sha256": direction_hashes["theta"],
+        "direction_qv_sha256": direction_hashes["qv"],
+        "environment_mode": {
+            "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+            "KDM6_QR_TRANSPORT": "actual_departure",
+            "OMP_NUM_THREADS": "1",
+            "OMP_DYNAMIC": "FALSE",
+            "OMP_THREAD_LIMIT": "1",
+            "MKL_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+            "KDM6_BLOCK22_ACTIVATION_TRACE": (
+                str(trace_path) if mode == "trace_on" else "unset"
+            ),
+        },
+        "per_basepoint_calls": {
+            "KDM_forward": 1,
+            "KDM_JVP": 1,
+            "KDM_VJP": 1,
+            "RTTOV_calls": 0,
+        },
+        "elapsed_seconds": elapsed_seconds,
+        "basepoints": {
+            name: {k: v for k, v in item.items() if k != "products"}
+            for name, item in results.items()
+        },
+        "product_npz": str(products_path),
+        "product_npz_sha256": sha256_file(products_path),
+        "trace_path": str(trace_path) if mode == "trace_on" else None,
+        "trace_sha256": sha256_file(trace_path) if mode == "trace_on" else None,
+        "cross_mode_comparison": None,
+        "new_RTTOV_calls": 0,
+        "new_host_calls": 0,
+        "input_processor_KDM_calls": 0,
+    }
+    if compare_mode_dir is not None:
+        compare_receipt_path = compare_mode_dir / "jvp_vjp_receipt.json"
+        compare_receipt = json.loads(compare_receipt_path.read_text())
+        if compare_receipt["instrumentation_mode"] != expected_compare_mode:
+            raise ValueError(
+                f"{mode} must compare against {expected_compare_mode}, got "
+                f"{compare_receipt['instrumentation_mode']}"
+            )
+        compare_product_path = Path(compare_receipt["product_npz"])
+        if sha256_file(compare_product_path) != compare_receipt["product_npz_sha256"]:
+            raise ValueError("comparison mode NPZ differs from its receipt")
+        if compare_receipt["input_bundle_sha256"] != receipt["input_bundle_sha256"]:
+            raise ValueError("comparison mode used a different input bundle")
+        if (
+            compare_receipt["direction_theta_sha256"] != direction_hashes["theta"]
+            or compare_receipt["direction_qv_sha256"] != direction_hashes["qv"]
+        ):
+            raise ValueError("comparison mode used a different accepted direction")
+        with np.load(compare_product_path, allow_pickle=False) as archived:
+            compare_products = {name: archived[name] for name in archived.files}
+        comparisons = {}
+        for name, value in all_products.items():
+            if name not in compare_products:
+                raise ValueError(f"comparison NPZ missing product {name}")
+            comparisons[name] = same_bits(value, compare_products[name])
+        if not all(comparisons.values()):
+            differences = [name for name, equal in comparisons.items() if not equal]
+            raise ValueError(f"cross-mode products differ: {differences[:12]}")
+        receipt["cross_mode_comparison"] = {
+            "compared_mode": compare_receipt["instrumentation_mode"],
+            "compared_receipt_sha256": sha256_file(compare_receipt_path),
+            "compared_npz_sha256": compare_receipt["product_npz_sha256"],
+            "all_products_bitwise_equal": True,
+            "product_count": len(comparisons),
+        }
+    receipt_path = output_dir / "jvp_vjp_receipt.json"
+    encoded = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode()
+    fd = os.open(receipt_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    print(
+        json.dumps(
+            {
+                "receipt": str(receipt_path),
+                "receipt_sha256": hashlib.sha256(encoded).hexdigest(),
+                "product_npz_sha256": receipt["product_npz_sha256"],
+                "basepoints": {
+                    name: {
+                        "parent_primal_all_exact": item["parent_primal_all_exact"],
+                        "native_dot_relative_error": item["native_dot_relative_error"],
+                        "ABI_dot_relative_error": item["ABI_dot_relative_error"],
+                    }
+                    for name, item in results.items()
+                },
+            },
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode", required=True, choices=("control", "trace_off", "trace_on")
+    )
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--compare-mode-dir", type=Path)
+    args = parser.parse_args()
+    run(args.output, mode=args.mode, compare_mode_dir=args.compare_mode_dir)

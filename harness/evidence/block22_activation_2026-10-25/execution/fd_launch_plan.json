@@ -1,0 +1,138 @@
+{
+  "capture": [
+    "full-B12 raw ABI inputs, forcing and outputs",
+    "full-B native profile, cloud state, rho_d and 5 finish fields",
+    "full-B post-physics profile rows and nine RTTOV profile fields including CFRAC",
+    "source QC/DQF and parent fixed support/quality arrays",
+    "full-B schedule/branch trace and comparison with AD baseline trace call 1",
+    "target 17 raw/finish and eight candidate-direction profile central-difference diagnostics at one common epsilon"
+  ],
+  "direction": {
+    "baseline": "original source_v2 block22 baseline",
+    "direction_qv_sha256": "a86c10acd09594842a0ebc1ee836170800cdc9367d3d94d28399460dbb891735",
+    "direction_theta_sha256": "3f29e5faf40e2a9c502c11efb420ce65e45d0e823c9c605f44e1778c44e24fce",
+    "proof_sha256": "c106fcff537acdac68ec0f1546a39dea69a35245318a578cfc8299ee1a93df1e",
+    "recipe": "parent alpha025 accepted delta divided by 0.25",
+    "scope": "full B512 theta_m and QV perturbations; all other inputs fixed"
+  },
+  "domain": {
+    "B": 512,
+    "L": 39,
+    "chunk_index": 22,
+    "flat_start0": 11264,
+    "flat_stop0": 11776,
+    "target_flat0": 11632,
+    "target_level_bottom0": 17,
+    "target_row0": 368
+  },
+  "execution_command": [
+    "/opt/local/bin/python3",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/run_block22_centered_fd.py",
+    "--execute",
+    "--output",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10"
+  ],
+  "fd": {
+    "endpoint_calls": {
+      "RTTOV": 0,
+      "fullB_KDM_JVP": 0,
+      "fullB_KDM_VJP": 0,
+      "fullB_KDM_forward": 1
+    },
+    "endpoint_count": 10,
+    "endpoint_order": [
+      {
+        "epsilon": 0.01,
+        "sign": 1
+      },
+      {
+        "epsilon": 0.01,
+        "sign": -1
+      },
+      {
+        "epsilon": 0.001,
+        "sign": 1
+      },
+      {
+        "epsilon": 0.001,
+        "sign": -1
+      },
+      {
+        "epsilon": 0.0001,
+        "sign": 1
+      },
+      {
+        "epsilon": 0.0001,
+        "sign": -1
+      },
+      {
+        "epsilon": 1e-05,
+        "sign": 1
+      },
+      {
+        "epsilon": 1e-05,
+        "sign": -1
+      },
+      {
+        "epsilon": 1e-06,
+        "sign": 1
+      },
+      {
+        "epsilon": 1e-06,
+        "sign": -1
+      }
+    ],
+    "epsilons": [
+      0.01,
+      0.001,
+      0.0001,
+      1e-05,
+      1e-06
+    ],
+    "scheme": "centered; each endpoint is rebuilt once from baseline"
+  },
+  "plan_sha256": "fab2afb081d1f74556709a8fbed8dd3f01242ae3aaa417e207ebcf1e617b250f",
+  "prepared_at_utc": "2026-10-25T02:26:54.685974+00:00",
+  "prior_attempt_accounting": {
+    "corrected_recorded_endpoint_calls": 10,
+    "orphaned_KDM6_calls": 1,
+    "orphaned_RTTOV_calls": 0,
+    "orphaned_call_ledger": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v9/orphaned_call_ledger.json",
+    "orphaned_call_ledger_sha256": "0b40f945ba97122bdeb283718025e218e09d92ed6fa6f468eb6e66a7d800514f",
+    "orphaned_endpoint_npz_saved": false,
+    "total_campaign_KDM6_calls_including_orphan": 11
+  },
+  "rttov_status": "not executed by this controller; direct observation pilot is a separate reviewed step",
+  "schema": "kdm6.block22_centered_fd_launch.v2",
+  "source_pins": {
+    "ad_products": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+    "ad_receipt": "30e1e20b38a6134c68342a096cc3404d34c4bf91c5678c7396122b53cc1b6fb3",
+    "ad_runner": "fbcf3bf31aff57a28057f4d7b50946aadccfe8dff23e808237bb1c9a7064abb3",
+    "ad_trace": "52183bb854c71af16e711b2b026a1df293a0ded9280fef04ad16e1bc2b06a41e",
+    "candidate_profile_jvp_products": "c52c9f6f7b6f8d84811fed3d52aeb66651da13c43da6605697ad67c324809e0e",
+    "candidate_profile_jvp_receipt": "6f9fba865a458637f9d49730f5b81359b744628dbd6f73dc4ebe6b5f911f612e",
+    "direction_proof": "c106fcff537acdac68ec0f1546a39dea69a35245318a578cfc8299ee1a93df1e",
+    "experiment_plan": "fab2afb081d1f74556709a8fbed8dd3f01242ae3aaa417e207ebcf1e617b250f",
+    "input_bundle": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+    "observer_build_receipt": "a4cb6281180d25105aaeaac8451bca43ed60fe202b915868cd59f87eb885c572",
+    "observer_dso": "53abe03ba228bf6ec04f649a4da89c0f7b3e748d31bc49d8694cf5b5f35a0370",
+    "parent_baseline_receipt": "d3210bcf3100bd2ca247e7f3502fd11f97c09dddfc02279ce2553049d8b54f72",
+    "parent_manifest": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+    "parent_trial_receipt": "b6aba16d9f1301208f6bf17a0a11b44379f994e5df0f8ef918a7cdb4369cc799",
+    "preparation": "efb89d12d416f6b4e8472873e69d5a585f72c6913e03ba335e07d17b6cf6f844",
+    "prior_orphaned_call_ledger": "0b40f945ba97122bdeb283718025e218e09d92ed6fa6f468eb6e66a7d800514f",
+    "runner": "f3250bc2518bcdee2a8abed63fc2a54db83090f56f4b05faf361b5aec6ef96d7",
+    "source_receipt": "b1da1cade982227e21ab4ed6c97820a3aff9b914cdc454951e057477ec1bdd4c",
+    "source_v2_batch": "c21fb137ccb1f9f724233b83e784d970fb3b98db9f87f3a3a898b3547090a0f9",
+    "source_v2_local_ad_verify": "175087c794444e878a17628492fbc2efe4389853baad990fc1497f11dfaa2d12",
+    "source_v2_native_finish": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a",
+    "source_v2_native_prep": "b5386603f0cb7f021b7d4c46493bfc77599fd2dcea49d5a67e845904b9b95ed5",
+    "source_v2_observation_batch": "db299004e17737d0dbfcb1063c4c71e5b4177389725ec3d40e05076225a39b46",
+    "source_v2_prep": "104f8a7fdd500ce50d9f86a0bb2a6a044591dc7e45420589b1dcf06207321fc5",
+    "trace_reader": "53997c89d6fcd20f137993046779198f6b0a448928e173aaf873433ac861fab0",
+    "value_noninterference": "e7aca9209a575b47609fe89e9f184c5efd42d06a4b5584cd9b3665921ebed314",
+    "value_products": "6189e21c0fbc93ec41a9f6de5632ac159c99e77a0e785ccebbf12e351db81c92"
+  },
+  "status": "PREPARED_NOT_EXECUTED",
+  "worktree": "/private/tmp/KDM6AD-block22-activation-20261025"
+}

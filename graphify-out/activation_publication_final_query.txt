@@ -1,0 +1,55 @@
+Traversal: BFS depth=2 | Start: ['trace()', 'trace()', 'cloud'] | 37 nodes found
+
+NODE pathlib [src= loc= community=575]
+NODE json [src= loc= community=575]
+NODE hashlib [src= loc= community=575]
+NODE argparse [src= loc= community=575]
+NODE RuntimeError [src= loc= community=295]
+NODE harness [src= loc= community=807]
+NODE test_make_applied_transfer_overlay.py [src=harness/tests/test_make_applied_transfer_overlay.py loc=L1 community=25]
+NODE make_rain_boundary_overlay.py [src=harness/make_rain_boundary_overlay.py loc=L1 community=25]
+NODE make_applied_transfer_overlay.py [src=harness/make_applied_transfer_overlay.py loc=L1 community=25]
+NODE manifest.json [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L1 community=534]
+NODE make_activation_trace_overlay.py [src=harness/make_activation_trace_overlay.py loc=L1 community=536]
+NODE test_activation_trace_overlay.py [src=harness/tests/test_activation_trace_overlay.py loc=L1 community=536]
+NODE create_overlay() [src=harness/make_applied_transfer_overlay.py loc=L263 community=25]
+NODE replace_once() [src=harness/make_rain_boundary_overlay.py loc=L192 community=25]
+NODE instrument_coordinator() [src=harness/make_activation_trace_overlay.py loc=L109 community=536]
+NODE render_overlay() [src=harness/make_applied_transfer_overlay.py loc=L234 community=25]
+NODE instrument_coordinator() [src=harness/make_applied_transfer_overlay.py loc=L88 community=25]
+NODE sha256_bytes() [src=harness/make_rain_boundary_overlay.py loc=L188 community=25]
+NODE paths_overlap() [src=harness/make_rain_boundary_overlay.py loc=L407 community=25]
+NODE main() [src=harness/make_activation_trace_overlay.py loc=L182 community=536]
+NODE cloud [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L32 community=564]
+NODE clear [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L26 community=564]
+NODE primary_reports [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L25 community=564]
+NODE water() [src=harness/make_applied_transfer_overlay.py loc=L77 community=25]
+NODE trace() [src=harness/make_applied_transfer_overlay.py loc=L70 community=25]
+NODE trace() [src=harness/make_activation_trace_overlay.py loc=L100 community=536]
+NODE test_observer_refuses_a_second_instrumentation() [src=harness/tests/test_activation_trace_overlay.py loc=L24 community=536]
+NODE test_observer_only_inserts_source_and_labels_value_only_diagnostics() [src=harness/tests/test_activation_trace_overlay.py loc=L12 community=536]
+NODE rates() [src=harness/make_applied_transfer_overlay.py loc=L81 community=25]
+NODE main() [src=harness/make_applied_transfer_overlay.py loc=L283 community=25]
+NODE state_fields() [src=harness/make_activation_trace_overlay.py loc=L105 community=536]
+NODE sha256 [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L34 community=564]
+NODE pins_verified [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L35 community=564]
+NODE Add a value-only block22 observer to the receipt-pinned research coordinator.  T [src=harness/make_activation_trace_overlay.py loc=L1 community=536]
+NODE calls [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L36 community=564]
+NODE file [src=harness/evidence/native_observation_ad_2026-10-21/manifest.json loc=L33 community=564]
+NODE Generate a three-cell value observer over the frozen actual-QR candidate. [src=harness/make_applied_transfer_overlay.py loc=L1 community=25]
+EDGE cloud --contains [EXTRACTED]--> primary_reports
+EDGE cloud --contains [EXTRACTED]--> calls
+EDGE cloud --contains [EXTRACTED]--> file
+EDGE cloud --contains [EXTRACTED]--> pins_verified
+EDGE cloud --contains [EXTRACTED]--> sha256
+EDGE trace() --contains [EXTRACTED]--> make_applied_transfer_overlay.py
+EDGE trace() --calls [EXTRACTED context=call]--> instrument_coordinator()
+EDGE trace() --contains [EXTRACTED]--> make_activation_trace_overlay.py
+EDGE trace() --calls [EXTRACTED context=call]--> instrument_coordinator()
+EDGE make_activation_trace_overlay.py --imports [EXTRACTED context=import]--> argparse
+EDGE make_activation_trace_overlay.py --contains [EXTRACTED]--> main()
+EDGE make_activation_trace_overlay.py --contains [EXTRACTED]--> state_fields()
+EDGE make_activation_trace_overlay.py --imports_from [EXTRACTED context=import]--> make_rain_boundary_overlay.py
+EDGE make_activation_trace_overlay.py --imports [EXTRACTED context=import]--> replace_once()
+EDGE make_activation_trace_overlay.py --imports [EXTRACTED context=import]--> hashlib
+... (truncated — 0 more nodes cut by ~1500-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

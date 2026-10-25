@@ -1,0 +1,17 @@
+{
+  "schema": "kdm6.block22_activation_observer.v1",
+  "source_sha256": "373e77cc9f81bd77603c6993a53cd8dfd5e9b3b401da6e102d90bc16028f280e",
+  "coordinator_sha256": "fdeff2b8c306a2bcba2c6c9127d36836bce6629a2135d5d80a02175de0ec106f",
+  "producer_sha256": "226122484e791cc786d6a52e5bf56888f75a2cc45b161968a1a7939503cc3c17",
+  "trace_env": "KDM6_BLOCK22_ACTIVATION_TRACE",
+  "B": 512,
+  "L": 39,
+  "row0": 368,
+  "levels_bottom0": [
+    4,
+    16,
+    17,
+    18
+  ],
+  "scope": "value-only observer; noninterference requires separate measured evidence"
+}
