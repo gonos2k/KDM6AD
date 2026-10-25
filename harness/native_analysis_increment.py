@@ -1,8 +1,9 @@
 """Encode dry-theta/QV analysis states as native WRF prognostic increments.
 
-The public conversion is value-only and operates on already aligned NumPy
-arrays. It does not read a WRF checkpoint, apply a control, update diagnostics,
-or run the host. The differentiable transform/JVP/VJP below are an optional
+The dry-theta conversion is value-only and operates on aligned NumPy arrays.
+The satellite-control adapter separately binds already-native T2/QV controls
+to a checkpoint; neither path applies a control or runs the host.
+The differentiable transform/JVP/VJP below are an optional
 Torch-f64 math contract for the coordinate conversion only; they do not include
 host dynamics, physics, observations, or a full-host adjoint.
 """
@@ -10,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+import hashlib
 from typing import Any
 
 import numpy as np
@@ -78,6 +80,70 @@ class NativeAnalysisIncrement:
     def delta_t_2(self) -> np.ndarray:
         """T_2 is theta_m perturbation, so its increment equals delta theta_m."""
         return self.delta_theta_m
+
+
+def bind_satellite_control(checkpoint, control, *, posterior_checkpoint_id):
+    """Bind prepared flat-column T2/QV wire deltas to an actual checkpoint.
+
+    Satellite controls already use moist-theta perturbation. There is no
+    dry-theta conversion here. ``posterior_checkpoint_id`` is the caller's
+    analysis provenance identifier; this adapter does not write a restart.
+    The live stepper rechecks the binding and exact application before send.
+    """
+    import netCDF4
+    from harness.native_analysis_control import prepare_effective_analysis
+    from harness.native_live_stepper import checkpoint_geometry_id
+
+    if not isinstance(posterior_checkpoint_id, str) or not posterior_checkpoint_id:
+        raise ValueError("posterior_checkpoint_id must identify the prepared analysis")
+    checkpoint.file.verify()
+    if control.get("background_checkpoint_id") != checkpoint.file.sha256:
+        raise ValueError("satellite control belongs to a different complete background checkpoint")
+    dims = dict(checkpoint.schema[0])
+    nx, ny, nz = (dims[n] for n in ("west_east", "south_north", "bottom_top"))
+    shape = (2, ny * nx, nz)
+    if control.get("horizontal_shape") != (ny, nx):
+        raise ValueError("satellite control horizontal shape differs from checkpoint")
+    wire = np.asarray(control["wire_delta"])
+    candidate = np.asarray(control["candidate"])
+    if (wire.dtype != np.float32 or wire.shape != shape
+            or candidate.dtype != np.float64 or candidate.shape != shape):
+        raise ValueError("satellite wire/candidate arrays require matching native column layout")
+    background = []
+    with netCDF4.Dataset(checkpoint.file.path) as ds:
+        ds.set_auto_maskandscale(False)
+        for name in ("THM_2", "QVAPOR"):
+            if (name not in ds.variables or ds[name].dimensions !=
+                    ("Time", "bottom_top", "south_north", "west_east")
+                    or np.dtype(ds[name].dtype) != np.float32
+                    or ds[name].shape != (1, nz, ny, nx)):
+                raise ValueError("checkpoint must expose full native binary32 THM_2/QVAPOR")
+            background.append(np.asarray(ds[name][0]).transpose(1, 2, 0).reshape(ny * nx, nz))
+    background = np.stack(background).astype(np.float64)
+    if hashlib.sha256(background.tobytes()).hexdigest() != control.get("background_sha256"):
+        raise ValueError("satellite control was prepared from a different native background")
+
+    def native(array):
+        return np.ascontiguousarray(array.reshape(ny, nx, nz).transpose(1, 2, 0))
+
+    prepared = prepare_effective_analysis(
+        native(background[0].astype(np.float32)), native(background[1].astype(np.float32)),
+        native(wire[0]), native(wire[1]), native(np.all(wire == 0.0, axis=0)),
+        bounds=(1, nx, 1, nz, 1, ny),
+    )
+    expected = np.stack((native(candidate[0]), native(candidate[1])))
+    actual = np.stack((prepared.effective_theta_m, prepared.effective_qv)).astype(np.float64)
+    if actual.tobytes() != expected.tobytes():
+        raise ValueError("satellite wire does not produce the declared effective state")
+    geometry = checkpoint_geometry_id(checkpoint)
+    checkpoint.file.verify()
+    return NativeAnalysisIncrement(
+        delta_theta_m=prepared.delta_theta_m, delta_qv=prepared.delta_qv,
+        unchanged_mask=~prepared.changed_mask,
+        model_valid_time=checkpoint.time, geometry_id=geometry, native_layout="i,k,j",
+        background_checkpoint_id=checkpoint.file.sha256,
+        posterior_checkpoint_id=posterior_checkpoint_id,
+    )
 
 
 def _validate_wrf_time(value: str, label: str) -> None:

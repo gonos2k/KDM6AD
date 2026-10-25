@@ -28,11 +28,12 @@ from harness.native_host_transition import (
     _copy_checkpoint, _stop_runner_group, file_sha256, native_step_namelist,
 )
 from harness.native_step_control import (
-    AppliedHeating, HeatingUpdate, StepReady, _f32_bits,
+    HeatingUpdate, StepReady, _f32_bits,
     atomic_write_command, encode_command, read_applied, read_ready,
 )
 from harness.native_analysis_control import (
-    AnalysisUpdate, apply_pair, encode_analysis_command, read_analysis_applied,
+    apply_pair, encode_analysis_command, prepare_effective_analysis,
+    read_analysis_applied,
 )
 from harness.native_analysis_increment import NativeAnalysisIncrement
 from harness.run_ss_case import set_or_insert
@@ -338,6 +339,9 @@ class NativeLiveStepper:
                 or state.generation >= self.steps or state.ready is None):
             raise ValueError('advance requires the current unconsumed state of this live session')
         analysis_binding = None
+        analysis_background_t = None
+        analysis_background_q = None
+        prepared_analysis = None
         if self.control_family == 'ANALYSIS_TQ' and isinstance(updates, NativeAnalysisIncrement):
             increment = updates
             dims = dict(state.checkpoint.schema[0])
@@ -353,20 +357,76 @@ class NativeLiveStepper:
                     or dt.shape != expected_shape or dq.shape != expected_shape or mask.shape != expected_shape
                     or dt.dtype.kind != 'f' or dq.dtype != dt.dtype
                     or not np.isfinite(dt).all() or not np.isfinite(dq).all()
-                    or np.any(dt[mask] != 0) or np.any(dq[mask] != 0)):
+                    or not np.array_equal(mask, (dt == 0.0) & (dq == 0.0))):
                 raise ValueError('analysis increment arrays differ from the full native i,k,j layout')
-            points = np.argwhere((dt != 0) | (dq != 0))
-            updates = tuple(AnalysisUpdate(int(i)+1, int(k)+1, int(j)+1, float(dt[i,k,j]), float(dq[i,k,j]))
-                            for i,k,j in points)
+            # One read per native prognostic field, then a k,j,i -> i,k,j
+            # transpose. No NetCDF scalar reads occur in the sparse update loop.
+            try:
+                import netCDF4
+
+                with netCDF4.Dataset(state.checkpoint.file.path) as ds:
+                    ds.set_auto_maskandscale(False)
+                    file_shape = (
+                        dims['bottom_top'], dims['south_north'], dims['west_east']
+                    )
+                    loaded = []
+                    for name in ('THM_2', 'QVAPOR'):
+                        if (name not in ds.variables
+                                or ds[name].dimensions != ('Time', 'bottom_top', 'south_north', 'west_east')
+                                or np.dtype(ds[name].dtype) != np.dtype(np.float32)
+                                or ds[name].shape != (1,) + file_shape):
+                            raise ValueError('analysis background requires full native float32 THM_2/QVAPOR')
+                        file_order = np.asarray(ds[name][0])
+                        if not np.isfinite(file_order).all():
+                            raise ValueError(f'analysis background {name} must be finite')
+                        native_order = np.ascontiguousarray(np.transpose(file_order, (2, 0, 1)))
+                        if native_order.shape != expected_shape:
+                            raise ValueError('analysis background transpose differs from native i,k,j bounds')
+                        loaded.append(native_order)
+                analysis_background_t, analysis_background_q = loaded
+                prepared_analysis = prepare_effective_analysis(
+                    analysis_background_t, analysis_background_q, dt, dq, mask,
+                    bounds=state.ready.bounds,
+                )
+            except BaseException as exc:
+                self._fail(exc)
+                raise
+            updates = prepared_analysis.updates
             analysis_binding = {'model_valid_time': increment.model_valid_time,
                 'geometry_id': geometry, 'background_checkpoint_id': increment.background_checkpoint_id,
                 'posterior_checkpoint_id': increment.posterior_checkpoint_id,
                 'delta_theta_m_sha256': hashlib.sha256(dt.tobytes()).hexdigest(),
-                'delta_qv_sha256': hashlib.sha256(dq.tobytes()).hexdigest(), 'native_layout': 'i,k,j'}
+                'delta_qv_sha256': hashlib.sha256(dq.tobytes()).hexdigest(),
+                'effective_delta_theta_m_sha256': hashlib.sha256(prepared_analysis.delta_theta_m.tobytes()).hexdigest(),
+                'effective_delta_qv_sha256': hashlib.sha256(prepared_analysis.delta_qv.tobytes()).hexdigest(),
+                'effective_theta_m_sha256': hashlib.sha256(prepared_analysis.effective_theta_m.tobytes()).hexdigest(),
+                'effective_qv_sha256': hashlib.sha256(prepared_analysis.effective_qv.tobytes()).hexdigest(),
+                'native_layout': 'i,k,j', 'effective_counts': dict(prepared_analysis.counts),
+                'all_noop': prepared_analysis.all_noop,
+                'no_applied_update': prepared_analysis.all_noop,
+                'background_arrays_read_once': ['THM_2', 'QVAPOR'],
+                'background_variable_read_counts': {'THM_2': 1, 'QVAPOR': 1},
+                'per_point_netcdf_reads': 0}
         else:
             updates = tuple(updates)
             if self.control_family == 'ANALYSIS_TQ' and updates:
                 raise ValueError('nonempty analysis requires a bound NativeAnalysisIncrement')
+            if self.control_family == 'ANALYSIS_TQ':
+                dims = dict(state.checkpoint.schema[0])
+                grid_points = dims['west_east'] * dims['bottom_top'] * dims['south_north']
+                analysis_binding = {
+                    'native_layout': 'i,k,j',
+                    'effective_counts': {
+                        'requested_points': 0, 'noop_points': 0, 'applied_points': 0,
+                        'empty_points': grid_points, 'requested_nonzero_components': 0,
+                        'applied_components': 0, 'zero_effect_components': 0,
+                    },
+                    'all_noop': True, 'no_applied_update': True,
+                    'background_arrays_read_once': [],
+                    'background_variable_read_counts': {'THM_2': 0, 'QVAPOR': 0},
+                    'per_point_netcdf_reads': 0,
+                    'source': 'explicit empty update sequence',
+                }
         try:
             self._verify_pins()
             self.base.snapshot(state.checkpoint)
@@ -376,25 +436,37 @@ class NativeLiveStepper:
             # Check the command's expected memory values before publishing it.
             import netCDF4
             before_bits = []
-            with netCDF4.Dataset(state.checkpoint.file.path) as ds:
-                ds.set_auto_maskandscale(False)
-                fields = ('H_DIABATIC',) if self.control_family == 'H_RATE' else ('THM_2', 'QVAPOR')
-                if any(name not in ds.variables or ds[name].dimensions !=
-                       ('Time', 'bottom_top', 'south_north', 'west_east') for name in fields):
-                    raise ValueError('unexpected native control coordinate convention')
-                for update in updates:
-                    index = (0, update.k - 1, update.j - 1, update.i - 1)
-                    if self.control_family == 'H_RATE':
+            if self.control_family == 'H_RATE':
+                with netCDF4.Dataset(state.checkpoint.file.path) as ds:
+                    ds.set_auto_maskandscale(False)
+                    if ('H_DIABATIC' not in ds.variables
+                            or ds['H_DIABATIC'].dimensions !=
+                            ('Time', 'bottom_top', 'south_north', 'west_east')):
+                        raise ValueError('unexpected native control coordinate convention')
+                    for update in updates:
+                        index = (0, update.k - 1, update.j - 1, update.i - 1)
                         old = np.float32(ds['H_DIABATIC'][index])
                         with np.errstate(over='ignore'):
                             new = np.float32(old + np.float32(update.delta))
                         if not np.isfinite(new) or _f32_bits(new) == _f32_bits(old):
                             raise ValueError('heating proposal has no finite representable memory departure')
                         before_bits.append((_f32_bits(old),))
-                    else:
-                        old_t, old_q = np.float32(ds['THM_2'][index]), np.float32(ds['QVAPOR'][index])
-                        apply_pair(old_t, old_q, update.delta_theta_m, update.delta_qv)
-                        before_bits.append((_f32_bits(old_t), _f32_bits(old_q)))
+            else:
+                if analysis_background_t is None or analysis_background_q is None:
+                    if updates:
+                        raise RuntimeError('effective analysis background was not prepared')
+                for update in updates:
+                    index = (update.i - 1, update.k - 1, update.j - 1)
+                    old_t = np.float32(analysis_background_t[index])
+                    old_q = np.float32(analysis_background_q[index])
+                    expected_t, expected_q = apply_pair(
+                        old_t, old_q, update.delta_theta_m, update.delta_qv
+                    )
+                    if (prepared_analysis is None
+                            or _f32_bits(expected_t) != _f32_bits(prepared_analysis.effective_theta_m[index])
+                            or _f32_bits(expected_q) != _f32_bits(prepared_analysis.effective_qv[index])):
+                        raise RuntimeError('effective arrays differ from strict paired apply_pair')
+                    before_bits.append((_f32_bits(old_t), _f32_bits(old_q)))
             step = state.ready.step
             command_path = self.control_root / f'command_{step:010d}.txt'
             atomic_write_command(command_path, packet)

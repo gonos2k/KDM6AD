@@ -518,6 +518,68 @@ def test_warm_analysis_increment_binds_to_current_thm2_and_qv_not_diagnostic_t(m
     assert applied["old_q_bits"] == _bits(qv)
 
 
+def test_effective_analysis_filters_float32_noop_and_reads_background_arrays_once(make_stepper):
+    stepper = make_stepper(steps=1, control_family="ANALYSIS_TQ")
+    increment = _increment(stepper.initial)
+    delta_t = increment.delta_theta_m.copy()
+    delta_q = increment.delta_qv.copy()
+    delta_t[1, 0, 0] = 1.0e-8  # representable as f32, but rounds away at THM_2=300
+    increment = replace(increment, delta_theta_m=delta_t, delta_qv=delta_q,
+                        unchanged_mask=(delta_t == 0) & (delta_q == 0))
+
+    with stepper:
+        after = stepper.advance(stepper.current, increment)
+        assert after.generation == 1
+        command = (stepper.control_root / "command_0000000006.txt").read_text("ascii")
+        assert command.splitlines()[0] == "KDM6AD_TQ_V1"
+        assert command.splitlines()[1] == "0000000006 0000000001"
+
+    binding = stepper._record["controls"][0]["analysis_binding"]
+    assert binding["effective_counts"] == {
+        "requested_points": 2,
+        "noop_points": 1,
+        "applied_points": 1,
+        "empty_points": 6,
+        "requested_nonzero_components": 3,
+        "applied_components": 2,
+        "zero_effect_components": 1,
+    }
+    assert binding["all_noop"] is False
+    assert binding["background_variable_read_counts"] == {"THM_2": 1, "QVAPOR": 1}
+    assert binding["per_point_netcdf_reads"] == 0
+    assert len(stepper._record["controls"][0]["applied"]) == 1
+
+
+def test_all_noop_and_empty_analysis_advance_with_zero_update_commands(make_stepper):
+    stepper = make_stepper(steps=2, control_family="ANALYSIS_TQ")
+    with stepper:
+        noop = _increment(stepper.current.checkpoint, theta=1.0e-8, qv=0.0)
+        first = stepper.advance(stepper.current, noop)
+        second = stepper.advance(first, ())
+        assert first.generation == 1 and second.generation == 2
+        command0 = (stepper.control_root / "command_0000000006.txt").read_text("ascii")
+        command1 = (stepper.control_root / "command_0000000007.txt").read_text("ascii")
+        assert command0.splitlines()[1] == "0000000006 0000000000"
+        assert command1.splitlines()[1] == "0000000007 0000000000"
+
+    first_binding, second_binding = [
+        record["analysis_binding"] for record in stepper._record["controls"]
+    ]
+    assert first_binding["all_noop"] is True
+    assert first_binding["no_applied_update"] is True
+    assert first_binding["effective_counts"]["requested_points"] == 1
+    assert first_binding["effective_counts"]["noop_points"] == 1
+    assert first_binding["effective_counts"]["applied_points"] == 0
+    assert first_binding["background_variable_read_counts"] == {"THM_2": 1, "QVAPOR": 1}
+    assert first_binding["per_point_netcdf_reads"] == 0
+    assert second_binding["all_noop"] is True
+    assert second_binding["effective_counts"]["requested_points"] == 0
+    assert second_binding["effective_counts"]["empty_points"] == 8
+    assert second_binding["source"] == "explicit empty update sequence"
+    assert second_binding["background_variable_read_counts"] == {"THM_2": 0, "QVAPOR": 0}
+    assert all(not record["applied"] for record in stepper._record["controls"])
+
+
 @pytest.mark.parametrize("binding,match", [
     ("time", "time/geometry/background"),
     ("geometry", "time/geometry/background"),
@@ -704,7 +766,7 @@ def test_analysis_tq_refuses_restart_without_thm2_even_if_diagnostic_t_exists(ma
 
     with stepper:
         current = stepper.current
-        with pytest.raises(ValueError, match="unexpected native control coordinate convention"):
+        with pytest.raises(ValueError, match="requires full native float32 THM_2/QVAPOR"):
             stepper.advance(current, increment)
         assert not (stepper.control_root / f"command_{current.ready.step:010d}.txt").exists()
     assert stepper._record["status"] == "failed"

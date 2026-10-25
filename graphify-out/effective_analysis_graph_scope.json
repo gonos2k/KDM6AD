@@ -1,0 +1,18 @@
+{
+  "schema": "kdm6.graph_scope.v1",
+  "AST_refresh": "effective_analysis_code_update.log",
+  "semantic_fragment": "effective_analysis_semantic.json",
+  "semantic_nodes": 12,
+  "semantic_edges": 12,
+  "semantic_hyperedges": 3,
+  "global_nodes": 22856,
+  "global_edges": 45613,
+  "existing_AST_warnings": 486,
+  "HTML": "skipped above5000node limit",
+  "semantic_token_usage": "unmetered agent extraction, no external labeling call",
+  "limits": [
+    "Graph is undirected; source verified actual call direction.",
+    "Existing AST call edges are preserved; extra semantic relationships attach as contexts instead of replacing calls.",
+    "Graph relationships do not replace actual source/run evidence."
+  ]
+}

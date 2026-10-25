@@ -8,6 +8,7 @@ unit sigma, zero bias, and lambda=1 for the normalized control penalty.
 
 from __future__ import annotations
 
+import hashlib
 import math
 from collections import Counter
 from collections.abc import Hashable, Mapping, Sequence
@@ -349,6 +350,85 @@ def bounded_control_step(baseline, native_gradient, scale, active_mask, alpha):
         "candidate": candidate,
         "alpha": float(alpha),
         "max_abs_scaled_gradient": max_abs,
+    }
+
+
+def prepare_representable_control(baseline, requested_z, active_mask, *,
+                                  horizontal_shape, background_checkpoint_id):
+    """Prepare a value-only native candidate and its effective prior coordinate.
+
+    Input controls are (2, j*i, k), while the shared host preparation uses
+    (i,k,j). The original binary32 background and scales remain fixed. This
+    function predicts wire application; it does not differentiate rounding or
+    evaluate KDM/RTTOV. A rounded candidate outside the total box is rejected.
+    """
+    from harness.native_analysis_control import prepare_effective_analysis
+
+    if (not isinstance(background_checkpoint_id, str) or len(background_checkpoint_id) != 64
+            or any(c not in "0123456789abcdef" for c in background_checkpoint_id)):
+        raise ValueError("background_checkpoint_id must pin the complete source checkpoint SHA-256")
+    if any(np.ma.isMaskedArray(a) and np.ma.getmaskarray(a).any()
+           for a in (baseline, requested_z, active_mask)):
+        raise ValueError("control arrays must not contain masked values")
+    background = np.asarray(baseline)
+    requested = np.asarray(requested_z)
+    active = np.asarray(active_mask)
+    if (background.dtype != np.float64 or background.ndim != 3
+            or background.shape[0] != 2 or not all(background.shape[1:])
+            or requested.dtype != np.float64 or requested.shape != background.shape
+            or active.dtype != np.bool_ or active.shape != background.shape):
+        raise ValueError("baseline/requested_z require binary64 (2, columns, levels) and matching boolean active_mask")
+    if (not isinstance(horizontal_shape, tuple) or len(horizontal_shape) != 2
+            or any(type(n) is not int or n <= 0 for n in horizontal_shape)):
+        raise ValueError("horizontal_shape must be positive integer (j, i)")
+    ny, nx = horizontal_shape
+    nz = background.shape[2]
+    if ny * nx != background.shape[1]:
+        raise ValueError("horizontal_shape must cover each native column once")
+    if (not np.isfinite(background).all() or not np.isfinite(requested).all()
+            or np.any(background[1] < 0.0) or np.any(np.abs(requested) > 1.0)
+            or np.any(requested[~active] != 0.0)
+            or np.any(active[1] & (background[1] == 0.0))):
+        raise ValueError("invalid background, frozen control, or total control bound")
+    with np.errstate(over="ignore"):
+        native_background = background.astype(np.float32)
+    if not np.array_equal(native_background.astype(np.float64), background):
+        raise ValueError("background must be the exact widened native binary32 state")
+    scale = np.stack((np.full_like(background[0], 0.2), 0.02 * background[1]))
+    requested_delta = scale * requested
+
+    def to_native(array):
+        return array.reshape(ny, nx, nz).transpose(1, 2, 0)
+
+    def to_columns(array):
+        return array.transpose(2, 0, 1).reshape(ny * nx, nz)
+
+    prepared = prepare_effective_analysis(
+        to_native(native_background[0]), to_native(native_background[1]),
+        to_native(requested_delta[0]), to_native(requested_delta[1]),
+        to_native(np.all(requested_delta == 0.0, axis=0)),
+        bounds=(1, nx, 1, nz, 1, ny),
+    )
+    candidate = np.stack((to_columns(prepared.effective_theta_m),
+                          to_columns(prepared.effective_qv))).astype(np.float64)
+    applied_delta = candidate - background
+    effective_z = np.divide(applied_delta, scale, out=np.zeros_like(scale),
+                            where=scale > 0.0)
+    if np.any(applied_delta[~active] != 0.0) or np.any(np.abs(effective_z) > 1.0):
+        raise ValueError("representable candidate leaves frozen controls or the total control box")
+    return {
+        "candidate": candidate,
+        "background_sha256": hashlib.sha256(background.tobytes(order="C")).hexdigest(),
+        "background_checkpoint_id": background_checkpoint_id,
+        "horizontal_shape": horizontal_shape,
+        "requested_z": requested.copy(),
+        "requested_delta": requested_delta,
+        "wire_delta": np.stack((to_columns(prepared.delta_theta_m),
+                                to_columns(prepared.delta_qv))),
+        "applied_delta": applied_delta,
+        "z": effective_z,
+        "counts": dict(prepared.counts),
+        "status": "no_applied_update" if prepared.all_noop else "prepared",
     }
 
 

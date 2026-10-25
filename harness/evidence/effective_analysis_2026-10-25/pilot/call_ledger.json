@@ -1,0 +1,31 @@
+{
+  "scope": "representable-input block22 value pilot only; not the independent saved-data audit",
+  "attempts": {
+    "v1": {
+      "status": "postprocess_failure",
+      "KDM_forward": 1,
+      "RTTOV_direct": 1
+    },
+    "v2": {
+      "status": "complete",
+      "KDM_forward": 1,
+      "RTTOV_direct": 1
+    }
+  },
+  "total_new_calls": {
+    "KDM_forward": 2,
+    "RTTOV_direct": 2,
+    "KDM_JVP": 0,
+    "KDM_VJP": 0,
+    "RTTOV_K": 0,
+    "native_host": 0,
+    "optimizer_iteration": 0
+  },
+  "completed_pilot_blocks": [
+    22
+  ],
+  "original_batch_columns": 512,
+  "full_domain_cost_reevaluated": false,
+  "baseline_reused": "historical parent RUN_v4 chunk22; no fresh baseline forward",
+  "current_source_note": "Pilot v2 executes its frozen snapshot. Later current-source checks also validate effective z against input before model execution; this extra rejection check does not retrospectively change the executed snapshot."
+}
