@@ -1,0 +1,17 @@
+{
+  "schema": "kdm6.saved_block22_response_input.v1",
+  "input_npz": {
+    "file": "saved_fields.npz",
+    "sha256": "e62b86a2f9f9113f375db639cb8346ea7d84b2332f09914c6653b5ec992420c8",
+    "bytes": 19160183
+  },
+  "scope": "Original fullB512 saved baseline, alpha.25/.5/1 and restrictedalpha1; no new model calls.",
+  "source_inventory_sha256": "c8d4e598159def8dd592200fd57bc0da846d7f32d60a33e56715189927cd4cdc",
+  "target_flat_index0": 11632,
+  "native_mass_level1": 18,
+  "channel_id": 13,
+  "parent_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "restricted_run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "source_public_base_commit": "d2ac976b7c10364da09ed333fcdc4b4eea49ddaf",
+  "saved_fixed_probe": "Independent sinusoidal baseline probe; not candidate descent and no local FD certification."
+}

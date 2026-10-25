@@ -1,0 +1,47 @@
+Traversal: BFS depth=2 | Start: ['probe()', 'probe', 'profile()'] | 30 nodes found
+
+NODE pathlib [src= loc= community=0]
+NODE sys [src= loc= community=0]
+NODE numpy [src= loc= community=0]
+NODE importlib_util [src= loc= community=8]
+NODE ctypes [src= loc= community=220]
+NODE g33_number_basis.py [src=harness/g33_number_basis.py loc=L1 community=63]
+NODE profile() [src=harness/g33_number_basis.py loc=L125 community=63]
+NODE nccn_active_return_probe.py [src=harness/nccn_active_return_probe.py loc=L1 community=220]
+NODE _physical() [src=harness/g33_number_basis.py loc=L69 community=63]
+NODE write_manifest() [src=harness/g33_real_column_batch.py loc=L127 community=63]
+NODE profile() [src=harness/g33_real_column_density.py loc=L55 community=63]
+NODE _dry_density() [src=harness/g33_number_basis.py loc=L83 community=63]
+NODE where_the_number_is() [src=harness/g33_number_basis.py loc=L188 community=63]
+NODE Path [src=harness/g33_number_basis.py loc=L125 community=63]
+NODE report() [src=harness/g33_number_basis.py loc=L348 community=63]
+NODE probe [src=harness/s5_calcww_bounds_driver.f90 loc=L1 community=1144]
+NODE main() [src=harness/g33_number_basis.py loc=L571 community=63]
+NODE _read() [src=harness/g33_number_basis.py loc=L60 community=63]
+NODE g33_netcdf_read [src= loc= community=63]
+NODE from_stream() [src=harness/g33_number_basis.py loc=L424 community=63]
+NODE harness_s5_calcww_bounds_driver_calc_ww_cp [src= loc= community=1144]
+NODE The same coefficients, restricted to interfaces that actually carry number. [src=harness/g33_number_basis.py loc=L190 community=63]
+NODE Matched-transfer coefficients on a conditional dry-density number measure.  Arm [src=harness/g33_number_basis.py loc=L1 community=63]
+NODE s5_calcww_bounds_driver.f90 [src=harness/s5_calcww_bounds_driver.f90 loc=L1 community=1144]
+NODE harness_s5_calcww_bounds_driver_get_command_argument [src= loc= community=1144]
+NODE Dry-air density by one of three routes, named.      `canonical` is the model's O [src=harness/g33_number_basis.py loc=L84 community=63]
+NODE probe() [src=harness/nccn_active_return_probe.py loc=L18 community=220]
+NODE Check a derived array at the state-to-diagnostic boundary. [src=harness/g33_number_basis.py loc=L71 community=63]
+NODE The three per-interface coefficients from a WRF state file.      `basis` selects [src=harness/g33_number_basis.py loc=L126 community=63]
+NODE Focused synthetic warm-column probe for the isolated NCCN return patch.  This ex [src=harness/nccn_active_return_probe.py loc=L1 community=220]
+EDGE profile() --contains [EXTRACTED]--> g33_number_basis.py
+EDGE profile() --calls [EXTRACTED context=call]--> _physical()
+EDGE profile() --calls [EXTRACTED context=call]--> _dry_density()
+EDGE profile() --references [EXTRACTED context=parameter_type]--> Path
+EDGE profile() --rationale_for [EXTRACTED]--> The three per-interface coefficients from a WRF state file.      `basis` selects
+EDGE profile() --calls [EXTRACTED context=call]--> report()
+EDGE profile() --calls [EXTRACTED context=call]--> where_the_number_is()
+EDGE probe --defines [EXTRACTED]--> s5_calcww_bounds_driver.f90
+EDGE probe --calls [EXTRACTED context=call]--> harness_s5_calcww_bounds_driver_calc_ww_cp
+EDGE probe --calls [EXTRACTED context=call]--> harness_s5_calcww_bounds_driver_get_command_argument
+EDGE probe() --contains [EXTRACTED]--> nccn_active_return_probe.py
+EDGE g33_number_basis.py --imports [EXTRACTED context=import]--> g33_netcdf_read
+EDGE g33_number_basis.py --contains [EXTRACTED]--> from_stream()
+EDGE g33_number_basis.py --contains [EXTRACTED]--> main()
+... (truncated — 0 more nodes cut by ~1200-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

@@ -1,0 +1,71 @@
+{
+  "schema": "kdm6.saved_block22_response_publication.v1",
+  "scope": "Source, saved subset and arithmetic outputs; zero new model calls. Historical draft explicitly labeled in REPORT.md.",
+  "files": [
+    {
+      "path": "harness/analyze_saved_block_response.py",
+      "bytes": 17227,
+      "sha256": "985ad6508154215d0941288f3e5822760d527eb44582b098814823fd4c73bd65"
+    },
+    {
+      "path": "harness/tests/test_analyze_saved_block_response.py",
+      "bytes": 4535,
+      "sha256": "29c32c7fdfcd7d485357986e39ac666530ef0d7140a30d59d31ae5e5d3d4b9d4"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/REPORT.md",
+      "bytes": 9875,
+      "sha256": "0547991631f84fbf7e6d7877101c532a26e12edb9bd35ae1f52374b288e2b8af"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/SOURCE_AUDIT.md",
+      "bytes": 3797,
+      "sha256": "1c67cc89edc6979d8bf5656a6db7c16ce1d6e8a8359001e9cf3d53313c8b22cd"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/analysis.json",
+      "bytes": 23166,
+      "sha256": "ce52bcc1a24364fbbe92ecddb58c765a07c05a459f82498792c221fedf3cf3fa"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/cpp_source_comparison.json",
+      "bytes": 668,
+      "sha256": "219e43fd1c686a9056fee070570bad002e48356a0da0f90598dd5d56a882e2d8"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/figure_receipt.json",
+      "bytes": 489,
+      "sha256": "209d085df888e6143d95e3c7bedc045884269e3016eb559341a2a6f0115713b8"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/figures/saved_block22_response.png",
+      "bytes": 232295,
+      "sha256": "ce4aded654350d077305187a88e7882d7b661d5119827db29045e8e8cd69f15f"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/history/analysis_initial.json",
+      "bytes": 17406,
+      "sha256": "2e351836465516d9ef55a354b35d7a122c0d6fb84268a5eda016fdcb50afc7b7"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/input_manifest.json",
+      "bytes": 863,
+      "sha256": "97c3eb4c9ab2f704ae92d349866372fd28281b8a1d0219ade9039150ac931aa5"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/saved_fields.npz",
+      "bytes": 19160183,
+      "sha256": "e62b86a2f9f9113f375db639cb8346ea7d84b2332f09914c6653b5ec992420c8"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/source_inventory.json",
+      "bytes": 55618,
+      "sha256": "c8d4e598159def8dd592200fd57bc0da846d7f32d60a33e56715189927cd4cdc"
+    },
+    {
+      "path": "harness/evidence/native_block22_response_2026-10-25/validation.json",
+      "bytes": 1389,
+      "sha256": "b19944fe182f6faac140450b9bb5bb1302a427f897e7af219c0aefc91c1d80c9"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "kdm6.block22_graph_refresh.v1",
+  "code_update": "graphify update .",
+  "graph_nodes": 22768,
+  "graph_edges": 45391,
+  "communities": 1710,
+  "semantic_nodes": 16,
+  "semantic_edges": 15,
+  "semantic_hyperedges": 2,
+  "semantic_sources": {
+    "harness/analyze_saved_block_response.py": "985ad6508154215d0941288f3e5822760d527eb44582b098814823fd4c73bd65",
+    "harness/evidence/native_block22_response_2026-10-25/REPORT.md": "0547991631f84fbf7e6d7877101c532a26e12edb9bd35ae1f52374b288e2b8af",
+    "harness/evidence/native_block22_response_2026-10-25/SOURCE_AUDIT.md": "1c67cc89edc6979d8bf5656a6db7c16ce1d6e8a8359001e9cf3d53313c8b22cd",
+    "harness/evidence/native_block22_response_2026-10-25/analysis.json": "ce52bcc1a24364fbbe92ecddb58c765a07c05a459f82498792c221fedf3cf3fa",
+    "harness/evidence/native_block22_response_2026-10-25/figures/saved_block22_response.png": "ce4aded654350d077305187a88e7882d7b661d5119827db29045e8e8cd69f15f",
+    "harness/evidence/native_block22_response_2026-10-25/input_manifest.json": "97c3eb4c9ab2f704ae92d349866372fd28281b8a1d0219ade9039150ac931aa5",
+    "harness/native_observation_batch.py": "db299004e17737d0dbfcb1063c4c71e5b4177389725ec3d40e05076225a39b46",
+    "harness/run_native_satellite_case.py": "275f9f659a4903937eabb172f07911152f691220ee66e428d242f7adf6ce90cd",
+    "oracle/kdm6/cloud_dsd.py": "b62a79a620052f9d9b77a0f58b90a1e7eb41ff9415692bbcf30630885ee93310",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "wiki/sources/native-block22-saved-response-2026-10-25.md": "42fc8891956b93f911576d2afd09f36ff85cf80c63f70938ea292735775253d8"
+  },
+  "token_counts": {
+    "input": null,
+    "output": null
+  },
+  "inspected_calls": [
+    "analyze -> finite_profile_projection",
+    "analyze -> moment_diameter_ratio"
+  ],
+  "limitations": [
+    "486 inherited AST extraction warnings (including external dataclasses source_file); relevant new source relationships checked against code.",
+    "Full graph HTML skipped above 5000-node visualization limit; raw graph/report retained outside wiki.",
+    "Graph is derived evidence, not executed model evidence."
+  ]
+}
