@@ -1,0 +1,80 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Semantic extraction for the output-preflight README, its saved validation receipt and the current analyzer/test dependency path. No saved scientific arrays, historical PR449 artifacts, or model calculations were modified. Token use unmetered.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "block22_output_preflight_note",
+      "label": "Saved block22 analyzer preflights JSON and plot outputs before analysis",
+      "file_type": "document",
+      "source_file": "harness/evidence/block22_output_preflight_2026-10-25/README.md",
+      "source_location": "L1-L9",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "scope": "Reject occupied or overlapping output paths before analyze(); preserve exclusive write guards. This does not make later multi-output plot rendering transactional.",
+      "historical_PR449_data_changed": false
+    },
+    {
+      "id": "block22_output_preflight_validation",
+      "label": "Real saved-data validation shows preflight rejection leaves no partial JSON and preserves plot output",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/block22_output_preflight_2026-10-25/validation.json",
+      "source_location": "/before; /after; /focused_tests_passed; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "focused_tests_passed": 12,
+      "fresh_output_run": "passed",
+      "scientific_values_unchanged": true,
+      "figure_bitwise_unchanged": true,
+      "new_model_calls": 0,
+      "historical_source_commit": "857e9e48e4476da9a0b682a2ec71479bb2e48f3e"
+    },
+    {
+      "id": "harness_analyze_saved_block_response_main",
+      "label": "CLI validates both output destinations and path overlap before computing analysis",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_block_response.py",
+      "source_location": "L273-L293",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "symbol": "main()",
+      "contract": "Reject existing/symlinked JSON or plot outputs and equal/nested destinations before calling analyze(); retain exclusive JSON creation and plot mkdir guards afterward."
+    },
+    {
+      "id": "block22_output_preflight_regression_tests",
+      "label": "Regression tests prove occupied and overlapping plot paths fail before analysis",
+      "file_type": "code",
+      "source_file": "harness/tests/test_analyze_saved_block_response.py",
+      "source_location": "L88-L130",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "symbols": ["test_cli_rejects_occupied_plot_path_before_analysis()", "test_cli_rejects_overlapping_new_outputs_before_analysis()"],
+      "guards_tested": ["existing plot folder", "dangling plot symlink", "same JSON/plot path", "JSON path ancestor/descendant overlap"],
+      "analyze_called_on_preflight_rejection": false
+    }
+  ],
+  "edges": [
+    {"source": "block22_output_preflight_note", "target": "harness_analyze_saved_block_response_main", "relation": "documents_output_preflight_contract_of", "source_file": "harness/analyze_saved_block_response.py", "source_location": "L279-L287", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "harness_analyze_saved_block_response_main", "target": "block22_output_preflight_regression_tests", "relation": "is_exercised_by", "source_file": "harness/tests/test_analyze_saved_block_response.py", "source_location": "L88-L130", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "block22_output_preflight_regression_tests", "target": "block22_output_preflight_validation", "relation": "backs_saved_validation_summary", "source_file": "harness/evidence/block22_output_preflight_2026-10-25/validation.json", "source_location": "/after; /focused_tests_passed", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "block22_output_preflight_validation", "target": "block22_output_preflight_note", "relation": "records_nonclobber_validation_and_limits", "source_file": "harness/evidence/block22_output_preflight_2026-10-25/README.md", "source_location": "L5-L9", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"}
+  ],
+  "hyperedges": [
+    {
+      "id": "block22_preflight_guard_validation_chain",
+      "label": "Preflight guards, regression tests and saved validation protect prior results from known output collisions",
+      "nodes": ["block22_output_preflight_note", "harness_analyze_saved_block_response_main", "block22_output_preflight_regression_tests", "block22_output_preflight_validation"],
+      "relation": "supports_saved_output_collision_guard_without_science_change",
+      "source_file": "harness/evidence/block22_output_preflight_2026-10-25/README.md",
+      "source_location": "L5-L9",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}

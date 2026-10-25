@@ -85,6 +85,51 @@ def test_cli_cannot_overwrite_the_input_manifest():
     assert path.read_bytes() == before
 
 
+@pytest.mark.parametrize("dangling_link", [False, True])
+def test_cli_rejects_occupied_plot_path_before_analysis(tmp_path, monkeypatch, dangling_link):
+    output = tmp_path / "analysis.json"
+    plots = tmp_path / "plots"
+    if dangling_link:
+        plots.symlink_to(tmp_path / "missing-target", target_is_directory=True)
+    else:
+        plots.mkdir()
+        (plots / "keep.txt").write_bytes(b"unchanged")
+
+    def unexpected_analysis(_):
+        pytest.fail("output preflight must run before analysis")
+
+    monkeypatch.setattr("harness.analyze_saved_block_response.analyze", unexpected_analysis)
+    with pytest.raises(FileExistsError, match="fresh directory"):
+        main(["--manifest", str(EVIDENCE / "input_manifest.json"),
+              "--output-json", str(output), "--plot-dir", str(plots)])
+    assert not output.exists()
+    if dangling_link:
+        assert plots.is_symlink() and not plots.exists()
+    else:
+        assert list(plots.iterdir()) == [plots / "keep.txt"]
+        assert (plots / "keep.txt").read_bytes() == b"unchanged"
+
+
+@pytest.mark.parametrize("output_relative,plots_relative", [
+    ("analysis.json", "analysis.json"),
+    ("analysis.json", "analysis.json/plots"),
+    ("plots/analysis.json", "plots"),
+])
+def test_cli_rejects_overlapping_new_outputs_before_analysis(
+        tmp_path, monkeypatch, output_relative, plots_relative):
+    output = tmp_path / output_relative
+    plots = tmp_path / plots_relative
+
+    def unexpected_analysis(_):
+        pytest.fail("output preflight must run before analysis")
+
+    monkeypatch.setattr("harness.analyze_saved_block_response.analyze", unexpected_analysis)
+    with pytest.raises(ValueError, match="must not overlap"):
+        main(["--manifest", str(EVIDENCE / "input_manifest.json"),
+              "--output-json", str(output), "--plot-dir", str(plots)])
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_manifest_hash_gate_rejects_corrupt_data_before_numpy_decode(tmp_path):
     import hashlib
     inventory = tmp_path / "source_inventory.json"

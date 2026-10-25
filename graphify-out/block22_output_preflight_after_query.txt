@@ -1,0 +1,55 @@
+Traversal: BFS depth=2 | Start: ['analyze_saved_block_response.py'] | 30 nodes found
+
+NODE pathlib [src= loc= community=8]
+NODE json [src= loc= community=8]
+NODE pytest [src= loc= community=4]
+NODE numpy [src= loc= community=0]
+NODE hashlib [src= loc= community=8]
+NODE math [src= loc= community=6]
+NODE argparse [src= loc= community=0]
+NODE test_analyze_saved_block_response.py [src=harness/tests/test_analyze_saved_block_response.py loc=L1 community=295]
+NODE analyze_saved_block_response.py [src=harness/analyze_saved_block_response.py loc=L1 community=295]
+NODE analyze() [src=harness/analyze_saved_block_response.py loc=L66 community=295]
+NODE main() [src=harness/analyze_saved_block_response.py loc=L273 community=295]
+NODE finite_profile_projection() [src=harness/analyze_saved_block_response.py loc=L25 community=295]
+NODE moment_diameter_ratio() [src=harness/analyze_saved_block_response.py loc=L46 community=295]
+NODE plot_response() [src=harness/analyze_saved_block_response.py loc=L231 community=295]
+NODE test_executed_reciprocal_predicts_the_saved_unclipped_diameter() [src=harness/tests/test_analyze_saved_block_response.py loc=L49 community=295]
+NODE test_actual_saved_block_moments_optics_and_finite_projection() [src=harness/tests/test_analyze_saved_block_response.py loc=L17 community=295]
+NODE test_projection_retains_channel_layer_order_and_pressure_interfaces() [src=harness/tests/test_analyze_saved_block_response.py loc=L36 community=295]
+NODE test_baseline_tangent_does_not_claim_to_equal_a_finite_nonlinear_change() [src=harness/tests/test_analyze_saved_block_response.py loc=L60 community=295]
+NODE test_manifest_refuses_changed_target_before_loading_arrays() [src=harness/tests/test_analyze_saved_block_response.py loc=L71 community=295]
+NODE test_cli_cannot_overwrite_the_input_manifest() [src=harness/tests/test_analyze_saved_block_response.py loc=L80 community=295]
+NODE test_cli_rejects_occupied_plot_path_before_analysis() [src=harness/tests/test_analyze_saved_block_response.py loc=L89 community=295]
+NODE _profile_row() [src=harness/analyze_saved_block_response.py loc=L55 community=295]
+NODE sha() [src=harness/analyze_saved_block_response.py loc=L21 community=295]
+NODE test_manifest_hash_gate_rejects_corrupt_data_before_numpy_decode() [src=harness/tests/test_analyze_saved_block_response.py loc=L133 community=295]
+NODE test_cli_rejects_overlapping_new_outputs_before_analysis() [src=harness/tests/test_analyze_saved_block_response.py loc=L118 community=295]
+NODE Active, unclipped cloud-slope scaling with the executed f32 reciprocal. [src=harness/analyze_saved_block_response.py loc=L47 community=295]
+NODE Render saved endpoints as discrete points, not a sampled continuous curve. [src=harness/analyze_saved_block_response.py loc=L232 community=295]
+NODE Saved-data diagnostics do not require a private physics executable. [src=harness/tests/test_analyze_saved_block_response.py loc=L1 community=295]
+NODE Contract rounded binary64 products, retaining separate field terms. [src=harness/analyze_saved_block_response.py loc=L26 community=295]
+NODE Replay one original B512 block's saved cloud/profile/BT response with NumPy.  No [src=harness/analyze_saved_block_response.py loc=L1 community=295]
+EDGE analyze_saved_block_response.py --imports [EXTRACTED context=import]--> argparse
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> analyze()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> finite_profile_projection()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> main()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> moment_diameter_ratio()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> plot_response()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> _profile_row()
+EDGE analyze_saved_block_response.py --contains [EXTRACTED]--> sha()
+EDGE analyze_saved_block_response.py --imports [EXTRACTED context=import]--> hashlib
+EDGE analyze_saved_block_response.py --imports [EXTRACTED context=import]--> json
+EDGE analyze_saved_block_response.py --imports [EXTRACTED context=import]--> math
+EDGE analyze_saved_block_response.py --imports [EXTRACTED context=import]--> numpy
+EDGE analyze_saved_block_response.py --imports_from [EXTRACTED context=import]--> pathlib
+EDGE analyze_saved_block_response.py --rationale_for [EXTRACTED]--> Replay one original B512 block's saved cloud/profile/BT response with NumPy.  No
+EDGE analyze_saved_block_response.py --imports_from [EXTRACTED context=import]--> test_analyze_saved_block_response.py
+EDGE analyze() --calls [EXTRACTED context=call]--> test_actual_saved_block_moments_optics_and_finite_projection()
+EDGE analyze() --calls [EXTRACTED context=call]--> test_manifest_hash_gate_rejects_corrupt_data_before_numpy_decode()
+EDGE analyze() --calls [EXTRACTED context=call]--> test_manifest_refuses_changed_target_before_loading_arrays()
+EDGE test_analyze_saved_block_response.py --imports [EXTRACTED context=import]--> pytest
+EDGE test_analyze_saved_block_response.py --contains [EXTRACTED]--> test_actual_saved_block_moments_optics_and_finite_projection()
+EDGE test_analyze_saved_block_response.py --contains [EXTRACTED]--> test_baseline_tangent_does_not_claim_to_equal_a_finite_nonlinear_change()
+EDGE test_analyze_saved_block_response.py --contains [EXTRACTED]--> test_cli_cannot_overwrite_the_input_manifest()
+... (truncated — 0 more nodes cut by ~1800-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

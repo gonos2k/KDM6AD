@@ -1,0 +1,49 @@
+{
+  "schema": "kdm6.block22_output_preflight_validation.v1",
+  "base_commit": "fb80470df2cefb87ce5dcb636b121c46daa5b8b0",
+  "before": {
+    "error": "response plots require a fresh directory",
+    "json_left": true,
+    "json_bytes": 23166,
+    "json_sha256": "ce52bcc1a24364fbbe92ecddb58c765a07c05a459f82498792c221fedf3cf3fa",
+    "existing_plot_preserved": true,
+    "new_model_calls": 0
+  },
+  "after": {
+    "occupied_plot_dir": {
+      "error": "response plots require a fresh directory",
+      "json_left": false,
+      "existing_plot_preserved": true
+    },
+    "fresh_json_and_plot": "passed",
+    "changed_analysis_fields": [
+      "analyzer_sha256"
+    ],
+    "all_scientific_values_unchanged": true,
+    "figure_bitwise_unchanged": true,
+    "new_model_calls": 0
+  },
+  "focused_tests_passed": 12,
+  "historical_source_resolution": [
+    {
+      "path": "harness/analyze_saved_block_response.py",
+      "historical_sha256": "985ad6508154215d0941288f3e5822760d527eb44582b098814823fd4c73bd65",
+      "historical_commit": "857e9e48e4476da9a0b682a2ec71479bb2e48f3e",
+      "historical_source_url": "https://raw.githubusercontent.com/gonos2k/KDM6AD/857e9e48e4476da9a0b682a2ec71479bb2e48f3e/harness/analyze_saved_block_response.py",
+      "current_sha256": "ace9ebc7c3ab4977d2cf2e82d52026735a1e2fb262d745ffcadafab8ae0630d1"
+    },
+    {
+      "path": "harness/tests/test_analyze_saved_block_response.py",
+      "historical_sha256": "29c32c7fdfcd7d485357986e39ac666530ef0d7140a30d59d31ae5e5d3d4b9d4",
+      "historical_commit": "857e9e48e4476da9a0b682a2ec71479bb2e48f3e",
+      "historical_source_url": "https://raw.githubusercontent.com/gonos2k/KDM6AD/857e9e48e4476da9a0b682a2ec71479bb2e48f3e/harness/tests/test_analyze_saved_block_response.py",
+      "current_sha256": "5c22e1a1085af766dcce56cd7b24c400c5d884ab49b8a07da96875e6e3186128"
+    }
+  ],
+  "scope": "Pre-existing output collisions and overlapping destinations rejected before analyze; exclusive creation guards retained. Not transactional recovery from arbitrary later plotting failures. Historical PR449 data/manifest are unchanged.",
+  "historical_publication_verification": {
+    "pins_passed": 13,
+    "unchanged_artifacts_in_current_tree": 11,
+    "source_snapshots_from_857e9e48": 2
+  }
+}
