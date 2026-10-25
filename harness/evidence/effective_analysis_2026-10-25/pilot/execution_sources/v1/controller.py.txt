@@ -1,0 +1,99 @@
+"""One full-B value pilot at an explicitly representable T/Q candidate."""
+from pathlib import Path
+import hashlib
+import json
+import os
+import sys
+
+import numpy as np
+
+ROOT = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_effective_analysis_20261025')
+SOURCE = ROOT / 'pilot_source_v1'
+sys.path.insert(0, str(SOURCE))
+for key in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OMP_THREAD_LIMIT', 'OPENBLAS_NUM_THREADS'):
+    os.environ[key] = '1'
+
+from harness.native_satellite_objective import prepare_representable_control, finalize_objective
+from harness.prepare_native_satellite_case import load_case_block
+from harness.run_native_candidate_observation import _runtime_environment
+from harness.run_native_satellite_case import evaluate_representable_block, load_arrays, publish_json, sha
+
+
+def main():
+    import torch
+    torch.set_num_threads(1)
+    output = ROOT / 'block22_pilot_v1'
+    output.mkdir()
+    parent = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4')
+    manifest_path = parent / 'CASE_MANIFEST.json'
+    manifest = json.loads(manifest_path.read_text())
+    config = manifest['case_preparation']
+    config['capture_value_state'] = True
+    config['rttov_timeout_seconds'] = 900.0
+    config['rttov_replay_manifest'] = None
+    repo = Path('/private/tmp/KDM6AD-block22-activation-20261025')
+    inputs = repo / 'harness/evidence/native_satellite_case_2026-10-25/data/native_state_controls.npz'
+    controls = repo / 'harness/evidence/native_satellite_restricted_2026-10-25/data/restricted_controls.npz'
+    support_path = repo / 'harness/evidence/native_satellite_case_2026-10-25/data/observation_support.npz'
+    with np.load(inputs, allow_pickle=False) as data:
+        background = np.stack((data['theta_m'], data['qv']))
+    with np.load(controls, allow_pickle=False) as data:
+        z = data['z'].copy()
+    with np.load(support_path, allow_pickle=False) as data:
+        active = data['active'].copy()
+    # Public active includes the subsequently frozen blocks; the proposal has
+    # exactly zero controls there. No support or weight is changed.
+    prepared = prepare_representable_control(background, z, active, horizontal_shape=(282,234))
+    block = load_case_block(config, 22)
+    receipt_path = parent / 'baseline/chunk_00022/receipt.json'
+    old_receipt = json.loads(receipt_path.read_text())
+    old = load_arrays(old_receipt)
+    if block['B'] != 512 or not np.array_equal(block['flat_indices'], np.arange(11264,11776)):
+        raise ValueError('pilot must retain the original fullB512 block22')
+    if not np.array_equal(np.stack((block['theta_m'],block['qv'])), background[:,11264:11776]):
+        raise ValueError('original block differs from the public background')
+    source_manifest = json.loads((SOURCE/'SOURCE_MANIFEST.json').read_text())
+    for rel, digest in source_manifest['files'].items():
+        if sha(SOURCE/rel) != digest:
+            raise ValueError('frozen pilot source changed')
+    pins = {str(p): sha(p) for p in (manifest_path, inputs, controls, support_path, receipt_path,
+                                    Path(old_receipt['artifact']), Path(config['paths']['candidate_library']),
+                                    Path(config['paths']['checkpoint']), Path(config['paths']['rttov_template_executable']))}
+    prior = finalize_objective([0.0], 381528.0, prepared['z'], active)
+    publish_json(output/'PREPARED.json', {
+        'scope':'one original B512 value-only candidate; no new gradient, optimizer or host step',
+        'input_pins':pins, 'source_manifest_sha256':sha(SOURCE/'SOURCE_MANIFEST.json'),
+        'producer_sha256':sha(Path(__file__)), 'counts':prepared['counts'],
+        'global_effective_prior':prior, 'requested_global_z_sha256':hashlib.sha256(z.tobytes()).hexdigest(),
+        'effective_global_z_sha256':hashlib.sha256(prepared['z'].tobytes()).hexdigest(),
+        'KDM_forward_budget':1, 'RTTOV_direct_budget':1, 'RTTOV_K_budget':0,
+        'native_host_steps':0, 'optimizer_iterations':0,
+    })
+    print('PREPARED_ORIGINAL_B512_EFFECTIVE_INPUT',flush=True)
+    with _runtime_environment({'factorial_mode':'norm_actual','qr_transport':'actual_departure'}):
+        arrays, metadata = evaluate_representable_block(
+            config, block, output/'rttov', record=False, baseline=old, control=prepared)
+    target = 368
+    summary = {
+        'schema':'kdm6.effective_native_block_value_pilot.v1', 'status':'COMPLETED_ONE_BLOCK_VALUE_ONLY',
+        'metadata':metadata, 'target_flat_index':11632,
+        'target_baseline_BT':old['bt'][target].tolist(),
+        'target_effective_candidate_BT':arrays['bt'][target].tolist(),
+        'new_model_calls':metadata['calls'], 'new_native_host_steps':0,
+        'new_optimizer_iterations':0, 'new_gradient_evaluations':0,
+        'full_domain_reassessment_complete':False,
+    }
+    with (output/'result.npz').open('xb') as stream:
+        np.savez_compressed(stream, **arrays)
+    for name,digest in pins.items():
+        if sha(name)!=digest:
+            raise ValueError('pinned input changed during pilot')
+    summary['result_sha256']=sha(output/'result.npz')
+    publish_json(output/'COMPLETE.json',summary)
+    print(json.dumps({'status':summary['status'],'calls':metadata['calls'],
+                      'support_preserved':metadata['support_preserved'],
+                      'observation_numerator':metadata['observation_numerator']}),flush=True)
+
+
+if __name__=='__main__':
+    main()

@@ -1,0 +1,378 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Effective binary32 T/Q analysis preparation and its one-block value-only KDM/RTTOV pilot. C1/C2 code and synthetic protocol gates are complete; C3 is demonstrated only for one original B512 block. No full-domain reevaluation, optimizer iteration, native host step, full-gradient claim, or second assimilation is established. Token usage unmetered.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "effective_analysis_resolution_checklist",
+      "label": "Resolution checklist separates engineering gates, one-block value evidence, and open domain/host work",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_location": "L7-L11; L22-L44; L50-L79; L100-L120",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "completed_scope": "C1 binary32 preparation; C2 code and synthetic command protocol; C3 one B512 value pilot",
+      "open_scope": "C4 full direction check; C5 cumulative fixed-scene optimization; C6 129-block reassessment; C8 paired host step; C9 second assimilation",
+      "host_cycle_complete": false,
+      "full_domain_cost_evaluated": false
+    },
+    {
+      "id": "harness_native_analysis_control_prepare_effective_analysis",
+      "label": "analysis | Shared preparation rounds requested T/Q deltas to binary32 and records effective applied pairs",
+      "file_type": "code",
+      "source_file": "harness/native_analysis_control.py",
+      "source_location": "L100-L108; L147-L175; L178-L190",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "contract": "Value-only full-native (i,k,j) preparation. Rejects invalid, overflowing or underflowing requests, preserves zero-component background bits, and tracks bitwise changes.",
+      "derivative_of_quantizer_claimed": false
+    },
+    {
+      "id": "harness_native_satellite_objective_prepare_representable_control",
+      "label": "control | Satellite control preparation computes candidate and prior coordinate from the effective state",
+      "file_type": "code",
+      "source_file": "harness/native_satellite_objective.py",
+      "source_location": "L356-L432",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "contract": "Requires exact widened binary32 background, full checkpoint SHA, fixed scales and total control bounds; returns effective candidate, applied delta and z_eff.",
+      "prior_coordinate": "z_eff=(effective_state-original_background)/scale",
+      "candidate_acceptance_is_value_only": true
+    },
+    {
+      "id": "harness_native_analysis_increment_bind_satellite_control",
+      "label": "control | Adapter binds flat-column T/Q controls to the complete checkpoint and native i,k,j layout",
+      "file_type": "code",
+      "source_file": "harness/native_analysis_increment.py",
+      "source_location": "L85-L145",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "contract": "Checks complete checkpoint SHA, reads native THM_2/QVAPOR, maps flat=j*nx+i to (i,k,j), and verifies that the wire deltas reproduce the declared effective state.",
+      "writes_restart": false,
+      "runs_host": false
+    },
+    {
+      "id": "tests_test_bind_satellite_control",
+      "label": "Synthetic tests exercise non-square coordinate mapping and reject changed fixed-background inputs",
+      "file_type": "code",
+      "source_file": "harness/tests/test_bind_satellite_control.py",
+      "source_location": "L18-L71; L90-L105",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "fixture_grid": "3 by 2 horizontal with 2 levels",
+      "checks": [
+        "independent (k,j,i) sentinels",
+        "flat-to-(i,k,j) placement",
+        "full checkpoint hash mismatch after MU-only edit"
+      ],
+      "native_model_run": false
+    },
+    {
+      "id": "harness_run_native_satellite_case_evaluate_representable_block",
+      "label": "block | Block evaluator uses the effective candidate and effective prior coordinate for value evaluation",
+      "file_type": "code",
+      "source_file": "harness/run_native_satellite_case.py",
+      "source_location": "L650-L716",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "contract": "Checks candidate against the complete case checkpoint pin and forwards the effective binary32 state widened to binary64; records value-only quantization status.",
+      "quantizer_differentiated": false
+    },
+    {
+      "id": "effective_analysis_b512_value_pilot_v2",
+      "label": "Pilot v2 evaluates one original B512 block through value-only KDM and direct RTTOV",
+      "file_type": "document",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/pilot/v2/COMPLETE.json",
+      "source_location": "/status; /metadata/chunk_index; /metadata/start; /metadata/stop; /metadata/valid_observations; /metadata/calls; /full_domain_reassessment_complete",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "block_range": "[11264,11776)",
+      "supported_observations": 2037,
+      "kdm_value_forwards_v2": 1,
+      "direct_rttov_calls_v2": 1,
+      "jvp_calls": 0,
+      "vjp_calls": 0,
+      "rttov_k_calls": 0,
+      "host_steps": 0,
+      "full_domain_cost_evaluated": false
+    },
+    {
+      "id": "effective_analysis_evidence_readme",
+      "label": "Evidence README records effective-state arithmetic, pilot attribution and remaining limits",
+      "file_type": "document",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/README.md",
+      "source_location": "L1-L6; L17-L47; L49-L62; L97-L107",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "explicit_limits": [
+        "one-block value pilot only",
+        "no native host step",
+        "no cumulative optimizer",
+        "full-domain reassessment remains open"
+      ]
+    },
+    {
+      "id": "full_domain_and_host_gates_remain_open",
+      "label": "Domain-wide iterations, linked paired host run, and second assimilation remain incomplete",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_location": "L45-L79; L115-L121",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "full_gradient_complete": false,
+      "full_domain_iterations_complete": false,
+      "paired_host_step_complete": false,
+      "second_assimilation_complete": false
+    },
+    {
+      "id": "harness_audit_effective_analysis_audit",
+      "label": "Current auditor independently replays saved full-domain binary32 T/Q state application",
+      "file_type": "code",
+      "source_file": "harness/audit_effective_analysis.py",
+      "source_location": "L284-L367; L560-L600; L665-L682",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "ast_symbol_id": "harness_audit_effective_analysis_audit",
+      "public_mode": "Uses public native_state_controls.npz baseline when --public-baseline is provided; private RUN_v4 receipt reconstruction is not claimed.",
+      "reads_saved_candidate_and_support": true,
+      "executes_kdm_rttov_host_or_optimizer": false
+    },
+    {
+      "id": "effective_analysis_public_arithmetic_audit_v6",
+      "label": "Audit v6 reproduces full-domain effective f32 state arithmetic from public saved arrays with zero model calls",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/audit_v6/audit.json",
+      "source_location": "/status; /domain; /counts/prepare_effective_analysis; /calls_executed_by_this_audit; /outputs; /source_inputs/baseline_reconstruction_mode; /interpretation_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "SAVED_EFFECTIVE_STATE_REPLAY_COMPLETE_NO_MODEL_CALLS",
+      "domain": {
+        "columns": 65988,
+        "blocks": 129,
+        "levels": 39
+      },
+      "baseline_source_mode": "public_native_state_controls_npz",
+      "private_129_receipt_reconstruction_claimed": false,
+      "calls": {
+        "KDM6": 0,
+        "RTTOV": 0,
+        "host": 0
+      },
+      "requested_pairs": 1679418,
+      "effective_changed_pairs": 561407,
+      "bitwise_noop_pairs": 1118011,
+      "output_npz": "effective_analysis_arrays.npz",
+      "output_npz_bytes": 45578103,
+      "observation_cost_re_evaluated": false
+    },
+    {
+      "id": "tests_test_audit_effective_analysis_test_npz_reader_decodes_the_exact_bytes_it_hashed",
+      "label": "Audit regression test confirms the public baseline path and same-byte hash/decode behavior",
+      "file_type": "code",
+      "source_file": "harness/tests/test_audit_effective_analysis.py",
+      "source_location": "L52-L65; L68-L84",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "ast_symbol_id": "tests_test_audit_effective_analysis_test_npz_reader_decodes_the_exact_bytes_it_hashed",
+      "checks": [
+        "public baseline mode carries no private receipt claim",
+        "NPZ decoded from the exact bytes hashed"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "harness_native_analysis_control_prepare_effective_analysis",
+      "target": "harness_native_satellite_objective_prepare_representable_control",
+      "relation": "implements_exact_wire_application_for",
+      "source_file": "harness/native_satellite_objective.py",
+      "source_location": "L406-L418",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "harness_native_satellite_objective_prepare_representable_control",
+      "target": "harness_native_analysis_increment_bind_satellite_control",
+      "relation": "produces_control_bound_to",
+      "source_file": "harness/native_analysis_increment.py",
+      "source_location": "L85-L145",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "harness_native_analysis_increment_bind_satellite_control",
+      "target": "tests_test_bind_satellite_control",
+      "relation": "is_exercised_by",
+      "source_file": "harness/tests/test_bind_satellite_control.py",
+      "source_location": "L40-L71; L90-L105",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "harness_native_satellite_objective_prepare_representable_control",
+      "target": "harness_run_native_satellite_case_evaluate_representable_block",
+      "relation": "supplies_effective_candidate_and_prior_coordinate_to",
+      "source_file": "harness/run_native_satellite_case.py",
+      "source_location": "L650-L716",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "harness_run_native_satellite_case_evaluate_representable_block",
+      "target": "effective_analysis_b512_value_pilot_v2",
+      "relation": "value_evaluation_receipt_for",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/README.md",
+      "source_location": "L64-L90",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "effective_analysis_b512_value_pilot_v2",
+      "target": "effective_analysis_evidence_readme",
+      "relation": "summarized_with_scope_limits_by",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/README.md",
+      "source_location": "L64-L107",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "effective_analysis_evidence_readme",
+      "target": "effective_analysis_resolution_checklist",
+      "relation": "supports_limited_C3_status_and_open_followup_gates",
+      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_location": "L31-L79",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "effective_analysis_resolution_checklist",
+      "target": "full_domain_and_host_gates_remain_open",
+      "relation": "keeps_domain_iteration_and_host_requirements_open",
+      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_location": "L45-L79; L115-L121",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "weight": 1.0
+    },
+    {
+      "source": "harness_audit_effective_analysis_audit",
+      "target": "effective_analysis_public_arithmetic_audit_v6",
+      "relation": "produced_public_saved_state_replay",
+      "source_file": "harness/audit_effective_analysis.py",
+      "source_location": "L284-L367; L572-L600; L665-L682",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "harness_audit_effective_analysis_audit",
+      "target": "tests_test_audit_effective_analysis_test_npz_reader_decodes_the_exact_bytes_it_hashed",
+      "relation": "guarded_by_public_mode_and_immutable_read_regressions",
+      "source_file": "harness/tests/test_audit_effective_analysis.py",
+      "source_location": "L52-L84",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "effective_analysis_public_arithmetic_audit_v6",
+      "target": "effective_analysis_evidence_readme",
+      "relation": "documented_as_portable_arithmetic_replay_with_limits",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/README.md",
+      "source_location": "L105-L128",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "effective_analysis_public_arithmetic_audit_v6",
+      "target": "harness_native_satellite_objective_prepare_representable_control",
+      "relation": "independently_replays_binary32_update_from_saved_candidate_inputs",
+      "source_file": "harness/audit_effective_analysis.py",
+      "source_location": "L173-L223; L406-L432",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "effective_state_to_one_block_value_evidence_chain",
+      "label": "Binary32 preparation, checkpoint binding, effective-state evaluation and one-block value receipt",
+      "nodes": [
+        "harness_native_analysis_control_prepare_effective_analysis",
+        "harness_native_satellite_objective_prepare_representable_control",
+        "harness_native_analysis_increment_bind_satellite_control",
+        "harness_run_native_satellite_case_evaluate_representable_block",
+        "effective_analysis_b512_value_pilot_v2",
+        "effective_analysis_evidence_readme"
+      ],
+      "relation": "supports_one_block_value_only_candidate_evaluation",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/README.md",
+      "source_location": "L8-L20; L49-L90",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "engineering_completion_does_not_close_domain_or_host_work",
+      "label": "Completed C1-C3 evidence remains separate from open full-domain, gradient, and host-cycle requirements",
+      "nodes": [
+        "effective_analysis_resolution_checklist",
+        "effective_analysis_evidence_readme",
+        "full_domain_and_host_gates_remain_open"
+      ],
+      "relation": "preserves_scope_boundary",
+      "source_file": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_location": "L31-L79; L115-L121",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "effective_analysis_public_arithmetic_audit_lineage",
+      "label": "Public saved-state replay is source-pinned, uses public baseline arrays, and makes no model calls",
+      "nodes": [
+        "harness_audit_effective_analysis_audit",
+        "effective_analysis_public_arithmetic_audit_v6",
+        "tests_test_audit_effective_analysis_test_npz_reader_decodes_the_exact_bytes_it_hashed",
+        "effective_analysis_evidence_readme"
+      ],
+      "relation": "audits_saved_binary32_state_arithmetic_without_cost_or_model_reexecution",
+      "source_file": "harness/evidence/effective_analysis_2026-10-25/audit_v6/audit.json",
+      "source_location": "/source_inputs; /calls_executed_by_this_audit; /interpretation_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "identity_policy": "Semantic function nodes use the actual existing AST IDs to join producer/consumer relationships."
+}

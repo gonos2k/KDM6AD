@@ -378,7 +378,8 @@ def finite_dot(left, right):
 
 
 def evaluate_block(
-    config, block, workspace, *, record, baseline=None, delta=None, z=None
+    config, block, workspace, *, record, baseline=None, delta=None, z=None,
+    effective_input=None,
 ):
     import torch
     from harness.native_batch_microphysics import NativeBatchDirection
@@ -413,7 +414,13 @@ def evaluate_block(
         model.kernel.forward = forward_with_value_capture
         captured_value_call = capture
     theta_np, qv_np = block["theta_m"].copy(), block["qv"].copy()
-    if delta is not None:
+    if effective_input is not None:
+        if (effective_input.dtype != np.float64
+                or effective_input.shape != (2,) + theta_np.shape
+                or not np.isfinite(effective_input).all()):
+            raise ValueError("effective_input must be a finite binary64 native T/Q pair")
+        theta_np, qv_np = effective_input[0].copy(), effective_input[1].copy()
+    elif delta is not None:
         theta_np += delta[0]
         qv_np += delta[1]
     theta = tensor(theta_np).requires_grad_(record)
@@ -638,6 +645,56 @@ def chunk_binding(run_id, stage, index, *, baseline_sha=None, controls_sha=None)
             controls_sha=controls_sha,
         )
     )
+
+
+def evaluate_representable_block(config, block, workspace, *, record, baseline, control):
+    """Evaluate an original full-B block at the prepared effective input.
+
+    The stored prior coordinate and observation input describe the same state.
+    Original baseline support is retained even when ``record=True`` at a later
+    optimization point. This does not differentiate binary32 preparation.
+    """
+    checkpoint_id = config.get("verified_sources", {}).get("checkpoint", {}).get("sha256")
+    if not checkpoint_id or checkpoint_id != control.get("background_checkpoint_id"):
+        raise ValueError("effective control and physical evaluator require the same complete background checkpoint")
+    rows = np.asarray(block["flat_indices"])
+    candidate = np.asarray(control["candidate"])[:, rows, :]
+    applied_delta = np.asarray(control["applied_delta"])[:, rows, :]
+    effective_z = np.asarray(control["z"])[:, rows, :]
+    original = np.stack((block["theta_m"], block["qv"]))
+    reconstructed = np.where(applied_delta == 0.0, original, original + applied_delta)
+    if (candidate.dtype != np.float64 or candidate.shape != original.shape
+            or not np.isfinite(candidate).all()
+            or reconstructed.tobytes() != candidate.tobytes()):
+        raise ValueError("effective candidate is not reproducible from the original block input")
+    scale = np.stack((np.full_like(original[0], 0.2), 0.02 * original[1]))
+    actual_z = np.divide(candidate - original, scale, out=np.zeros_like(scale),
+                         where=scale > 0.0)
+    if (effective_z.tobytes() != actual_z.tobytes()
+            or np.any(np.abs(actual_z) > 1.0)):
+        raise ValueError("effective prior coordinate differs from the evaluated native input")
+    arrays, metadata = evaluate_block(
+        config, block, workspace, record=record, baseline=baseline,
+        delta=(applied_delta[0], applied_delta[1]), z=effective_z,
+        effective_input=candidate,
+    )
+    if (arrays["theta_m"].tobytes() != candidate[0].tobytes()
+            or arrays["qv"].tobytes() != candidate[1].tobytes()):
+        raise RuntimeError("observation calculation did not use the prepared effective input")
+    arrays.update(
+        requested_z=np.asarray(control["requested_z"])[:, rows, :],
+        requested_delta=np.asarray(control["requested_delta"])[:, rows, :],
+        wire_delta=np.asarray(control["wire_delta"])[:, rows, :],
+    )
+    metadata["control_application"] = {
+        "contract": "binary32 wire delta then binary32 native addition; evaluated as exact widened effective input",
+        "background_sha256": control["background_sha256"],
+        "background_checkpoint_id": control["background_checkpoint_id"],
+        "global_effective_counts": control["counts"],
+        "observation_and_prior_use_effective_state": True,
+        "quantizer_differentiated": False,
+    }
+    return arrays, metadata
 
 
 def write_stage(path, value):

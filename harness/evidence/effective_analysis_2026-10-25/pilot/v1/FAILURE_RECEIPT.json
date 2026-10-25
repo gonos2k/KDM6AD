@@ -1,0 +1,15 @@
+{
+  "status": "FAILED_AFTER_COMPLETED_DIRECT_BEFORE_KMA_POSTPROCESS",
+  "error": "missing frozen oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+  "new_model_calls": {
+    "KDM_forward": 1,
+    "RTTOV_direct": 1,
+    "RTTOV_K": 0,
+    "KDM_JVP": 0,
+    "KDM_VJP": 0,
+    "host": 0
+  },
+  "completed_scientific_result": false,
+  "radiance_sha256": "806196580ed4567a380cf1dd5e58e5f4873d8588a68ce65e22ece38e19b88c0a",
+  "producer_sha256": "a4ee2df4fa9253262dad2bedc2c26eca6e68b8226ecb85b46cacb9530030b576"
+}

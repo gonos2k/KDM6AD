@@ -1,0 +1,490 @@
+{
+  "binary32": {
+    "background_qv_exact_widened_float32": true,
+    "background_theta_m_exact_widened_float32": true,
+    "delta_stats": {
+      "effective_wire_qv": {
+        "max": 0.0002357190678594634,
+        "max_abs": 0.0002357190678594634,
+        "mean_abs": 2.530005091199493e-09,
+        "min": -0.00018569020903669298,
+        "nonzero_count": 508839,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 0.003298449650698088
+      },
+      "effective_wire_theta_m": {
+        "max": 0.06790640205144882,
+        "max_abs": 0.14039748907089233,
+        "mean_abs": 1.930310935391354e-06,
+        "min": -0.14039748907089233,
+        "nonzero_count": 346604,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -3.159631060776986
+      },
+      "quantization_roundoff_qv": {
+        "max": 1.2006763584673091e-12,
+        "max_abs": 1.2006763584673091e-12,
+        "mean_abs": 5.0784015973886247e-17,
+        "min": -5.924291276732802e-13,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 3.5481269537266555e-12
+      },
+      "quantization_roundoff_theta_m": {
+        "max": 4.506060316544769e-10,
+        "max_abs": 3.1833161107108765e-09,
+        "mean_abs": 4.246356054921244e-14,
+        "min": -3.1833161107108765e-09,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -5.07771519392395e-09
+      },
+      "quantized_request_qv": {
+        "max": 0.0002357190678594634,
+        "max_abs": 0.0002357190678594634,
+        "mean_abs": 2.5552132719982936e-09,
+        "min": -0.00018569020903669298,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 0.0033342335391887347
+      },
+      "quantized_request_theta_m": {
+        "max": 0.06790640205144882,
+        "max_abs": 0.14039748907089233,
+        "mean_abs": 2.016174043377019e-06,
+        "min": -0.14039748907089233,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -3.2859089627537506
+      },
+      "realized_minus_requested_qv": {
+        "max": 9.312647068162964e-10,
+        "max_abs": 9.313149319890393e-10,
+        "mean_abs": 6.050361114657367e-11,
+        "min": -9.313149319890393e-10,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -1.0566980706728373e-05
+      },
+      "realized_minus_requested_theta_m": {
+        "max": 3.8134184512353954e-06,
+        "max_abs": 3.8134184512353954e-06,
+        "mean_abs": 1.3921749232354057e-07,
+        "min": -3.7380200384627956e-06,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 0.07140457201796131
+      },
+      "realized_state_change_qv": {
+        "max": 0.00023571867495775223,
+        "max_abs": 0.00023571867495775223,
+        "mean_abs": 2.5449409009794604e-09,
+        "min": -0.00018568988889455795,
+        "nonzero_count": 508839,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 0.0033236665549338795
+      },
+      "realized_state_change_theta_m": {
+        "max": 0.06790637969970703,
+        "max_abs": 0.1403980255126953,
+        "mean_abs": 1.961731795940006e-06,
+        "min": -0.1403980255126953,
+        "nonzero_count": 346604,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -3.214504385658074
+      },
+      "requested_qv": {
+        "max": 0.00023571906665878704,
+        "max_abs": 0.00023571906665878704,
+        "mean_abs": 2.5552132718470254e-09,
+        "min": -0.00018569020944946227,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 0.003334233535640608
+      },
+      "requested_theta_m": {
+        "max": 0.06790640311885826,
+        "max_abs": 0.14039748926644405,
+        "mean_abs": 2.016174041888073e-06,
+        "min": -0.14039748926644405,
+        "nonzero_count": 1679418,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -3.2859089576760354
+      },
+      "state_accumulation_roundoff_qv": {
+        "max": 9.312647319958955e-10,
+        "max_abs": 9.312728366239753e-10,
+        "mean_abs": 3.529543059008479e-11,
+        "min": -9.312728366239753e-10,
+        "nonzero_count": 508837,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 2.5216904235791384e-05
+      },
+      "state_accumulation_roundoff_theta_m": {
+        "max": 3.8134185160743073e-06,
+        "max_abs": 3.8134185160743073e-06,
+        "mean_abs": 5.335438497368798e-08,
+        "min": -3.738019586307928e-06,
+        "nonzero_count": 346604,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": -0.054873324881087926
+      }
+    },
+    "effective_state_stats": {
+      "qv": {
+        "max": 0.02328752912580967,
+        "max_abs": 0.02328752912580967,
+        "mean_abs": 0.005366091155778159,
+        "min": 1.8103659726875776e-07,
+        "nonzero_count": 2573532,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 13809.807304312078
+      },
+      "theta_m": {
+        "max": 190.59487915039062,
+        "max_abs": 190.59487915039062,
+        "mean_abs": 52.679124438277036,
+        "min": -4.293475151062012,
+        "nonzero_count": 2573532,
+        "shape": [
+          65988,
+          39
+        ],
+        "sum_fsum": 135570802.17235613
+      }
+    },
+    "wire_overflow_components": {
+      "qv": 0,
+      "theta_m": 0
+    },
+    "wire_underflow_components": {
+      "qv": 0,
+      "theta_m": 0
+    }
+  },
+  "calls_executed_by_this_audit": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0
+  },
+  "candidate_state_relation": {
+    "candidate_qv_is_background_plus_stored_delta_bitwise": true,
+    "candidate_theta_m_is_background_plus_stored_delta_bitwise": true,
+    "stored_vs_state_minus_background": {
+      "qv_max_abs_lastbit_difference": 1.7347217957661878e-18,
+      "reconstructed_recipe_effect_counts": {
+        "changed_both_components": 294036,
+        "changed_pairs": 561407,
+        "changed_qv_components": 508839,
+        "changed_theta_components": 346604,
+        "empty_pairs": 894114,
+        "noop_requested_pairs": 1118011,
+        "qv_only_changed_pairs": 214803,
+        "requested_nonzero_both_components": 1679308,
+        "requested_nonzero_pairs": 1679418,
+        "requested_nonzero_qv_components": 1679373,
+        "requested_nonzero_theta_components": 1679353,
+        "theta_only_changed_pairs": 52568,
+        "zero_effect_requested_qv_components": 1170534,
+        "zero_effect_requested_theta_components": 1332749
+      },
+      "state_minus_background_qv_component_nonzero": 1679373,
+      "state_minus_background_theta_component_nonzero": 1679353,
+      "stored_request_qv_component_nonzero": 1679418,
+      "stored_request_theta_component_nonzero": 1679418,
+      "stored_vs_reconstructed_qv_exact_equal": false,
+      "stored_vs_reconstructed_theta_exact_equal": false,
+      "theta_max_abs_lastbit_difference": 1.421084800656044e-14,
+      "used_for_primary_effective_state": "persisted candidate_input_delta.npz requested deltas; candidate_state-baseline subtraction is reported only as an alternative recipe"
+    }
+  },
+  "control_z": {
+    "active_mask_scope": "original pre-projection observation_support.active; later-frozen 25 full blocks remain marked active here but their accepted z/effective z are zero",
+    "alpha": 1.0,
+    "cost_re_evaluation": "not performed; z-prior coordinate-norm diagnostics only, not an observation/cost re-evaluation or new optimizer policy",
+    "effective_prior_after_freeze_coordinate_term": 1.950563490552541,
+    "effective_prior_numerator_coordinate_term": 1.950563490552541,
+    "original_active_component_count": 4251312,
+    "postprojection_active_component_count": 3358836,
+    "prior_numerator_change_coordinate_term": -1.1286109029562397e-06,
+    "prior_unchanged_by_mask_projection": true,
+    "proposed_prior_after_freeze_coordinate_term": 1.950564619163444,
+    "proposed_prior_matches_saved_screen_summary": true,
+    "proposed_prior_numerator_coordinate_term": 1.950564619163444,
+    "proposed_vs_effective_z": {
+      "qv": {
+        "active_box_overshoots": 0,
+        "different_coordinates": 1679418,
+        "effective": {
+          "max": 0.9999997359027764,
+          "max_abs": 0.9999997359027764,
+          "mean_abs": 1.403300387638421e-05,
+          "min": -0.6143116753264063,
+          "nonzero_count": 508839,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": 22.14802304360296
+        },
+        "effective_minus_proposed": {
+          "max": 2.9767646730998954e-06,
+          "max_abs": 2.9768969050903178e-06,
+          "mean_abs": 3.9157721305985957e-07,
+          "min": -2.9768969050903178e-06,
+          "nonzero_count": 1679418,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": -0.025680874807018896
+        },
+        "proposed": {
+          "max": 1.0,
+          "max_abs": 1.0,
+          "mean_abs": 1.412654130310927e-05,
+          "min": -0.6143127358075207,
+          "nonzero_count": 1679418,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": 22.17370391840998
+        }
+      },
+      "theta_m": {
+        "active_box_overshoots": 0,
+        "different_coordinates": 1679418,
+        "effective": {
+          "max": 0.33953189849853516,
+          "max_abs": 0.7019901275634766,
+          "mean_abs": 9.80865897970003e-06,
+          "min": -0.7019901275634766,
+          "nonzero_count": 346604,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": -16.07252192829037
+        },
+        "effective_minus_proposed": {
+          "max": 1.9067092256176967e-05,
+          "max_abs": 1.9067092256176967e-05,
+          "mean_abs": 6.960874616177037e-07,
+          "min": -1.8690100192313985e-05,
+          "nonzero_count": 1679418,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": 0.35702286008980566
+        },
+        "proposed": {
+          "max": 0.3395320155942913,
+          "max_abs": 0.7019874463322202,
+          "mean_abs": 1.0080870209440367e-05,
+          "min": -0.7019874463322202,
+          "nonzero_count": 1679418,
+          "shape": [
+            65988,
+            39
+          ],
+          "sum_fsum": -16.429544788380177
+        }
+      }
+    },
+    "requested_delta_formula_matches_stored": {
+      "qv_bitwise_matches_stored": true,
+      "qv_max_abs_difference": 0.0,
+      "theta_m_bitwise_matches_stored": true,
+      "theta_m_max_abs_difference": 0.0
+    },
+    "scales": {
+      "qv": "0.02 * alpha * original baseline qv",
+      "theta_m": 0.2
+    }
+  },
+  "coordinate_contract": {
+    "f32_update_order": "cast background and request to binary32; for nonzero request components compute float32(old + request32); zero request components retain old bits",
+    "native_helper_order": "(i,k,j), one-based bounds (1,NX,1,L,1,NY)",
+    "public_flat_order": "flat0=j*NX+i with level as second axis",
+    "qv": "native QVAPOR mixing ratio in kg/kg dry air",
+    "theta_m": "native WRF THM_2 moist potential-temperature perturbation coordinate in K; no dry-theta conversion is applied"
+  },
+  "counts": {
+    "prepare_effective_analysis": {
+      "applied_components": 855443,
+      "applied_points": 561407,
+      "empty_points": 894114,
+      "noop_points": 1118011,
+      "requested_nonzero_components": 3358836,
+      "requested_points": 1679418,
+      "zero_effect_components": 2503393
+    },
+    "prepare_representable_control": {
+      "applied_components": 855443,
+      "applied_points": 561407,
+      "empty_points": 894114,
+      "noop_points": 1118011,
+      "requested_nonzero_components": 3358836,
+      "requested_points": 1679418,
+      "zero_effect_components": 2503393
+    },
+    "state_minus_background_alternative": {
+      "changed_both_components": 294036,
+      "changed_pairs": 561407,
+      "changed_qv_components": 508839,
+      "changed_theta_components": 346604,
+      "empty_pairs": 894114,
+      "noop_requested_pairs": 1118011,
+      "qv_only_changed_pairs": 214803,
+      "requested_nonzero_both_components": 1679308,
+      "requested_nonzero_pairs": 1679418,
+      "requested_nonzero_qv_components": 1679373,
+      "requested_nonzero_theta_components": 1679353,
+      "theta_only_changed_pairs": 52568,
+      "zero_effect_requested_qv_components": 1170534,
+      "zero_effect_requested_theta_components": 1332749
+    },
+    "stored_requested_delta": {
+      "changed_both_components": 294036,
+      "changed_pairs": 561407,
+      "changed_qv_components": 508839,
+      "changed_theta_components": 346604,
+      "empty_pairs": 894114,
+      "noop_requested_pairs": 1118011,
+      "qv_only_changed_pairs": 214803,
+      "requested_nonzero_both_components": 1679418,
+      "requested_nonzero_pairs": 1679418,
+      "requested_nonzero_qv_components": 1679418,
+      "requested_nonzero_theta_components": 1679418,
+      "theta_only_changed_pairs": 52568,
+      "zero_effect_requested_qv_components": 1170579,
+      "zero_effect_requested_theta_components": 1332814
+    }
+  },
+  "domain": {
+    "L": 39,
+    "NX": 234,
+    "NY": 282,
+    "blocks": 129,
+    "columns": 65988
+  },
+  "interpretation_limits": [
+    "Requested-pair count is computed from the persisted candidate_input_delta arrays, not from candidate_state minus background.",
+    "The candidate-state-minus-background recipe is reported separately because f64 subtraction can change requested delta last bits.",
+    "The only physics-related operation replayed is the native float32 state update; no KDM, RTTOV, host, observation, or cost model is executed.",
+    "This is not an effective assimilation cost or a forecast/host-step replay.",
+    "Baseline was loaded from the published native_state_controls.npz; this run does not claim independent reconstruction from 129 private RUN_v4 receipts."
+  ],
+  "outputs": {
+    "arrays_bytes": 45578103,
+    "arrays_file": "effective_analysis_arrays.npz",
+    "arrays_sha256": "004dd64b3a53bd6001dbd2b414c7e3a1fdbcd5664a940aeb8823650958c5f182"
+  },
+  "public_block22_anchor": {
+    "baseline_fields_bitwise_match_parent": {
+      "flat_index": true,
+      "qv": true,
+      "theta_m": true
+    },
+    "sha256": "e62b86a2f9f9113f375db639cb8346ea7d84b2332f09914c6653b5ec992420c8"
+  },
+  "schema": "kdm6.effective_analysis_audit.v1",
+  "source_inputs": {
+    "audit_producer_sha256": "585a88d999ea6dcbb2b6c4999832d24de02c723a5ca604ad82fde6a46f1f53a8",
+    "background_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "baseline_reconstruction_mode": "public_native_state_controls_npz",
+    "candidate_input_delta_npz_sha256": "b5ecf7e396186377a06623e753e48f4c61f2d67930e1f4bace4b93fbf38818bc",
+    "candidate_input_state_npz_sha256": "c32bf411412b6955f3ad0c2e6f4215e9cfc4124d43362a7d4dbcd1b0f426dcb5",
+    "parent_baseline_chunks": [],
+    "parent_case_manifest_sha256": null,
+    "parent_run_id": null,
+    "public_baseline_npz_sha256": "31233fa78952e4fc8da10b6272ff8182b6548988fb8ba815dfcc3a9bc1932167",
+    "restricted_candidate_run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+    "restricted_control_npz_sha256": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+    "restricted_control_z_sha256": "1177f076e4d8421bfe855f3fd9e064d54bedcf353fcda211c35a4d7059710c38",
+    "restricted_parent_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+    "source_artifact_hashes": {
+      "audit_producer_source": "585a88d999ea6dcbb2b6c4999832d24de02c723a5ca604ad82fde6a46f1f53a8",
+      "candidate_input_delta_npz": "b5ecf7e396186377a06623e753e48f4c61f2d67930e1f4bace4b93fbf38818bc",
+      "candidate_input_state_npz": "c32bf411412b6955f3ad0c2e6f4215e9cfc4124d43362a7d4dbcd1b0f426dcb5",
+      "effective_helper_source": "aac9b8bcaf611aa2c24e3b11fa3ff785f4293d06a773371053fe44c05867e664",
+      "original_preprojection_observation_support_npz": "f0ffe23d74d6077defb164a9822480b04d0b96c08d2d6af02da003a978bc6ca8",
+      "public_block22_input_manifest_json": "97c3eb4c9ab2f704ae92d349866372fd28281b8a1d0219ade9039150ac931aa5",
+      "public_block22_saved_fields_npz": "e62b86a2f9f9113f375db639cb8346ea7d84b2332f09914c6653b5ec992420c8",
+      "public_native_state_controls_npz": "31233fa78952e4fc8da10b6272ff8182b6548988fb8ba815dfcc3a9bc1932167",
+      "publication_manifest_json": "0e0b45838dcc77b9941be4a52e06d0f7d92645eb56a1e5eb0008f864e34f81bf",
+      "representable_control_source": "e8e6327625ae27f9328a848ba61f1234c5f058054969e643b915c471123a1a3c",
+      "restricted_block_screen_json": "d636e77504a663d7f6c801a40f743541c499354611744e5304d76c4c2405d644",
+      "restricted_candidate_sourcebound_json": "2a45cd8269a5c331274c9be0024d3451346c8bf33bec639fdeabe9d7e205d9ed",
+      "restricted_case_manifest_json": "76f981eb2f92fdef6f19495aa6f143e467dde634ed6106b4d9a50c1a310f502b",
+      "restricted_controls_npz": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+      "restricted_summary_json": "622d20ddad610d87fbbceed4a0013cbd655012401d628dfefe3daac3e58deb74"
+    },
+    "source_helper_status": {
+      "prepare_effective_analysis_vs_independent_scalar_bitwise": {
+        "changed_pair_mask_bitwise": true,
+        "counts_equal_scalar": true,
+        "effective_qv_bitwise": true,
+        "effective_theta_m_bitwise": true,
+        "wire_delta_qv_bitwise": true,
+        "wire_delta_theta_m_bitwise": true
+      },
+      "prepare_representable_control_vs_effective_analysis": {
+        "applied_delta_qv_bitwise_matches_state_difference": true,
+        "applied_delta_theta_bitwise_matches_state_difference": true,
+        "candidate_qv_bitwise_matches_effective_api": true,
+        "candidate_theta_bitwise_matches_effective_api": true,
+        "request_qv_matches_stored_numeric": true,
+        "request_theta_matches_stored_numeric": true
+      }
+    }
+  },
+  "status": "SAVED_EFFECTIVE_STATE_REPLAY_COMPLETE_NO_MODEL_CALLS"
+}

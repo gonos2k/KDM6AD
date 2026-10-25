@@ -15,8 +15,10 @@ import pytest
 
 from harness.native_analysis_control import (
     AnalysisUpdate,
+    PreparedEffectiveAnalysis,
     apply_pair,
     encode_analysis_command,
+    prepare_effective_analysis,
     read_analysis_applied,
 )
 
@@ -403,3 +405,108 @@ def test_fortran_analysis_parser_rejects_invalid_pair_and_framing(tmp_path,fortr
     assert code!=0
     assert "AWAIT_ERROR" in output
     assert not (control/"applied_0000000006.txt").exists()
+
+
+def test_effective_analysis_filters_float32_noop_points_and_matches_scalar_pairs():
+    old_t = np.full((2, 3, 2), 300.0, dtype=np.float32)
+    old_q = np.full((2, 3, 2), 0.01, dtype=np.float32)
+    min_subnormal = np.nextafter(np.float32(0.0), np.float32(1.0))
+    old_t[0, 0, 0] = np.float32(-min_subnormal)
+    old_q[0, 0, 0] = np.float32(-0.0)
+    old_t[1, 1, 1] = np.float32(1.0e30)
+    requested_t = np.zeros_like(old_t, dtype=np.float64)
+    requested_q = np.zeros_like(old_q, dtype=np.float64)
+    requested_t[0, 0, 0] = float(min_subnormal)
+    requested_t[0, 1, 0] = 0.25
+    requested_q[0, 1, 0] = 0.001
+    requested_t[1, 1, 1] = 1.0  # representable, but rounds away at this background
+    unchanged = (requested_t == 0.0) & (requested_q == 0.0)
+
+    prepared = prepare_effective_analysis(
+        old_t, old_q, requested_t, requested_q, unchanged, bounds=BOUNDS
+    )
+
+    assert isinstance(prepared, PreparedEffectiveAnalysis)
+    assert prepared.counts == {
+        "requested_points": 3,
+        "noop_points": 1,
+        "applied_points": 2,
+        "empty_points": 9,
+        "requested_nonzero_components": 4,
+        "applied_components": 3,
+        "zero_effect_components": 1,
+    }
+    assert not prepared.all_noop
+    assert prepared.changed_mask[0, 0, 0] and prepared.changed_mask[0, 1, 0]
+    assert not prepared.changed_mask[1, 1, 1]
+    assert [(u.i, u.k, u.j) for u in prepared.updates] == [(1, 1, 1), (1, 2, 1)]
+    # A real nonzero addition changes -minsubnormal to +0 and is not filtered.
+    assert _bits(old_t[0, 0, 0]) == 0x80000001
+    assert _bits(prepared.effective_theta_m[0, 0, 0]) == 0
+    # A zero component preserves the input's signed-zero bit pattern.
+    assert _bits(prepared.effective_qv[0, 0, 0]) == 0x80000000
+    assert prepared.delta_theta_m[1, 1, 1] == 0.0
+    assert prepared.delta_qv[1, 1, 1] == 0.0
+
+    for update in prepared.updates:
+        i, k, j = update.i - 1, update.k - 1, update.j - 1
+        expected_t, expected_q = apply_pair(
+            old_t[i, k, j], old_q[i, k, j],
+            prepared.delta_theta_m[i, k, j], prepared.delta_qv[i, k, j])
+        assert _bits(expected_t) == _bits(prepared.effective_theta_m[i, k, j])
+        assert _bits(expected_q) == _bits(prepared.effective_qv[i, k, j])
+
+
+def test_effective_analysis_all_noop_is_identity_with_signed_zero_bits():
+    old_t = np.full((2, 3, 2), 300.0, dtype=np.float32)
+    old_q = np.full_like(old_t, 0.01)
+    old_t[0, 0, 0] = np.float32(-0.0)
+    old_q[1, 1, 1] = np.float32(-0.0)
+    zero = np.zeros(old_t.shape, dtype=np.float64)
+    prepared = prepare_effective_analysis(
+        old_t, old_q, zero, zero.copy(), np.ones(old_t.shape, dtype=bool),
+        bounds=BOUNDS)
+    assert prepared.all_noop and prepared.updates == ()
+    assert prepared.counts["requested_points"] == 0
+    assert prepared.counts["applied_points"] == 0
+    assert prepared.effective_theta_m.tobytes() == old_t.tobytes()
+    assert prepared.effective_qv.tobytes() == old_q.tobytes()
+    assert not prepared.changed_mask.any()
+
+
+@pytest.mark.parametrize("mutate,match", [
+    ("integer_mask", "unchanged_mask must be a Boolean"),
+    ("wrong_mask", "exactly identify zero requested"),
+    ("bad_bounds", "bounds must equal the full native array domain shape"),
+    ("underflow", "underflows binary32"),
+    ("overflow", "overflows binary32"),
+    ("negative_qv", "qv must be nonnegative"),
+    ("negative_background_qv", "background_qv must be nonnegative"),
+])
+def test_effective_analysis_rejects_invalid_metadata_and_physical_values(mutate, match):
+    old_t = np.full((2, 3, 2), 300.0, dtype=np.float32)
+    old_q = np.full_like(old_t, 0.01)
+    dt = np.zeros(old_t.shape, dtype=np.float64)
+    dq = np.zeros(old_q.shape, dtype=np.float64)
+    mask = np.ones(old_t.shape, dtype=bool)
+    bounds = BOUNDS
+    if mutate == "integer_mask":
+        mask = mask.astype(np.int32)
+    elif mutate == "wrong_mask":
+        dt[0, 0, 0] = 0.25
+        mask[0, 0, 0] = True
+    elif mutate == "bad_bounds":
+        bounds = (1, 3, 1, 2, 1, 2)
+    elif mutate == "underflow":
+        dt[0, 0, 0] = 1.0e-50
+        mask[0, 0, 0] = False
+    elif mutate == "overflow":
+        dt[0, 0, 0] = 1.0e100
+        mask[0, 0, 0] = False
+    elif mutate == "negative_qv":
+        dq[0, 0, 0] = -0.02
+        mask[0, 0, 0] = False
+    elif mutate == "negative_background_qv":
+        old_q[0, 0, 0] = -0.01
+    with pytest.raises(ValueError, match=match):
+        prepare_effective_analysis(old_t, old_q, dt, dq, mask, bounds=bounds)

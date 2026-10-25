@@ -1,0 +1,39 @@
+{
+  "scope": "one original B512 value-only candidate; no new gradient, optimizer or host step",
+  "input_pins": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/CASE_MANIFEST.json": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+    "/private/tmp/KDM6AD-block22-activation-20261025/harness/evidence/native_satellite_case_2026-10-25/data/native_state_controls.npz": "31233fa78952e4fc8da10b6272ff8182b6548988fb8ba815dfcc3a9bc1932167",
+    "/private/tmp/KDM6AD-block22-activation-20261025/harness/evidence/native_satellite_restricted_2026-10-25/data/restricted_controls.npz": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+    "/private/tmp/KDM6AD-block22-activation-20261025/harness/evidence/native_satellite_case_2026-10-25/data/observation_support.npz": "f0ffe23d74d6077defb164a9822480b04d0b96c08d2d6af02da003a978bc6ca8",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/baseline/chunk_00022/receipt.json": "d3210bcf3100bd2ca247e7f3502fd11f97c09dddfc02279ce2553049d8b54f72",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/baseline/chunk_00022/attempt_0952eb5c7acd486282b3aa2c4f8839dc/result.npz": "1d6436896a56bc0772c747e33e0fe990afb5cd218c292f051d7761dce312c5df",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.2.0.0.dylib": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+  },
+  "source_manifest_sha256": "34d22db3b040a1d910d22e4dab1be44bac1136c4a710bf8dda5083a34f61d672",
+  "producer_sha256": "a4ee2df4fa9253262dad2bedc2c26eca6e68b8226ecb85b46cacb9530030b576",
+  "counts": {
+    "requested_points": 1679418,
+    "noop_points": 1118011,
+    "applied_points": 561407,
+    "empty_points": 894114,
+    "requested_nonzero_components": 3358836,
+    "applied_components": 855443,
+    "zero_effect_components": 2503393
+  },
+  "global_effective_prior": {
+    "observation_numerator": 0.0,
+    "regularization_numerator": 1.950563490552541,
+    "numerator": 1.950563490552541,
+    "Z": 381528.0,
+    "cost": 5.1125041689012105e-06
+  },
+  "requested_global_z_sha256": "1177f076e4d8421bfe855f3fd9e064d54bedcf353fcda211c35a4d7059710c38",
+  "effective_global_z_sha256": "f139e192010f66e21237789538d5af7e4199d46516255a128cb99902aaf7811a",
+  "KDM_forward_budget": 1,
+  "RTTOV_direct_budget": 1,
+  "RTTOV_K_budget": 0,
+  "native_host_steps": 0,
+  "optimizer_iterations": 0
+}
