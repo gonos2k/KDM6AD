@@ -1,0 +1,9 @@
+{
+  "schema": "kdm6.block22_cpp_source_comparison.v1",
+  "actual_coordinator_sha256": "373e77cc9f81bd77603c6993a53cd8dfd5e9b3b401da6e102d90bc16028f280e",
+  "public_coordinator_sha256": "9253e1741cb8926f98fc088c56579a015472ea43b7ef0b365ef2c42bd2660152",
+  "actual_apply_satadj_step_text_sha256": "44530a766de3617b26f503d60dbd162355d24af64a59bf0b2a571b803edde067",
+  "public_apply_satadj_step_text_sha256": "44530a766de3617b26f503d60dbd162355d24af64a59bf0b2a571b803edde067",
+  "bounded_function_text_equal": true,
+  "scope": "Source text comparison only. Executable authority remains pinned DSO/build archive; no model call and no intermediate activation measurement."
+}

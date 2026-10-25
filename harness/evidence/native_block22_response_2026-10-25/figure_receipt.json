@@ -1,0 +1,8 @@
+{
+  "schema": "kdm6.block22_saved_figure.v1",
+  "analysis_sha256": "ce52bcc1a24364fbbe92ecddb58c765a07c05a459f82498792c221fedf3cf3fa",
+  "source_analyzer_sha256": "985ad6508154215d0941288f3e5822760d527eb44582b098814823fd4c73bd65",
+  "figure_sha256": "ce4aded654350d077305187a88e7882d7b661d5119827db29045e8e8cd69f15f",
+  "new_model_calls": 0,
+  "scope": "Saved endpoints and local finite-profile K projection only; dashed segments guide the eye, not unmeasured intermediate model states."
+}

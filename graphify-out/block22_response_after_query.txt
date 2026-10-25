@@ -1,0 +1,52 @@
+Traversal: BFS depth=2 | Start: ['moment_diameter_ratio()', 'finite_profile_projection()', 'producer()'] | 38 nodes found
+
+NODE pathlib [src= loc= community=0]
+NODE json [src= loc= community=0]
+NODE pytest [src= loc= community=93]
+NODE numpy [src= loc= community=0]
+NODE hashlib [src= loc= community=0]
+NODE math [src= loc= community=0]
+NODE argparse [src= loc= community=0]
+NODE struct [src= loc= community=542]
+NODE collections [src= loc= community=20]
+NODE test_analyze_saved_block_response.py [src=harness/tests/test_analyze_saved_block_response.py loc=L1 community=342]
+NODE analyze_saved_block_response.py [src=harness/analyze_saved_block_response.py loc=L1 community=342]
+NODE replay_native_number.py [src=harness/replay_native_number.py loc=L1 community=338]
+NODE analyze() [src=harness/analyze_saved_block_response.py loc=L66 community=342]
+NODE sedimentation_ledger() [src=harness/replay_native_number.py loc=L12 community=338]
+NODE replay_capture() [src=harness/replay_native_number.py loc=L127 community=338]
+NODE finite_profile_projection() [src=harness/analyze_saved_block_response.py loc=L25 community=342]
+NODE f32() [src=harness/replay_native_number.py loc=L8 community=338]
+NODE moment_diameter_ratio() [src=harness/analyze_saved_block_response.py loc=L46 community=342]
+NODE parse_records() [src=harness/replay_native_number.py loc=L69 community=338]
+NODE main() [src=harness/analyze_saved_block_response.py loc=L273 community=342]
+NODE producer() [src=harness/replay_native_number.py loc=L95 community=338]
+NODE _mul() [src=harness/replay_native_number.py loc=L89 community=338]
+NODE replay() [src=harness/replay_native_number.py loc=L217 community=338]
+NODE plot_response() [src=harness/analyze_saved_block_response.py loc=L231 community=342]
+NODE test_projection_retains_channel_layer_order_and_pressure_interfaces() [src=harness/tests/test_analyze_saved_block_response.py loc=L36 community=342]
+NODE _profile_row() [src=harness/analyze_saved_block_response.py loc=L55 community=342]
+NODE test_baseline_tangent_does_not_claim_to_equal_a_finite_nonlinear_change() [src=harness/tests/test_analyze_saved_block_response.py loc=L60 community=342]
+NODE test_cli_cannot_overwrite_the_input_manifest() [src=harness/tests/test_analyze_saved_block_response.py loc=L80 community=342]
+NODE test_executed_reciprocal_predicts_the_saved_unclipped_diameter() [src=harness/tests/test_analyze_saved_block_response.py loc=L49 community=342]
+NODE test_manifest_refuses_changed_target_before_loading_arrays() [src=harness/tests/test_analyze_saved_block_response.py loc=L71 community=342]
+NODE test_actual_saved_block_moments_optics_and_finite_projection() [src=harness/tests/test_analyze_saved_block_response.py loc=L17 community=342]
+NODE test_manifest_hash_gate_rejects_corrupt_data_before_numpy_decode() [src=harness/tests/test_analyze_saved_block_response.py loc=L88 community=342]
+NODE sha() [src=harness/analyze_saved_block_response.py loc=L21 community=342]
+NODE Contract rounded binary64 products, retaining separate field terms. [src=harness/analyze_saved_block_response.py loc=L26 community=342]
+NODE The two source-ordered binary32 producer expressions, before/after min. [src=harness/replay_native_number.py loc=L96 community=338]
+NODE Active, unclipped cloud-slope scaling with the executed f32 reciprocal. [src=harness/analyze_saved_block_response.py loc=L47 community=342]
+NODE Replay one original B512 block's saved cloud/profile/BT response with NumPy.  No [src=harness/analyze_saved_block_response.py loc=L1 community=342]
+NODE Saved-data diagnostics do not require a private physics executable. [src=harness/tests/test_analyze_saved_block_response.py loc=L1 community=342]
+EDGE moment_diameter_ratio() --contains [EXTRACTED]--> analyze_saved_block_response.py
+EDGE moment_diameter_ratio() --calls [EXTRACTED context=call]--> analyze()
+EDGE moment_diameter_ratio() --rationale_for [EXTRACTED]--> Active, unclipped cloud-slope scaling with the executed f32 reciprocal.
+EDGE moment_diameter_ratio() --imports [EXTRACTED context=import]--> test_analyze_saved_block_response.py
+EDGE moment_diameter_ratio() --calls [EXTRACTED context=call]--> test_executed_reciprocal_predicts_the_saved_unclipped_diameter()
+EDGE finite_profile_projection() --contains [EXTRACTED]--> analyze_saved_block_response.py
+EDGE finite_profile_projection() --calls [EXTRACTED context=call]--> analyze()
+EDGE finite_profile_projection() --rationale_for [EXTRACTED]--> Contract rounded binary64 products, retaining separate field terms.
+EDGE finite_profile_projection() --imports [EXTRACTED context=import]--> test_analyze_saved_block_response.py
+EDGE finite_profile_projection() --calls [EXTRACTED context=call]--> test_baseline_tangent_does_not_claim_to_equal_a_finite_nonlinear_change()
+EDGE finite_profile_projection() --calls [EXTRACTED context=call]--> test_projection_retains_channel_layer_order_and_pressure_interfaces()
+... (truncated — 0 more nodes cut by ~1600-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

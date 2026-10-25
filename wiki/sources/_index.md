@@ -5,6 +5,7 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[native-block22-saved-response-2026-10-25]] — Saved full-B block22 K/profile-JVP and alpha-endpoint response decomposition with optical mapping, block ranks, and no-causality limits.
 - [[native-ko7-restricted-confirmation-2026-10-25]] — Actual restricted alpha=1 full-domain confirmation with unchanged support and explicit cost, state/rate delivery, provenance, and physical-scope limits.
 - [[pr421-calibration-dom-review-2026-10-13]] — Future calibration JSON binding and recorded DOM/common-objective qualifications.
 - [[pr420-dom-nine-channel-analysis-2026-10-13]] — Actual finite-budget DOM9 and matched DOM7 analysis, audit and checkpoint with explicit scientific limits.

@@ -19,6 +19,13 @@ cost acceptance, not held-out validation, forecast skill or a native host/RK
 cycle; physical water/energy/number closure and legacy number units remain
 unresolved.
 
+[[sources/native-block22-saved-response-2026-10-25]] is a saved-data-only
+analysis of the original B512 block22 target `(i=167,j=50,k=18)`. Its fixed
+sinusoidal baseline probe JVP is not the candidate descent direction. A
+separate baseline-K projection against the actual finite RTTOV profile change
+is compared with saved BT endpoints; the large residual is a bounded
+nonlinearity diagnostic, not process causality or a local FD/forecast claim.
+
 [[sources/native-ice-factorial-2026-10-23]] completes the one-column ice-only
 factorial and prepares the full native-grid endpoint packet. At that preparation
 stage, no regional KDM execution was claimed; later four-arm execution is

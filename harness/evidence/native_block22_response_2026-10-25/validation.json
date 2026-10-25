@@ -1,0 +1,37 @@
+{
+  "schema": "kdm6.saved_block22_response_validation.v1",
+  "scope": "Public saved-array arithmetic and source review; no new model execution or FD experiment.",
+  "full_analysis_dictionary_replay_equal": true,
+  "focused_tests": {
+    "command": "python3 -m pytest -q harness/tests/test_analyze_saved_block_response.py",
+    "passed": 7,
+    "skipped": 0
+  },
+  "undefined_name_check": {
+    "command": "ruff check --select F821,F822,F823 harness/analyze_saved_block_response.py harness/tests/test_analyze_saved_block_response.py",
+    "passed": true
+  },
+  "environment": {
+    "python": "3.10.11",
+    "numpy": "2.2.6",
+    "pytest": "9.1.1",
+    "platform": "macOS-26.7-arm64-arm-64bit"
+  },
+  "input_npz_sha256": "e62b86a2f9f9113f375db639cb8346ea7d84b2332f09914c6653b5ec992420c8",
+  "analyzer_sha256": "985ad6508154215d0941288f3e5822760d527eb44582b098814823fd4c73bd65",
+  "new_calls": {
+    "KDM": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "review": {
+    "red": "No P1/P2; bounded C++ hash extraction recipe added and public side checked.",
+    "green": "See final review and wiki/graph synthesis; no new run attribution."
+  },
+  "limitations": [
+    "No local small-step native FD at block22.",
+    "No recorded post-update activation intermediate.",
+    "No forecast, optimizer convergence, closed physical budget or historical number-unit certification."
+  ]
+}
