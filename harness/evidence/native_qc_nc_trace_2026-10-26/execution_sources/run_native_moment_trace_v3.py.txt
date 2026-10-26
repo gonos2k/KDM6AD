@@ -1,0 +1,594 @@
+"""Run one of four root-gated owner-bounded V3 moment trace reproductions.
+
+Preparation and preflight are read-only. A separate plan-bound GO receipt and
+``--execute`` are both required before a single one-step host process starts.
+Each invocation runs exactly one case/trace variant and never retries.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+import traceback
+
+EVIDENCE = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_qc_nc_trace_20261026")
+FORWARD = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025")
+WORKTREE = Path("/private/tmp/KDM6AD-qc-nc-trace-20261026")
+CONTROL_PLAN = FORWARD / "plans/no_analysis_control_v18/control_plan.json"
+CONTROL_RESULT = FORWARD / "runs/no_analysis_control_v3/control_result.json"
+ALPHA1_PLAN = FORWARD / "runs/analysis_candidate_v1/candidate_plan.json"
+ALPHA1_RESULT = FORWARD / "runs/analysis_candidate_v1/candidate_result.json"
+RUN_ROOT = EVIDENCE / "runs/four_case_v2"
+BUILD_RECEIPT = EVIDENCE / "build/host_v3/private_host_build_receipt.json"
+PLAN_PATH = EVIDENCE / "plans/four_case_v2/experiment_plan.json"
+PLAN_RECEIPT = EVIDENCE / "plans/four_case_v2/plan_receipt.json"
+AUTHORIZATION_PATH = EVIDENCE / "plans/four_case_v2/root_go.json"
+PRIOR_PLAN_PATH = EVIDENCE / "plans/four_case_v1/experiment_plan.json"
+PRIOR_PLAN_RECEIPT = EVIDENCE / "plans/four_case_v1/plan_receipt.json"
+PRIOR_RUN_ROOT = EVIDENCE / "runs/four_case_v1"
+V2_ENV = "KDM6AD_MOMENT_TRACE_V2_DIR"
+EXPECTED_ENV_MODES = {
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+}
+RUN_IDS = ("control_v3_off", "control_v3_on", "alpha1_v3_off", "alpha1_v3_on")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def write_new(path: Path, value: dict) -> str:
+    payload = (json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    with Path(path).open("xb") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _pin(path: Path) -> dict:
+    original = Path(path).expanduser()
+    if original.is_symlink() or not original.is_file():
+        raise ValueError(f"expected a pinned regular file: {original}")
+    resolved = original.resolve(strict=True)
+    return {"path": str(resolved), "sha256": sha256_file(resolved), "bytes": resolved.stat().st_size}
+
+
+def prepare_plan() -> dict:
+    """Create the frozen V3 plan while preserving the two completed V2 controls."""
+    if PLAN_PATH.exists() or PLAN_PATH.is_symlink() or PLAN_RECEIPT.exists():
+        raise FileExistsError("V3 plan paths must be new; preserve every prior attempt")
+    prior_plan = json.loads(PRIOR_PLAN_PATH.read_text())
+    prior_receipt = json.loads(PRIOR_PLAN_RECEIPT.read_text())
+    prior_off_path = PRIOR_RUN_ROOT / "control_v2_off/run_result.json"
+    prior_on_path = PRIOR_RUN_ROOT / "control_v2_on/run_result.json"
+    prior_off = json.loads(prior_off_path.read_text())
+    prior_on = json.loads(prior_on_path.read_text())
+    control = json.loads(CONTROL_PLAN.read_text())
+    control_result = json.loads(CONTROL_RESULT.read_text())
+    alpha_plan = json.loads(ALPHA1_PLAN.read_text())
+    alpha_result = json.loads(ALPHA1_RESULT.read_text())
+    build = json.loads(BUILD_RECEIPT.read_text())
+    if prior_plan.get("schema") != "kdm6.native_moment_trace_v2_four_case_plan.v1":
+        raise ValueError("V3 rerun requires the frozen original V2 four-case plan")
+    if prior_receipt.get("plan_sha256") != sha256_file(PRIOR_PLAN_PATH):
+        raise ValueError("prior V2 plan receipt no longer matches its plan")
+    for variant, result in (("off", prior_off), ("on", prior_on)):
+        if result.get("status") != "STEP_COMPLETE" or result.get("native_host_steps_completed") != 1:
+            raise ValueError(f"prior V2 control {variant} run is incomplete")
+    if prior_off.get("output_checkpoint_sha256") != prior_on.get("output_checkpoint_sha256"):
+        raise ValueError("prior V2 control off/on outputs are not bitwise identical")
+    if build.get("schema") != "kdm6.native_moment_trace_v2_private_host_build.v1":
+        raise ValueError("unexpected private V2 build receipt")
+    if build.get("status") != "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS":
+        raise ValueError("private V2 host build is incomplete or has physical calls")
+    if any(build.get(key) != 0 for key in ("host_steps", "KDM6_calls", "RTTOV_calls")):
+        raise ValueError("build receipt must show zero physical/model calls")
+    if alpha_result.get("status") != "CANDIDATE_STEP_COMPLETE" or alpha_result.get("native_host_steps_completed") != 1:
+        raise ValueError("historical alpha1 candidate source result is incomplete")
+    if control_result.get("native_host_steps_completed") != 1:
+        raise ValueError("historical control reference result is incomplete")
+    if alpha_plan.get("execution", {}).get("runtime_mode_flags") != EXPECTED_ENV_MODES:
+        raise ValueError("alpha1 source plan uses different KDM runtime modes")
+    if control.get("experiment", {}).get("start_time") != alpha_plan["execution"].get("start_time"):
+        raise ValueError("control and alpha1 origins differ")
+    if control.get("experiment", {}).get("end_time") != alpha_plan["execution"].get("end_time"):
+        raise ValueError("control and alpha1 end times differ")
+
+    origin = alpha_plan["execution"]["origin_checkpoint"]
+    if origin["checkpoint_sha256"] != control["restart"]["checkpoint_sha256"]:
+        raise ValueError("control and alpha1 runs do not share the original 00:00:40 checkpoint")
+    if alpha_plan["execution"]["assets"] != control["inputs"]["case_assets"]:
+        raise ValueError("control and alpha1 runtime asset inventories differ")
+    if alpha_plan["execution"]["namelist_source_sha256"] != control["namelist"]["source_sha256"]:
+        raise ValueError("control and alpha1 namelist source differs")
+
+    source_files = {
+        "run_controller": _pin(Path(__file__)),
+        "native_live_stepper": _pin(WORKTREE / "harness/native_live_stepper.py"),
+        "native_host_transition": _pin(WORKTREE / "harness/native_host_transition.py"),
+        "native_analysis_control": _pin(WORKTREE / "harness/native_analysis_control.py"),
+        "native_analysis_increment": _pin(WORKTREE / "harness/native_analysis_increment.py"),
+        "native_satellite_objective": _pin(WORKTREE / "harness/native_satellite_objective.py"),
+        "native_step_control": _pin(WORKTREE / "harness/native_step_control.py"),
+        "run_ss_case": _pin(WORKTREE / "harness/run_ss_case.py"),
+        "moment_trace_module": _pin(WORKTREE / "harness/native_trace/kdm6ad_moment_trace_v2.f90"),
+        "moment_trace_overlay": _pin(WORKTREE / "harness/native_moment_trace_overlay.py"),
+        "moment_trace_reader": _pin(WORKTREE / "harness/native_moment_trace_records.py"),
+    }
+    histories = {
+        "control_plan": _pin(CONTROL_PLAN),
+        "control_result": _pin(CONTROL_RESULT),
+        "alpha1_plan": _pin(ALPHA1_PLAN),
+        "alpha1_result": _pin(ALPHA1_RESULT),
+        "build_receipt": _pin(BUILD_RECEIPT),
+        "prior_v2_plan": _pin(PRIOR_PLAN_PATH),
+        "prior_v2_receipt": _pin(PRIOR_PLAN_RECEIPT),
+        "prior_control_off_result": _pin(prior_off_path),
+        "prior_control_on_result": _pin(prior_on_path),
+        "prior_control_on_host_trace": _pin(Path(prior_on["v2_trace_files"]["host.hex"]["path"])),
+        "prior_control_on_kernel_trace": _pin(Path(prior_on["v2_trace_files"]["kernel.hex"]["path"])),
+        "original_checkpoint": _pin(Path(origin["checkpoint_path"])),
+        "control_ready_checkpoint": _pin(Path(alpha_plan["pairing"]["control_ready_checkpoint"])),
+        "accepted_z": _pin(Path(alpha_plan["proposal"]["accepted_z_artifact"])),
+        "candidate_metadata": _pin(Path(alpha_plan["proposal"]["candidate_metadata"])),
+        "prepared_prediction": _pin(Path(alpha_plan["prepared_prediction"]["artifact"])),
+    }
+    if histories["original_checkpoint"]["sha256"] != origin["checkpoint_sha256"]:
+        raise ValueError("original restart hash differs from the alpha1 source plan")
+    if histories["control_ready_checkpoint"]["sha256"] != alpha_plan["pairing"]["control_ready_sha256"]:
+        raise ValueError("historical control READY40 differs from the paired plan pin")
+    if histories["accepted_z"]["sha256"] != alpha_plan["proposal"]["accepted_z_sha256"]:
+        raise ValueError("accepted direction artifact changed")
+    if histories["candidate_metadata"]["sha256"] != alpha_plan["proposal"]["candidate_metadata_sha256"]:
+        raise ValueError("restricted candidate metadata changed")
+    if histories["prepared_prediction"]["sha256"] != alpha_plan["prepared_prediction"]["artifact_sha256"]:
+        raise ValueError("alpha1 prepared wire prediction changed")
+
+    executable = _pin(Path(build["private_executable"]))
+    library = _pin(Path(build["capi_dso_runtime_copy"]))
+    if executable["sha256"] != build["private_executable_sha256"]:
+        raise ValueError("private V2 executable hash differs from build receipt")
+    if library["sha256"] != build["capi_dso_runtime_copy_sha256"]:
+        raise ValueError("private V2 DSO hash differs from build receipt")
+    if build.get("fortran_kdm6_ffp_contract_off") is not True:
+        raise ValueError("V2 Fortran KDM wrapper was not built with -ffp-contract=off")
+    if build.get("solve_em_original_compile_flags_preserved") is not True:
+        raise ValueError("solve_em compile flags differ from the historical executed source")
+    module_path = (WORKTREE / "harness/native_trace/kdm6ad_moment_trace_v2.f90").resolve()
+    module_sha = sha256_file(module_path)
+    if build.get("fortran_sources", {}).get(str(module_path), {}).get("sha256") != module_sha:
+        raise ValueError("V3 build receipt does not bind the owner-k-bounds module source")
+
+    cases = []
+    for case in ("control", "alpha1"):
+        for variant in ("off", "on"):
+            run_id = f"{case}_v3_{variant}"
+            cases.append({
+                "run_id": run_id,
+                "case": case,
+                "v2_trace": variant,
+                "output": str(RUN_ROOT / run_id),
+                "trace_directory": str(RUN_ROOT / run_id / "v2_trace") if variant == "on" else None,
+            })
+    plan = {
+        "schema": "kdm6.native_moment_trace_v3_four_case_plan.v1",
+        "status": "PREPARED_AWAITING_REVIEW_AND_ROOT_EXECUTION_GATE",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "purpose": "Repeat caller/wrapper/kernel/cleanup measurements with finish-stage levels bounded by each target's owning wrapper call.",
+        "trace_producer_revision": {
+            "module_source_sha256": module_sha,
+            "owner_k_bounds_saved_per_target": True,
+            "finish_stage_k_bounds": "intersection of finish caller range and target owner's wrapper kts/kte",
+            "prior_v2_sources_and_runs_preserved": True,
+        },
+        "build": {
+            "receipt": histories["build_receipt"],
+            "executable": executable,
+            "dso": library,
+            "actual_ice_mode": "norm_actual",
+            "actual_qr_transport": "actual_departure",
+        },
+        "reference_source": {"control_plan": histories["control_plan"],
+                             "control_result": histories["control_result"],
+                             "alpha1_plan": histories["alpha1_plan"],
+                             "alpha1_result": histories["alpha1_result"],
+                             "prior_v2_plan": histories["prior_v2_plan"]},
+        "prior_completed_steps": {
+            "count": 2,
+            "control_off_result": histories["prior_control_off_result"],
+            "control_on_result": histories["prior_control_on_result"],
+            "off_on_output_checkpoint_sha256": prior_off["output_checkpoint_sha256"],
+            "prior_on_trace_host": histories["prior_control_on_host_trace"],
+            "prior_on_trace_kernel": histories["prior_control_on_kernel_trace"],
+            "interpretation": "Two prior control host steps are retained and counted. Their output checkpoints match; the prior on trace included finish caller k=40 outside the owning wrapper mass-level range, so it is not complete moment-stage evidence.",
+        },
+        "historical_inputs": histories,
+        "private_sources": source_files,
+        "runtime": {
+            "origin": origin,
+            "start_time": alpha_plan["execution"]["start_time"],
+            "end_time": alpha_plan["execution"]["end_time"],
+            "dt_seconds": 20,
+            "steps": 1,
+            "ranks": 1,
+            "threads": 1,
+            "control_family": "ANALYSIS_TQ",
+            "radiation_every_step": True,
+            "trace_column_v1_i_j": alpha_plan["execution"]["trace_column_i1_j1"],
+            "mode_flags": EXPECTED_ENV_MODES,
+            "namelist_source_path": alpha_plan["execution"]["namelist_source_path"],
+            "namelist_source_sha256": alpha_plan["execution"]["namelist_source_sha256"],
+            "assets": alpha_plan["execution"]["assets"],
+            "environment_without_v2_trace": alpha_plan["execution"]["environment"],
+            "native_runtime_parameters": alpha_plan["execution"]["verified_native_runtime_parameters"],
+        },
+        "analysis": {
+            "control_case": "empty ANALYSIS_TQ sequence; exact identity before full physics",
+            "alpha1_case": "recompute the alpha=1.0 wire from each run's own READY40; require exact match to the pinned prior candidate/wire prediction before sending",
+            "proposal_artifact_sha256": alpha_plan["proposal"]["accepted_z_array_sha256"],
+            "expected_applied_points": 561407,
+            "expected_applied_components": 855443,
+            "scientific_status": "historical alpha1 proposal; prior fixed-M support loss remains known, so its outcome is diagnostic and is not admitted as a valid update",
+        },
+        "paired_gate": {
+            "each_run_captures_own_ready40": True,
+            "compare_all_serialized_ready_fields_to_historical_control_before_advance": True,
+            "trace_on_off_expected_final_checkpoint_bitwise_equal_within_case": True,
+            "trace_on_requires_host_and_kernel_files": True,
+            "trace_off_requires_v2_directory_variable_absent": True,
+        },
+        "budget": {
+            "host_steps_max": 4,
+            "prior_completed_host_steps": 2,
+            "total_if_four_v3_steps_complete": 6,
+            "native_kdm_wrapper_entries_expected_per_step": 2,
+            "external_kdm_calls": 0,
+            "RTTOV_calls": 0,
+            "optimizer_calls": 0,
+            "conditional_extension": "At most two alpha0.25 off/on steps may follow only if the corrected four-case comparison leaves witness 2 unexplained and root approves; that would make eight campaign steps including the two preserved prior controls.",
+        },
+        "cases": cases,
+        "limits": [
+            "The 40-to-60 s result is a restart-defined forward response, not continuous simulation from 00:00:00.",
+            "Call/tile dimensions are recorded from the runtime trace; B512 observation chunks do not imply native WRF tile geometry.",
+            "The trace is value-only and does not alter the operational ABI or physics formulae.",
+            "No trial is a full-host adjoint, accepted optimizer step, or forecast-skill claim.",
+        ],
+    }
+    PLAN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RUN_ROOT.mkdir(parents=True, exist_ok=True)
+    plan_sha = write_new(PLAN_PATH, plan)
+    receipt = {
+        "schema": "kdm6.native_moment_trace_v3_four_case_plan_receipt.v1",
+        "status": "V3_PLAN_NOT_EXECUTED",
+        "plan_path": str(PLAN_PATH),
+        "plan_sha256": plan_sha,
+        "controller_sha256": sha256_file(Path(__file__)),
+        "host_steps": 0,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+    }
+    receipt_sha = write_new(PLAN_RECEIPT, receipt)
+    return {"plan": str(PLAN_PATH), "plan_sha256": plan_sha,
+            "receipt": str(PLAN_RECEIPT), "receipt_sha256": receipt_sha,
+            "status": receipt["status"]}
+
+
+def load_and_verify_plan(plan_path: Path) -> tuple[dict, dict]:
+    plan_path = Path(plan_path).resolve(strict=True)
+    receipt_path = plan_path.with_name("plan_receipt.json")
+    plan = json.loads(plan_path.read_text())
+    receipt = json.loads(receipt_path.read_text())
+    if receipt.get("plan_sha256") != sha256_file(plan_path):
+        raise ValueError("plan receipt does not bind the frozen plan")
+    if receipt.get("controller_sha256") != sha256_file(Path(__file__)):
+        raise ValueError("run controller changed after plan preparation")
+    if plan.get("schema") != "kdm6.native_moment_trace_v3_four_case_plan.v1":
+        raise ValueError("unexpected V3 four-case plan schema")
+    if plan.get("status") != "PREPARED_AWAITING_REVIEW_AND_ROOT_EXECUTION_GATE":
+        raise ValueError("plan status is not execution eligible")
+    prior_v2 = plan["prior_completed_steps"]
+    if prior_v2.get("count") != 2:
+        raise ValueError("V3 campaign must preserve exactly two prior control steps")
+    prior_results = [
+        json.loads(Path(plan["historical_inputs"][name]["path"]).read_text())
+        for name in ("prior_control_off_result", "prior_control_on_result")
+    ]
+    if any(result.get("output_checkpoint_sha256") != prior_v2["off_on_output_checkpoint_sha256"]
+           for result in prior_results):
+        raise ValueError("preserved V2 control results no longer match their paired checkpoint pin")
+    for group in ("private_sources", "historical_inputs"):
+        for label, item in plan[group].items():
+            path = Path(item["path"])
+            if not path.is_file() or path.is_symlink() or sha256_file(path) != item["sha256"]:
+                raise ValueError(f"pinned {group} item changed: {label}")
+    for asset in plan["runtime"]["assets"]:
+        path = Path(asset["path"])
+        if not path.is_file() or path.is_symlink() or path.stat().st_size != asset["bytes"]:
+            raise ValueError(f"runtime asset missing/changed in size: {asset['case_basename']}")
+        if sha256_file(path) != asset["sha256"]:
+            raise ValueError(f"runtime asset hash changed: {asset['case_basename']}")
+    for name, path_key, hash_key in (
+        ("executable", "path", "sha256"), ("dso", "path", "sha256"),
+    ):
+        pin = plan["build"][name]
+        path = Path(pin[path_key])
+        if not path.is_file() or path.is_symlink() or sha256_file(path) != pin[hash_key]:
+            raise ValueError(f"V2 build {name} changed after plan preparation")
+    if plan["runtime"]["mode_flags"] != EXPECTED_ENV_MODES:
+        raise ValueError("KDM mode selectors differ from the frozen plan")
+    return plan, receipt
+
+
+def _checkpoint_state(checkpoint) -> object:
+    import netCDF4
+    import numpy as np
+
+    dims = dict(checkpoint.schema[0])
+    nx, ny, nz = (dims[name] for name in ("west_east", "south_north", "bottom_top"))
+    with netCDF4.Dataset(checkpoint.file.path) as dataset:
+        dataset.set_auto_maskandscale(False)
+        fields = []
+        for name in ("THM_2", "QVAPOR"):
+            variable = dataset[name]
+            if (variable.dimensions != ("Time", "bottom_top", "south_north", "west_east")
+                    or np.dtype(variable.dtype) != np.dtype(np.float32)
+                    or variable.shape != (1, nz, ny, nx)):
+                raise ValueError(f"READY40 has invalid {name} layout")
+            values = np.asarray(variable[0])
+            if not np.isfinite(values).all():
+                raise ValueError(f"READY40 {name} contains nonfinite values")
+            fields.append(np.ascontiguousarray(values.transpose(1, 2, 0)).reshape(ny * nx, nz).astype(np.float64))
+    return np.stack(fields)
+
+
+def _ready_comparison(current, reference_path: Path, reference_sha: str) -> dict:
+    import netCDF4
+    from harness.native_host_transition import NativeCheckpoint
+    from harness.native_replay_compare import compare_frames
+
+    reference = NativeCheckpoint.capture(reference_path, expected_time="2025-07-19_00:00:40", expected_itimestep=2)
+    if reference.file.sha256 != reference_sha:
+        raise ValueError("historical control READY40 hash differs from plan")
+    if current.checkpoint.schema != reference.schema:
+        raise ValueError("new READY40 structure differs from historical control")
+    with netCDF4.Dataset(reference_path) as baseline, netCDF4.Dataset(current.checkpoint.file.path) as candidate:
+        baseline.set_auto_maskandscale(False)
+        candidate.set_auto_maskandscale(False)
+        comparison = compare_frames(baseline, candidate, 0, 0, "2025-07-19_00:00:40")
+    comparison["new_ready_sha256"] = current.checkpoint.file.sha256
+    comparison["reference_ready_sha256"] = reference_sha
+    if comparison.get("raw_bitwise_equal") is not True:
+        raise ValueError("new READY40 differs from the reference control checkpoint")
+    return comparison
+
+
+def verify_root_go(path: Path, *, plan_sha: str, run_id: str) -> dict:
+    gate = json.loads(Path(path).read_text())
+    if (gate.get("schema") != "kdm6.native_moment_trace_v2_execution_authorization.v1"
+            or gate.get("status") != "APPROVED"
+            or gate.get("plan_sha256") != plan_sha
+            or run_id not in gate.get("approved_run_ids", [])):
+        raise RuntimeError("no root GO receipt is bound to this plan and run id")
+    return {"path": str(Path(path).resolve(strict=True)), "sha256": sha256_file(Path(path)),
+            "status": gate["status"], "approved_run_id": run_id}
+
+
+def execute_one(plan_path: Path, run_id: str, authorization_path: Path) -> dict:
+    plan, plan_receipt = load_and_verify_plan(plan_path)
+    case = next((row for row in plan["cases"] if row["run_id"] == run_id), None)
+    if case is None:
+        raise ValueError(f"run id is not in the plan: {run_id}")
+    authorization = verify_root_go(authorization_path,
+                                   plan_sha=plan_receipt["plan_sha256"], run_id=run_id)
+    output = Path(case["output"])
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"run output must be new: {output}")
+    if not output.parent.is_dir():
+        raise FileNotFoundError(f"run output parent is missing: {output.parent}")
+    free = shutil.disk_usage(output.parent).free
+    if free < 5 * (1 << 30):
+        raise OSError(f"less than 5 GiB free before host run: {free} bytes")
+
+    sys.path.insert(0, str(WORKTREE))
+    from harness.native_host_transition import NativeCheckpoint, NativeInputs, PinnedFile
+    from harness.native_live_stepper import NativeLiveStepper
+
+    runtime = plan["runtime"]
+    environment = dict(runtime["environment_without_v2_trace"])
+    if V2_ENV in environment:
+        raise ValueError("base environment already contains V2 trace variable")
+    output.mkdir(parents=True, exist_ok=False)
+    if case["v2_trace"] == "on":
+        trace_directory = Path(case["trace_directory"])
+        trace_directory.mkdir(parents=True, exist_ok=False)
+        environment[V2_ENV] = str(trace_directory)
+    else:
+        trace_directory = None
+        environment.pop(V2_ENV, None)
+
+    initial = NativeCheckpoint.capture(
+        runtime["origin"]["checkpoint_path"], expected_time=runtime["start_time"],
+        expected_itimestep=runtime["origin"]["itimestep"],
+    )
+    if initial.file.sha256 != runtime["origin"]["checkpoint_sha256"]:
+        raise ValueError("original 00:00:40 checkpoint changed during launch validation")
+    external = NativeInputs(
+        namelist=PinnedFile.bind(runtime["namelist_source_path"]),
+        assets=tuple((row["case_basename"], PinnedFile.bind(row["path"]))
+                     for row in runtime["assets"]),
+        environment=tuple(sorted(environment.items())),
+    )
+    external.verify()
+    executable = PinnedFile.bind(plan["build"]["executable"]["path"])
+    library = PinnedFile.bind(plan["build"]["dso"]["path"])
+    runner = PinnedFile.bind(WORKTREE / "harness/run_ss_case.py")
+
+    write_new(output / "experiment_plan.json", plan)
+    write_new(output / "launch_receipt.json", {
+        "schema": "kdm6.native_moment_trace_v2_single_run_launch.v1",
+        "status": "AUTHORIZED_SINGLE_HOST_STEP",
+        "run_id": run_id,
+        "plan_sha256": plan_receipt["plan_sha256"],
+        "authorization": authorization,
+        "trace_mode": case["v2_trace"],
+        "execution_environment_sha256": hashlib.sha256(
+            json.dumps(sorted(environment.items()), separators=(",", ":")).encode()
+        ).hexdigest(),
+        "free_disk_bytes_at_launch": free,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "host_steps_requested": 1,
+        "KDM6_wrapper_entries_expected": 2,
+        "RTTOV_calls": 0,
+    })
+
+    stepper = None
+    ready = None
+    prepared = None
+    error = None
+    error_traceback = None
+    try:
+        stepper = NativeLiveStepper(
+            initial=initial, external=external, executable=executable, library=library,
+            runner=runner, work_root=output / "live_process", steps=1, dt_seconds=20,
+            trace_column=tuple(runtime["trace_column_v1_i_j"]),
+            radiation_every_step=True, control_family="ANALYSIS_TQ",
+            capture_ready_checkpoint=True,
+        )
+        with stepper:
+            current = stepper.current
+            if current is None or current.ready is None:
+                raise RuntimeError("live host did not expose an initial READY40")
+            ready = _ready_comparison(
+                current,
+                Path(plan["historical_inputs"]["control_ready_checkpoint"]["path"]),
+                plan["historical_inputs"]["control_ready_checkpoint"]["sha256"],
+            )
+            write_new(output / "ready_comparison.json", ready)
+            if case["case"] == "control":
+                result = stepper.advance(current, ())
+                command_counts = {"applied_rows": 0, "applied_components": 0}
+            else:
+                import numpy as np
+                from harness.native_analysis_increment import bind_satellite_control
+                from harness.native_satellite_objective import prepare_representable_control
+
+                with np.load(plan["historical_inputs"]["accepted_z"]["path"], allow_pickle=False) as archive:
+                    z = np.asarray(archive["z"])
+                prepared = prepare_representable_control(
+                    _checkpoint_state(current.checkpoint), z, z != 0.0,
+                    horizontal_shape=(282, 234),
+                    background_checkpoint_id=current.checkpoint.file.sha256,
+                )
+                with np.load(plan["historical_inputs"]["prepared_prediction"]["path"], allow_pickle=False) as archive:
+                    if archive.files != ["candidate", "wire_delta"]:
+                        raise ValueError("historical alpha1 prediction artifact schema differs")
+                    predicted_candidate = np.asarray(archive["candidate"])
+                    predicted_wire = np.asarray(archive["wire_delta"])
+                if (prepared["candidate"].tobytes() != predicted_candidate.tobytes()
+                        or prepared["wire_delta"].tobytes() != predicted_wire.tobytes()):
+                    raise ValueError("READY40-derived alpha1 wire differs from the prior pinned prediction")
+                if prepared["counts"].get("applied_points") != plan["analysis"]["expected_applied_points"]:
+                    raise ValueError("alpha1 applied point count differs from the source-bound plan")
+                if prepared["counts"].get("applied_components") != plan["analysis"]["expected_applied_components"]:
+                    raise ValueError("alpha1 applied component count differs from the source-bound plan")
+                increment = bind_satellite_control(
+                    current.checkpoint, prepared,
+                    posterior_checkpoint_id=(
+                        "historical PR448 microphysics-only proposal; alpha=1.0; "
+                        "no full-host acceptance"
+                    ),
+                )
+                command_counts = {
+                    "applied_rows": int(prepared["counts"]["applied_points"]),
+                    "applied_components": int(prepared["counts"]["applied_components"]),
+                    "wire_delta_sha256": hashlib.sha256(prepared["wire_delta"].tobytes()).hexdigest(),
+                    "candidate_sha256": hashlib.sha256(prepared["candidate"].tobytes()).hexdigest(),
+                }
+                result = stepper.advance(current, increment)
+            if result.checkpoint.time != runtime["end_time"] or result.checkpoint.itimestep != 3:
+                raise RuntimeError("host run ended at an unexpected time or timestep")
+    except BaseException as exc:
+        error = exc
+        error_traceback = traceback.format_exc()
+
+    stepper_record = None if stepper is None else stepper._record
+    trace_files = {}
+    if trace_directory is not None:
+        for name in ("host.hex", "kernel.hex"):
+            path = trace_directory / name
+            trace_files[name] = ({"path": str(path), "sha256": sha256_file(path), "bytes": path.stat().st_size}
+                                 if path.is_file() else None)
+    record = {
+        "schema": "kdm6.native_moment_trace_v2_single_run_result.v1",
+        "status": "FAILED" if error is not None else "STEP_COMPLETE",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id": run_id,
+        "plan_sha256": plan_receipt["plan_sha256"],
+        "controller_sha256": sha256_file(Path(__file__)),
+        "error": None if error is None else f"{type(error).__name__}: {error}",
+        "traceback": error_traceback,
+        "ready_comparison": ready,
+        "command_counts": command_counts if error is None else None,
+        "live_session_record": stepper_record,
+        "native_host_steps_completed": 0 if stepper_record is None else sum(
+            item.get("output_time") is not None for item in stepper_record.get("controls", [])
+        ),
+        "analysis_wire_sha256": None if not stepper_record or not stepper_record.get("controls") else
+            stepper_record["controls"][-1].get("command_sha256"),
+        "v2_trace_directory": None if trace_directory is None else str(trace_directory),
+        "v2_trace_files": trace_files,
+        "v1_trace": None if stepper_record is None else stepper_record.get("native_trace"),
+        "output_time": None if stepper_record is None or not stepper_record.get("controls") else
+            stepper_record["controls"][-1].get("output_time"),
+        "output_checkpoint_sha256": None if stepper_record is None or not stepper_record.get("controls") else
+            stepper_record["controls"][-1].get("output_checkpoint_sha256"),
+        "model_calls": {"host_steps_expected": 1, "KDM6_wrapper_entries_expected": 2,
+                        "RTTOV": 0, "optimizer": 0},
+    }
+    write_new(output / "run_result.json", record)
+    if error is not None:
+        raise error
+    return record
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--prepare", action="store_true", help="freeze a new four-run plan from the private build receipt")
+    parser.add_argument("--plan", type=Path, default=PLAN_PATH)
+    parser.add_argument("--run-id", choices=RUN_IDS)
+    parser.add_argument("--authorization", type=Path, default=AUTHORIZATION_PATH)
+    parser.add_argument("--execute", action="store_true", help="run exactly one case; requires root GO receipt")
+    args = parser.parse_args(argv)
+    if args.prepare:
+        print(json.dumps(prepare_plan(), sort_keys=True))
+        return 0
+    if not args.run_id:
+        parser.error("--run-id is required when --prepare is not set")
+    if not args.execute:
+        _, receipt = load_and_verify_plan(args.plan)
+        print(json.dumps({"status": "PREFLIGHT_PASS_NOT_EXECUTED", "run_id": args.run_id,
+                          "plan_sha256": receipt["plan_sha256"], "host_steps": 0,
+                          "KDM6_calls": 0, "RTTOV_calls": 0}, sort_keys=True))
+        return 0
+    result = execute_one(args.plan, args.run_id, args.authorization)
+    print(json.dumps({"status": result["status"], "run_id": args.run_id,
+                      "host_steps": result["native_host_steps_completed"],
+                      "output_checkpoint_sha256": result["output_checkpoint_sha256"]}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

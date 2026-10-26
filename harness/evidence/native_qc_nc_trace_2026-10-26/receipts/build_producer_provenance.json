@@ -1,0 +1,32 @@
+{
+  "builder_receipt_binding": {
+    "host_v2_receipt": {
+      "builder_script_path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build_private_host_v2.py",
+      "builder_script_sha256": "19f2e4f0ca5acd36e27080ab563d7c5c67001a6e35f6794f2231300143219992",
+      "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/private_host_build_receipt.json",
+      "receipt_contains_builder_path_or_hash": false,
+      "sha256": "03021f93b8e9642b7605de94d29b120c7785bb22e937786022d4bc8fdbbf6698"
+    },
+    "host_v3_receipt": {
+      "builder_script_path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build_private_host_v3_module_only.py",
+      "builder_script_sha256": "cdce4e1603f986bb243f4b6bfa929bbcc3596b3ae005a01b51f91c0517d238b0",
+      "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/private_host_build_receipt.json",
+      "receipt_contains_builder_path_or_hash": false,
+      "sha256": "87830262677455577b5cd66b534a2ae7c38c2909ec0c0abb035101dd7698c9c1"
+    }
+  },
+  "published_v3_builder_copy": {
+    "byte_identical_to_builder_source": true,
+    "path": "execution_sources/build_private_host_v3_module_only.py.txt",
+    "sha256": "cdce4e1603f986bb243f4b6bfa929bbcc3596b3ae005a01b51f91c0517d238b0"
+  },
+  "schema": "kdm6.native_moment_trace_build_producer_provenance.v1",
+  "scope": "Publication supplement. Both original build receipts were created without a builder script path/hash field.",
+  "solve_source_reconstruction_audit": {
+    "original_path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/source_reconstruction_comparison.json",
+    "original_sha256": "a60c304da40bc168963cccf08513d1cf305d38b1cef18436cf0f191b8caee562",
+    "published_redacted_copy_path": "receipts/solve_source_reconstruction_redacted.json",
+    "published_redacted_copy_sha256": "a60c304da40bc168963cccf08513d1cf305d38b1cef18436cf0f191b8caee562",
+    "redaction": "Canonical root and public worktree prefixes replaced with ${CANONICAL_ROOT} and ${PUBLIC_WORKTREE}."
+  }
+}

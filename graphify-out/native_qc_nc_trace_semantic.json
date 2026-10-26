@@ -1,0 +1,600 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Current native QC/NC boundary evidence spans corrected control, alpha1, and alpha0.25 off/on full-physics pairs. Initial V2 K40 traces remain separately preserved/rejected. The evidence localizes saved state boundaries only; alpha0.5, candidate costs, raw NC units and causal process attribution are outside this trace packet.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "wiki": {
+      "path": "wiki/sources/native-qc-nc-boundary-2026-10-26.md",
+      "bytes": 5697,
+      "sha256": "6b94000eb2c35e9d4297f1f1d7cfcc5ae38f0d3d879c016f21586c472659554a"
+    },
+    "contract": {
+      "path": "docs/NATIVE_MOMENT_TRACE_V2.md",
+      "bytes": 6365,
+      "sha256": "7cd99df808127c49f282c264623309f7f1cff9df5e5b43594f77747b87e86e19"
+    },
+    "checklist": {
+      "path": "docs/NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md",
+      "bytes": 4602,
+      "sha256": "f899dd13e7c4d867269420be2823894dc10e9aa4f03c774518a0d3f6b928c14a"
+    },
+    "trace_plan": {
+      "path": "docs/NATIVE_QC_NC_TRACE_PLAN_20261026.md",
+      "bytes": 9226,
+      "sha256": "17517c736a14a77bfebdf9168edce73f6605c000d7238f6c5618922e8435bd39"
+    },
+    "history_readme": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/README.md",
+      "bytes": 3451,
+      "sha256": "40bfbb667611664df6391de5f6c18850a7c475259618caee434d247ad2e89926"
+    },
+    "input_manifest": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/input_manifest.json",
+      "bytes": 3074,
+      "sha256": "7580bae179b1c13de4aea7a3536d962d80c02a703937e22b6bc618f4c114aae7"
+    },
+    "analysis": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "bytes": 872218,
+      "sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639"
+    },
+    "ledger": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "bytes": 23192,
+      "sha256": "2913a6bbfbafd7ae9b9fdfb28eee46f732ca5f5179f62d9f9cb0e6227a687575"
+    },
+    "noninterference": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/noninterference.json",
+      "bytes": 2827,
+      "sha256": "14b7bea7d1ffe69f9fbd6fc3abf3f44eaf0b0cb429b7ec24fa6ed2f04245fc42"
+    },
+    "v2_build": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/host_v2_build.json",
+      "bytes": 96583,
+      "sha256": "7f434b557f5813e5c4e40bd99459bca6bb7bce61ab981731f8a0c8a7cc6a19bd"
+    },
+    "v3_build": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/host_v3_build.json",
+      "bytes": 98988,
+      "sha256": "23965e2c8cfe776a3ba4d49aaa893c819b1e7a0df3df5dd871dcf0c880531793"
+    },
+    "reader": {
+      "path": "harness/native_moment_trace_records.py",
+      "bytes": 20082,
+      "sha256": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944"
+    },
+    "analyzer": {
+      "path": "harness/analyze_native_moment_trace.py",
+      "bytes": 18691,
+      "sha256": "4f87a59c2c05aeca37846f25f63f2fa70b6ddbd7d77994018ed3200e1b5fbfec"
+    },
+    "extractor": {
+      "path": "harness/extract_native_moment_context.py",
+      "bytes": 3857,
+      "sha256": "dd953d587abf7a5ec937c7d0879550648510e1160cf7fcac92ba6b3eeb76ffd3"
+    },
+    "fortran_writer": {
+      "path": "harness/native_trace/kdm6ad_moment_trace_v2.f90",
+      "bytes": 7820,
+      "sha256": "7c17514726e733901645d5a79fd4727fea7721f8d1033a81b3ce60a0b342a224"
+    },
+    "cxx_header": {
+      "path": "harness/native_trace/native_moment_trace_v2.hpp",
+      "bytes": 4412,
+      "sha256": "659256af332e8747febeb8bb0363854ff0b797a92099dbabc82b2a99a1bc7dfd"
+    },
+    "cxx_overlay": {
+      "path": "harness/native_moment_trace_cpp_overlay.py",
+      "bytes": 1885,
+      "sha256": "3c74f5815ca06208a7f304699ea6fe899b45fb748d65a93b917f0a3d896f5ddf"
+    },
+    "fortran_overlay": {
+      "path": "harness/native_moment_trace_overlay.py",
+      "bytes": 10631,
+      "sha256": "6c84cd4135812a8634d73a09e2cf29a6d9500314523bdea2cdb2824825705d94"
+    },
+    "H1_report": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/REPORT.md",
+      "bytes": 8461,
+      "sha256": "24d7777be2530c495ade4931e3d9a0caa454a3876f2d8bd201aca93305ebe01b"
+    },
+    "control_v3_on_context_source": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "9d3a08c3123a2a84fe665ee60b7b7ea4fea9364aa97fe9fc0e0be8c43c36601a"
+    },
+    "control_v3_on_context": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/context.npz",
+      "bytes": 1020,
+      "sha256": "3bc406f45a77a138b6099cae08e94d4545fc1533404723948f2c86f1d30e234a"
+    },
+    "control_v3_on_host": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/host.hex",
+      "bytes": 71585,
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    "control_v3_on_kernel": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    "alpha1_v3_on_context_source": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "a0ca720526d73e7d2904e83ffe5b0139eb6e1f0a06efa29f86558af28be58292"
+    },
+    "alpha1_v3_on_context": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/context.npz",
+      "bytes": 1025,
+      "sha256": "87ed7bbdf56d2951a3ec2d0ea08301c81f4b88221fff207a33114b6322dd2ac4"
+    },
+    "alpha1_v3_on_host": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/host.hex",
+      "bytes": 71585,
+      "sha256": "9be7af8e92a72da5ac9015a17dc4ac47ac7df3685a21c0900768270066928fa9"
+    },
+    "alpha1_v3_on_kernel": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "79f324eb82023dc86b104af3e94a9dc7bf84872852b82c28e54ccdd55fbffb9a"
+    },
+    "alpha025_v2_on_context_source": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "67d24543b60992940199d05259300918383fe6f21515fb6039bcd07f3d6db64e"
+    },
+    "alpha025_v2_on_context": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/context.npz",
+      "bytes": 1014,
+      "sha256": "35f12b1f66f559970a5fc71a1f79dbbbc81440a7f4b3ccb989c4d5fd9016995a"
+    },
+    "alpha025_v2_on_host": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/host.hex",
+      "bytes": 71585,
+      "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+    },
+    "alpha025_v2_on_kernel": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+    },
+    "progress": {
+      "path": "docs/NATIVE_ANALYSIS_PROGRESS_20261026.md",
+      "bytes": 3387,
+      "sha256": "7b848d7426f6a1715d0efe526e48cbcae877c313016e169c21b1aa5c22b7f96a"
+    },
+    "packet_readme": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/README.md",
+      "bytes": 7119,
+      "sha256": "cae11d3cba33cd08ec251c5d2cc3e8a18457d30e477f680259b3e78f656f43cf"
+    },
+    "build_provenance": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/build_producer_provenance.json",
+      "bytes": 2174,
+      "sha256": "76aa0334a5bd74628248deaed3d45f4fc1ae953b7ffd70d43042b5e71ac19e13"
+    },
+    "builder_v3_copy": {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/build_private_host_v3_module_only.py.txt",
+      "bytes": 15202,
+      "sha256": "cdce4e1603f986bb243f4b6bfa929bbcc3596b3ae005a01b51f91c0517d238b0"
+    },
+    "wiki_index": {
+      "path": "wiki/index.md",
+      "bytes": 15721,
+      "sha256": "11900724de73f4a2b1af52ab2f88567f91a14a8f2216c2405e67f4ef1f72f4e8"
+    },
+    "wiki_log": {
+      "path": "wiki/log.md",
+      "bytes": 59138,
+      "sha256": "ed7781ff43a795579ec890e62da5b1a92115dd4942c53ce1339a7cf7fc02e9ac"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qc_nc_trace_v2_contract",
+      "label": "V2 contract separates host REAL4 stages from value-only kernel FP64 input/output and solve_em caller finish boundaries",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_MOMENT_TRACE_V2.md",
+      "source_location": "Actual state and call identity; Stage table; Execution and interpretation gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "V1_trace_unchanged": true,
+      "one_MPI_rank_one_thread": true,
+      "source_sha256": "7cd99df808127c49f282c264623309f7f1cff9df5e5b43594f77747b87e86e19"
+    },
+    {
+      "id": "native_qc_nc_corrected_three_case_campaign",
+      "label": "Three corrected control/alpha1/alpha0.25 off/on pairs completed with identical full endpoints within each pair",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "source_location": "/rows; /actual_host_steps_completed; /actual_KDM_wrapper_entries; /initial_trace_scope_rejection",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "corrected_cases": [
+        "control",
+        "alpha1",
+        "alpha0.25"
+      ],
+      "corrected_steps": 6,
+      "initial_V2_control_steps_preserved": 2,
+      "total_actual_host_steps": 8,
+      "actual_KDM_wrapper_entries": 16,
+      "RTTOV_calls": 0,
+      "optimizer_calls": 0,
+      "accepted_full_host_updates": 0,
+      "corrected_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "corrected_DSO_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "alpha0p5_trace_included": false,
+      "source_sha256": "2913a6bbfbafd7ae9b9fdfb28eee46f732ca5f5179f62d9f9cb0e6227a687575",
+      "execution_ledger_sha256": "2913a6bbfbafd7ae9b9fdfb28eee46f732ca5f5179f62d9f9cb0e6227a687575",
+      "noninterference_receipt_sha256": "14b7bea7d1ffe69f9fbd6fc3abf3f44eaf0b0cb429b7ec24fa6ed2f04245fc42",
+      "input_manifest_sha256": "7580bae179b1c13de4aea7a3536d962d80c02a703937e22b6bc618f4c114aae7",
+      "campaign_analysis_sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639",
+      "corrected_V3_build_receipt_sha256": "87830262677455577b5cd66b534a2ae7c38c2909ec0c0abb035101dd7698c9c1",
+      "initial_V2_scope_rejection_preserved": true,
+      "initial_extra_K40_records": 18,
+      "corrected_pairs": 3,
+      "total_steps_in_ledger": 8,
+      "total_wrapper_entries": 16,
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_initial_v2_storage_level_rejection",
+      "label": "Initial V2 control trace with 18 storage-level-k40 records is retained as engineering history and rejected from corrected analysis",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "source_location": "/initial_trace_scope_rejection; separate raw engineering_history traces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "extra_storage_k_rows": 18,
+      "raw_trace_deleted": false,
+      "included_in_corrected_6318_values": false,
+      "reader_tolerance_changed": false,
+      "source_sha256": "2913a6bbfbafd7ae9b9fdfb28eee46f732ca5f5179f62d9f9cb0e6227a687575",
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_three_on_trace_packet",
+      "label": "Corrected on-arm V2 traces for control, alpha1, and alpha0.25 bind 39 levels and three selected target columns",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/input_manifest.json",
+      "source_location": "/runs; /targets; /levels; /global_shape_i_k_j; /comparisons",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "trace_runs": [
+        "control_v3_on",
+        "alpha1_v3_on",
+        "alpha025_v2_on"
+      ],
+      "each_run_call_count": 2,
+      "values_per_run": 2106,
+      "total_selected_values": 6318,
+      "levels": 39,
+      "targets_one_based_ij": [
+        [
+          155,
+          25
+        ],
+        [
+          221,
+          63
+        ],
+        [
+          91,
+          94
+        ]
+      ],
+      "host_and_kernel_streams_separate": true,
+      "source_sha256": "7580bae179b1c13de4aea7a3536d962d80c02a703937e22b6bc618f4c114aae7",
+      "run_ids": [
+        "control_v3_on",
+        "alpha1_v3_on",
+        "alpha025_v2_on"
+      ],
+      "each_trace_run_values": 2106,
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_three_case_off_on_noninterference",
+      "label": "All corrected off/on pairs preserve byte-identical ACKs and full output checkpoints equal to each other and their historical endpoints",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/noninterference.json",
+      "source_location": "/pairs/0; /pairs/1; /pairs/2; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "pair_count": 3,
+      "all_pairs_full_file_sha_equal": true,
+      "all_pairs_raw_bitwise_equal": true,
+      "all_pairs_ack_byte_identical": true,
+      "variables_each": 652,
+      "numeric_elements_each": 322426586,
+      "mismatches_each": 0,
+      "control_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "alpha1_endpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+      "alpha025_endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "source_sha256": "14b7bea7d1ffe69f9fbd6fc3abf3f44eaf0b0cb429b7ec24fa6ed2f04245fc42",
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_three_case_trace_analysis",
+      "label": "Offline replay analyzes 6318 selected values with complete stage coverage and exact representation-boundary matches",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "source_location": "/status; /runs; /comparisons; /scope_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "NATIVE_MOMENT_TRACE_REPLAY_PASSED",
+      "run_count": 3,
+      "total_trace_values": 6318,
+      "complete_for_all_runs": true,
+      "widen_mismatches": 0,
+      "cast_mismatches": 0,
+      "model_calls_during_replay": {
+        "KDM": 0,
+        "RTTOV": 0,
+        "host": 0,
+        "optimizer": 0
+      },
+      "causal_attribution": false,
+      "raw_NC_units_certified": false,
+      "source_sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639",
+      "input_manifest_sha256": "7580bae179b1c13de4aea7a3536d962d80c02a703937e22b6bc618f4c114aae7",
+      "replay_calls": 0,
+      "raw_number_units_certified": false,
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_candidate_boundary_classifications",
+      "label": "Saved traces locate candidate NC states at pre-KDM and FP64 output boundaries without assigning process cause",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "source_location": "/runs/alpha1_v3_on/targets; /runs/alpha025_v2_on/targets; /scope_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "alpha1_witness_91_94_k4_MP_INPUT_NC": -0.03163810074329376,
+      "alpha1_witness_91_94_k4_FP64_OUTPUT_NC": 0.0,
+      "alpha025_witness_221_63_k6_MP_INPUT_NC": -3.814399242401123,
+      "alpha025_witness_221_63_k6_FP64_OUTPUT_NC": 0.0,
+      "alpha025_witness_91_94_k4_MP_INPUT_NC": -0.17183831334114075,
+      "alpha025_witness_91_94_k4_FP64_OUTPUT_NC": 0.0,
+      "QC_positive_at_these_candidate_outputs": true,
+      "ready_initial_invalid_pair_witnesses": [
+        [
+          155,
+          25,
+          19
+        ],
+        [
+          91,
+          94,
+          4
+        ]
+      ],
+      "NC_physical_units_certified": false,
+      "process_cause_inferred": false,
+      "source_sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639",
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_control_origin_context",
+      "label": "Control restart begins from a 40-second state carrying prior unaccepted T/Q diagnostic history",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/README.md",
+      "source_location": "checkpoint provenance paragraph",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "restart_time": "2025-07-19_00:00:40",
+      "control_means_no_new_TQ_command": true,
+      "prior_single_column_diagnostic_history_present": true,
+      "source_sha256": "40bfbb667611664df6391de5f6c18850a7c475259618caee434d247ad2e89926"
+    },
+    {
+      "id": "native_qc_nc_trace_scope_and_open_gates",
+      "label": "R4 boundary measurement is complete; candidate-preserving support/cost, optimization and physical cause remain open",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qc-nc-boundary-2026-10-26.md",
+      "source_location": "Scope and evidence",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "R4_boundary_measurement_complete": true,
+      "R5_candidate_fix_and_cost_complete": false,
+      "R6_candidate_cost_complete": false,
+      "C5_optimization_complete": false,
+      "full_host_AD_claimed": false,
+      "candidate_alpha0p5_trace_included": false,
+      "derivative_claimed": false,
+      "physical_closure_claimed": false,
+      "source_sha256": "6b94000eb2c35e9d4297f1f1d7cfcc5ae38f0d3d879c016f21586c472659554a",
+      "R5_R6_R7_R8_R9_open": true,
+      "candidate_cost_available": false,
+      "accepted_update": false
+    },
+    {
+      "id": "native_qc_nc_build_producer_provenance",
+      "label": "Build receipts pin outputs and source inputs but omit builder-script hashes at execution; a post-build inventory records available script bytes without retroactive attestation",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/build_producer_provenance.json",
+      "source_location": "/builder_receipt_binding; /published_v3_builder_copy; /solve_source_reconstruction_audit",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "host_v2_script_hash_in_execution_receipt": false,
+      "host_v3_script_hash_in_execution_receipt": false,
+      "V3_builder_copy_sha256": "cdce4e1603f986bb243f4b6bfa929bbcc3596b3ae005a01b51f91c0517d238b0",
+      "builder_hash_is_execution_time_attested": false,
+      "solve_em_object_byte_identity_claimed": false,
+      "solve_em_body_and_relocations_match": true,
+      "source_sha256": "76aa0334a5bd74628248deaed3d45f4fc1ae953b7ffd70d43042b5e71ac19e13",
+      "artifact_type": "dataset"
+    },
+    {
+      "id": "native_qc_nc_current_progress_r4_r5",
+      "label": "R4 selected-boundary measurements are complete for control, alpha1 and alpha0.25; candidate support/cost and R5-R9 actions remain open",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261026.md",
+      "source_location": "Measured result; Execution accounting; Updated checklist",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "R4_boundary_measurement_complete": true,
+      "R5_candidate_support_fix_open": true,
+      "R6_candidate_cost_open": true,
+      "R7_R8_R9_open": true,
+      "source_sha256": "7b848d7426f6a1715d0efe526e48cbcae877c313016e169c21b1aa5c22b7f96a"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qc_nc_trace_v2_contract",
+      "target": "native_qc_nc_three_on_trace_packet",
+      "relation": "defines_the_two_stream_call_and_stage_schema_for",
+      "source_file": "docs/NATIVE_MOMENT_TRACE_V2.md",
+      "source_location": "CALL header; Stage table",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_corrected_three_case_campaign",
+      "target": "native_qc_nc_three_case_off_on_noninterference",
+      "relation": "is_validated_by_off_on_endpoint_and_ACK_comparison",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/noninterference.json",
+      "source_location": "/pairs",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_three_on_trace_packet",
+      "target": "native_qc_nc_three_case_trace_analysis",
+      "relation": "is_replayed_as_saved_data_by",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "source_location": "/input_manifest_sha256; /runs",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_three_case_trace_analysis",
+      "target": "native_qc_nc_candidate_boundary_classifications",
+      "relation": "provides_control_and_candidate_saved_state_boundary_values_for",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "source_location": "/runs; /targets; /scope_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_initial_v2_storage_level_rejection",
+      "target": "native_qc_nc_three_case_trace_analysis",
+      "relation": "is_excluded_from_corrected_analysis_but_remains_preserved_as_history",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "source_location": "/initial_trace_scope_rejection; /rows",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_control_origin_context",
+      "target": "native_qc_nc_corrected_three_case_campaign",
+      "relation": "bounds_control_label_to_no_new_analysis_on_a_state_with_prior_diagnostic_history",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/README.md",
+      "source_location": "checkpoint provenance paragraph",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_corrected_three_case_campaign",
+      "target": "native_qc_nc_trace_scope_and_open_gates",
+      "relation": "completes_measurement_R4_without_completing_candidate_admission_or_optimization",
+      "source_file": "wiki/sources/native-qc-nc-boundary-2026-10-26.md",
+      "source_location": "Scope and evidence",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_corrected_three_case_campaign",
+      "target": "native_qc_nc_build_producer_provenance",
+      "relation": "ties_runtime_receipts_to_postbuild_builder_source_inventory_without_execution_time_claim",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/build_producer_provenance.json",
+      "source_location": "/builder_receipt_binding; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_qc_nc_current_progress_r4_r5",
+      "target": "native_qc_nc_corrected_three_case_campaign",
+      "relation": "summarizes_completed_R4_measurement_without_claiming_R5_cost_or_optimizer_completion",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261026.md",
+      "source_location": "Measured QC-NC trace; Remaining gates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "native_qc_nc_three_case_measurement_chain",
+      "label": "Three corrected full-host cases pair caller/host REAL4 state, value-only FP64 moments and final checkpoint observations under exact call/tile IDs",
+      "nodes": [
+        "native_qc_nc_trace_v2_contract",
+        "native_qc_nc_corrected_three_case_campaign",
+        "native_qc_nc_three_on_trace_packet",
+        "native_qc_nc_three_case_trace_analysis",
+        "native_qc_nc_candidate_boundary_classifications"
+      ],
+      "relation": "records_executed_state_boundary_measurements_not_causal_process_rates",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "source_location": "/runs; /comparisons; /scope_limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "native_qc_nc_corrected_noninterference_history",
+      "label": "Two rejected initial V2 traces are preserved separately; corrected off/on pairs match full endpoints and ACKs for control, alpha1 and alpha0.25",
+      "nodes": [
+        "native_qc_nc_initial_v2_storage_level_rejection",
+        "native_qc_nc_corrected_three_case_campaign",
+        "native_qc_nc_three_case_off_on_noninterference",
+        "native_qc_nc_control_origin_context"
+      ],
+      "relation": "distinguishes_historical_trace_scope_failure_from_corrected_control_and_candidate_pairs",
+      "source_file": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "source_location": "/initial_trace_scope_rejection; /rows; /initial_two_control_steps_retained",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "native_qc_nc_r4_r5_boundary",
+      "label": "R4 selected-boundary measurement is complete for three cases; post-build script inventory is distinct from execution-time attestation; candidate support/cost and R5-R9 actions remain open.",
+      "nodes": [
+        "native_qc_nc_candidate_boundary_classifications",
+        "native_qc_nc_trace_scope_and_open_gates",
+        "native_qc_nc_three_case_trace_analysis",
+        "native_qc_nc_current_progress_r4_r5",
+        "native_qc_nc_build_producer_provenance"
+      ],
+      "relation": "bounds_interpretation_and_future_work",
+      "source_file": "wiki/sources/native-qc-nc-boundary-2026-10-26.md",
+      "source_location": "Scope and evidence",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}

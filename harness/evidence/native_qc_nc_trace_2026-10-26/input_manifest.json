@@ -1,0 +1,118 @@
+{
+  "comparisons": [
+    {
+      "candidate_run_id": "alpha1_v3_on",
+      "control_run_id": "control_v3_on"
+    },
+    {
+      "candidate_run_id": "alpha025_v2_on",
+      "control_run_id": "control_v3_on"
+    }
+  ],
+  "dt_hex64": "4034000000000000",
+  "global_shape_i_k_j": [
+    234,
+    39,
+    282
+  ],
+  "instrumentation_noninterference": {
+    "bytes": 2827,
+    "file": "receipts/noninterference.json",
+    "sha256": "14b7bea7d1ffe69f9fbd6fc3abf3f44eaf0b0cb429b7ec24fa6ed2f04245fc42"
+  },
+  "levels": 39,
+  "levels_of_interest": [
+    19,
+    6,
+    4
+  ],
+  "ncmin_land_hex64": "4024000000000000",
+  "ncmin_sea_hex64": "4024000000000000",
+  "runs": [
+    {
+      "context_npz": {
+        "bytes": 1020,
+        "file": "data/control_v3_on/context.npz",
+        "sha256": "3bc406f45a77a138b6099cae08e94d4545fc1533404723948f2c86f1d30e234a"
+      },
+      "expected_call_count": 2,
+      "run_id": "control_v3_on",
+      "traces": {
+        "host": {
+          "bytes": 71585,
+          "file": "data/control_v3_on/host.hex",
+          "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+        },
+        "kernel": {
+          "bytes": 24041,
+          "file": "data/control_v3_on/kernel.hex",
+          "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+        }
+      }
+    },
+    {
+      "context_npz": {
+        "bytes": 1025,
+        "file": "data/alpha1_v3_on/context.npz",
+        "sha256": "87ed7bbdf56d2951a3ec2d0ea08301c81f4b88221fff207a33114b6322dd2ac4"
+      },
+      "expected_call_count": 2,
+      "run_id": "alpha1_v3_on",
+      "traces": {
+        "host": {
+          "bytes": 71585,
+          "file": "data/alpha1_v3_on/host.hex",
+          "sha256": "9be7af8e92a72da5ac9015a17dc4ac47ac7df3685a21c0900768270066928fa9"
+        },
+        "kernel": {
+          "bytes": 24041,
+          "file": "data/alpha1_v3_on/kernel.hex",
+          "sha256": "79f324eb82023dc86b104af3e94a9dc7bf84872852b82c28e54ccdd55fbffb9a"
+        }
+      }
+    },
+    {
+      "context_npz": {
+        "bytes": 1014,
+        "file": "data/alpha025_v2_on/context.npz",
+        "sha256": "35f12b1f66f559970a5fc71a1f79dbbbc81440a7f4b3ccb989c4d5fd9016995a"
+      },
+      "expected_call_count": 2,
+      "run_id": "alpha025_v2_on",
+      "traces": {
+        "host": {
+          "bytes": 71585,
+          "file": "data/alpha025_v2_on/host.hex",
+          "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+        },
+        "kernel": {
+          "bytes": 24041,
+          "file": "data/alpha025_v2_on/kernel.hex",
+          "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+        }
+      }
+    }
+  ],
+  "schema": "kdm6.native_moment_trace_replay_inputs.v1",
+  "step": 3,
+  "targets": [
+    {
+      "i": 155,
+      "j": 25,
+      "name": "native155_25",
+      "witness_k": 19
+    },
+    {
+      "i": 221,
+      "j": 63,
+      "name": "native221_63",
+      "witness_k": 6
+    },
+    {
+      "i": 91,
+      "j": 94,
+      "name": "native91_94",
+      "witness_k": 4
+    }
+  ]
+}

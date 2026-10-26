@@ -1,0 +1,36 @@
+{
+  "authoritative_fortran_sha256": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+  "comparison": {
+    "disassembly_body_equal": true,
+    "global_symbol_lists_equal": true,
+    "relocation_tables_equal_excluding_object_header": true,
+    "undefined_symbol_lists_equal": true
+  },
+  "comparison_logs": {
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.dis": "0cfaddbe19b8ba760911016841b7b01d605ab4c6a631e33d5ea31839c3692c7b",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.dis.body": "c3032da4bcb4eaeb4ba801c3ee26958249e818fabfa0202310788e73f5e923cc",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.externals": "6f84196cc9e7dec3908399c6c0faa41e2c2f108156d4760de49a2b8e307f450a",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.load": "8401de05a8880fbe121b5ae857e7687918ba525b2661728fdbfd1d778c43c354",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.reloc": "2ab545ab62095ad8499a5571aaec381eec6324f5f9e0ee11db721083acc29cf7",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.reloc.body": "7d8536db546ad92751854cc742d96f9a8654b7e01d00c12ae643e5deeb559d38",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.strings": "c092114fc5eb2358516c10861ab4cd3859abcc7bdcfbf4e13daba15e63067cd6",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_new.undefined": "dca34df90d7b24200cb332f7dacd524a691a0621e2c4f56d48621fbe67b8a280",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.dis": "8bd1eb4fafabea5ca8452fad226cd032bb237d56c59ccecc09d2444cd7e1ec46",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.dis.body": "c3032da4bcb4eaeb4ba801c3ee26958249e818fabfa0202310788e73f5e923cc",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.externals": "6f84196cc9e7dec3908399c6c0faa41e2c2f108156d4760de49a2b8e307f450a",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.load": "f17e331fc88921039945f6edadca2c09c1d2364e228b82914c919ec65e12d037",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.reloc": "2a521a26fe8132acbd63809c751fa23917c34e67f748506382a0f1fd80e4ce36",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.reloc.body": "7d8536db546ad92751854cc742d96f9a8654b7e01d00c12ae643e5deeb559d38",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.strings": "191bb4815674c5fe90e90cccefa21475e4020f1adcfcbfeae70e49886d167538",
+    "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/reconstruction_audit/solve_old.undefined": "dca34df90d7b24200cb332f7dacd524a691a0621e2c4f56d48621fbe67b8a280"
+  },
+  "exact_object_byte_identity": false,
+  "executed_v1_object_path": "host/research_evidence/mp137_two_step_20261020/build/dyn_em/solve_em.o",
+  "executed_v1_object_sha256": "3adaa130a338a8ed0bb12f84145398279c8787eef3a7280f5dd06f45180e93b4",
+  "fresh_preprocessed_source_sha256": "2e82c883af596e50bb7daa879ff8597a8c572ce03d2b14d0859629201f61c0ea",
+  "interpretation": "The __text disassembly body, relocation table, undefined symbols, and global symbol names match exactly. __text section size is identical. Only __cstring entries differ: the executed object records solve_em.f90; the reconstruction records the private absolute source path.",
+  "reconstructed_v1_object_path": "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/objects/solve_em_reconstructed_v1.o",
+  "reconstructed_v1_object_sha256": "368ffcf14273033263a1590dca602eeb1b72564de1d55d1ae599037f6bd546fe",
+  "schema": "kdm6ad.solve_em_reconstruction_comparison.v1",
+  "status": "SOURCE_AND_MACHINE_CODE_MATCH_PATH_METADATA_DIFFERS"
+}

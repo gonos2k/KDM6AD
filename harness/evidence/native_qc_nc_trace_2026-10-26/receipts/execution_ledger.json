@@ -1,0 +1,510 @@
+{
+  "accepted_full_host_updates": 0,
+  "actual_KDM_wrapper_entries": 16,
+  "actual_host_steps_completed": 8,
+  "initial_prior_history": "Common40sorigin already contains an earlier unaccepted diagnostic T/Q history; this is not a pristine forecast comparison.",
+  "initial_trace_scope_rejection": "Initial on stream included18topstoragek40rows outside39nativelevels; raw trace preserved, strict reader rejected, producer fixed and4same-binarycomparisons repeated. No rows dropped or numeric tolerance changed.",
+  "initial_two_control_steps_retained": true,
+  "new_RTTOV_calls": 0,
+  "number_units": "raw legacy coordinates, not newly certified",
+  "optimizer_calls": 0,
+  "prelaunch_rejections_with_zero_host_starts": [
+    "frozen reader source changed then restored exactly before launch",
+    "one invalid renamed V3 command-line run-id"
+  ],
+  "rows": [
+    {
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "2f673487872e5f2739cf4451019a5c2c66158e650d2aec830cb4ce86b8b98636",
+      "applied": {
+        "applied_components": 0,
+        "applied_rows": 0
+      },
+      "campaign_group": "four_case_v1",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "host_steps": 1,
+      "label": "initial_control_off",
+      "loaded_CAPI_library_lines": [
+        "dyld[60655]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "0b33573b761fea48ed12f1da55525071ecafc8c06151ab88d4bbd6c3ac0987bc",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "87ccdb1ad17b29bb10cef87d3be8170ea4d994d1ef3d7a9ced262d55b218dd0f",
+      "rsl_source_sha256": "74f37ebedb60a1247825fe02af708a9159d7731b0e2159f5929441c85a345332",
+      "run_id": "control_v2_off",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "4a3520ba520e2bda31dce29cbb8ce2ebef05776e895025f9da9afabe7a335c04",
+      "trace_artifacts": {}
+    },
+    {
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "2f673487872e5f2739cf4451019a5c2c66158e650d2aec830cb4ce86b8b98636",
+      "applied": {
+        "applied_components": 0,
+        "applied_rows": 0
+      },
+      "campaign_group": "four_case_v1",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "host_steps": 1,
+      "label": "initial_control_on",
+      "loaded_CAPI_library_lines": [
+        "dyld[61058]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "0b33573b761fea48ed12f1da55525071ecafc8c06151ab88d4bbd6c3ac0987bc",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "dddddda444922397cdf63c31d5bf730f1adc2c5e70b27663013dcd280d9784a8",
+      "rsl_source_sha256": "475f58b57fe3fdff1c0d7475fc2abf325673023ce95f709566cddd63b080f3f1",
+      "run_id": "control_v2_on",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "4a3520ba520e2bda31dce29cbb8ce2ebef05776e895025f9da9afabe7a335c04",
+      "trace_artifacts": {
+        "host.hex": {
+          "bytes": 72383,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v1/control_v2_on/v2_trace/host.hex",
+          "sha256": "7811c1af7690029f01abd73455f85a96becfbb46c0e0f38c71362e0ebfd3c8cd"
+        },
+        "kernel.hex": {
+          "bytes": 24041,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v1/control_v2_on/v2_trace/kernel.hex",
+          "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+        }
+      }
+    },
+    {
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 0,
+        "applied_rows": 0
+      },
+      "campaign_group": "four_case_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "host_steps": 1,
+      "label": "control_off",
+      "loaded_CAPI_library_lines": [
+        "dyld[63243]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "40e306ef6150cc4760e19258bbbf0f15762b102ccb7e55569e05c8e00bfc52c4",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "4e140061c143fd4dd9bfae1b7145549986e32add30a2e8c2ff1dc42b0a9c40c9",
+      "rsl_source_sha256": "fc5e737ada4743fbfb9382fb85725f75cab6e657f865b63320b0f1de1b9449df",
+      "run_id": "control_v3_off",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "71aa5edb099b59e703846247b824b53a383b9c1a644f0cc76ff3a2020a109848",
+      "trace_artifacts": {}
+    },
+    {
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 0,
+        "applied_rows": 0
+      },
+      "campaign_group": "four_case_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "host_steps": 1,
+      "label": "control_on",
+      "loaded_CAPI_library_lines": [
+        "dyld[63359]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "40e306ef6150cc4760e19258bbbf0f15762b102ccb7e55569e05c8e00bfc52c4",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "3815d868b7e95d24286dcfb4095507c6cd8f3de0dd15167d777f8ee1435d1d79",
+      "rsl_source_sha256": "cb2535338d68a7e1c01e27f4f4b9ecbee5fcfe2ae815237644a7f58cda7941a0",
+      "run_id": "control_v3_on",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "71aa5edb099b59e703846247b824b53a383b9c1a644f0cc76ff3a2020a109848",
+      "trace_artifacts": {
+        "host.hex": {
+          "bytes": 71585,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v2/control_v3_on/v2_trace/host.hex",
+          "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+        },
+        "kernel.hex": {
+          "bytes": 24041,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v2/control_v3_on/v2_trace/kernel.hex",
+          "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+        }
+      }
+    },
+    {
+      "ack_sha256": "6adc74d59538393a856d85cd4734c0f5dd5cf3ab62009db165035598edc2e18b",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 855443,
+        "applied_rows": 561407,
+        "candidate_sha256": "cba9b44e397ab9f13af36410f20a7c4c28426452fc75f568e9d57828fd57ec0b",
+        "wire_delta_sha256": "cdf31f6f2ff6b5688cf3f9d56375f28aa5adb19f77bad629d02218e256f71fbf"
+      },
+      "campaign_group": "four_case_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+      "host_steps": 1,
+      "label": "alpha1_off",
+      "loaded_CAPI_library_lines": [
+        "dyld[63452]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "40e306ef6150cc4760e19258bbbf0f15762b102ccb7e55569e05c8e00bfc52c4",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "4cba28e89f871e59ee6011220ac5424cec79d705fda6787a5f5a2677739b218a",
+      "rsl_source_sha256": "0e74bfb06ffe78ffd54a1780a61f8645563acdf5d2894fb3b7038ea1da436f5b",
+      "run_id": "alpha1_v3_off",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "71aa5edb099b59e703846247b824b53a383b9c1a644f0cc76ff3a2020a109848",
+      "trace_artifacts": {}
+    },
+    {
+      "ack_sha256": "6adc74d59538393a856d85cd4734c0f5dd5cf3ab62009db165035598edc2e18b",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 855443,
+        "applied_rows": 561407,
+        "candidate_sha256": "cba9b44e397ab9f13af36410f20a7c4c28426452fc75f568e9d57828fd57ec0b",
+        "wire_delta_sha256": "cdf31f6f2ff6b5688cf3f9d56375f28aa5adb19f77bad629d02218e256f71fbf"
+      },
+      "campaign_group": "four_case_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+      "host_steps": 1,
+      "label": "alpha1_on",
+      "loaded_CAPI_library_lines": [
+        "dyld[64063]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "40e306ef6150cc4760e19258bbbf0f15762b102ccb7e55569e05c8e00bfc52c4",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "b7669cac1d39427af69d20478d288a412ed457ffcbb955d376fa85357f016371",
+      "rsl_source_sha256": "919ab1e61dbe47b6de73e68bf5f495267eb704bb65b09106f7a729f2084c8088",
+      "run_id": "alpha1_v3_on",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "71aa5edb099b59e703846247b824b53a383b9c1a644f0cc76ff3a2020a109848",
+      "trace_artifacts": {
+        "host.hex": {
+          "bytes": 71585,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v2/alpha1_v3_on/v2_trace/host.hex",
+          "sha256": "9be7af8e92a72da5ac9015a17dc4ac47ac7df3685a21c0900768270066928fa9"
+        },
+        "kernel.hex": {
+          "bytes": 24041,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/four_case_v2/alpha1_v3_on/v2_trace/kernel.hex",
+          "sha256": "79f324eb82023dc86b104af3e94a9dc7bf84872852b82c28e54ccdd55fbffb9a"
+        }
+      }
+    },
+    {
+      "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 170749,
+        "applied_rows": 117172,
+        "candidate_sha256": "228db9df068836d6777d6182c8b03b72255ce76f5b618e2a2eba50f3632a4974",
+        "wire_delta_sha256": "47907c23038cf1ef8378227a159f96d4f9c93da98b7a59050ac0c7e3f3507465"
+      },
+      "campaign_group": "alpha025_pair_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "host_steps": 1,
+      "label": "alpha025_off",
+      "loaded_CAPI_library_lines": [
+        "dyld[64592]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "1f25b6850ed7a0ed574af64e3e47e609873593d14b00f9287a13f29ed2d3c84a",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "6d8fc756a0712c247695c8e4efd588b52423fe8464a207057e95a7649a93306b",
+      "rsl_source_sha256": "3f60a988a801f556ac76dae3a0b08be50fb4ed7f204fbf7a243aa1e75f252bc4",
+      "run_id": "alpha025_v2_off",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "9b83a1cc543980633ecc7f86f08320d5a7f9bc37613a3b058bf42e1ae5bfa574",
+      "trace_artifacts": {}
+    },
+    {
+      "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+      "actual_CAPI_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+      "actual_executable_sha256": "aaa918cde7403076cf656b3abe8b98ab03311c6fdbfa7933fb5e6813c121cbdd",
+      "applied": {
+        "applied_components": 170749,
+        "applied_rows": 117172,
+        "candidate_sha256": "228db9df068836d6777d6182c8b03b72255ce76f5b618e2a2eba50f3632a4974",
+        "wire_delta_sha256": "47907c23038cf1ef8378227a159f96d4f9c93da98b7a59050ac0c7e3f3507465"
+      },
+      "campaign_group": "alpha025_pair_v2",
+      "complete_ready_variable_count": 652,
+      "final_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "host_steps": 1,
+      "label": "alpha025_on",
+      "loaded_CAPI_library_lines": [
+        "dyld[64968]: <B7BF53C5-D4EE-332A-AAB4-D840BA7779D3> ${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/execution/lib/libkdm6_c.2.0.0.dylib"
+      ],
+      "module_markers": {
+        "cumulus_driver": 1,
+        "finish_driver": 1,
+        "kdm6_dispatch": 2,
+        "kdm6_wrapper": 2,
+        "ksas": 2,
+        "pbl_driver": 1,
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "shinhong_pbl": 2,
+        "surface_driver": 1
+      },
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "output_time": "2025-07-19_00:01:00",
+      "physical_clock": "40->60 s, independent common-origin reproduction",
+      "producer_sha256": "1f25b6850ed7a0ed574af64e3e47e609873593d14b00f9287a13f29ed2d3c84a",
+      "ready_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "ready_mismatches": 0,
+      "ready_numeric_elements": 322426586,
+      "result_sha256": "2213683a82efd49c35390b6b9dd7e771691ed166edaea3cbcda8a1e1d08e895d",
+      "rsl_source_sha256": "b348011547a03e03def0d64a90fdfd5d774ee8f74d6c08f36d036b9453274bb6",
+      "run_id": "alpha025_v2_on",
+      "runtime_config": {
+        "bl_pbl_physics": "11",
+        "cu_physics": "37",
+        "mp_physics": "137",
+        "mp_zero_out": "2",
+        "mp_zero_out_all": "0",
+        "mp_zero_out_thresh": "9.99999994E-09",
+        "no_mp_heating": "0",
+        "ra_lw_physics": "4",
+        "ra_sw_physics": "4",
+        "sf_surface_physics": "2",
+        "use_q_diabatic": "0",
+        "use_theta_m": "1"
+      },
+      "source_plan_sha256": "9b83a1cc543980633ecc7f86f08320d5a7f9bc37613a3b058bf42e1ae5bfa574",
+      "trace_artifacts": {
+        "host.hex": {
+          "bytes": 71585,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/alpha025_pair_v2/alpha025_v2_on/v2_trace/host.hex",
+          "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+        },
+        "kernel.hex": {
+          "bytes": 24041,
+          "path": "${CANONICAL_ROOT}/host/research_evidence/native_qc_nc_trace_20261026/runs/alpha025_pair_v2/alpha025_v2_on/v2_trace/kernel.hex",
+          "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+        }
+      }
+    }
+  ],
+  "schema": "kdm6.native_moment_trace_execution_ledger.v1"
+}

@@ -1,0 +1,544 @@
+"""Build the private V2 moment-trace WRF executable; never runs the model."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import ctypes
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+
+ROOT = Path("/Users/yhlee/KDM6AD-k")
+WORKTREE = Path("/private/tmp/KDM6AD-qc-nc-trace-20261026")
+EVIDENCE = ROOT / "host/research_evidence/native_qc_nc_trace_20261026"
+BUILD = ROOT / "host/research_evidence/mp137_two_step_20261020/build"
+SOURCE_PHYS = BUILD / "phys"
+SOURCE_DYN = BUILD / "dyn_em"
+OLD_PRIVATE = ROOT / "host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7"
+OLD_RECEIPT = OLD_PRIVATE / "private_wrf_build_receipt.json"
+OLD_ARCHIVE = OLD_PRIVATE / "libwrflib.native_fp64_value.a"
+OLD_EXECUTABLE = OLD_PRIVATE / "execution/wrf_mp137_native_fp64_value.exe"
+OLD_WRAPPER_OBJECT = SOURCE_PHYS / "module_mp_kdm6ad.o"
+OLD_SOLVE_OBJECT = SOURCE_DYN / "solve_em.o"
+BASE_ARCHIVE = BUILD / "main/libwrflib.a"
+COMPILE_LOG = BUILD / "compile_cap3.log"
+MPIF90 = Path("/opt/homebrew/bin/mpif90")
+TORCH = Path("/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib")
+NEW_MODULE_SOURCE = WORKTREE / "harness/native_trace/kdm6ad_moment_trace_v2.f90"
+NEW_MODULE_SOURCE_SHA256 = "b0e914a0d4777e8c463ee20ceceeb393e2a6a635d0551cb3fa785f9f562bb287"
+OVERLAY_SCRIPT_SHA256 = "6c84cd4135812a8634d73a09e2cf29a6d9500314523bdea2cdb2824825705d94"
+CAPI_DIR = EVIDENCE / "build/capi_v2"
+CAPI_RECEIPT = CAPI_DIR / "build_receipt.json"
+CAPI_DSO = CAPI_DIR / "libkdm6_native_fp64_value.2.0.0.dylib"
+RECONSTRUCTION_AUDIT = EVIDENCE / "build/host_v2_attempt4_preprocess_object_metadata_mismatch/source_reconstruction_comparison.json"
+FP64_SYMBOL = "_kdm6_native_fp64_value_c"
+TRACE_CONTEXT_SYMBOL = "_kdm6_moment_trace_context_c"
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def run(argv, *, cwd=None, log=None, env=None) -> str:
+    result = subprocess.run(
+        [str(x) for x in argv], cwd=cwd, env=env, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, text=True, check=False,
+    )
+    if log is not None:
+        Path(log).write_text(result.stdout)
+    if result.returncode:
+        raise subprocess.CalledProcessError(result.returncode, argv, output=result.stdout)
+    return result.stdout
+
+
+def clonefile(source: Path, destination: Path) -> None:
+    """Create a copy-on-write APFS clone; fail closed if clonefile is unavailable."""
+    if destination.exists() or destination.is_symlink():
+        raise FileExistsError(destination)
+    libc = ctypes.CDLL(None, use_errno=True)
+    function = libc.clonefile
+    function.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32)
+    function.restype = ctypes.c_int
+    status = function(os.fsencode(source), os.fsencode(destination), 0)
+    if status != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error), str(destination))
+
+
+def archive_members(path: Path) -> dict[tuple[str, int], str]:
+    data = Path(path).read_bytes()
+    if not data.startswith(b"!<arch>\n"):
+        raise ValueError(f"not an ar archive: {path}")
+    offset, occurrences, result = 8, {}, {}
+    while offset < len(data):
+        header = data[offset:offset + 60]
+        if len(header) != 60 or header[58:60] != b"`\n":
+            raise ValueError(f"malformed archive header at {offset}")
+        raw_name = header[:16].decode("ascii").rstrip()
+        size = int(header[48:58].decode("ascii").strip())
+        payload = data[offset + 60:offset + 60 + size]
+        if raw_name.startswith("#1/"):
+            name_len = int(raw_name[3:])
+            name, payload = payload[:name_len].decode("utf-8").rstrip("\0"), payload[name_len:]
+        else:
+            name = raw_name.rstrip("/")
+        if not name.startswith("__.SYMDEF"):
+            occurrence = occurrences.get(name, 0)
+            occurrences[name] = occurrence + 1
+            result[(name, occurrence)] = sha256_bytes(payload)
+        offset += 60 + size + size % 2
+    if offset != len(data):
+        raise ValueError("archive scan did not end at file boundary")
+    return result
+
+
+def compile_command(name: str) -> list[str]:
+    for line in COMPILE_LOG.read_text(errors="replace").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("time mpif90 ") and stripped.endswith(f" {name}.f90"):
+            argv = shlex.split(stripped)
+            if argv[0] == "time":
+                argv = argv[1:]
+            return argv
+    raise ValueError(f"saved compiler log has no command for {name}.f90")
+
+
+def rewrite_compile(command: list[str], name: str, source: Path, output: Path, moddir: Path | None) -> list[str]:
+    argv = list(command)
+    for i, token in enumerate(argv):
+        if token == "-o":
+            argv[i + 1] = str(output)
+            break
+    else:
+        raise ValueError(f"compile command for {name} has no output flag")
+    argv[-1] = str(source)
+    if moddir is not None:
+        argv.extend(["-J", str(moddir), "-I", str(moddir)])
+    return argv
+
+
+def preprocess_authoritative_solve_f90(source_f: Path, destination_dir: Path) -> tuple[Path, dict]:
+    """Replay the saved preprocessor pipeline from compile_cap3.log on pinned solve_em.F."""
+    lines = COMPILE_LOG.read_text(errors="replace").splitlines()
+    sed_line = next((x.strip() for x in lines if x.strip().startswith("sed -e")
+                     and "solve_em.F > solve_em.G" in x), None)
+    cpp_line = next((x.strip() for x in lines if x.strip().startswith("cpp ")
+                     and "solve_em.G  > solve_em.bb" in x), None)
+    standard_line = next((x.strip() for x in lines if "standard.exe solve_em.bb | cpp " in x
+                          and "> solve_em.f90" in x), None)
+    if not (sed_line and cpp_line and standard_line):
+        raise ValueError("saved compile log lacks the complete solve_em preprocessing pipeline")
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    g_file = destination_dir / "solve_em.G"
+    bb_file = destination_dir / "solve_em.bb"
+    f90_file = destination_dir / "solve_em.f90"
+
+    sed_tokens = shlex.split(sed_line)
+    redir = sed_tokens.index(">")
+    sed_command = sed_tokens[:redir]
+    sed_command[-1] = str(source_f)
+    with g_file.open("wb") as stdout:
+        result = subprocess.run(sed_command, cwd=SOURCE_DYN, stdout=stdout,
+                                stderr=subprocess.PIPE, check=False)
+    (destination_dir / "preprocess_sed.stderr.log").write_bytes(result.stderr)
+    if result.returncode:
+        raise subprocess.CalledProcessError(result.returncode, sed_command, result.stderr)
+
+    cpp_tokens = shlex.split(cpp_line)
+    cpp_redir = cpp_tokens.index(">")
+    cpp_command = cpp_tokens[:cpp_redir]
+    cpp_command[-1] = str(g_file)
+    with bb_file.open("wb") as stdout:
+        result = subprocess.run(cpp_command, cwd=SOURCE_DYN, stdout=stdout,
+                                stderr=subprocess.PIPE, check=False)
+    (destination_dir / "preprocess_cpp.stderr.log").write_bytes(result.stderr)
+    if result.returncode:
+        raise subprocess.CalledProcessError(result.returncode, cpp_command, result.stderr)
+
+    pipeline_tokens = shlex.split(standard_line)
+    pipe = pipeline_tokens.index("|")
+    output_redir = pipeline_tokens.index(">")
+    standard_command = pipeline_tokens[:pipe]
+    cpp_after_standard = pipeline_tokens[pipe + 1:output_redir]
+    standard_command[-1] = str(bb_file)
+    if pipeline_tokens[output_redir + 1] != "solve_em.f90":
+        raise ValueError("unexpected preprocessor output in saved log")
+    standard_result = subprocess.run(standard_command, cwd=SOURCE_DYN,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                     check=False)
+    if standard_result.returncode:
+        raise subprocess.CalledProcessError(standard_result.returncode, standard_command,
+                                            standard_result.stderr)
+    with f90_file.open("wb") as stdout:
+        cpp_result = subprocess.run(cpp_after_standard, cwd=SOURCE_DYN,
+                                    input=standard_result.stdout, stdout=stdout,
+                                    stderr=subprocess.PIPE, check=False)
+    (destination_dir / "preprocess_standard.stderr.log").write_bytes(standard_result.stderr)
+    (destination_dir / "preprocess_final_cpp.stderr.log").write_bytes(cpp_result.stderr)
+    if cpp_result.returncode:
+        raise subprocess.CalledProcessError(cpp_result.returncode, cpp_after_standard,
+                                            cpp_result.stderr)
+    commands = {
+        "saved_log": str(COMPILE_LOG),
+        "saved_log_sha256": sha256_file(COMPILE_LOG),
+        "sed": sed_command,
+        "cpp_pre_standard": cpp_command,
+        "standard": standard_command,
+        "cpp_post_standard": cpp_after_standard,
+        "stderr_logs": [
+            {"path": str(destination_dir / name), "sha256": sha256_file(destination_dir / name)}
+            for name in ("preprocess_sed.stderr.log", "preprocess_cpp.stderr.log",
+                         "preprocess_standard.stderr.log", "preprocess_final_cpp.stderr.log")
+        ],
+    }
+    return f90_file, commands
+
+
+def build(output: Path, overlay_script: Path) -> dict:
+    output = output.resolve()
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"output must be a new directory: {output}")
+    required = [OLD_RECEIPT, OLD_ARCHIVE, OLD_EXECUTABLE, OLD_WRAPPER_OBJECT,
+                OLD_SOLVE_OBJECT, BASE_ARCHIVE, COMPILE_LOG, NEW_MODULE_SOURCE,
+                overlay_script, CAPI_RECEIPT, CAPI_DSO,
+                SOURCE_PHYS / "module_mp_kdm6ad.f90", SOURCE_DYN / "solve_em.f90",
+                RECONSTRUCTION_AUDIT]
+    for path in required:
+        if not path.is_file():
+            raise FileNotFoundError(path)
+    if sha256_file(NEW_MODULE_SOURCE) != NEW_MODULE_SOURCE_SHA256:
+        raise ValueError("V2 Fortran trace module source changed from the reviewed input")
+    if sha256_file(overlay_script) != OVERLAY_SCRIPT_SHA256:
+        raise ValueError("V2 Fortran overlay source changed from the reviewed input")
+    old = json.loads(OLD_RECEIPT.read_text())
+    capi = json.loads(CAPI_RECEIPT.read_text())
+    reconstruction = json.loads(RECONSTRUCTION_AUDIT.read_text())
+    if (reconstruction.get("status") != "SOURCE_AND_MACHINE_CODE_MATCH_PATH_METADATA_DIFFERS"
+            or reconstruction.get("authoritative_fortran_sha256") != "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f"
+            or reconstruction.get("comparison") != {
+                "disassembly_body_equal": True,
+                "global_symbol_lists_equal": True,
+                "relocation_tables_equal_excluding_object_header": True,
+                "undefined_symbol_lists_equal": True,
+            }
+            or reconstruction.get("executed_v1_object_sha256") != sha256_file(OLD_SOLVE_OBJECT)):
+        raise ValueError("authoritative solve source reconstruction audit is missing or incomplete")
+    if old.get("status") != "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS":
+        raise ValueError("baseline private host receipt is not the pinned untested build")
+    if old.get("private_wrf_sha256") != sha256_file(OLD_EXECUTABLE):
+        raise ValueError("baseline private executable differs from its receipt")
+    if old.get("private_wrf_archive_sha256") != sha256_file(OLD_ARCHIVE):
+        raise ValueError("baseline private archive differs from its receipt")
+    if capi.get("status") != "BUILT_NO_PHYSICAL_CALLS" or capi.get("dso_sha256") != sha256_file(CAPI_DSO):
+        raise ValueError("CAPI v2 DSO is not the pinned no-call artifact")
+    if TRACE_CONTEXT_SYMBOL not in capi.get("exported_symbols", []):
+        raise ValueError("CAPI v2 does not export the private moment trace context symbol")
+    if FP64_SYMBOL not in capi.get("exported_symbols", []):
+        raise ValueError("CAPI v2 lacks the separate native fp64 entry")
+    if old.get("module_mp_kdm6ad_source_sha256") != "8b47bc625c6b402626e888fe02e5e380fd8557cc582c5c8db4d3be54b97550fa":
+        raise ValueError("old wrapper source pin differs from the plan")
+    if sha256_file(SOURCE_PHYS / "module_mp_kdm6ad.f90") != "457c9b904711397f4cbc01fbcd588c48a7739200ce50d00e30098209d220207a":
+        raise ValueError("saved wrapper preprocessed source changed")
+    if sha256_file(SOURCE_DYN / "solve_em.F") != "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f":
+        raise ValueError("saved solve_em original source changed")
+    if sha256_file(ROOT / "host/KIM-meso_v1.0/dyn_em/solve_em.F") != sha256_file(SOURCE_DYN / "solve_em.F"):
+        raise ValueError("canonical and saved authoritative solve_em.F sources differ")
+    if sha256_file(OLD_WRAPPER_OBJECT) != old["module_mp_kdm6ad_object_sha256"]:
+        raise ValueError("baseline wrapper object no longer matches its build receipt")
+
+    baseline_members = archive_members(OLD_ARCHIVE)
+    expected_base = {(x["name"], x["occurrence"]): x["sha256"] for x in old["private_wrf_archive_member_sha256"]}
+    if baseline_members != expected_base:
+        raise ValueError("baseline private archive member inventory/hash differs from receipt")
+    if sha256_file(OLD_SOLVE_OBJECT) != expected_base[("solve_em.o", 0)]:
+        raise ValueError("saved baseline solve_em.o differs from the executed archive member")
+    if ("kdm6ad_moment_trace_v2.o", 0) in baseline_members:
+        raise ValueError("V2 trace module already exists in the source archive")
+
+    output.mkdir(parents=True)
+    module_dir = output / "fortran_mod"
+    objects = output / "objects"
+    staged = output / "archive_member"
+    execution = output / "execution"
+    runtime = execution / "lib"
+    for directory in (module_dir, objects, staged, runtime):
+        directory.mkdir(parents=True)
+    source_root = output / "overlay_source"
+    overlay_phys = source_root / "phys"
+    overlay_dyn = source_root / "dyn_em"
+    overlay_phys.mkdir(parents=True)
+    overlay_dyn.mkdir(parents=True)
+    wrapper_source = overlay_phys / "module_mp_kdm6ad.f90"
+    solve_source = overlay_dyn / "solve_em.f90"
+    clonefile(SOURCE_PHYS / "module_mp_kdm6ad.f90", wrapper_source)
+    private_solve_f = overlay_dyn / "solve_em.F"
+    clonefile(SOURCE_DYN / "solve_em.F", private_solve_f)
+    base_solve_source, preprocess_commands = preprocess_authoritative_solve_f90(
+        private_solve_f, output / "preprocessed")
+    if sha256_file(base_solve_source) != reconstruction["fresh_preprocessed_source_sha256"]:
+        raise RuntimeError("fresh solve_em preprocessing differs from the reviewed reconstruction audit")
+    overlay_solve_base = output / "preprocessed/solve_em_v1.f90"
+    clonefile(base_solve_source, overlay_solve_base)
+
+    spec = importlib.util.spec_from_file_location("native_moment_trace_overlay", overlay_script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("could not load frozen public V2 overlay definitions")
+    overlay_module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = overlay_module
+    spec.loader.exec_module(overlay_module)
+    wrapper_base_sha = sha256_file(wrapper_source)
+    wrapper_text, wrapper_states = overlay_module._patch_text(
+        wrapper_source.read_text(encoding="utf-8"), overlay_module._MP_INSERTIONS)
+    if wrapper_base_sha != "457c9b904711397f4cbc01fbcd588c48a7739200ce50d00e30098209d220207a":
+        raise ValueError("saved wrapper compiled/preprocessed F90 changed")
+    if set(wrapper_states.values()) != {"inserted"}:
+        raise RuntimeError(f"V2 wrapper source anchors incomplete: {wrapper_states}")
+    wrapper_source.write_text(wrapper_text, encoding="utf-8", newline="")
+    if sha256_file(wrapper_source) != "fab26aa9f5fece94b2560c49991304b4b71134eb664b3e23a01725fed9535141":
+        raise RuntimeError("V2 wrapper generated F90 differs from the pinned overlay hash")
+
+    base_solve_text = base_solve_source.read_text(encoding="utf-8")
+    if "s15_step" in base_solve_text or "s15_capture_enabled" in base_solve_text:
+        raise RuntimeError("fresh solve_em.F preprocessing retained stale generated S15 inserts")
+    solve_base_sha = sha256_file(base_solve_source)
+    solve_text, solve_states = overlay_module._patch_text(
+        base_solve_text, overlay_module._SOLVE_INSERTIONS)
+    if set(solve_states.values()) != {"inserted"}:
+        raise RuntimeError(f"V2 solve source anchors incomplete: {solve_states}")
+    solve_source.write_text(solve_text, encoding="utf-8", newline="")
+    zero_pre = "       CALL moment_trace_finish_values('ZERO_OUT_PRE', grid%itimestep, &"
+    zero_out = "       CALL microphysics_zero_outb"
+    tile_assignments = (
+        "       its = max(grid%i_start(ij),ids)",
+        "       ite = min(grid%i_end(ij),ide-1)",
+        "       jts = max(grid%j_start(ij),jds)",
+        "       jte = min(grid%j_end(ij),jde-1)",
+    )
+    zero_guard = "       IF ( config_flags%mp_zero_out > 0 ) THEN"
+    zero_pre_idx = solve_text.find(zero_pre)
+    zero_guard_idx = solve_text.find(zero_guard, zero_pre_idx + 1) if zero_pre_idx >= 0 else -1
+    zero_out_idx = solve_text.find(zero_out, zero_guard_idx + 1) if zero_guard_idx >= 0 else -1
+    bound_indices = [solve_text.rfind(line, 0, zero_pre_idx) for line in tile_assignments] if zero_pre_idx >= 0 else []
+    if (zero_pre_idx < 0 or zero_guard_idx < 0 or zero_out_idx < 0
+            or any(index < 0 for index in bound_indices)
+            or not (bound_indices == sorted(bound_indices)
+                    and bound_indices[-1] < zero_pre_idx < zero_guard_idx < zero_out_idx)):
+        raise RuntimeError("ZERO_OUT_PRE must follow current tile bounds and precede the guarded zero-out")
+    overlay_report_path = output / "fortran_overlay_receipt.json"
+    overlay_report = {
+        "schema": "kdm6ad.native_moment_trace_v2_private_fortran_overlay.v1",
+        "status": "applied_to_staged_sources",
+        "overlay_script": str(overlay_script),
+        "overlay_script_sha256": sha256_file(overlay_script),
+        "wrapper": {"baseline_compiled_f90_sha256": wrapper_base_sha,
+                    "overlay_f90_path": str(wrapper_source),
+                    "overlay_f90_sha256": sha256_file(wrapper_source),
+                    "insertions": wrapper_states},
+        "solve": {"authoritative_fortran_source_path": str(private_solve_f),
+                  "authoritative_fortran_source_sha256": sha256_file(private_solve_f),
+                  "preprocessing_commands": preprocess_commands,
+                  "preprocessed_f90_path": str(base_solve_source),
+                  "preprocessed_f90_sha256": solve_base_sha,
+                  "overlay_f90_path": str(solve_source),
+                  "overlay_f90_sha256": sha256_file(solve_source),
+                  "insertions": solve_states},
+    }
+    overlay_report_path.write_text(json.dumps(overlay_report, sort_keys=True, indent=2) + "\n")
+    module_object = objects / "kdm6ad_moment_trace_v2.o"
+    wrapper_object = objects / "module_mp_kdm6ad.o"
+    solve_object = objects / "solve_em.o"
+
+    wrap_command = compile_command("module_mp_kdm6ad")
+    solve_command = compile_command("solve_em")
+    if "-ffp-contract=off" not in wrap_command:
+        raise ValueError("saved KDM wrapper compile command lost -ffp-contract=off")
+    if "-ffp-contract=off" in solve_command:
+        raise ValueError("unexpected solve_em baseline flag drift; refusing to alter its operation contract")
+    module_flags = [x for x in wrap_command[wrap_command.index("-c") + 1:-1]
+                    if not x.startswith("-I") and x not in ("-ffp-contract=off",)]
+    module_command = [str(MPIF90), "-o", str(module_object), "-c", *module_flags,
+                      "-ffp-contract=off", "-J", str(module_dir), str(NEW_MODULE_SOURCE)]
+    run(module_command, cwd=SOURCE_PHYS, log=output / "compile_moment_trace_module.log")
+    wrapped = rewrite_compile(wrap_command, "module_mp_kdm6ad", wrapper_source, wrapper_object, module_dir)
+    solved = rewrite_compile(solve_command, "solve_em", solve_source, solve_object, module_dir)
+    run(wrapped, cwd=SOURCE_PHYS, log=output / "compile_module_mp_kdm6ad.log")
+    run(solved, cwd=SOURCE_DYN, log=output / "compile_solve_em.log")
+
+    private_archive = output / "libwrflib.native_moment_trace_v2.a"
+    clonefile(OLD_ARCHIVE, private_archive)
+    staged_objects = []
+    for source in (module_object, wrapper_object, solve_object):
+        target = staged / source.name
+        clonefile(source, target)
+        staged_objects.append(target)
+    run(["/usr/bin/ar", "-r", str(private_archive), *map(str, staged_objects)], cwd=staged,
+        log=output / "replace_archive_members.log")
+    run(["/usr/bin/ranlib", "-c", str(private_archive)], log=output / "ranlib.log")
+    updated_members = archive_members(private_archive)
+    if set(updated_members) != set(baseline_members) | {("kdm6ad_moment_trace_v2.o", 0)}:
+        raise RuntimeError("private archive member inventory changed beyond adding the V2 module")
+    expected_changes = {"module_mp_kdm6ad.o", "solve_em.o", "kdm6ad_moment_trace_v2.o"}
+    changed = [name for name, occurrence in baseline_members
+               if baseline_members[(name, occurrence)] != updated_members[(name, occurrence)]]
+    if set(changed) != expected_changes - {"kdm6ad_moment_trace_v2.o"}:
+        raise RuntimeError(f"private archive unexpected modified members: {changed}")
+    if updated_members[("kdm6_iso_c.o", 0)] != baseline_members[("kdm6_iso_c.o", 0)]:
+        raise RuntimeError("V1 ISO binding object changed in the V2 host build")
+    if updated_members[("module_big_step_utilities_em.o", 0)] != baseline_members[("module_big_step_utilities_em.o", 0)]:
+        raise RuntimeError("V1 finish-trace object changed in the V2 host build")
+
+    copied_dso = runtime / "libkdm6_c.2.0.0.dylib"
+    clonefile(CAPI_DSO, copied_dso)
+    if sha256_file(copied_dso) != capi["dso_sha256"]:
+        raise RuntimeError("private runtime CAPI DSO copy hash mismatch")
+    final = execution / "wrf_mp137_native_moment_trace_v2.exe"
+    link = list(old["private_wrf_link_command"])
+    for i, token in enumerate(link):
+        if token == "-o":
+            link[i + 1] = str(final)
+        elif token == str(OLD_ARCHIVE):
+            link[i] = str(private_archive)
+        elif token == old["capi_dso_execution_copy_path"]:
+            link[i] = str(copied_dso)
+    if str(private_archive) not in link or str(copied_dso) not in link or str(final) not in link:
+        raise ValueError("transformed WRF link command did not replace all three private artifacts")
+    sdk = Path(run(["xcrun", "--show-sdk-path"]).strip()).resolve()
+    env = os.environ.copy()
+    env["SDKROOT"] = str(sdk)
+    env["MACOSX_DEPLOYMENT_TARGET"] = old["private_wrf_link_deployment_target"]
+    run(link, cwd=BUILD / "main", env=env, log=output / "link_private_wrf.log")
+    run(["install_name_tool", "-change", "@rpath/libkdm6_native_fp64_value.2.dylib",
+         str(copied_dso), str(final)])
+    run(["codesign", "--force", "--sign", "-", str(final)])
+    run(["codesign", "--verify", "--strict", str(final)])
+    run(["codesign", "--force", "--sign", "-", str(copied_dso)])
+    run(["codesign", "--verify", "--strict", str(copied_dso)])
+
+    undefined = run(["nm", "-u", str(final)]).splitlines()
+    if not any(x.strip().endswith(FP64_SYMBOL) for x in undefined):
+        raise RuntimeError("linked WRF does not reference the private FP64 C entry")
+    if any(x.strip().endswith("_kdm6_step_c") for x in undefined):
+        raise RuntimeError("linked WRF unexpectedly references operational f32 entry")
+    wrapper_undefined = run(["nm", "-u", str(wrapper_object)]).splitlines()
+    module_undefined = run(["nm", "-u", str(module_object)]).splitlines()
+    if not any("moment_trace_begin_call" in x for x in wrapper_undefined):
+        raise RuntimeError("compiled wrapper is not linked to the V2 Fortran trace module")
+    if not any(x.strip().endswith(TRACE_CONTEXT_SYMBOL) for x in module_undefined):
+        raise RuntimeError("compiled V2 Fortran module does not reference the private C trace context")
+    if TRACE_CONTEXT_SYMBOL not in run(["nm", "-gU", str(copied_dso)]):
+        raise RuntimeError("runtime DSO does not export the private trace context")
+    linked = run(["otool", "-L", str(final)])
+    rpaths = run(["otool", "-l", str(final)])
+    dso_linked = run(["otool", "-L", str(copied_dso)])
+    dso_rpaths = run(["otool", "-l", str(copied_dso)])
+    if str(copied_dso) not in linked:
+        raise RuntimeError("linked host does not resolve to private trace DSO")
+    for runtime_name in ("libtorch.dylib", "libtorch_cpu.dylib", "libc10.dylib"):
+        if f"@rpath/{runtime_name}" not in linked or f"@rpath/{runtime_name}" not in dso_linked:
+            raise RuntimeError(f"Torch runtime dependency missing: {runtime_name}")
+    if str(TORCH) not in rpaths or str(TORCH) not in dso_rpaths:
+        raise RuntimeError("host/DSO RPATH does not select the pinned PyTorch directory")
+    for name, evidence in capi.get("torch_paths", {}).items():
+        path = Path(evidence["path"])
+        if not path.is_file() or sha256_file(path) != evidence["sha256"]:
+            raise RuntimeError(f"pinned PyTorch payload changed: {name}")
+
+    receipt = {
+        "schema": "kdm6.native_moment_trace_v2_private_host_build.v1",
+        "status": "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_commit": old.get("base_commit"),
+        "baseline_host_executable": str(OLD_EXECUTABLE),
+        "baseline_host_executable_sha256": sha256_file(OLD_EXECUTABLE),
+        "baseline_private_archive": str(OLD_ARCHIVE),
+        "baseline_private_archive_sha256": sha256_file(OLD_ARCHIVE),
+        "baseline_build_receipt": str(OLD_RECEIPT),
+        "baseline_build_receipt_sha256": sha256_file(OLD_RECEIPT),
+        "solve_source_reconstruction_audit": str(RECONSTRUCTION_AUDIT),
+        "solve_source_reconstruction_audit_sha256": sha256_file(RECONSTRUCTION_AUDIT),
+        "baseline_fortran_object_sha256": {
+            "module_mp_kdm6ad.o": sha256_file(OLD_WRAPPER_OBJECT),
+            "solve_em.o": sha256_file(OLD_SOLVE_OBJECT),
+        },
+        "reconstructed_v1_solve_source_sha256": solve_base_sha,
+        "fortran_sources": {
+            str(NEW_MODULE_SOURCE): {"sha256": sha256_file(NEW_MODULE_SOURCE)},
+            str(overlay_script): {"sha256": sha256_file(overlay_script)},
+            str(overlay_report_path): {"sha256": sha256_file(overlay_report_path)},
+            str(wrapper_source): {"sha256": sha256_file(wrapper_source), "compiled_source_sha256": sha256_file(wrapper_source), "base_source_sha256": wrapper_base_sha},
+            str(solve_source): {"sha256": sha256_file(solve_source), "compiled_source_sha256": sha256_file(solve_source), "base_source_sha256": solve_base_sha},
+            str(base_solve_source): {"sha256": sha256_file(base_solve_source), "role": "freshly preprocessed authoritative solve_em.F; rebuilt object matched executed V1 object"},
+            str(SOURCE_PHYS / "module_mp_kdm6ad.f90"): {"sha256": sha256_file(SOURCE_PHYS / "module_mp_kdm6ad.f90"), "role": "saved baseline compiled/preprocessed wrapper source"},
+            str(SOURCE_DYN / "solve_em.f90"): {"sha256": sha256_file(SOURCE_DYN / "solve_em.f90"), "role": "stale generated source rejected for S15 interface mismatch"},
+            str(SOURCE_PHYS / "module_mp_kdm6ad.F"): {"sha256": sha256_file(SOURCE_PHYS / "module_mp_kdm6ad.F"), "role": "saved original source review input"},
+            str(SOURCE_DYN / "solve_em.F"): {"sha256": sha256_file(SOURCE_DYN / "solve_em.F"), "role": "saved original source review input"},
+        },
+        "compiled_fortran_objects": {
+            "kdm6ad_moment_trace_v2.o": {"path": str(module_object), "sha256": sha256_file(module_object), "command": module_command, "log_sha256": sha256_file(output / "compile_moment_trace_module.log")},
+            "module_mp_kdm6ad.o": {"path": str(wrapper_object), "sha256": sha256_file(wrapper_object), "command": wrapped, "log_sha256": sha256_file(output / "compile_module_mp_kdm6ad.log")},
+            "solve_em.o": {"path": str(solve_object), "sha256": sha256_file(solve_object), "command": solved, "log_sha256": sha256_file(output / "compile_solve_em.log")},
+        },
+        "fortran_kdm6_ffp_contract_off": True,
+        "solve_em_original_compile_flags_preserved": True,
+        "private_archive_path": str(private_archive),
+        "private_archive_sha256": sha256_file(private_archive),
+        "archive_changed_members": sorted(changed + ["kdm6ad_moment_trace_v2.o"]),
+        "archive_member_inventory": len(updated_members),
+        "archive_member_hashes": [{"name": n, "occurrence": o, "sha256": h} for (n, o), h in sorted(updated_members.items())],
+        "capi_build_receipt": str(CAPI_RECEIPT),
+        "capi_build_receipt_sha256": sha256_file(CAPI_RECEIPT),
+        "capi_dso_source_sha256": capi["dso_sha256"],
+        "capi_dso_runtime_copy": str(copied_dso),
+        "capi_dso_runtime_copy_sha256": sha256_file(copied_dso),
+        "capi_v2_export_count": capi["private_export_count"],
+        "capi_operational_export_count": capi["operational_export_count"],
+        "capi_trace_context_export": TRACE_CONTEXT_SYMBOL,
+        "private_executable": str(final),
+        "private_executable_sha256": sha256_file(final),
+        "link_command": link,
+        "link_log_sha256": sha256_file(output / "link_private_wrf.log"),
+        "sdkroot": str(sdk),
+        "torch_payload": capi["torch_paths"],
+        "host_load_commands": linked,
+        "host_rpaths": rpaths,
+        "dso_load_commands": dso_linked,
+        "dso_rpaths": dso_rpaths,
+        "host_kdm6_undefined_symbols": [x.strip() for x in undefined if "kdm6" in x],
+        "host_steps": 0,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+        "model_run_authorized": False,
+    }
+    (output / "private_host_build_receipt.json").write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+    return receipt
+
+
+def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=EVIDENCE / "build/host_v2")
+    parser.add_argument("--overlay-script", type=Path, default=WORKTREE / "harness/native_moment_trace_overlay.py")
+    args = parser.parse_args()
+    receipt = build(args.output, args.overlay_script.resolve())
+    print(json.dumps({"status": receipt["status"], "executable": receipt["private_executable"],
+                      "executable_sha256": receipt["private_executable_sha256"],
+                      "changed_archive_members": receipt["archive_changed_members"],
+                      "KDM6_calls": 0, "RTTOV_calls": 0, "host_steps": 0}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

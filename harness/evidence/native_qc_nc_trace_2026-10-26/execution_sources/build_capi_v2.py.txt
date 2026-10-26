@@ -1,0 +1,83 @@
+"""Isolated moment-trace C API build; no physics/kernel/host execution."""
+from pathlib import Path
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+WT = Path('/private/tmp/KDM6AD-qc-nc-trace-20261026')
+OLD = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_value_bridge_v1')
+sys.path.insert(0, str(WT))
+from harness.native_moment_trace_cpp_overlay import overlay_cpp_source
+
+
+def sha(p):
+    h=hashlib.sha256()
+    with Path(p).open('rb') as f:
+        for b in iter(lambda:f.read(8<<20),b''):h.update(b)
+    return h.hexdigest()
+
+
+def run(argv, log):
+    r=subprocess.run([str(x) for x in argv],capture_output=True,text=True)
+    Path(log).write_text(r.stdout+r.stderr)
+    if r.returncode:raise RuntimeError(f'build command failed ({r.returncode}): {log}')
+    return r.stdout
+
+
+def build(out):
+    receipt=json.loads((OLD/'build_receipt.json').read_text())
+    source=WT/'libtorch/bridge/kdm6_c_api.cpp'
+    if sha(source)!='9f1780de844474de588cbe5bb174488676f69f5bf3a9db6ab864255809a1da2c':raise ValueError('base C API source differs')
+    archive=Path(receipt['archive_copy'])
+    if sha(archive)!=receipt['archive_copy_sha256']:raise ValueError('physics archive differs')
+    exports=WT/'libtorch/bridge/kdm6_c.exports'
+    if sha(exports)!=receipt['default_exports_sha256']:raise ValueError('operational exports differ')
+    for r in receipt['torch_paths'].values():
+        if sha(r['path'])!=r['sha256']:raise ValueError('Torch runtime asset changed')
+    out.mkdir(parents=True,exist_ok=False)
+    cpp=out/'kdm6_c_api.moment_v2.cpp';cpp.write_text(overlay_cpp_source(source.read_text()))
+    shutil.copyfile(WT/'libtorch/bridge/kdm6_c_api.h',out/'kdm6_c_api.h')
+    helper=WT/'harness/native_trace/native_moment_trace_v2.hpp'
+    shutil.copyfile(helper,out/helper.name)
+    object_path=out/'kdm6_c_api.moment_v2.o'
+    command=list(receipt['compile_command'])
+    command[command.index('-c')+1]=str(cpp)
+    command[command.index('-o')+1]=str(object_path)
+    command.insert(1,'-DKDM6_ENABLE_NATIVE_MOMENT_TRACE_V2=1')
+    if '-ffp-contract=off' not in command:raise ValueError('missing ffp-contract=off')
+    run(command,out/'compile.log')
+    symbols=exports.read_text().rstrip()+'\n_kdm6_native_fp64_value_c\n_kdm6_moment_trace_context_c\n'
+    export_path=out/'moment_v2.exports';export_path.write_text(symbols)
+    names={s.strip() for s in symbols.splitlines() if s.strip() and not s.startswith('#')}
+    if len(names)!=16:raise ValueError('expected 16 private exports')
+    dso=out/'libkdm6_native_fp64_value.2.0.0.dylib'
+    torch=Path(receipt['torch_paths']['libtorch.dylib']['path']).parent
+    flags=command[command.index('-O3'):command.index('-c')]
+    link=[command[0],*flags,'-dynamiclib','-Wl,-headerpad_max_install_names',f'-Wl,-exported_symbols_list,{export_path}',
+          '-compatibility_version','2.0.0','-current_version','2.0.0','-Wl,-install_name,@rpath/libkdm6_native_fp64_value.2.dylib',
+          '-o',str(dso),str(object_path),f'-Wl,-rpath,{torch}',str(archive),
+          str(torch/'libtorch.dylib'),str(torch/'libtorch_cpu.dylib'),str(torch/'libc10.dylib')]
+    run(link,out/'link.log');run(['codesign','--force','--sign','-',dso],out/'codesign.log')
+    run(['codesign','--verify','--strict',dso],out/'codesign_verify.log')
+    actual={line.split()[-1] for line in run(['nm','-gU',dso],out/'symbols.log').splitlines() if line.strip()}
+    if actual!=names:raise ValueError(f'private export mismatch {actual ^ names}')
+    if sha(archive)!=receipt['archive_copy_sha256']:raise ValueError('physics archive changed during build')
+    result={'schema':'kdm6.native_moment_trace_capi_build.v2','status':'BUILT_NO_PHYSICAL_CALLS',
+      'base_commit':'a1c63630ec760b797d485a33537075003aa8d812','old_build_receipt_sha256':sha(OLD/'build_receipt.json'),
+      'source_pins':{str(p):sha(p) for p in [source,WT/'harness/native_moment_trace_cpp_overlay.py',helper,cpp,out/helper.name,out/'kdm6_c_api.h',Path(__file__)]},
+      'compile_command':command,'link_command':link,'compile_log_sha256':sha(out/'compile.log'),
+      'physics_archive':str(archive),'physics_archive_sha256':sha(archive),'physics_archive_members_unchanged':receipt['archive_members'],
+      'dso_path':str(dso),'dso_sha256':sha(dso),'object_sha256':sha(object_path),
+      'exported_symbols':sorted(actual),'private_export_count':len(actual),'operational_export_count':14,
+      'torch_paths':receipt['torch_paths'],'torch_version':'2.13.0','ffp_contract_off':True,
+      'operational_install_modified':False,'new_physical_calls':{'host':0,'KDM':0,'RTTOV':0}}
+    (out/'build_receipt.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+    print(json.dumps({k:result[k] for k in ['status','dso_path','dso_sha256','private_export_count']}))
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);args=p.parse_args();build(args.output.resolve())
