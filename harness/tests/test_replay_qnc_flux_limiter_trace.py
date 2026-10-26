@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 
@@ -20,7 +21,7 @@ from harness.replay_qnc_flux_limiter_trace import (
     analyze_qnc_flux_limiter_trace,
     read_qnc_flux_trace,
 )
-from harness.analyze_upstream_nc_trace import UpstreamNCTrace, UpstreamValue
+from harness.analyze_upstream_nc_trace import UpstreamNCTrace, UpstreamValue, read_upstream_nc_trace
 
 
 def _row(step: int, rk: int, stage: str, i: int, k: int, j: int, field: str, dtype: str, raw: str) -> str:
@@ -171,6 +172,22 @@ def test_analyzer_rejects_cross_run_join_and_reports_wrong_advect_tend_bits(tmp_
     assert not wrong_join["all_captured_replays_match_a_source_or_outer_fma_candidate"]
 
 
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    (("scalar_adv_opt", 1.9), ("rk_ord", 3.9), ("zadvect_implicit", 0.9),
+     ("scalar_adv_opt", True), ("scalar_adv_opt", "1")),
+)
+def test_analyzer_rejects_noninteger_run_config(tmp_path, field, bad_value):
+    trace = read_qnc_flux_trace(_write_trace(tmp_path, "config.tsv", _complete_synthetic_rows()))
+    config = {"scalar_adv_opt": 1, "rk_ord": 3, "h_sca_adv_order": 5, "v_sca_adv_order": 3, "zadvect_implicit": 0}
+    config[field] = bad_value
+    with pytest.raises(ValueError, match=f"run config {field} must be the integer"):
+        analyze_qnc_flux_limiter_trace(
+            trace, upstream_trace=_upstream_for_synthetic(), run_id="control_v6",
+            upstream_run_id="control_v6", run_config=config,
+        )
+
+
 def test_ph_low_full_source_formula_mismatch_fails_captured_replay_gate(tmp_path):
     trace = read_qnc_flux_trace(_write_trace(tmp_path, "ph_formula.tsv", _complete_synthetic_rows()))
     upstream = _upstream_for_synthetic()
@@ -288,6 +305,76 @@ def test_parser_rejects_wrong_boolean_encoding_and_boolean_on_other_field(tmp_pa
     rows[0] = rows[0].replace("TENDENCY\tf32\t00000000", "TENDENCY\tbool\t00")
     with pytest.raises(ValueError):
         read_qnc_flux_trace(_write_trace(tmp_path, "bad_type.tsv", rows))
+
+    rows = _valid_rows()
+    index = next(n for n, row in enumerate(rows) if "RK3_PD_LIMIT_CELL" in row and "LIMIT_HIT" in row)
+    rows[index] = rows[index].replace("LIMIT_HIT\tbool\t00", "LIMIT_HIT\tf32\tC2F60000")
+    with pytest.raises(ValueError, match="LIMIT_HIT requires bool"):
+        read_qnc_flux_trace(_write_trace(tmp_path, "bad_hit_type.tsv", rows))
+
+
+def test_analyzer_rejects_in_memory_limit_hit_with_wrong_dtype(tmp_path):
+    trace = read_qnc_flux_trace(_write_trace(tmp_path, "valid.tsv", _complete_synthetic_rows()))
+    group = trace.select_qnc_scalar_group()
+    key = next(key for key, row in group.values.items() if row.field == "LIMIT_HIT")
+    values = dict(group.values)
+    values[key] = replace(values[key], dtype="f32", bits=0xC2F60000)
+    malformed = replace(trace, groups=(replace(group, values=values),))
+    with pytest.raises(ValueError, match="LIMIT_HIT requires bool"):
+        analyze_qnc_flux_limiter_trace(
+            malformed, upstream_trace=_upstream_for_synthetic(), run_id="control_v6",
+            upstream_run_id="control_v6",
+            run_config={"scalar_adv_opt": 1, "rk_ord": 3, "h_sca_adv_order": 5, "v_sca_adv_order": 3, "zadvect_implicit": 0},
+        )
+
+
+@pytest.mark.parametrize("malformation", ("noncanonical_bool", "wrong_mapping_key", "float_mapping_key", "nonfinite_f32"))
+def test_analyzer_rejects_noncanonical_in_memory_rows(tmp_path, malformation):
+    trace = read_qnc_flux_trace(_write_trace(tmp_path, "canonical.tsv", _complete_synthetic_rows()))
+    group = trace.select_qnc_scalar_group()
+    values = dict(group.values)
+    if malformation == "float_mapping_key":
+        old_key = next(key for key, row in values.items() if row.field == "LIMIT_HIT")
+        float_key = tuple(float(value) if index in (0, 1, 3, 4, 5) else value for index, value in enumerate(old_key))
+        values[float_key] = values.pop(old_key)
+        row_order = tuple(float_key if key == old_key else key for key in group.row_order)
+        malformed = replace(trace, groups=(replace(group, values=values, row_order=row_order),))
+        expected_error = "canonical integer coordinates"
+    elif malformation == "wrong_mapping_key":
+        key = next(key for key, row in values.items() if row.field == "LIMIT_HIT")
+        values[key] = replace(values[key], i=220)
+        expected_error = "flux record key"
+    elif malformation == "noncanonical_bool":
+        key = next(key for key, row in values.items() if row.field == "LIMIT_HIT")
+        values[key] = replace(values[key], bits=2)
+        expected_error = "canonical boolean"
+    else:
+        key = next(key for key, row in values.items() if row.field == "TENDENCY")
+        values[key] = replace(values[key], bits=0x7FC00000)
+        expected_error = "finite binary32"
+    if malformation != "float_mapping_key":
+        malformed = replace(trace, groups=(replace(group, values=values),))
+    with pytest.raises(ValueError, match=expected_error):
+        analyze_qnc_flux_limiter_trace(
+            malformed, upstream_trace=_upstream_for_synthetic(), run_id="control_v6",
+            upstream_run_id="control_v6",
+            run_config={"scalar_adv_opt": 1, "rk_ord": 3, "h_sca_adv_order": 5, "v_sca_adv_order": 3, "zadvect_implicit": 0},
+        )
+
+
+def test_published_pr457_cases_are_numerically_unchanged():
+    packet = Path(__file__).resolve().parents[1] / "evidence/native_qnc_flux_2026-10-27"
+    expected = json.loads((packet / "analysis.json").read_text())["cases"]
+    flags = json.loads((packet / "receipts/runtime_flags.json").read_text())
+    for case, run_id in (("control", "control_pr457_v5_on"), ("alpha025", "alpha025_pr457_v6_on")):
+        result = analyze_qnc_flux_limiter_trace(
+            read_qnc_flux_trace(packet / "data" / case / "qnc_flux.tsv"),
+            upstream_trace=read_upstream_nc_trace(packet / "data" / case / "upstream_nc.tsv"),
+            run_id=run_id,
+            upstream_run_id=run_id,
+            run_config=flags["normalized_run_config"][case],
+        )
+        assert result == expected[case]
 
 
 def test_parser_rejects_duplicate_missing_and_bad_magic(tmp_path):

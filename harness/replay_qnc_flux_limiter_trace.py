@@ -114,7 +114,19 @@ def _key(row: FluxTraceValue) -> FluxKey:
     return (row.step, row.rk, row.stage, row.i, row.k, row.j, row.field)
 
 
+def _canonical_key(key: object) -> bool:
+    return (
+        type(key) is tuple and len(key) == 7
+        and all(type(key[index]) is int for index in (0, 1, 3, 4, 5))
+        and type(key[2]) is str and type(key[6]) is str
+    )
+
+
 def _validate_flux_group(group: FluxTraceGroup) -> None:
+    if any(not _canonical_key(key) for key in (*group.values, *group.row_order)):
+        raise ValueError("flux record keys must use canonical integer coordinates")
+    if len(group.row_order) != len(group.values) or set(group.row_order) != set(group.values):
+        raise ValueError("flux row order does not match its records")
     expected: set[FluxKey] = set()
     for stage in ("RK1_START", "RK1_AFTER_Y", "RK1_AFTER_X", "RK1_AFTER_Z"):
         expected.update((NATIVE_STEP_SECONDS, 1, stage, *TARGET_IKJ, f) for f in STAGE_FIELDS[stage])
@@ -125,6 +137,17 @@ def _validate_flux_group(group: FluxTraceGroup) -> None:
     missing, extra = expected - set(group.values), set(group.values) - expected
     if missing or extra:
         raise ValueError(f"incomplete/unexpected flux records; missing={len(missing)} extra={len(extra)}")
+    for key, row in group.values.items():
+        if _key(row) != key or any(type(value) is not int for value in (row.step, row.rk, row.i, row.k, row.j)):
+            raise ValueError("flux record key does not match its row")
+        expected_dtype = "bool" if row.field == "LIMIT_HIT" else "f32"
+        if row.dtype != expected_dtype:
+            raise ValueError(f"{row.field} requires {expected_dtype}, got {row.dtype}")
+        if row.dtype == "bool":
+            if type(row.bits) is not bool:
+                raise ValueError("LIMIT_HIT requires a canonical boolean bit")
+        elif type(row.bits) is not int or not 0 <= row.bits <= 0xFFFFFFFF or not np.isfinite(row.value):
+            raise ValueError(f"{row.field} requires a finite binary32 word")
     stage_order: list[tuple[int, str]] = []
     for key in group.row_order:
         item = (key[1], key[2])
@@ -194,6 +217,9 @@ def read_qnc_flux_trace(path: str | Path) -> FluxTrace:
         allowed = {TARGET_IKJ, *FACE_NEIGHBORS_IKJ} if stage == "RK3_PD_LIMIT_CELL" else {TARGET_IKJ}
         if coord not in allowed:
             raise ValueError(f"line {line_no}: unexpected target/donor coordinate {coord}")
+        expected_dtype = "bool" if field == "LIMIT_HIT" else "f32"
+        if dtype != expected_dtype:
+            raise ValueError(f"line {line_no}: {field} requires {expected_dtype}, got {dtype}")
         if dtype == "f32":
             if not _HEX32.fullmatch(hex_word):
                 raise ValueError(f"line {line_no}: f32 word must have 8 hex digits")
@@ -201,8 +227,8 @@ def read_qnc_flux_trace(path: str | Path) -> FluxTrace:
             if not np.isfinite(np.asarray([bits], dtype=np.uint32).view(np.float32)[0]):
                 raise ValueError(f"line {line_no}: nonfinite f32 record")
         elif dtype == "bool":
-            if field != "LIMIT_HIT" or not _BOOL.fullmatch(hex_word):
-                raise ValueError(f"line {line_no}: only LIMIT_HIT may be bool 00/01")
+            if not _BOOL.fullmatch(hex_word):
+                raise ValueError(f"line {line_no}: LIMIT_HIT must be bool 00/01")
             bits = hex_word == "01"
         else:
             raise ValueError(f"line {line_no}: unsupported dtype {dtype!r}")
@@ -499,8 +525,8 @@ def analyze_qnc_flux_limiter_trace(
         raise ValueError("flux and upstream NC traces must have the same explicit run_id")
     expected_config = {"scalar_adv_opt": 1, "rk_ord": 3, "h_sca_adv_order": 5, "v_sca_adv_order": 3, "zadvect_implicit": 0}
     for field, expected in expected_config.items():
-        if field not in run_config or int(run_config[field]) != expected:
-            raise ValueError(f"run config {field} must be {expected}")
+        if field not in run_config or type(run_config[field]) is not int or run_config[field] != expected:
+            raise ValueError(f"run config {field} must be the integer {expected}")
     target_upstream = (TARGET_IKJ[0], TARGET_IKJ[2], TARGET_IKJ[1])
     rk1 = _rk1_directional_replay(selected)
     rk3 = _rk3_divergence_replay(selected)

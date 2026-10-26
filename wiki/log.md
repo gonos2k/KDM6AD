@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native trace guards and saved QNC budget
+- Added [[sources/native-trace-guards-and-qnc-budget-2026-10-27]]: the moment overlay now refuses report/source aliases and escaping source paths before mutation, retains source permissions, and the QNC replay requires canonical record types and integer run settings. The prior 28-file packet remains immutable and its original source pin remains historical.
+- Saved binary32 face/state operands give exact-rational local residuals `+25,776.334` (control) and `−165,989.840` (alpha0.25). This is a target-cell numerical comparison, not an executed FMA, physical NC unit, shared-face/domain conservation, or new model/RTTOV/assimilation result.
+
 ## [2026-10-27] Native QNC flux and limiter trace
 - Added [[sources/native-qnc-flux-limiter-2026-10-27]]: the corrected control/alpha0.25 trace-off/on pairs preserve their respective full checkpoints bitwise. One scalar-QNC flux group per trace-on run joins the same-run RK1/RK3 advection tendency; the target RK3 outgoing limiter branch is active in both runs and the candidate still ends with negative NC.
 - The active positive-definite `PH_LOW` formula has a source-compatible target-cell replay; the captured records still lack the complete neighboring shared-face/domain budget and executed instruction sequence. Number-budget closure and the physical repair remain open. No RTTOV call, accepted analysis or second assimilation was performed in this trace campaign.

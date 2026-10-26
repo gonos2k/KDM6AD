@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 from pathlib import Path
+import shutil
 import sys
 
 import pytest
@@ -54,6 +57,7 @@ def test_pins_match_authoritative_compiled_inputs():
 
 def test_default_plan_is_read_only_and_apply_is_source_pinned(tmp_path, monkeypatch):
     originals = _fixture_sources(tmp_path)
+    original_modes = {rel: (tmp_path / rel).stat().st_mode & 0o777 for rel in originals}
     monkeypatch.setattr(
         overlay,
         "SOURCE_PINS",
@@ -68,6 +72,7 @@ def test_default_plan_is_read_only_and_apply_is_source_pinned(tmp_path, monkeypa
 
     applied = overlay.apply_overlay(tmp_path)
     assert applied["status"] == "applied"
+    assert {rel: (tmp_path / rel).stat().st_mode & 0o777 for rel in originals} == original_modes
     mp = (tmp_path / "phys/module_mp_kdm6ad.f90").read_text(encoding="utf-8")
     solve = (tmp_path / "dyn_em/solve_em.f90").read_text(encoding="utf-8")
     for stage in ("MP_INPUT", "MP_OUTPUT", "HOST_WRITEBACK", "WRAPPER_POST"):
@@ -132,3 +137,66 @@ def test_overlay_keeps_unrelated_v1_text_and_uses_host_moments(tmp_path, monkeyp
     assert b"! preserved V1 trace marker" in result
     assert len(result) > len(before)
     assert "P_QNC" in solve_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("source_rel", tuple(overlay.SOURCE_PINS))
+@pytest.mark.parametrize("alias_kind", ("direct", "symlink", "hardlink"))
+@pytest.mark.parametrize("apply", (False, True))
+def test_report_alias_refused_before_plan_or_apply(tmp_path, monkeypatch, source_rel, alias_kind, apply):
+    originals = _fixture_sources(tmp_path)
+    if apply:
+        monkeypatch.setattr(
+            overlay,
+            "SOURCE_PINS",
+            {rel: hashlib.sha256(data).hexdigest() for rel, data in originals.items()},
+        )
+    source = tmp_path / source_rel
+    report = source if alias_kind == "direct" else tmp_path / "report.json"
+    if alias_kind == "symlink":
+        report.symlink_to(source)
+    elif alias_kind == "hardlink":
+        os.link(source, report)
+    before = {rel: (tmp_path / rel).read_bytes() for rel in originals}
+    args = ["--host-root", str(tmp_path), "--report", str(report)]
+    if apply:
+        args.append("--apply")
+    with pytest.raises(SystemExit) as exc:
+        overlay.main(args)
+    assert exc.value.code == 2
+    assert {rel: (tmp_path / rel).read_bytes() for rel in originals} == before
+
+
+def test_fresh_report_records_blocked_plan_without_changing_inputs(tmp_path):
+    originals = _fixture_sources(tmp_path)
+    report = tmp_path / "report.json"
+    assert overlay.main(["--host-root", str(tmp_path), "--report", str(report)]) == 2
+    assert json.loads(report.read_text())["status"] == "blocked"
+    assert {rel: (tmp_path / rel).read_bytes() for rel in originals} == originals
+
+
+def test_report_tilde_path_is_written_where_it_was_checked(tmp_path, monkeypatch):
+    _fixture_sources(tmp_path / "host")
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert overlay.main(["--host-root", str(tmp_path / "host"), "--report", "~/trace.json"]) == 2
+    assert (tmp_path / "trace.json").is_file()
+    assert not (work / "~").exists()
+
+
+def test_source_parent_symlink_outside_host_root_is_refused(tmp_path, monkeypatch):
+    root = tmp_path / "host"
+    originals = _fixture_sources(root)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    shutil.move(str(root / "phys"), str(outside / "phys"))
+    (root / "phys").symlink_to(outside / "phys", target_is_directory=True)
+    monkeypatch.setattr(
+        overlay,
+        "SOURCE_PINS",
+        {rel: hashlib.sha256(data).hexdigest() for rel, data in originals.items()},
+    )
+    assert overlay.build_overlay_plan(root)["status"] == "blocked"
+    assert overlay.apply_overlay(root)["status"] == "blocked"
+    assert (outside / "phys/module_mp_kdm6ad.f90").read_bytes() == originals["phys/module_mp_kdm6ad.f90"]

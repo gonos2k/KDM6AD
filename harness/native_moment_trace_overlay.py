@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import stat
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -185,8 +186,18 @@ def build_overlay_plan(host_root: Path) -> dict[str, Any]:
         return report
     for rel, expected in SOURCE_PINS.items():
         path = root / rel
-        if path.is_symlink():
-            report["errors"].append(f"refusing symlink source: {path}")
+        component = root
+        has_symlink = False
+        for part in Path(rel).parts:
+            component /= part
+            if component.is_symlink():
+                has_symlink = True
+                break
+        if has_symlink:
+            report["errors"].append(f"refusing symlink source path: {path}")
+            continue
+        if not path.resolve(strict=False).is_relative_to(root):
+            report["errors"].append(f"source escapes host root: {path}")
             continue
         try:
             before = path.read_bytes()
@@ -226,11 +237,13 @@ def apply_overlay(host_root: Path) -> dict[str, Any]:
             path = Path(item["_path"])
             if _sha256(path.read_bytes()) != item["source_sha256"]:
                 raise RuntimeError(f"source changed during overlay preflight: {path}")
+            source_mode = stat.S_IMODE(path.stat().st_mode)
             fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".moment-v2-tmp", dir=path.parent)
             temp_path = Path(name)
             with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
                 handle.write(item["_content"])
                 handle.flush()
+                os.fchmod(handle.fileno(), source_mode)
                 os.fsync(handle.fileno())
             staged.append((path, temp_path, item["source_sha256"]))
         for path, temp_path, source_hash in staged:
@@ -249,19 +262,41 @@ def apply_overlay(host_root: Path) -> dict[str, Any]:
     return report
 
 
+def _check_report_target(report_path: Path, host_root: Path) -> None:
+    """Keep report output separate from every pinned input, before plan/apply."""
+    target = report_path.expanduser()
+    root = host_root.expanduser().resolve(strict=False)
+    resolved = target.resolve(strict=False)
+    for rel in SOURCE_PINS:
+        source = root / rel
+        if resolved == source.resolve(strict=False):
+            raise ValueError(f"report path aliases input source: {source}")
+        if target.exists() and source.exists() and target.samefile(source):
+            raise ValueError(f"report path is a hardlink to input source: {source}")
+    if target.is_symlink() or target.exists():
+        raise FileExistsError(f"report requires a new non-symlink path: {target}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host-root", type=Path, required=True, help="explicit isolated private host source tree")
     parser.add_argument("--apply", action="store_true", help="write after source-pin and unique-anchor checks")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args(argv)
+    report_path = args.report.expanduser() if args.report is not None else None
+    if report_path is not None:
+        try:
+            _check_report_target(report_path, args.host_root)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
     report = apply_overlay(args.host_root) if args.apply else build_overlay_plan(args.host_root)
     serializable = {**report, "files": [{k: v for k, v in item.items() if not k.startswith("_")} for item in report["files"]]}
     rendered = json.dumps(serializable, indent=2, sort_keys=True)
     print(rendered)
-    if args.report:
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(rendered + "\n", encoding="utf-8")
+    if report_path is not None:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with report_path.open("x", encoding="utf-8") as stream:
+            stream.write(rendered + "\n")
     return 0 if report["status"] in {"ready", "applied"} else 2
 
 
