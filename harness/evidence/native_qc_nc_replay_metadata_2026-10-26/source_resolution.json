@@ -1,0 +1,22 @@
+{
+  "schema": "kdm6.historical_source_resolution.v1",
+  "immutable_manifest": "harness/evidence/native_qc_nc_trace_2026-10-26/manifest.json",
+  "base_commit": "6787d3c926981e603de6585caae50407ac2c7fd0",
+  "unchanged_manifest_entries": 50,
+  "changed_sources": [
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/replay.py",
+      "pr455_snapshot": "harness/evidence/native_qc_nc_replay_metadata_2026-10-26/pr455_replay.py.txt",
+      "pr455_sha256": "f8c902254d24add08f6ba6fcbaa6078220562a4bf8f6dd0c523a29e148ab4cbd",
+      "current_sha256": "d4a50962f0da948c1bda829e5188cc1c6d0fd57aea2ba9ffbeab9b840a7d465a"
+    },
+    {
+      "path": "harness/tests/test_replay_native_moment_trace.py",
+      "pr455_snapshot": "harness/evidence/native_qc_nc_replay_metadata_2026-10-26/pr455_test_replay_native_moment_trace.py.txt",
+      "pr455_sha256": "8ab859cd8437af0a588977ab671e50b0e4d616ffeeff9090d419346eeab6c2f8",
+      "current_sha256": "a7be64e7cced48d1108b663c68d5f6c9ab955dfafee2fc975c35646e47c6aec3"
+    }
+  ],
+  "replay_output_sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639",
+  "new_model_calls": 0
+}

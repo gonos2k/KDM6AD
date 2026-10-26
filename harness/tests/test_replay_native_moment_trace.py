@@ -101,7 +101,7 @@ def _manifest(tmp_path: Path, *, tamper_hash=False):
         "ncmin_land_hex64":NCMIN_LAND_HEX,
         "ncmin_sea_hex64":NCMIN_SEA_HEX,
         "levels_of_interest":[19,6,4],
-        "targets":TARGETS,
+        "targets":[dict(row) for row in TARGETS],
         "runs":runs,
         "comparisons":[{"control_run_id":"control_off","candidate_run_id":"alpha_025"}],
     }
@@ -147,4 +147,35 @@ def test_replay_context_npz_is_strictly_float32_and_shape_bound(tmp_path):
     path = tmp_path / "input_manifest.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match=r"float32\[3,39\]"):
+        REPLAY.replay_manifest(path)
+
+
+@pytest.mark.parametrize("field,value,label", [
+    ("levels", 39.9, "levels"),
+    ("levels", True, "levels"),
+    ("levels", "39", "levels"),
+    ("step", 3.1, "step"),
+    ("shape", 234.5, "global_shape_i_k_j"),
+    ("target", 155.5, "target T1 i"),
+    ("interest", 19.5, "levels_of_interest"),
+    ("calls", 1.5, "expected_call_count"),
+    ("bytes", 1.5, "byte count"),
+])
+def test_replay_rejects_fractional_integer_metadata(tmp_path, field, value, label):
+    manifest = _manifest(tmp_path)
+    if field in ("levels", "step"):
+        manifest[field] = value
+    elif field == "shape":
+        manifest["global_shape_i_k_j"][0] = value
+    elif field == "target":
+        manifest["targets"][0]["i"] = value
+    elif field == "interest":
+        manifest["levels_of_interest"][0] = value
+    elif field == "calls":
+        manifest["runs"][0]["expected_call_count"] = value
+    else:
+        manifest["runs"][0]["traces"]["host"]["bytes"] = value
+    path = tmp_path / "input_manifest.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match=f"{label}.*integer"):
         REPLAY.replay_manifest(path)

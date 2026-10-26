@@ -1,0 +1,5313 @@
+{
+  "execution_summary": {
+    "accepted_analysis_updates": 0,
+    "archive_member_inventory": 378,
+    "base_commit": "6787d3c926981e603de6585caae50407ac2c7fd0",
+    "executed_kdm_wrapper_entries": 8,
+    "executed_steps": 4,
+    "kdm_fortran_ffp_contract_off": true,
+    "new_rttov_calls": 0,
+    "optimizer_calls": 0,
+    "pairs": [
+      {
+        "ack_byte_identical": true,
+        "case": "control",
+        "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "full_checkpoint_raw_bitwise_equal": true,
+        "numeric_element_mismatches": 0,
+        "numeric_elements_compared": 322426586,
+        "off_run_id": "control_upstream_nc_v4_off",
+        "on_run_id": "control_upstream_nc_v6_on",
+        "private_pair_receipt_sha256": "f5530101567e60ae1b4a3ec3f6c41f1075ca8211d533610c613fea5b7528533e",
+        "variable_count": 652
+      },
+      {
+        "ack_byte_identical": true,
+        "case": "alpha025",
+        "final_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+        "full_checkpoint_raw_bitwise_equal": true,
+        "numeric_element_mismatches": 0,
+        "numeric_elements_compared": 322426586,
+        "off_run_id": "alpha025_upstream_nc_v6_off",
+        "on_run_id": "alpha025_upstream_nc_v6_on",
+        "private_pair_receipt_sha256": "8b38191698d1ea9aa0186b325619cf2f023903f696a3f02df3c244fa1cf455e0",
+        "variable_count": 652
+      }
+    ],
+    "prior_pr455_steps_not_recatalogued": 8,
+    "runs": [
+      {
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "case": "control_off",
+        "endpoint_full_comparison_sha256": "c556f6166357c2fb600295efdd7d886b95c652b69747f0edcc1c7e01266f33e4",
+        "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "host_steps": 1,
+        "kdm_wrapper_entries": 2,
+        "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+        "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+        "run_id": "control_upstream_nc_v4_off",
+        "run_result_sha256": "d5198e0c775667a3a2638696f54cdbff3f5eedadecc026a12b7b3cdfa76708e2",
+        "trace_artifacts": {},
+        "trace_mode": "off",
+        "upstream_trace_rows": 0
+      },
+      {
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "case": "control_on",
+        "endpoint_full_comparison_sha256": "c556f6166357c2fb600295efdd7d886b95c652b69747f0edcc1c7e01266f33e4",
+        "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "host_steps": 1,
+        "kdm_wrapper_entries": 2,
+        "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+        "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+        "run_id": "control_upstream_nc_v6_on",
+        "run_result_sha256": "2e3ebe9fc2bbcbfe10907ddf2daa4041ba3048601e8b05a1fc0646383e1e6f1a",
+        "trace_artifacts": {
+          "host.hex": {
+            "bytes": 71585,
+            "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+          },
+          "kernel.hex": {
+            "bytes": 24041,
+            "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+          },
+          "upstream_nc.tsv": {
+            "bytes": 11014,
+            "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+          }
+        },
+        "trace_mode": "on",
+        "upstream_trace_rows": 206
+      },
+      {
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "case": "alpha025_off",
+        "endpoint_full_comparison_sha256": "ffa25d399029d30e62fc3f084de8019776322578eafc827ba5bc54e83180e247",
+        "endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+        "host_steps": 1,
+        "kdm_wrapper_entries": 2,
+        "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+        "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+        "run_id": "alpha025_upstream_nc_v6_off",
+        "run_result_sha256": "02c993f7e02921d865bd736ca781f88315020155d1561cb958a0bd07d3d57576",
+        "trace_artifacts": {},
+        "trace_mode": "off",
+        "upstream_trace_rows": 0
+      },
+      {
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "case": "alpha025_on",
+        "endpoint_full_comparison_sha256": "ffa25d399029d30e62fc3f084de8019776322578eafc827ba5bc54e83180e247",
+        "endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+        "host_steps": 1,
+        "kdm_wrapper_entries": 2,
+        "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+        "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+        "run_id": "alpha025_upstream_nc_v6_on",
+        "run_result_sha256": "8a66c5fa8cec7b2495cd3f531fcacbab2521cdeb33e05339b7690536c4669dcd",
+        "trace_artifacts": {
+          "host.hex": {
+            "bytes": 71585,
+            "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+          },
+          "kernel.hex": {
+            "bytes": 24041,
+            "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+          },
+          "upstream_nc.tsv": {
+            "bytes": 11014,
+            "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+          }
+        },
+        "trace_mode": "on",
+        "upstream_trace_rows": 206
+      }
+    ],
+    "runtime_namelist_readback": {
+      "BL_PBL_PHYSICS": "11",
+      "CU_PHYSICS": "37",
+      "MP_PHYSICS": "137",
+      "MP_ZERO_OUT": "2",
+      "MP_ZERO_OUT_ALL": "0",
+      "NO_MP_HEATING": "0",
+      "RA_LW_PHYSICS": "4",
+      "RA_SW_PHYSICS": "4",
+      "USE_Q_DIABATIC": "0",
+      "USE_THETA_M": "1"
+    },
+    "schema": "kdm6.native_upstream_nc_execution_summary.v1",
+    "scope": "Same original READY40 for four independent full-domain 20-second forward runs; two witness columns logged. No new observation evaluation or assimilation cycle.",
+    "solve_original_compile_flags_preserved": true,
+    "v4_archive_delta": [
+      "solve_em.o"
+    ],
+    "v4_build_receipt_sha256": "bd64ce5b0c209df1f293d9f6528e72f323edd2b51de5c3a40ea3f3cd4bdfa1d2",
+    "v4_dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+    "v4_executable_sha256": "59512e7f3b2e6dfc3887e9ce7497fabafd64d87599d136e5cbd2c6d92b8326a6",
+    "v4_overlay_base_solve_sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79",
+    "v4_overlay_script_sha256": "8fc86b9e447a7f144f9b54c24e2ca0554f5ac2bbc951c6f54f0d0134355e91f1",
+    "v4_overlay_solve_sha256": "a10a2aae453f1d0fcaa96d288d235db0087df3c6a28a4d4035e39f53790c8f71",
+    "v6_controller_sha256": "2bf217aaf723c75419cbe2b07ad6404f27675af7cfa6d3aa4ad08b980ad19044",
+    "v6_plan_sha256": "f5ff1a9bbe953cdd2fbf93b17b2d10aec057ef877c6ff48d934c1b834b2de2ca"
+  },
+  "input_manifest_sha256": "3f2f0ffeacd7ae85e00f1223ea0098febbdcdb3564df1ed7b4e83fe6c7a26615",
+  "replay_model_calls": {
+    "KDM": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "runs": {
+    "alpha025": {
+      "analysis": {
+        "run_id": "alpha025_upstream_nc_v6_on",
+        "schema": "kdm6ad.upstream_nc_trace_analysis.v1",
+        "scope": {
+          "f32_replay": "source-order candidate is compared bitwise; no exactness claim unless the observed bits match",
+          "higher_derivatives_or_cost": "not evaluated",
+          "mechanistic_attribution": "not inferred from operand replay",
+          "purpose": "audit the native qnc scalar update through the pre-KDM wrapper boundary",
+          "units": "not certified by this trace"
+        },
+        "targets": {
+          "target_221_63_6": {
+            "generic_rk_steps": [
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3560E5C",
+                    "value": -919363911680.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B0577C",
+                    "value": 90286.96875
+                  },
+                  "numerator": {
+                    "bits_hex": "528FF9B0",
+                    "value": 309184692224.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4A51034A",
+                    "value": 3424466.5
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D05",
+                      "dtype": "f32",
+                      "value": -181919629312.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A51034A",
+                      "dtype": "f32",
+                      "value": 3424466.5
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D05",
+                      "dtype": "f32",
+                      "value": -181919629312.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4A51034A",
+                    "value": 3424466.5
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2006F04",
+                    "value": -137904586752.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3560E5C",
+                    "value": -919363911680.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B0577C",
+                    "value": 90286.96875
+                  },
+                  "numerator": {
+                    "bits_hex": "528FF9B0",
+                    "value": 309184692224.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4A51034A",
+                    "value": 3424466.5
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D05",
+                      "dtype": "f32",
+                      "value": -181919629312.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A51034A",
+                      "dtype": "f32",
+                      "value": 3424466.5
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D05",
+                      "dtype": "f32",
+                      "value": -181919629312.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4A51034A",
+                    "value": 3424466.5
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2006F04",
+                    "value": -137904586752.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3A32E92",
+                    "value": -1401721978880.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B058CE",
+                    "value": 90289.609375
+                  },
+                  "numerator": {
+                    "bits_hex": "D22147C0",
+                    "value": -173173374976.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C9EA20C6",
+                    "value": -1917976.75
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B9262",
+                      "dtype": "f32",
+                      "value": -184223825920.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA8",
+                      "dtype": "f32",
+                      "value": 1124.8330078125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA20C6",
+                      "dtype": "f32",
+                      "value": -1917976.75
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B9262",
+                      "dtype": "f32",
+                      "value": -184223825920.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA8",
+                      "dtype": "f32",
+                      "value": 1124.8330078125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A51034A",
+                      "dtype": "f32",
+                      "value": 3424466.5
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C9EA20C6",
+                    "value": -1917976.75
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2028BA8",
+                    "value": -140172197888.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3A32E92",
+                    "value": -1401721978880.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B058CE",
+                    "value": 90289.609375
+                  },
+                  "numerator": {
+                    "bits_hex": "D22147C0",
+                    "value": -173173374976.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C9EA20C6",
+                    "value": -1917976.75
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B9262",
+                      "dtype": "f32",
+                      "value": -184223825920.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA8",
+                      "dtype": "f32",
+                      "value": 1124.8330078125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA20C6",
+                      "dtype": "f32",
+                      "value": -1917976.75
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B9262",
+                      "dtype": "f32",
+                      "value": -184223825920.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA8",
+                      "dtype": "f32",
+                      "value": 1124.8330078125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A51034A",
+                      "dtype": "f32",
+                      "value": 3424466.5
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C9EA20C6",
+                    "value": -1917976.75
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2028BA8",
+                    "value": -140172197888.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3EEC6C7",
+                    "value": -2051074293760.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B06206",
+                    "value": 90308.046875
+                  },
+                  "numerator": {
+                    "bits_hex": "C8A832DE",
+                    "value": -344470.9375
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C0741F1E",
+                    "value": -3.814399242401123
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A7A",
+                      "dtype": "f32",
+                      "value": -104208482304.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E75B8",
+                      "dtype": "f32",
+                      "value": 1139.6787109375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C0741F1E",
+                      "dtype": "f32",
+                      "value": -3.814399242401123
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A7A",
+                      "dtype": "f32",
+                      "value": -104208482304.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E75B8",
+                      "dtype": "f32",
+                      "value": 1139.6787109375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA20C6",
+                      "dtype": "f32",
+                      "value": -1917976.75
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C0741F1E",
+                    "value": -3.814399242401123
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D1BF056C",
+                    "value": -102553714688.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3EEC6C7",
+                    "value": -2051074293760.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B06205",
+                    "value": 90308.0390625
+                  },
+                  "numerator": {
+                    "bits_hex": "C8C00000",
+                    "value": -393216.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C0741F1E",
+                    "value": -3.814399242401123
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A7A",
+                      "dtype": "f32",
+                      "value": -104208482304.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E75B8",
+                      "dtype": "f32",
+                      "value": 1139.6787109375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C0741F1E",
+                      "dtype": "f32",
+                      "value": -3.814399242401123
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A7A",
+                      "dtype": "f32",
+                      "value": -104208482304.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E75B8",
+                      "dtype": "f32",
+                      "value": 1139.6787109375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA20C6",
+                      "dtype": "f32",
+                      "value": -1917976.75
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C08B554F",
+                    "value": -4.354163646697998
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D1BF056C",
+                    "value": -102553714688.0
+                  }
+                }
+              }
+            ],
+            "global_i_j_k": [
+              221,
+              63,
+              6
+            ],
+            "pd_step3": {
+              "observed_scalar_old": {
+                "bits_hex": "4BAD4BDA",
+                "value": 22714292.0
+              },
+              "operands_after": {
+                "C1H": {
+                  "bits_hex": "3F9EF5D8",
+                  "dtype": "f32",
+                  "value": 1.241877555847168
+                },
+                "C2H": {
+                  "bits_hex": "C6B384BB",
+                  "dtype": "f32",
+                  "value": -22978.365234375
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47AFF11A",
+                  "dtype": "f32",
+                  "value": 90082.203125
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "QNC": {
+                  "bits_hex": "C9EA20C6",
+                  "dtype": "f32",
+                  "value": -1917976.75
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "4BAD4BDA",
+                  "dtype": "f32",
+                  "value": 22714292.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                }
+              },
+              "operands_before": {
+                "C1H": {
+                  "bits_hex": "3F9EF5D8",
+                  "dtype": "f32",
+                  "value": 1.241877555847168
+                },
+                "C2H": {
+                  "bits_hex": "C6B384BB",
+                  "dtype": "f32",
+                  "value": -22978.365234375
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47AFF11A",
+                  "dtype": "f32",
+                  "value": 90082.203125
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "QNC": {
+                  "bits_hex": "C9EA20C6",
+                  "dtype": "f32",
+                  "value": -1917976.75
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "4B4F99F6",
+                  "dtype": "f32",
+                  "value": 13605366.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "51193512",
+                  "dtype": "f32",
+                  "value": 41126273024.0
+                }
+              },
+              "predicted_scalar_old": {
+                "bits_hex": "4BAD4BDA",
+                "value": 22714292.0
+              },
+              "qnc_unchanged_bitwise": true,
+              "rk_step": 3,
+              "scalar_old_bitwise_match": true,
+              "scalar_tend_after": {
+                "bits_hex": "00000000",
+                "value": 0.0
+              },
+              "scalar_tend_zeroed": true
+            },
+            "pre_microphysics_matches_kdm_mp_input": {
+              "bitwise_match": true,
+              "kdm_call_id": 1,
+              "kdm_mp_input_bits_hex": "C0741F1E",
+              "upstream_pre_microphysics_bits_hex": "C0741F1E"
+            },
+            "pre_microphysics_qnc": {
+              "bits_hex": "C0741F1E",
+              "value": -3.814399242401123
+            }
+          },
+          "target_91_94_4": {
+            "generic_rk_steps": [
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "4DA434C8",
+                    "value": 344365312.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96797",
+                    "value": 94927.1796875
+                  },
+                  "numerator": {
+                    "bits_hex": "4DA434C8",
+                    "value": 344365312.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4562BAD8",
+                    "value": 3627.677734375
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC67850",
+                      "dtype": "f32",
+                      "value": -416221696.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A8",
+                      "dtype": "f32",
+                      "value": -64.69073486328125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BAD8",
+                      "dtype": "f32",
+                      "value": 3627.677734375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC67850",
+                      "dtype": "f32",
+                      "value": -416221696.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A8",
+                      "dtype": "f32",
+                      "value": -64.69073486328125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4562BADC",
+                    "value": 3627.6787109375
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "4C450C23",
+                    "value": 51654796.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "4DA434C5",
+                    "value": 344365216.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96797",
+                    "value": 94927.1796875
+                  },
+                  "numerator": {
+                    "bits_hex": "4DA434C5",
+                    "value": 344365216.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4562BAD8",
+                    "value": 3627.677734375
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC67850",
+                      "dtype": "f32",
+                      "value": -416221696.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A8",
+                      "dtype": "f32",
+                      "value": -64.69073486328125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BAD8",
+                      "dtype": "f32",
+                      "value": 3627.677734375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC67850",
+                      "dtype": "f32",
+                      "value": -416221696.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A8",
+                      "dtype": "f32",
+                      "value": -64.69073486328125
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4562BAD8",
+                    "value": 3627.677734375
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "4C450C20",
+                    "value": 51654784.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "CE4A8A0F",
+                    "value": -849511360.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96867",
+                    "value": 94928.8046875
+                  },
+                  "numerator": {
+                    "bits_hex": "CE4A8A0F",
+                    "value": -849511360.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C60BD3BD",
+                    "value": -8948.9345703125
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047CF6",
+                      "dtype": "f32",
+                      "value": -555695488.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF58C",
+                      "dtype": "f32",
+                      "value": -63.23979187011719
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BD3BD",
+                      "dtype": "f32",
+                      "value": -8948.9345703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047CF6",
+                      "dtype": "f32",
+                      "value": -555695488.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF58C",
+                      "dtype": "f32",
+                      "value": -63.23979187011719
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BAD8",
+                      "dtype": "f32",
+                      "value": 3627.677734375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C60BD3BA",
+                    "value": -8948.931640625
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CCA2080C",
+                    "value": -84951136.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "CE4A8A14",
+                    "value": -849511680.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96867",
+                    "value": 94928.8046875
+                  },
+                  "numerator": {
+                    "bits_hex": "CE4A8A14",
+                    "value": -849511680.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C60BD3BD",
+                    "value": -8948.9345703125
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047CF6",
+                      "dtype": "f32",
+                      "value": -555695488.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF58C",
+                      "dtype": "f32",
+                      "value": -63.23979187011719
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BD3BD",
+                      "dtype": "f32",
+                      "value": -8948.9345703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047CF6",
+                      "dtype": "f32",
+                      "value": -555695488.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF58C",
+                      "dtype": "f32",
+                      "value": -63.23979187011719
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BAD8",
+                      "dtype": "f32",
+                      "value": 3627.677734375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C60BD3BD",
+                    "value": -8948.9345703125
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CCA20810",
+                    "value": -84951168.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D008E342",
+                    "value": -9186379776.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B972F8",
+                    "value": 94949.9375
+                  },
+                  "numerator": {
+                    "bits_hex": "C67EF026",
+                    "value": -16316.037109375
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "BE2FF662",
+                    "value": -0.17183831334114075
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E50",
+                      "dtype": "f32",
+                      "value": -468961792.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231DD2C",
+                      "dtype": "f32",
+                      "value": -44.46598815917969
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "BE2FF662",
+                      "dtype": "f32",
+                      "value": -0.17183831334114075
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E50",
+                      "dtype": "f32",
+                      "value": -468961792.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231DD2C",
+                      "dtype": "f32",
+                      "value": -44.46598815917969
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BD3BD",
+                      "dtype": "f32",
+                      "value": -8948.9345703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "BE2FF662",
+                    "value": -0.17183831334114075
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CDDB0537",
+                    "value": -459319008.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D008E342",
+                    "value": -9186379776.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B972F8",
+                    "value": 94949.9375
+                  },
+                  "numerator": {
+                    "bits_hex": "C6800000",
+                    "value": -16384.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "BE2FF662",
+                    "value": -0.17183831334114075
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E50",
+                      "dtype": "f32",
+                      "value": -468961792.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231DD2C",
+                      "dtype": "f32",
+                      "value": -44.46598815917969
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "BE2FF662",
+                      "dtype": "f32",
+                      "value": -0.17183831334114075
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E50",
+                      "dtype": "f32",
+                      "value": -468961792.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231DD2C",
+                      "dtype": "f32",
+                      "value": -44.46598815917969
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BD3BD",
+                      "dtype": "f32",
+                      "value": -8948.9345703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "BE30B205",
+                    "value": -0.17255409061908722
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CDDB0537",
+                    "value": -459319008.0
+                  }
+                }
+              }
+            ],
+            "global_i_j_k": [
+              91,
+              94,
+              4
+            ],
+            "pd_step3": {
+              "observed_scalar_old": {
+                "bits_hex": "47BD0088",
+                "value": 96769.0625
+              },
+              "operands_after": {
+                "C1H": {
+                  "bits_hex": "3F901658",
+                  "dtype": "f32",
+                  "value": 1.1256818771362305
+                },
+                "C2H": {
+                  "bits_hex": "C63A8F20",
+                  "dtype": "f32",
+                  "value": -11939.78125
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47B98C00",
+                  "dtype": "f32",
+                  "value": 95000.0
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "QNC": {
+                  "bits_hex": "C60BD3BD",
+                  "dtype": "f32",
+                  "value": -8948.9345703125
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "47BD0088",
+                  "dtype": "f32",
+                  "value": 96769.0625
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                }
+              },
+              "operands_before": {
+                "C1H": {
+                  "bits_hex": "3F901658",
+                  "dtype": "f32",
+                  "value": 1.1256818771362305
+                },
+                "C2H": {
+                  "bits_hex": "C63A8F20",
+                  "dtype": "f32",
+                  "value": -11939.78125
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47B98C00",
+                  "dtype": "f32",
+                  "value": 95000.0
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "QNC": {
+                  "bits_hex": "C60BD3BD",
+                  "dtype": "f32",
+                  "value": -8948.9345703125
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "4DDB051C",
+                  "dtype": "f32",
+                  "value": 459318144.0
+                }
+              },
+              "predicted_scalar_old": {
+                "bits_hex": "47BD0088",
+                "value": 96769.0625
+              },
+              "qnc_unchanged_bitwise": true,
+              "rk_step": 3,
+              "scalar_old_bitwise_match": true,
+              "scalar_tend_after": {
+                "bits_hex": "00000000",
+                "value": 0.0
+              },
+              "scalar_tend_zeroed": true
+            },
+            "pre_microphysics_matches_kdm_mp_input": {
+              "bitwise_match": true,
+              "kdm_call_id": 1,
+              "kdm_mp_input_bits_hex": "BE2FF662",
+              "upstream_pre_microphysics_bits_hex": "BE2FF662"
+            },
+            "pre_microphysics_qnc": {
+              "bits_hex": "BE2FF662",
+              "value": -0.17183831334114075
+            }
+          }
+        },
+        "trace": {
+          "bytes": 11014,
+          "file": "upstream_nc.tsv",
+          "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+        }
+      },
+      "context_links": {
+        "target_221_63_6": {
+          "final_nc_bits_hex": "00000000",
+          "final_qc": 6.385861343005672e-05,
+          "finish_nc_bits_hex": "00000000",
+          "finish_to_final_bitwise_match": true,
+          "ready40_nc_bits_hex": "4B4F99F6",
+          "ready40_qc": 8.340936619788408e-05,
+          "ready_to_rk1_bitwise_match": true,
+          "rk1_input_nc_bits_hex": "4B4F99F6",
+          "rk3_to_premicro_bitwise_match": true
+        },
+        "target_91_94_4": {
+          "final_nc_bits_hex": "00000000",
+          "final_qc": 6.021899753250182e-05,
+          "finish_nc_bits_hex": "00000000",
+          "finish_to_final_bitwise_match": true,
+          "ready40_nc_bits_hex": "00000000",
+          "ready40_qc": 6.022389425197616e-05,
+          "ready_to_rk1_bitwise_match": true,
+          "rk1_input_nc_bits_hex": "00000000",
+          "rk3_to_premicro_bitwise_match": true
+        }
+      }
+    },
+    "control": {
+      "analysis": {
+        "run_id": "control_upstream_nc_v6_on",
+        "schema": "kdm6ad.upstream_nc_trace_analysis.v1",
+        "scope": {
+          "f32_replay": "source-order candidate is compared bitwise; no exactness claim unless the observed bits match",
+          "higher_derivatives_or_cost": "not evaluated",
+          "mechanistic_attribution": "not inferred from operand replay",
+          "purpose": "audit the native qnc scalar update through the pre-KDM wrapper boundary",
+          "units": "not certified by this trace"
+        },
+        "targets": {
+          "target_221_63_6": {
+            "generic_rk_steps": [
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3560E58",
+                    "value": -919363649536.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B0577C",
+                    "value": 90286.96875
+                  },
+                  "numerator": {
+                    "bits_hex": "528FF9B8",
+                    "value": 309184954368.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4A510355",
+                    "value": 3424469.25
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D03",
+                      "dtype": "f32",
+                      "value": -181919596544.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A510355",
+                      "dtype": "f32",
+                      "value": 3424469.25
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D03",
+                      "dtype": "f32",
+                      "value": -181919596544.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4A510355",
+                    "value": 3424469.25
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2006F02",
+                    "value": -137904553984.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3560E58",
+                    "value": -919363649536.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B0577C",
+                    "value": 90286.96875
+                  },
+                  "numerator": {
+                    "bits_hex": "528FF9B8",
+                    "value": 309184954368.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4A510355",
+                    "value": 3424469.25
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D03",
+                      "dtype": "f32",
+                      "value": -181919596544.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A510355",
+                      "dtype": "f32",
+                      "value": 3424469.25
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D2296D03",
+                      "dtype": "f32",
+                      "value": -181919596544.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C56AC",
+                      "dtype": "f32",
+                      "value": 1122.70849609375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4A510355",
+                    "value": 3424469.25
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2006F02",
+                    "value": -137904553984.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3A32EB0",
+                    "value": -1401725911040.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B058CE",
+                    "value": 90289.609375
+                  },
+                  "numerator": {
+                    "bits_hex": "D22148B0",
+                    "value": -173177307136.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C9EA2223",
+                    "value": -1918020.375
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B927B",
+                      "dtype": "f32",
+                      "value": -184224235520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA7",
+                      "dtype": "f32",
+                      "value": 1124.8328857421875
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA2223",
+                      "dtype": "f32",
+                      "value": -1918020.375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B927B",
+                      "dtype": "f32",
+                      "value": -184224235520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA7",
+                      "dtype": "f32",
+                      "value": 1124.8328857421875
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A510355",
+                      "dtype": "f32",
+                      "value": 3424469.25
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C9EA2223",
+                    "value": -1918020.375
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2028BC0",
+                    "value": -140172591104.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3A32EB0",
+                    "value": -1401725911040.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B058CE",
+                    "value": 90289.609375
+                  },
+                  "numerator": {
+                    "bits_hex": "D22148B0",
+                    "value": -173177307136.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C9EA2223",
+                    "value": -1918020.375
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B927B",
+                      "dtype": "f32",
+                      "value": -184224235520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA7",
+                      "dtype": "f32",
+                      "value": 1124.8328857421875
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA2223",
+                      "dtype": "f32",
+                      "value": -1918020.375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D22B927B",
+                      "dtype": "f32",
+                      "value": -184224235520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448C9AA7",
+                      "dtype": "f32",
+                      "value": 1124.8328857421875
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "4A510355",
+                      "dtype": "f32",
+                      "value": 3424469.25
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4B4F99F6",
+                      "dtype": "f32",
+                      "value": 13605366.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "51193512",
+                      "dtype": "f32",
+                      "value": 41126273024.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C9EA2223",
+                    "value": -1918020.375
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4B4F99F6",
+                    "value": 13605366.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D2028BC0",
+                    "value": -140172591104.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D3EEC6C2",
+                    "value": -2051073638400.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B06204",
+                    "value": 90308.03125
+                  },
+                  "numerator": {
+                    "bits_hex": "4897CD22",
+                    "value": 310889.0625
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "405C5296",
+                    "value": 3.4425406455993652
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A76",
+                      "dtype": "f32",
+                      "value": -104208449536.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E759B",
+                      "dtype": "f32",
+                      "value": 1139.6751708984375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "405C5296",
+                      "dtype": "f32",
+                      "value": 3.4425406455993652
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A76",
+                      "dtype": "f32",
+                      "value": -104208449536.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E759B",
+                      "dtype": "f32",
+                      "value": 1139.6751708984375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA2223",
+                      "dtype": "f32",
+                      "value": -1918020.375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "405C5296",
+                    "value": 3.4425406455993652
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D1BF0568",
+                    "value": -102553681920.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D3EEC6C2",
+                    "value": -2051073638400.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B06204",
+                    "value": 90308.03125
+                  },
+                  "numerator": {
+                    "bits_hex": "48800000",
+                    "value": 262144.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "405C5296",
+                    "value": 3.4425406455993652
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B05D6A",
+                    "value": 90298.828125
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A76",
+                      "dtype": "f32",
+                      "value": -104208449536.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E759B",
+                      "dtype": "f32",
+                      "value": 1139.6751708984375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "405C5296",
+                      "dtype": "f32",
+                      "value": 3.4425406455993652
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "D1C21A76",
+                      "dtype": "f32",
+                      "value": -104208449536.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F9EF5D8",
+                      "dtype": "f32",
+                      "value": 1.241877555847168
+                    },
+                    "C2H": {
+                      "bits_hex": "C6B384BB",
+                      "dtype": "f32",
+                      "value": -22978.365234375
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7BEF54",
+                      "dtype": "f32",
+                      "value": 0.9841206073760986
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47AFF11A",
+                      "dtype": "f32",
+                      "value": 90082.203125
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "448E759B",
+                      "dtype": "f32",
+                      "value": 1139.6751708984375
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "448D882B",
+                      "dtype": "f32",
+                      "value": 1132.2552490234375
+                    },
+                    "QNC": {
+                      "bits_hex": "C9EA2223",
+                      "dtype": "f32",
+                      "value": -1918020.375
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "4BAD4BDA",
+                      "dtype": "f32",
+                      "value": 22714292.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4039C716",
+                    "value": 2.9027762413024902
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "4BAD4BDA",
+                    "value": 22714292.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "D1BF0568",
+                    "value": -102553681920.0
+                  }
+                }
+              }
+            ],
+            "global_i_j_k": [
+              221,
+              63,
+              6
+            ],
+            "pd_step3": {
+              "observed_scalar_old": {
+                "bits_hex": "4BAD4BDA",
+                "value": 22714292.0
+              },
+              "operands_after": {
+                "C1H": {
+                  "bits_hex": "3F9EF5D8",
+                  "dtype": "f32",
+                  "value": 1.241877555847168
+                },
+                "C2H": {
+                  "bits_hex": "C6B384BB",
+                  "dtype": "f32",
+                  "value": -22978.365234375
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47AFF11A",
+                  "dtype": "f32",
+                  "value": 90082.203125
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "QNC": {
+                  "bits_hex": "C9EA2223",
+                  "dtype": "f32",
+                  "value": -1918020.375
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "4BAD4BDA",
+                  "dtype": "f32",
+                  "value": 22714292.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                }
+              },
+              "operands_before": {
+                "C1H": {
+                  "bits_hex": "3F9EF5D8",
+                  "dtype": "f32",
+                  "value": 1.241877555847168
+                },
+                "C2H": {
+                  "bits_hex": "C6B384BB",
+                  "dtype": "f32",
+                  "value": -22978.365234375
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47AFF11A",
+                  "dtype": "f32",
+                  "value": 90082.203125
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "448D882B",
+                  "dtype": "f32",
+                  "value": 1132.2552490234375
+                },
+                "QNC": {
+                  "bits_hex": "C9EA2223",
+                  "dtype": "f32",
+                  "value": -1918020.375
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "4B4F99F6",
+                  "dtype": "f32",
+                  "value": 13605366.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "51193512",
+                  "dtype": "f32",
+                  "value": 41126273024.0
+                }
+              },
+              "predicted_scalar_old": {
+                "bits_hex": "4BAD4BDA",
+                "value": 22714292.0
+              },
+              "qnc_unchanged_bitwise": true,
+              "rk_step": 3,
+              "scalar_old_bitwise_match": true,
+              "scalar_tend_after": {
+                "bits_hex": "00000000",
+                "value": 0.0
+              },
+              "scalar_tend_zeroed": true
+            },
+            "pre_microphysics_matches_kdm_mp_input": {
+              "bitwise_match": true,
+              "kdm_call_id": 1,
+              "kdm_mp_input_bits_hex": "405C5296",
+              "upstream_pre_microphysics_bits_hex": "405C5296"
+            },
+            "pre_microphysics_qnc": {
+              "bits_hex": "405C5296",
+              "value": 3.4425406455993652
+            }
+          },
+          "target_91_94_4": {
+            "generic_rk_steps": [
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "4DA43487",
+                    "value": 344363232.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96797",
+                    "value": 94927.1796875
+                  },
+                  "numerator": {
+                    "bits_hex": "4DA43487",
+                    "value": 344363232.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4562BA85",
+                    "value": 3627.657470703125
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC6785A",
+                      "dtype": "f32",
+                      "value": -416222016.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A9",
+                      "dtype": "f32",
+                      "value": -64.69074249267578
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BA85",
+                      "dtype": "f32",
+                      "value": 3627.657470703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC6785A",
+                      "dtype": "f32",
+                      "value": -416222016.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A9",
+                      "dtype": "f32",
+                      "value": -64.69074249267578
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4562BA82",
+                    "value": 3627.65673828125
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "4C450BD5",
+                    "value": 51654484.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "4DA43489",
+                    "value": 344363296.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96797",
+                    "value": 94927.1796875
+                  },
+                  "numerator": {
+                    "bits_hex": "4DA43489",
+                    "value": 344363296.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "4562BA85",
+                    "value": 3627.657470703125
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC6785A",
+                      "dtype": "f32",
+                      "value": -416222016.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A9",
+                      "dtype": "f32",
+                      "value": -64.69074249267578
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BA85",
+                      "dtype": "f32",
+                      "value": 3627.657470703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDC6785A",
+                      "dtype": "f32",
+                      "value": -416222016.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "40D55555",
+                      "dtype": "f32",
+                      "value": 6.666666507720947
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C28161A9",
+                      "dtype": "f32",
+                      "value": -64.69074249267578
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "4562BA85",
+                    "value": 3627.657470703125
+                  },
+                  "qnc_base_operand": "QNC",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 1,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "4C450BD8",
+                    "value": 51654496.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "CE4AA462",
+                    "value": -849942656.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96867",
+                    "value": 94928.8046875
+                  },
+                  "numerator": {
+                    "bits_hex": "CE4AA462",
+                    "value": -849942656.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C60BE5E3",
+                    "value": -8953.4716796875
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047FA6",
+                      "dtype": "f32",
+                      "value": -555739520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF504",
+                      "dtype": "f32",
+                      "value": -63.23927307128906
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BE5E3",
+                      "dtype": "f32",
+                      "value": -8953.4716796875
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047FA6",
+                      "dtype": "f32",
+                      "value": -555739520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF504",
+                      "dtype": "f32",
+                      "value": -63.23927307128906
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BA85",
+                      "dtype": "f32",
+                      "value": 3627.657470703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C60BE5E6",
+                    "value": -8953.474609375
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CCA21D1B",
+                    "value": -84994264.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "CE4AA45E",
+                    "value": -849942400.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B96867",
+                    "value": 94928.8046875
+                  },
+                  "numerator": {
+                    "bits_hex": "CE4AA45E",
+                    "value": -849942400.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "C60BE5E3",
+                    "value": -8953.4716796875
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047FA6",
+                      "dtype": "f32",
+                      "value": -555739520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF504",
+                      "dtype": "f32",
+                      "value": -63.23927307128906
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BE5E3",
+                      "dtype": "f32",
+                      "value": -8953.4716796875
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CE047FA6",
+                      "dtype": "f32",
+                      "value": -555739520.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41200000",
+                      "dtype": "f32",
+                      "value": 10.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C27CF504",
+                      "dtype": "f32",
+                      "value": -63.23927307128906
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "4562BA85",
+                      "dtype": "f32",
+                      "value": 3627.657470703125
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "4DDB051C",
+                      "dtype": "f32",
+                      "value": 459318144.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "C60BE5E3",
+                    "value": -8953.4716796875
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 2,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "00000000",
+                    "value": 0.0
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CCA21D18",
+                    "value": -84994240.0
+                  }
+                }
+              },
+              {
+                "fused_candidate": {
+                  "dt_tendency": {
+                    "bits_hex": "D008E330",
+                    "value": -9186361344.0
+                  },
+                  "mode": "fma_contraction_candidate",
+                  "new_mass_factor": {
+                    "bits_hex": "47B972F9",
+                    "value": 94949.9453125
+                  },
+                  "numerator": {
+                    "bits_hex": "45043F6A",
+                    "value": 2115.96337890625
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "3CB68F1E",
+                    "value": 0.022285040467977524
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E32",
+                      "dtype": "f32",
+                      "value": -468960832.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231D493",
+                      "dtype": "f32",
+                      "value": -44.45759201049805
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "3CB68F1E",
+                      "dtype": "f32",
+                      "value": 0.022285040467977524
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E32",
+                      "dtype": "f32",
+                      "value": -468960832.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231D493",
+                      "dtype": "f32",
+                      "value": -44.45759201049805
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BE5E3",
+                      "dtype": "f32",
+                      "value": -8953.4716796875
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "3CB68F1E",
+                    "value": 0.022285040467977524
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": true,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CDDB0519",
+                    "value": -459318048.0
+                  }
+                },
+                "source_order": {
+                  "dt_tendency": {
+                    "bits_hex": "D008E330",
+                    "value": -9186361344.0
+                  },
+                  "mode": "separate_f32_ops",
+                  "new_mass_factor": {
+                    "bits_hex": "47B972F9",
+                    "value": 94949.9453125
+                  },
+                  "numerator": {
+                    "bits_hex": "45000000",
+                    "value": 2048.0
+                  },
+                  "observed_qnc": {
+                    "bits_hex": "3CB68F1E",
+                    "value": 0.022285040467977524
+                  },
+                  "old_mass_factor": {
+                    "bits_hex": "47B96965",
+                    "value": 94930.7890625
+                  },
+                  "operands_after": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E32",
+                      "dtype": "f32",
+                      "value": -468960832.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231D493",
+                      "dtype": "f32",
+                      "value": -44.45759201049805
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "3CB68F1E",
+                      "dtype": "f32",
+                      "value": 0.022285040467977524
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "operands_before": {
+                    "ADVECT_TEND": {
+                      "bits_hex": "CDDF9E32",
+                      "dtype": "f32",
+                      "value": -468960832.0
+                    },
+                    "C1H": {
+                      "bits_hex": "3F901658",
+                      "dtype": "f32",
+                      "value": 1.1256818771362305
+                    },
+                    "C2H": {
+                      "bits_hex": "C63A8F20",
+                      "dtype": "f32",
+                      "value": -11939.78125
+                    },
+                    "DT_RK": {
+                      "bits_hex": "41A00000",
+                      "dtype": "f32",
+                      "value": 20.0
+                    },
+                    "H_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "MSFTY": {
+                      "bits_hex": "3F7ABC73",
+                      "dtype": "f32",
+                      "value": 0.9794380068778992
+                    },
+                    "MU_BASE": {
+                      "bits_hex": "47B98C00",
+                      "dtype": "f32",
+                      "value": 95000.0
+                    },
+                    "MU_NEW": {
+                      "bits_hex": "C231D493",
+                      "dtype": "f32",
+                      "value": -44.45759201049805
+                    },
+                    "MU_OLD": {
+                      "bits_hex": "C275EF79",
+                      "dtype": "f32",
+                      "value": -61.48386001586914
+                    },
+                    "QNC": {
+                      "bits_hex": "C60BE5E3",
+                      "dtype": "f32",
+                      "value": -8953.4716796875
+                    },
+                    "SCALAR_OLD": {
+                      "bits_hex": "47BD0088",
+                      "dtype": "f32",
+                      "value": 96769.0625
+                    },
+                    "SCALAR_TEND": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    },
+                    "TENDEC": {
+                      "bits_hex": "00",
+                      "dtype": "bool",
+                      "value": false
+                    },
+                    "Z_TENDENCY": {
+                      "bits_hex": "00000000",
+                      "dtype": "f32",
+                      "value": 0.0
+                    }
+                  },
+                  "predicted_qnc": {
+                    "bits_hex": "3CB0B204",
+                    "value": 0.021569259464740753
+                  },
+                  "qnc_base_operand": "SCALAR_OLD",
+                  "qnc_bitwise_match": false,
+                  "rk_step": 3,
+                  "scalar_old_bitwise_match": true,
+                  "scalar_old_expected_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "scalar_old_observed_after": {
+                    "bits_hex": "47BD0088",
+                    "value": 96769.0625
+                  },
+                  "tenddec": false,
+                  "tendency": {
+                    "bits_hex": "CDDB0519",
+                    "value": -459318048.0
+                  }
+                }
+              }
+            ],
+            "global_i_j_k": [
+              91,
+              94,
+              4
+            ],
+            "pd_step3": {
+              "observed_scalar_old": {
+                "bits_hex": "47BD0088",
+                "value": 96769.0625
+              },
+              "operands_after": {
+                "C1H": {
+                  "bits_hex": "3F901658",
+                  "dtype": "f32",
+                  "value": 1.1256818771362305
+                },
+                "C2H": {
+                  "bits_hex": "C63A8F20",
+                  "dtype": "f32",
+                  "value": -11939.78125
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47B98C00",
+                  "dtype": "f32",
+                  "value": 95000.0
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "QNC": {
+                  "bits_hex": "C60BE5E3",
+                  "dtype": "f32",
+                  "value": -8953.4716796875
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "47BD0088",
+                  "dtype": "f32",
+                  "value": 96769.0625
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                }
+              },
+              "operands_before": {
+                "C1H": {
+                  "bits_hex": "3F901658",
+                  "dtype": "f32",
+                  "value": 1.1256818771362305
+                },
+                "C2H": {
+                  "bits_hex": "C63A8F20",
+                  "dtype": "f32",
+                  "value": -11939.78125
+                },
+                "DT_RK": {
+                  "bits_hex": "41A00000",
+                  "dtype": "f32",
+                  "value": 20.0
+                },
+                "MU_BASE": {
+                  "bits_hex": "47B98C00",
+                  "dtype": "f32",
+                  "value": 95000.0
+                },
+                "MU_NEW_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "MU_OLD_ARG": {
+                  "bits_hex": "C275EF79",
+                  "dtype": "f32",
+                  "value": -61.48386001586914
+                },
+                "QNC": {
+                  "bits_hex": "C60BE5E3",
+                  "dtype": "f32",
+                  "value": -8953.4716796875
+                },
+                "SCALAR_OLD": {
+                  "bits_hex": "00000000",
+                  "dtype": "f32",
+                  "value": 0.0
+                },
+                "SCALAR_TEND": {
+                  "bits_hex": "4DDB051C",
+                  "dtype": "f32",
+                  "value": 459318144.0
+                }
+              },
+              "predicted_scalar_old": {
+                "bits_hex": "47BD0088",
+                "value": 96769.0625
+              },
+              "qnc_unchanged_bitwise": true,
+              "rk_step": 3,
+              "scalar_old_bitwise_match": true,
+              "scalar_tend_after": {
+                "bits_hex": "00000000",
+                "value": 0.0
+              },
+              "scalar_tend_zeroed": true
+            },
+            "pre_microphysics_matches_kdm_mp_input": {
+              "bitwise_match": true,
+              "kdm_call_id": 1,
+              "kdm_mp_input_bits_hex": "3CB68F1E",
+              "upstream_pre_microphysics_bits_hex": "3CB68F1E"
+            },
+            "pre_microphysics_qnc": {
+              "bits_hex": "3CB68F1E",
+              "value": 0.022285040467977524
+            }
+          }
+        },
+        "trace": {
+          "bytes": 11014,
+          "file": "upstream_nc.tsv",
+          "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+        }
+      },
+      "context_links": {
+        "target_221_63_6": {
+          "final_nc_bits_hex": "405C5296",
+          "final_qc": 6.383410072885454e-05,
+          "finish_nc_bits_hex": "405C5296",
+          "finish_to_final_bitwise_match": true,
+          "ready40_nc_bits_hex": "4B4F99F6",
+          "ready40_qc": 8.340936619788408e-05,
+          "ready_to_rk1_bitwise_match": true,
+          "rk1_input_nc_bits_hex": "4B4F99F6",
+          "rk3_to_premicro_bitwise_match": true
+        },
+        "target_91_94_4": {
+          "final_nc_bits_hex": "3CB68F1E",
+          "final_qc": 6.021952867740765e-05,
+          "finish_nc_bits_hex": "3CB68F1E",
+          "finish_to_final_bitwise_match": true,
+          "ready40_nc_bits_hex": "00000000",
+          "ready40_qc": 6.022389425197616e-05,
+          "ready_to_rk1_bitwise_match": true,
+          "rk1_input_nc_bits_hex": "00000000",
+          "rk3_to_premicro_bitwise_match": true
+        }
+      }
+    }
+  },
+  "schema": "kdm6.native_upstream_nc_replay_result.v1",
+  "scope": "Saved-state arithmetic replay; model, RTTOV and optimizer are not called.",
+  "status": "UPSTREAM_NC_REPLAY_PASSED"
+}

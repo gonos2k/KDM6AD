@@ -1,0 +1,74 @@
+"""Storage-only APFS clone of a verified identical V5 checkpoint output."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+ROOT = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_upstream_nc_trace_20261026/runs/upstream_nc_v6").resolve()
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--reference", type=Path, required=True)
+    parser.add_argument("--target", type=Path, required=True)
+    parser.add_argument("--expected-sha256", required=True)
+    parser.add_argument("--receipt", type=Path, required=True)
+    args = parser.parse_args()
+    reference = args.reference.resolve(strict=True)
+    target_input = args.target
+    target = target_input.resolve(strict=True)
+    if target_input.is_symlink() or not target.is_relative_to(ROOT) or target == reference:
+        raise ValueError("deduplication is restricted to a closed V5-owned output file")
+    if args.receipt.exists() or args.receipt.is_symlink():
+        raise FileExistsError(args.receipt)
+    if not reference.is_file() or not target.is_file():
+        raise FileNotFoundError("reference and target must be existing regular files")
+    before = sha256(target)
+    source = sha256(reference)
+    if before != source or before != args.expected_sha256:
+        raise ValueError("APFS dedup requires byte-identical source/target hashes matching the approved run result")
+    fd, name = tempfile.mkstemp(prefix=f".{target.name}.cow-", dir=target.parent)
+    os.close(fd)
+    temporary = Path(name)
+    temporary.unlink()
+    try:
+        subprocess.run(["/bin/cp", "-c", "-p", str(reference), str(temporary)], check=True)
+        if sha256(temporary) != before or sha256(target) != before:
+            raise ValueError("bytes changed during APFS clone")
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    if sha256(target) != before:
+        raise RuntimeError("post-clone target hash mismatch")
+    receipt = {
+        "schema": "kdm6.native_upstream_nc_trace_v6_storage_dedup.v1",
+        "scope": "Storage-only APFS clone of a completed, SHA-identical V5 checkpoint. No model calculation or data change; historical reference untouched.",
+        "reference": str(reference),
+        "target": str(target),
+        "sha256_before_and_after": before,
+        "producer_sha256": sha256(Path(__file__)),
+    }
+    with args.receipt.open("x", encoding="utf-8") as stream:
+        json.dump(receipt, stream, indent=2, sort_keys=True)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    print(json.dumps({"target": str(target), "sha256_unchanged": before}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -35,6 +35,12 @@ def _sha(raw: bytes) -> str:
     return sha256(raw).hexdigest()
 
 
+def _required_int(value: Any, label: str) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{label} must be an integer")
+    return value
+
+
 def _read_asset(base: Path, asset: dict[str, Any], *, label: str) -> bytes:
     rel = Path(asset["file"])
     if rel.is_absolute():
@@ -44,7 +50,8 @@ def _read_asset(base: Path, asset: dict[str, Any], *, label: str) -> bytes:
     if base_resolved not in path.parents:
         raise ValueError(f"{label} path escapes the manifest directory")
     raw = path.read_bytes()
-    if len(raw) != int(asset["bytes"]):
+    expected_bytes = _required_int(asset["bytes"], f"{label} byte count")
+    if len(raw) != expected_bytes:
         raise ValueError(f"{label} byte count differs: {len(raw)} != {asset['bytes']}")
     digest = _sha(raw)
     if digest != asset["sha256"]:
@@ -98,16 +105,25 @@ def replay_manifest(manifest_path: Path) -> dict[str, Any]:
     target_names = [row["name"] for row in targets_raw]
     if len(set(target_names)) != len(target_names):
         raise ValueError("target names must be unique")
-    targets = {row["name"]: (int(row["i"]), int(row["j"])) for row in targets_raw}
+    targets = {
+        row["name"]: (
+            _required_int(row["i"], f"target {row['name']} i"),
+            _required_int(row["j"], f"target {row['name']} j"),
+        )
+        for row in targets_raw
+    }
     if len(set(targets.values())) != 3:
         raise ValueError("target coordinates must be unique")
-    levels = int(manifest["levels"])
+    levels = _required_int(manifest["levels"], "levels")
     if levels != 39:
         raise ValueError("native moment trace replay requires 39 levels")
-    global_shape = tuple(int(x) for x in manifest["global_shape_i_k_j"])
+    global_shape = tuple(
+        _required_int(x, f"global_shape_i_k_j[{n}]")
+        for n, x in enumerate(manifest["global_shape_i_k_j"])
+    )
     if global_shape != (234, 39, 282):
         raise ValueError("manifest global native shape must be (234,39,282) in i,k,j order")
-    expected_step = int(manifest["step"])
+    expected_step = _required_int(manifest["step"], "step")
     if expected_step != 3:
         raise ValueError("this trace protocol replay expects one actual step=3")
     expected_dt = _f64_from_hex(manifest["dt_hex64"], "dt_hex64")
@@ -115,7 +131,10 @@ def replay_manifest(manifest_path: Path) -> dict[str, Any]:
         raise ValueError("manifest dt must equal the actual 20-second timestep")
     expected_land = _f64_from_hex(manifest["ncmin_land_hex64"], "ncmin_land_hex64")
     expected_sea = _f64_from_hex(manifest["ncmin_sea_hex64"], "ncmin_sea_hex64")
-    levels_of_interest = tuple(int(x) for x in manifest.get("levels_of_interest", [19, 6, 4]))
+    levels_of_interest = tuple(
+        _required_int(x, f"levels_of_interest[{n}]")
+        for n, x in enumerate(manifest.get("levels_of_interest", [19, 6, 4]))
+    )
     if levels_of_interest != (19, 6, 4):
         raise ValueError("levels_of_interest must be the frozen native levels (19,6,4)")
 
@@ -133,7 +152,7 @@ def replay_manifest(manifest_path: Path) -> dict[str, Any]:
         kernel_bytes = _read_asset(base, trace_files["kernel"], label=f"{run_id} kernel trace")
         context_bytes = _read_asset(base, run["context_npz"], label=f"{run_id} context NPZ")
         context = _load_context(context_bytes, target_count=len(targets), levels=levels, run_id=run_id)
-        expected_calls = int(run["expected_call_count"])
+        expected_calls = _required_int(run["expected_call_count"], f"run {run_id} expected_call_count")
         if expected_calls < 1:
             raise ValueError(f"run {run_id} expected_call_count must be positive")
 

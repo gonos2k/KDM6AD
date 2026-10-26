@@ -1,0 +1,73 @@
+{
+  "schema": "kdm6.native_upstream_nc_replay_inputs.v1",
+  "base_commit": "6787d3c926981e603de6585caae50407ac2c7fd0",
+  "targets": [
+    {
+      "name": "target_221_63_6",
+      "i": 221,
+      "j": 63,
+      "k": 6,
+      "prior_context_row": 1
+    },
+    {
+      "name": "target_91_94_4",
+      "i": 91,
+      "j": 94,
+      "k": 4,
+      "prior_context_row": 2
+    }
+  ],
+  "runs": {
+    "control": {
+      "run_id": "control_upstream_nc_v6_on",
+      "upstream_trace": {
+        "file": "data/control/upstream_nc.tsv",
+        "bytes": 11014,
+        "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+      },
+      "host_trace": {
+        "file": "data/control/host.hex",
+        "bytes": 71585,
+        "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+      },
+      "kernel_trace": {
+        "file": "data/control/kernel.hex",
+        "bytes": 24041,
+        "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+      },
+      "context": {
+        "file": "data/control/context.npz",
+        "bytes": 1020,
+        "sha256": "3bc406f45a77a138b6099cae08e94d4545fc1533404723948f2c86f1d30e234a"
+      }
+    },
+    "alpha025": {
+      "run_id": "alpha025_upstream_nc_v6_on",
+      "upstream_trace": {
+        "file": "data/alpha025/upstream_nc.tsv",
+        "bytes": 11014,
+        "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+      },
+      "host_trace": {
+        "file": "data/alpha025/host.hex",
+        "bytes": 71585,
+        "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+      },
+      "kernel_trace": {
+        "file": "data/alpha025/kernel.hex",
+        "bytes": 24041,
+        "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+      },
+      "context": {
+        "file": "data/alpha025/context.npz",
+        "bytes": 1014,
+        "sha256": "35f12b1f66f559970a5fc71a1f79dbbbc81440a7f4b3ccb989c4d5fd9016995a"
+      }
+    }
+  },
+  "execution_summary": {
+    "file": "receipts/execution_summary.json",
+    "bytes": 6978,
+    "sha256": "5329d03e9a03967e13409aabf6c27a93dd670f2650c6ff4cba1ee72ca9cc5dee"
+  }
+}
