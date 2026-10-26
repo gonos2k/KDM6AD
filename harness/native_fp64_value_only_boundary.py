@@ -585,14 +585,20 @@ def capture_fp_environment(probe_library: Path | None = None):
 
 
 def _fp_environment_roundoff_compatible(snapshot):
+    """Require measured nearest rounding and disabled float32 flush-to-zero."""
     probe = snapshot.get("float32_roundtrip")
-    if probe is not None and not probe["all_bits_preserved"]:
+    if probe is not None and (
+        not isinstance(probe, dict) or probe.get("all_bits_preserved") is not True
+    ):
         return False
-    if snapshot.get("fe_round_to_nearest") is False:
-        return False
-    if snapshot.get("fpcr_round_to_nearest") is False or snapshot.get("fpcr_fz_bit24") is True:
-        return False
-    return True
+    bits = snapshot.get("fpcr_rounding_mode_bits")
+    return (
+        snapshot.get("fe_round_to_nearest") is True
+        and snapshot.get("raw_fpcr_available") is True
+        and type(bits) is int and bits == 0
+        and snapshot.get("fpcr_fz_bit24") is False
+        and snapshot.get("fpcr_round_to_nearest", True) is True
+    )
 
 
 def _macho_file_backed_sections(path: Path) -> dict[tuple[str, str, str], bytes]:

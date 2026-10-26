@@ -4,6 +4,10 @@ As of `2026-10-25T15:15:15Z`, after immutable interim snapshot H1
 (`7d4d2d85b9c444b7cae9e842bec9ff332a013814`). This dated page supplements H1;
 it does not revise the earlier packet or checklist hashes.
 
+Follow-up: [2026-10-26 review checklist](NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md)
+records the FP-environment predicate correction, saved Q65 resolution diagnosis
+and outstanding QC–NC tracing. The execution outcomes below remain unchanged.
+
 ## Full-physics value steps and trial admission
 
 - The no-new-analysis control and α=1, 0.5 and 0.25 T/Q candidates each
@@ -57,7 +61,7 @@ it does not revise the earlier packet or checklist hashes.
   passes the common 33-part profile/BT/cost gate. Native-17 rank 1 passes only
   epsilon `1e-6` (ratio `0.17599`); other required gates fail. V14 coordinate
   triage used the wrong norm and is withdrawn; v15 corrects accounting without
-  changing tolerances. The CI gate failure is not proof of an AD bug.
+  changing tolerances. The directional gate failure is not proof of an AD bug.
 - C5/C6 fixed-prior full-domain optimizer iterations and C9 a second analysis
   are not implemented or run. No accepted update, full-host AD, derivative
   certificate, forecast or unattended cycling result is claimed.

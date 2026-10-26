@@ -1,0 +1,9 @@
+{
+  "semantic_nodes": 7,
+  "semantic_edges": 7,
+  "edges_added": 5,
+  "existing_edges_preserved_with_semantic_context": 2,
+  "hyperedges_retained": 49,
+  "semantic_token_usage": "unmeasured; not billed as a fabricated zero",
+  "coverage_limits": "486 existing extraction warnings about source_file metadata; no complete private host graph coverage; source verified independently; HTML skipped above 5000 nodes."
+}

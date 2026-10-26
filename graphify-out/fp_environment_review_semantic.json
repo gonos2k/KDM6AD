@@ -1,0 +1,320 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Verification correction and saved requested-direction Q65 diagnosis; zero new model/RTTOV calls. Existing derivative failures and unknown block34 environment remain unchanged.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "fp_environment_review_20261026",
+      "label": "FP-environment and Q65 review records bounded findings and open host-boundary actions",
+      "file_type": "document",
+      "source_file": "wiki/sources/fp-environment-review-2026-10-26.md",
+      "source_location": "L1-L51",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "model_calls": 0,
+      "RTTOV_calls": 0,
+      "historical_common33_verdict_changed": false,
+      "effective_C4_status_changed": false,
+      "source_sha256": "202a75795f13b3b905c5fec36cf77b42d8ba59cea086e584597f01043eb5fde3"
+    },
+    {
+      "id": "harness_native_fp64_value_only_boundary_fp_environment_roundoff_compatible",
+      "label": "Roundoff compatibility requires measured FE nearest, raw FPCR, integer rounding bits zero, FZ off and no contradictory optional probe",
+      "file_type": "code",
+      "source_file": "harness/native_fp64_value_only_boundary.py",
+      "source_location": "L587-L601",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "FE_nearest_required": true,
+      "raw_FPCR_required": true,
+      "rounding_bits_required": 0,
+      "FZ_bit24_required": false,
+      "malformed_roundtrip_probe_rejected": true,
+      "caller_exception_status_restoration_claimed": false,
+      "source_sha256": "cbc0b12ad96ec496f4961b9ec0014e4bbe659cd3e84bd9c938970aaada2af88b"
+    },
+    {
+      "id": "tests_test_native_fp64_value_only_boundary",
+      "label": "Focused tests cover missing/unknown controls, non-nearest rounding, FPCR bits/FZ conflicts and malformed or contradictory probes",
+      "file_type": "code",
+      "source_file": "harness/tests/test_native_fp64_value_only_boundary.py",
+      "source_location": "L220-L242",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "focused_tests_reported": 23,
+      "checks_malformed_probe_type": true,
+      "source_sha256": "e4b8f13480f824f4b4d85bec9ddb0709e92668d7dffbc447eac1e83f463880c4"
+    },
+    {
+      "id": "fp64_boundary_saved_environment_gate",
+      "label": "Existing block40 and nonsquare B8 same-thread snapshots pass the revised predicate; block34 capture remains unavailable",
+      "file_type": "document",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/validation.json",
+      "source_location": "/historical_case_reassessment",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "block40_status": "same-thread FP environment PASS",
+      "nonsquare_B8_status": "same-thread FP environment PASS",
+      "block34_status": "UNAVAILABLE; not inferred or imputed",
+      "half_ulp_bound_validated_for_block34": false,
+      "source_sha256": "9bd2dab88186761b8e2593e0b1eedadc418ff59bbbda90f24b1278ddd34a9307"
+    },
+    {
+      "id": "block22_requested_direction_q65_resolution",
+      "label": "Saved original-requested-direction Q65 coordinate is lattice-limited at epsilon 1e-6; this is not effective C4 or joint33 evidence",
+      "file_type": "document",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.json",
+      "source_location": "/epsilon_1e_minus_6_resolution_result; /epsilon_results; /target_coordinate; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "OFFLINE_SAVED_ARRAY_REPLAY_PASSED",
+      "block": 22,
+      "row0": 368,
+      "flat_index0": 11632,
+      "native_i_j_k_one_based": [
+        167,
+        50,
+        2
+      ],
+      "RTTOV_layer_one_based": 65,
+      "native_mass_level_one_based": 2,
+      "epsilon_1e_6_observed_gap_ulps": 74.0,
+      "epsilon_1e_6_JVP_gap_ulps": 72.33640535545564,
+      "epsilon_1e_6_ratio": 215.5597165071425,
+      "nearest_lattice_ratio": 43.87333046157018,
+      "epsilon_1e_4_pass": false,
+      "epsilon_1e_5_pass": false,
+      "epsilon_1e_3_pass": true,
+      "epsilon_1e_2_pass": true,
+      "decimal_Q_chain_relative_difference": 1.3204493057512713e-16,
+      "upstream_KDM_tangent_reverified": false,
+      "effective_C4_direction": false,
+      "joint33_claimed": false,
+      "model_or_RTTOV_calls": 0,
+      "source_sha256": "47cde276f0c1444366e277b74845db717b26cb96a93837ab2be6d886733c2667",
+      "replay_source_sha256": "5b6c5238d4a537e12dc9fb75de3a760c1be0d2b4f5ddc8b700f5b153d18d6fab",
+      "activation_witness_i_j_k_one_based": [
+        167,
+        50,
+        18
+      ]
+    },
+    {
+      "id": "h1_source_resolution_fp_review",
+      "label": "H1 FP helper/test documentation pins remain resolvable to exact original snapshots; current verification does not rewrite historical execution evidence",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/historical_manifest_sha256; /sources",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "source_snapshot_count": 5,
+      "manifest_and_snapshots_verified": true,
+      "source_sha256": "26a9eec16e7c9a039ae934cff4072c9286f3d35f7c9269c5c249ff044e88097c"
+    },
+    {
+      "id": "native_qc_nc_trace_plan_20261026",
+      "label": "Three-witness QC\u2013NC trace needs host tile/call identity and FP64/REAL4 boundary measurements",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QC_NC_TRACE_PLAN_20261026.md",
+      "source_location": "Minimum diagnostic trace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "existing_trace_column": [
+        156,
+        21
+      ],
+      "target_columns": [
+        [
+          155,
+          25,
+          19
+        ],
+        [
+          221,
+          63,
+          6
+        ],
+        [
+          91,
+          94,
+          4
+        ]
+      ],
+      "new_trace_execution_performed": false,
+      "source_sha256": "17517c736a14a77bfebdf9168edce73f6605c000d7238f6c5618922e8435bd39"
+    }
+  ],
+  "edges": [
+    {
+      "source": "fp_environment_review_20261026",
+      "target": "harness_native_fp64_value_only_boundary_fp_environment_roundoff_compatible",
+      "relation": "describes_revised_roundoff_admission_requirements",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/README.md",
+      "source_location": "H2:FP environment predicate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "harness_native_fp64_value_only_boundary_fp_environment_roundoff_compatible",
+      "target": "tests_test_native_fp64_value_only_boundary",
+      "relation": "is_covered_by_strict_missing_conflict_and_malformed_probe_regressions",
+      "source_file": "harness/tests/test_native_fp64_value_only_boundary.py",
+      "source_location": "L220-L242",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "harness_native_fp64_value_only_boundary_fp_environment_roundoff_compatible",
+      "target": "fp64_boundary_saved_environment_gate",
+      "relation": "rechecks_saved_environment_snapshots_without_repeating_calls",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/validation.json",
+      "source_location": "/historical_case_reassessment",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "fp_environment_review_20261026",
+      "target": "block22_requested_direction_q65_resolution",
+      "relation": "summarizes_saved_Q65_resolution_as_one_requested_direction_coordinate",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/README.md",
+      "source_location": "H3:Original requested-direction Q65 resolution",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "block22_requested_direction_q65_resolution",
+      "target": "fp_environment_review_20261026",
+      "relation": "keeps_R2_saved_resolution_separate_from_open_host_boundary_and_candidate_gates",
+      "source_file": "docs/NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md",
+      "source_location": "R2; R3-R9",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "h1_source_resolution_fp_review",
+      "target": "fp_environment_review_20261026",
+      "relation": "preserves_historical_source_pins_while_current_review_uses_newer_verification",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/sources; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "fp_environment_review_20261026",
+      "target": "native_qc_nc_trace_plan_20261026",
+      "relation": "records_next_unperformed_measurement",
+      "source_file": "docs/NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md",
+      "source_location": "R3-R4",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "fp_environment_evidence_gate_chain_20261026",
+      "label": "Measured controls and regression tests support roundoff eligibility; two saved cases pass while block34 remains unconfirmed",
+      "nodes": [
+        "harness_native_fp64_value_only_boundary_fp_environment_roundoff_compatible",
+        "tests_test_native_fp64_value_only_boundary",
+        "fp64_boundary_saved_environment_gate"
+      ],
+      "relation": "bounds_roundoff_certificate",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/README.md",
+      "source_location": "H2:FP environment predicate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "block22_q65_saved_coordinate_resolution_20261026",
+      "label": "A saved requested-direction Q coordinate has a binary64 endpoint lattice limit at epsilon 1e-6; the Q conversion derivative check does not certify the upstream KDM tangent or effective C4",
+      "nodes": [
+        "block22_requested_direction_q65_resolution",
+        "fp_environment_review_20261026",
+        "h1_source_resolution_fp_review"
+      ],
+      "relation": "records_bounded_saved_coordinate_result_without_changing_historical_or_effective_direction_verdicts",
+      "source_file": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.json",
+      "source_location": "/epsilon_1e_minus_6_resolution_result; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "source_pins": {
+    "wiki": {
+      "path": "wiki/sources/fp-environment-review-2026-10-26.md",
+      "bytes": 2952,
+      "sha256": "202a75795f13b3b905c5fec36cf77b42d8ba59cea086e584597f01043eb5fde3"
+    },
+    "index": {
+      "path": "wiki/index.md",
+      "bytes": 15515,
+      "sha256": "2f3391211b05823f4b848cfd823ece954d12a9ee0ffd63f6caaa764d0219aec5"
+    },
+    "log": {
+      "path": "wiki/log.md",
+      "bytes": 58452,
+      "sha256": "98ea9739275792a8be639259fe3ec0186080b3ed3299d99a354207e2060ce73f"
+    },
+    "checklist": {
+      "path": "docs/NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md",
+      "bytes": 4602,
+      "sha256": "f899dd13e7c4d867269420be2823894dc10e9aa4f03c774518a0d3f6b928c14a"
+    },
+    "readme": {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/README.md",
+      "bytes": 3636,
+      "sha256": "e15b29ee9983b58ce19c0197ff2a96b9c0f5c32bc5b267931b38ea90875cea18"
+    },
+    "q65": {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.json",
+      "bytes": 10276,
+      "sha256": "47cde276f0c1444366e277b74845db717b26cb96a93837ab2be6d886733c2667"
+    },
+    "q65_replay": {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.py",
+      "bytes": 15094,
+      "sha256": "5b6c5238d4a537e12dc9fb75de3a760c1be0d2b4f5ddc8b700f5b153d18d6fab"
+    },
+    "boundary_gate": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/receipts/fp64_boundary_gate_v2.json",
+      "bytes": 22656,
+      "sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917"
+    },
+    "helper": {
+      "path": "harness/native_fp64_value_only_boundary.py",
+      "bytes": 83422,
+      "sha256": "cbc0b12ad96ec496f4961b9ec0014e4bbe659cd3e84bd9c938970aaada2af88b"
+    },
+    "tests": {
+      "path": "harness/tests/test_native_fp64_value_only_boundary.py",
+      "bytes": 13827,
+      "sha256": "e4b8f13480f824f4b4d85bec9ddb0709e92668d7dffbc447eac1e83f463880c4"
+    },
+    "fp_doc": {
+      "path": "docs/NATIVE_FP64_VALUE_BRIDGE.md",
+      "bytes": 3779,
+      "sha256": "6f4f22d8dd66b63f7e409e7f915319b1a5a01db79d81f4b2abd371465ab8b492"
+    },
+    "h1_resolution": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "bytes": 2327,
+      "sha256": "26a9eec16e7c9a039ae934cff4072c9286f3d35f7c9269c5c249ff044e88097c"
+    }
+  }
+}
