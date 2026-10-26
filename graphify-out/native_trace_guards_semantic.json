@@ -1,0 +1,193 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "P2 report/source collision and P3 QNC trace validation repaired without physics change; saved target-cell exact-rational residual analyzed, while old packet/source pin, raw units and domain budget remain bounded.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md": {
+      "bytes": 5731,
+      "sha256": "335e425474cdcf95c0d9935086363b456ead8754dafde73774d917ff8d260b2b"
+    },
+    "wiki/sources/native-trace-guards-and-qnc-budget-2026-10-27.md": {
+      "bytes": 1538,
+      "sha256": "b8d82b49377f0a57b861482865bf2b0a341fc1293ac8b046bd08ec671cf02d9a"
+    },
+    "harness/native_moment_trace_overlay.py": {
+      "bytes": 12219,
+      "sha256": "ec73e45860946b992811e797ea6131a6dba281d8c23348fd17fd692e3ea5f3b5"
+    },
+    "harness/replay_qnc_flux_limiter_trace.py": {
+      "bytes": 27065,
+      "sha256": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+    },
+    "harness/tests/test_native_moment_trace_overlay.py": {
+      "bytes": 8532,
+      "sha256": "ad3ce8219429304962ae0f300c4f819ed59d19a3a747ee14c186adb0fb35e228"
+    },
+    "harness/tests/test_replay_qnc_flux_limiter_trace.py": {
+      "bytes": 19293,
+      "sha256": "f3eff6939a8d4d3aaaf973df9f72f5b01401cb2c94e52764293febe39cb86ee8"
+    },
+    "harness/evidence/native_qnc_flux_2026-10-27/manifest.json": {
+      "bytes": 16902,
+      "sha256": "bc6a31a3c5e454a652b01ae9c261fb846817949408bda5063685b0275d2477f9"
+    },
+    "harness/replay_pr457_qnc_with_hardened_reader.py": {
+      "bytes": 2911,
+      "sha256": "2b8a4fb1747cd660db38a2557129a544f9bcdb266f13db29a16acdd8152cd1ee"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_trace_guards_20261027_report",
+      "label": "Post-PR457 trace guard and exact saved-QNC budget report",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Input and output guards; Exact arithmetic; Gates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "335e425474cdcf95c0d9935086363b456ead8754dafde73774d917ff8d260b2b"
+    },
+    {
+      "id": "native_trace_guards_20261027_overlay",
+      "label": "Moment overlay report preflight and source mode preservation",
+      "file_type": "code",
+      "source_file": "harness/native_moment_trace_overlay.py",
+      "source_location": "_check_report_target; build_overlay_plan; apply_overlay; main",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "ec73e45860946b992811e797ea6131a6dba281d8c23348fd17fd692e3ea5f3b5"
+    },
+    {
+      "id": "native_trace_guards_20261027_reader",
+      "label": "Strict QNC record dtype, bit, key and integer configuration validation",
+      "file_type": "code",
+      "source_file": "harness/replay_qnc_flux_limiter_trace.py",
+      "source_location": "_validate_flux_group; read_qnc_flux_trace; analyze_qnc_flux_limiter_trace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+    },
+    {
+      "id": "native_trace_guards_20261027_budget",
+      "label": "Saved operand exact-rational target QNC residual: control positive, alpha0.25 negative",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Exact arithmetic on saved target-cell operands",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "335e425474cdcf95c0d9935086363b456ead8754dafde73774d917ff8d260b2b",
+      "control_local_residual": 25776.33436947022,
+      "alpha025_local_residual": -165989.8398494994,
+      "number_units_certified": false,
+      "domain_budget_closed": false
+    },
+    {
+      "id": "native_trace_guards_20261027_historical_pin",
+      "label": "Original PR457 packet stays immutable and pins the earlier reader source",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/manifest.json",
+      "source_location": "external_source_pins; files",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "bc6a31a3c5e454a652b01ae9c261fb846817949408bda5063685b0275d2477f9",
+      "historical_packet_rewritten": false
+    },
+    {
+      "id": "native_trace_guards_20261027_wiki",
+      "label": "Wiki synthesis of trace guards, budget and limits",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-trace-guards-and-qnc-budget-2026-10-27.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "b8d82b49377f0a57b861482865bf2b0a341fc1293ac8b046bd08ec671cf02d9a"
+    },
+    {
+      "id": "native_trace_guards_20261027_companion",
+      "label": "Current strict reader reproduces unchanged PR457 packet cases without rewriting historical manifest",
+      "file_type": "code",
+      "source_file": "harness/replay_pr457_qnc_with_hardened_reader.py",
+      "source_location": "replay; main",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "2b8a4fb1747cd660db38a2557129a544f9bcdb266f13db29a16acdd8152cd1ee",
+      "model_calls": 0
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_trace_guards_20261027_report",
+      "target": "native_trace_guards_20261027_overlay",
+      "relation": "documents",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Input and output guards"
+    },
+    {
+      "source": "native_trace_guards_20261027_report",
+      "target": "native_trace_guards_20261027_reader",
+      "relation": "documents",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Input and output guards"
+    },
+    {
+      "source": "native_trace_guards_20261027_report",
+      "target": "native_trace_guards_20261027_budget",
+      "relation": "documents",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Exact arithmetic"
+    },
+    {
+      "source": "native_trace_guards_20261027_report",
+      "target": "native_trace_guards_20261027_historical_pin",
+      "relation": "preserves",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "The PR #457 packet remains historical"
+    },
+    {
+      "source": "native_trace_guards_20261027_wiki",
+      "target": "native_trace_guards_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-trace-guards-and-qnc-budget-2026-10-27.md",
+      "source_location": "Review and equations"
+    },
+    {
+      "source": "native_qnc_flux_20261027_analysis",
+      "target": "native_trace_guards_20261027_budget",
+      "relation": "input_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "Exact arithmetic"
+    },
+    {
+      "source": "native_trace_guards_20261027_reader",
+      "target": "native_trace_guards_20261027_historical_pin",
+      "relation": "does_not_replace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_TRACE_GUARDS_AND_QNC_BUDGET_20261027.md",
+      "source_location": "The PR #457 packet remains historical"
+    },
+    {
+      "source": "native_trace_guards_20261027_companion",
+      "target": "native_trace_guards_20261027_historical_pin",
+      "relation": "validates_without_rewriting",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/replay_pr457_qnc_with_hardened_reader.py",
+      "source_location": "replay"
+    }
+  ],
+  "hyperedges": []
+}
