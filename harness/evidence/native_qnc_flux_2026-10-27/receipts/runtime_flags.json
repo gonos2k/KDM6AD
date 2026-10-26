@@ -1,0 +1,59 @@
+{
+  "namelist_run_config_readback": {
+    "alpha025": {
+      "H_SCA_ADV_ORDER": "11*5",
+      "RK_ORD": "3",
+      "SCALAR_ADV_OPT": "11*1",
+      "V_SCA_ADV_ORDER": "11*3",
+      "ZADVECT_IMPLICIT": "0"
+    },
+    "control": {
+      "H_SCA_ADV_ORDER": "11*5",
+      "RK_ORD": "3",
+      "SCALAR_ADV_OPT": "11*1",
+      "V_SCA_ADV_ORDER": "11*3",
+      "ZADVECT_IMPLICIT": "0"
+    }
+  },
+  "normalized_run_config": {
+    "alpha025": {
+      "h_sca_adv_order": 5,
+      "rk_ord": 3,
+      "scalar_adv_opt": 1,
+      "v_sca_adv_order": 3,
+      "zadvect_implicit": 0
+    },
+    "control": {
+      "h_sca_adv_order": 5,
+      "rk_ord": 3,
+      "scalar_adv_opt": 1,
+      "v_sca_adv_order": 3,
+      "zadvect_implicit": 0
+    }
+  },
+  "readback_private_relative_path": {
+    "alpha025": "runs/pr457_v6/alpha025_pr457_v6_on/live_process/live_2dbwzigy/namelist.output",
+    "control": "runs/pr457_v5/control_pr457_v5_on/live_process/live_zv10ut7x/namelist.output"
+  },
+  "readback_source_sha256": {
+    "alpha025": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+    "control": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3"
+  },
+  "schema": "kdm6.native_qnc_flux_runtime_flags.v1",
+  "scope": "Values read from the actual saved namelist.output files for both selected on-runs; raw file SHA256 values match. The run-config fields preserve their emitted WRF repetition syntax and normalized kernel inputs.",
+  "values": {
+    "BL_PBL_PHYSICS": 11,
+    "CU_PHYSICS": 37,
+    "MP_PHYSICS": 137,
+    "MP_ZERO_OUT": 2,
+    "MP_ZERO_OUT_ALL": 0,
+    "NO_MP_HEATING": 0,
+    "RA_LW_PHYSICS": 4,
+    "RA_SW_PHYSICS": 4,
+    "SF_SFCLAY_PHYSICS": 1,
+    "SF_SURFACE_PHYSICS": 2,
+    "SF_URBAN_PHYSICS": 1,
+    "USE_Q_DIABATIC": 0,
+    "USE_THETA_M": 1
+  }
+}

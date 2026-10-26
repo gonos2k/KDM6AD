@@ -1,0 +1,2490 @@
+{
+  "cases": {
+    "alpha025": {
+      "all_captured_replays_match_a_source_or_outer_fma_candidate": true,
+      "flux_trace": {
+        "bytes": 4490,
+        "file": "qnc_flux.tsv",
+        "protocol_version": 2,
+        "sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3"
+      },
+      "rk1_directional_tendency_replay": [
+        {
+          "axis": "Y",
+          "before": {
+            "bits_hex": "00000000",
+            "value": 0.0
+          },
+          "delta": {
+            "bits_hex": "569823E1",
+            "value": 83639933075456.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D0754EE7",
+            "value": -16462355456.0
+          },
+          "outer_fma": {
+            "bits_hex": "D0754EE7",
+            "value": -16462355456.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D0754EE7",
+            "value": -16462355456.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "X",
+          "before": {
+            "bits_hex": "D0754EE7",
+            "value": -16462355456.0
+          },
+          "delta": {
+            "bits_hex": "D788BF16",
+            "value": -300708578459648.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "511F291C",
+            "value": 42724343808.0
+          },
+          "outer_fma": {
+            "bits_hex": "511F291C",
+            "value": 42724343808.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "511F291C",
+            "value": 42724343808.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "Z",
+          "before": {
+            "bits_hex": "511F291C",
+            "value": 42724343808.0
+          },
+          "delta": {
+            "bits_hex": "CF7DFEDD",
+            "value": -4261338368.0
+          },
+          "factor": {
+            "bits_hex": "C252DDF8",
+            "value": -52.716766357421875
+          },
+          "observed": {
+            "bits_hex": "D2296D05",
+            "value": -181919629312.0
+          },
+          "outer_fma": {
+            "bits_hex": "D2296D05",
+            "value": -181919629312.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D2296D05",
+            "value": -181919629312.0
+          },
+          "separate_match": true
+        }
+      ],
+      "rk3_pd_applied_divergence_replay": [
+        {
+          "axis": "Z",
+          "before": {
+            "bits_hex": "00000000",
+            "value": 0.0
+          },
+          "delta": {
+            "bits_hex": "CF4D94E4",
+            "value": -3449086976.0
+          },
+          "factor": {
+            "bits_hex": "C252DDF8",
+            "value": -52.716766357421875
+          },
+          "observed": {
+            "bits_hex": "D2295664",
+            "value": -181824716800.0
+          },
+          "outer_fma": {
+            "bits_hex": "D2295664",
+            "value": -181824716800.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D2295664",
+            "value": -181824716800.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "X",
+          "before": {
+            "bits_hex": "D2295664",
+            "value": -181824716800.0
+          },
+          "delta": {
+            "bits_hex": "D7CE76E7",
+            "value": -454020153999360.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D1AC399B",
+            "value": -92462604288.0
+          },
+          "outer_fma": {
+            "bits_hex": "D1AC399B",
+            "value": -92462604288.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D1AC399B",
+            "value": -92462604288.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "Y",
+          "before": {
+            "bits_hex": "D1AC399B",
+            "value": -92462604288.0
+          },
+          "delta": {
+            "bits_hex": "56591A8C",
+            "value": 59677010296832.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D1C21A7A",
+            "value": -104208482304.0
+          },
+          "outer_fma": {
+            "bits_hex": "D1C21A7A",
+            "value": -104208482304.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D1C21A7A",
+            "value": -104208482304.0
+          },
+          "separate_match": true
+        }
+      ],
+      "rk3_pd_limiter": {
+        "correction_faces": {
+          "FX_EAST": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "579517DE",
+              "value": 327859482656768.0
+            },
+            "pre": {
+              "bits_hex": "57BA8BE5",
+              "value": 410220010405888.0
+            }
+          },
+          "FX_WEST": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "D6E75FFE",
+              "value": -127199734661120.0
+            },
+            "pre": {
+              "bits_hex": "D710BFBC",
+              "value": -159153167269888.0
+            }
+          },
+          "FY_NORTH": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "55CB97A2",
+              "value": 27981514801152.0
+            },
+            "pre": {
+              "bits_hex": "55FEBC70",
+              "value": 35010660794368.0
+            }
+          },
+          "FY_SOUTH": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "D5CC3BEA",
+              "value": -28069712625664.0
+            },
+            "pre": {
+              "bits_hex": "D5FF89FC",
+              "value": -35121012932608.0
+            }
+          },
+          "FZ_BOTTOM": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "4F49CB33",
+              "value": 3385537280.0
+            },
+            "pre": {
+              "bits_hex": "4F7C7C57",
+              "value": 4236007168.0
+            }
+          },
+          "FZ_TOP": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "CAC85146",
+              "value": -6564003.0
+            },
+            "pre": {
+              "bits_hex": "CAFAA37A",
+              "value": -8212925.0
+            }
+          }
+        },
+        "dt_step_matches_upstream_dt_rk": true,
+        "flux_out_replay": {
+          "computed": {
+            "bits_hex": "54C844ED",
+            "value": 6881198735360.0
+          },
+          "matches": true,
+          "observed": {
+            "bits_hex": "54C844ED",
+            "value": 6881198735360.0
+          }
+        },
+        "limit_cells": {
+          "i220_k6_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "54610150",
+              "value": 3865558646784.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "575B09BD",
+              "value": 240834872082432.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k5_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "00000000",
+              "value": 0.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "57A8956A",
+              "value": 370719363956736.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k6_j62": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "5476C9A4",
+              "value": 4239779692544.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5756C303",
+              "value": 236133057298432.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k6_j63": {
+            "branch_match": true,
+            "expected_hit": true,
+            "expected_scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "flux_out": {
+              "bits_hex": "54C844ED",
+              "value": 6881198735360.0
+            },
+            "limit_hit": true,
+            "ph_low": {
+              "bits_hex": "54A00F95",
+              "value": 5499649523712.0
+            },
+            "scale": {
+              "bits_hex": "3F4C9A3C",
+              "value": 0.7992284297943115
+            },
+            "scale_match": true
+          },
+          "i221_k6_j64": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "00000000",
+              "value": 0.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "577B0BD1",
+              "value": 276028169650176.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k7_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "529FB110",
+              "value": 342935207936.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5301F47E",
+              "value": 558152679424.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i222_k6_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "5264A6C0",
+              "value": 245512536064.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5792457E",
+              "value": 321654328655872.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          }
+        },
+        "low_order_faces_unchanged": {
+          "FX_LOW_EAST": true,
+          "FX_LOW_WEST": true,
+          "FY_LOW_NORTH": true,
+          "FY_LOW_SOUTH": true,
+          "FZ_LOW_BOTTOM": true,
+          "FZ_LOW_TOP": true
+        },
+        "ph_low_replay": {
+          "all_advect_scalar_pd_ph_low_operands_captured": true,
+          "candidate_scope": "complete advect_scalar_pd operand replay; FMA variants remain arithmetic candidates, not compiler evidence",
+          "computed": {
+            "bits_hex": "54A00F94",
+            "value": 5499648999424.0
+          },
+          "fma_contraction_candidates": [
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F94",
+                "value": 5499648999424.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            }
+          ],
+          "matches": false,
+          "matching_fma_candidates": [
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F95",
+                "value": 5499649523712.0
+              }
+            }
+          ],
+          "observed": {
+            "bits_hex": "54A00F95",
+            "value": 5499649523712.0
+          },
+          "source_terms_missing": []
+        },
+        "pre_vs_target_limit_cell": true
+      },
+      "run_config": {
+        "h_sca_adv_order": 5,
+        "rk_ord": 3,
+        "scalar_adv_opt": 1,
+        "v_sca_adv_order": 3,
+        "zadvect_implicit": 0
+      },
+      "run_id": "alpha025_pr457_v6_on",
+      "same_run_advect_tend_join": [
+        {
+          "flux_tendency": {
+            "bits_hex": "D2296D05",
+            "value": -181919629312.0
+          },
+          "matches": true,
+          "rk_step": 1,
+          "same_run_ADVECT_TEND": {
+            "bits_hex": "D2296D05",
+            "value": -181919629312.0
+          }
+        },
+        {
+          "flux_tendency": {
+            "bits_hex": "D1C21A7A",
+            "value": -104208482304.0
+          },
+          "matches": true,
+          "rk_step": 3,
+          "same_run_ADVECT_TEND": {
+            "bits_hex": "D1C21A7A",
+            "value": -104208482304.0
+          }
+        }
+      ],
+      "schema": "kdm6ad.qnc_flux_limiter_replay.v1",
+      "scope": {
+        "budget_closure": "not certified",
+        "number_units": "not certified",
+        "process_attribution": "not inferred"
+      },
+      "selected_capture_group": {
+        "index": 0,
+        "source_role": "context_filtered_scalar_qnc"
+      },
+      "target_ikj": [
+        221,
+        6,
+        63
+      ],
+      "upstream_trace": {
+        "file": "upstream_nc.tsv",
+        "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+      }
+    },
+    "control": {
+      "all_captured_replays_match_a_source_or_outer_fma_candidate": true,
+      "flux_trace": {
+        "bytes": 4490,
+        "file": "qnc_flux.tsv",
+        "protocol_version": 2,
+        "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+      },
+      "rk1_directional_tendency_replay": [
+        {
+          "axis": "Y",
+          "before": {
+            "bits_hex": "00000000",
+            "value": 0.0
+          },
+          "delta": {
+            "bits_hex": "569823F0",
+            "value": 83640058904576.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D0754EFF",
+            "value": -16462380032.0
+          },
+          "outer_fma": {
+            "bits_hex": "D0754EFF",
+            "value": -16462380032.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D0754EFF",
+            "value": -16462380032.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "X",
+          "before": {
+            "bits_hex": "D0754EFF",
+            "value": -16462380032.0
+          },
+          "delta": {
+            "bits_hex": "D788BF10",
+            "value": -300708377133056.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "511F290C",
+            "value": 42724278272.0
+          },
+          "outer_fma": {
+            "bits_hex": "511F290C",
+            "value": 42724278272.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "511F290C",
+            "value": 42724278272.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "Z",
+          "before": {
+            "bits_hex": "511F290C",
+            "value": 42724278272.0
+          },
+          "delta": {
+            "bits_hex": "CF7DFED5",
+            "value": -4261336320.0
+          },
+          "factor": {
+            "bits_hex": "C252DDF8",
+            "value": -52.716766357421875
+          },
+          "observed": {
+            "bits_hex": "D2296D03",
+            "value": -181919596544.0
+          },
+          "outer_fma": {
+            "bits_hex": "D2296D03",
+            "value": -181919596544.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D2296D03",
+            "value": -181919596544.0
+          },
+          "separate_match": true
+        }
+      ],
+      "rk3_pd_applied_divergence_replay": [
+        {
+          "axis": "Z",
+          "before": {
+            "bits_hex": "00000000",
+            "value": 0.0
+          },
+          "delta": {
+            "bits_hex": "CF4D94B9",
+            "value": -3449075968.0
+          },
+          "factor": {
+            "bits_hex": "C252DDF8",
+            "value": -52.716766357421875
+          },
+          "observed": {
+            "bits_hex": "D2295640",
+            "value": -181824126976.0
+          },
+          "outer_fma": {
+            "bits_hex": "D2295640",
+            "value": -181824126976.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D2295640",
+            "value": -181824126976.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "X",
+          "before": {
+            "bits_hex": "D2295640",
+            "value": -181824126976.0
+          },
+          "delta": {
+            "bits_hex": "D7CE769B",
+            "value": -454017603862528.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D1AC3990",
+            "value": -92462514176.0
+          },
+          "outer_fma": {
+            "bits_hex": "D1AC3990",
+            "value": -92462514176.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D1AC3990",
+            "value": -92462514176.0
+          },
+          "separate_match": true
+        },
+        {
+          "axis": "Y",
+          "before": {
+            "bits_hex": "D1AC3990",
+            "value": -92462514176.0
+          },
+          "delta": {
+            "bits_hex": "56591AD6",
+            "value": 59677320675328.0
+          },
+          "factor": {
+            "bits_hex": "394E6292",
+            "value": 0.0001968241122085601
+          },
+          "observed": {
+            "bits_hex": "D1C21A76",
+            "value": -104208449536.0
+          },
+          "outer_fma": {
+            "bits_hex": "D1C21A76",
+            "value": -104208449536.0
+          },
+          "outer_fma_match": true,
+          "separate_f32": {
+            "bits_hex": "D1C21A76",
+            "value": -104208449536.0
+          },
+          "separate_match": true
+        }
+      ],
+      "rk3_pd_limiter": {
+        "correction_faces": {
+          "FX_EAST": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "579517CE",
+              "value": 327858945785856.0
+            },
+            "pre": {
+              "bits_hex": "57BA8BC0",
+              "value": 410218768891904.0
+            }
+          },
+          "FX_WEST": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "D6E7601F",
+              "value": -127200011485184.0
+            },
+            "pre": {
+              "bits_hex": "D710BFC4",
+              "value": -159153301487616.0
+            }
+          },
+          "FY_NORTH": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "55CB97AC",
+              "value": 27981535772672.0
+            },
+            "pre": {
+              "bits_hex": "55FEBC66",
+              "value": 35010639822848.0
+            }
+          },
+          "FY_SOUTH": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "D5CC3C67",
+              "value": -28069974769664.0
+            },
+            "pre": {
+              "bits_hex": "D5FF8A82",
+              "value": -35121293950976.0
+            }
+          },
+          "FZ_BOTTOM": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "4F49CB09",
+              "value": 3385526528.0
+            },
+            "pre": {
+              "bits_hex": "4F7C7C0C",
+              "value": 4235987968.0
+            }
+          },
+          "FZ_TOP": {
+            "donor_ikj": [
+              221,
+              6,
+              63
+            ],
+            "donor_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "matches": true,
+            "post": {
+              "bits_hex": "CAC85225",
+              "value": -6564114.5
+            },
+            "pre": {
+              "bits_hex": "CAFAA47A",
+              "value": -8213053.0
+            }
+          }
+        },
+        "dt_step_matches_upstream_dt_rk": true,
+        "flux_out_replay": {
+          "computed": {
+            "bits_hex": "54C844C0",
+            "value": 6881175142400.0
+          },
+          "matches": true,
+          "observed": {
+            "bits_hex": "54C844C0",
+            "value": 6881175142400.0
+          }
+        },
+        "limit_cells": {
+          "i220_k6_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "5461018F",
+              "value": 3865575161856.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "575B09B7",
+              "value": 240834771419136.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k5_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "00000000",
+              "value": 0.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "57A8956C",
+              "value": 370719431065600.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k6_j62": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "5476C99D",
+              "value": 4239777857536.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5756C307",
+              "value": 236133124407296.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k6_j63": {
+            "branch_match": true,
+            "expected_hit": true,
+            "expected_scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "flux_out": {
+              "bits_hex": "54C844C0",
+              "value": 6881175142400.0
+            },
+            "limit_hit": true,
+            "ph_low": {
+              "bits_hex": "54A00F7F",
+              "value": 5499637989376.0
+            },
+            "scale": {
+              "bits_hex": "3F4C9A4E",
+              "value": 0.7992295026779175
+            },
+            "scale_match": true
+          },
+          "i221_k6_j64": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "00000000",
+              "value": 0.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "577B0BCD",
+              "value": 276028102541312.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i221_k7_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "529FB0A4",
+              "value": 342931668992.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5301F428",
+              "value": 558147043328.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          },
+          "i222_k6_j63": {
+            "branch_match": true,
+            "expected_hit": false,
+            "expected_scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "flux_out": {
+              "bits_hex": "5264A7AA",
+              "value": 245516369920.0
+            },
+            "limit_hit": false,
+            "ph_low": {
+              "bits_hex": "5792457D",
+              "value": 321654295101440.0
+            },
+            "scale": {
+              "bits_hex": "3F800000",
+              "value": 1.0
+            },
+            "scale_match": true
+          }
+        },
+        "low_order_faces_unchanged": {
+          "FX_LOW_EAST": true,
+          "FX_LOW_WEST": true,
+          "FY_LOW_NORTH": true,
+          "FY_LOW_SOUTH": true,
+          "FZ_LOW_BOTTOM": true,
+          "FZ_LOW_TOP": true
+        },
+        "ph_low_replay": {
+          "all_advect_scalar_pd_ph_low_operands_captured": true,
+          "candidate_scope": "complete advect_scalar_pd operand replay; FMA variants remain arithmetic candidates, not compiler evidence",
+          "computed": {
+            "bits_hex": "54A00F7F",
+            "value": 5499637989376.0
+          },
+          "fma_contraction_candidates": [
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": false,
+              "value": {
+                "bits_hex": "54A00F80",
+                "value": 5499638513664.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            }
+          ],
+          "matches": true,
+          "matching_fma_candidates": [
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": false,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": false,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": false,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": false,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": false
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            },
+            {
+              "fma_sites": {
+                "final_subtract": true,
+                "horizontal_sum": true,
+                "mass_first": true,
+                "mass_second": true,
+                "vertical_sum": true
+              },
+              "matches_observed": true,
+              "value": {
+                "bits_hex": "54A00F7F",
+                "value": 5499637989376.0
+              }
+            }
+          ],
+          "observed": {
+            "bits_hex": "54A00F7F",
+            "value": 5499637989376.0
+          },
+          "source_terms_missing": []
+        },
+        "pre_vs_target_limit_cell": true
+      },
+      "run_config": {
+        "h_sca_adv_order": 5,
+        "rk_ord": 3,
+        "scalar_adv_opt": 1,
+        "v_sca_adv_order": 3,
+        "zadvect_implicit": 0
+      },
+      "run_id": "control_pr457_v5_on",
+      "same_run_advect_tend_join": [
+        {
+          "flux_tendency": {
+            "bits_hex": "D2296D03",
+            "value": -181919596544.0
+          },
+          "matches": true,
+          "rk_step": 1,
+          "same_run_ADVECT_TEND": {
+            "bits_hex": "D2296D03",
+            "value": -181919596544.0
+          }
+        },
+        {
+          "flux_tendency": {
+            "bits_hex": "D1C21A76",
+            "value": -104208449536.0
+          },
+          "matches": true,
+          "rk_step": 3,
+          "same_run_ADVECT_TEND": {
+            "bits_hex": "D1C21A76",
+            "value": -104208449536.0
+          }
+        }
+      ],
+      "schema": "kdm6ad.qnc_flux_limiter_replay.v1",
+      "scope": {
+        "budget_closure": "not certified",
+        "number_units": "not certified",
+        "process_attribution": "not inferred"
+      },
+      "selected_capture_group": {
+        "index": 0,
+        "source_role": "context_filtered_scalar_qnc"
+      },
+      "target_ikj": [
+        221,
+        6,
+        63
+      ],
+      "upstream_trace": {
+        "file": "upstream_nc.tsv",
+        "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+      }
+    }
+  },
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "run_config_by_case": {
+    "alpha025": {
+      "h_sca_adv_order": 5,
+      "rk_ord": 3,
+      "scalar_adv_opt": 1,
+      "v_sca_adv_order": 3,
+      "zadvect_implicit": 0
+    },
+    "control": {
+      "h_sca_adv_order": 5,
+      "rk_ord": 3,
+      "scalar_adv_opt": 1,
+      "v_sca_adv_order": 3,
+      "zadvect_implicit": 0
+    }
+  },
+  "schema": "kdm6.native_qnc_flux_offline_replay.v1",
+  "scope": "Saved V2 flux and same-run upstream NC arithmetic only; no new model execution or physical closure claim."
+}

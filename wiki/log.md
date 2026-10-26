@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC flux and limiter trace
+- Added [[sources/native-qnc-flux-limiter-2026-10-27]]: the corrected control/alpha0.25 trace-off/on pairs preserve their respective full checkpoints bitwise. One scalar-QNC flux group per trace-on run joins the same-run RK1/RK3 advection tendency; the target RK3 outgoing limiter branch is active in both runs and the candidate still ends with negative NC.
+- The active positive-definite `PH_LOW` formula has a source-compatible target-cell replay; the captured records still lack the complete neighboring shared-face/domain budget and executed instruction sequence. Number-budget closure and the physical repair remain open. No RTTOV call, accepted analysis or second assimilation was performed in this trace campaign.
+
 ## [2026-10-26] Native QC-NC boundary trace V2
 - Added [[sources/native-qc-nc-boundary-2026-10-26]]: control, alpha1 and alpha0.25 corrected off/on full-physics pairs preserve all 652 checkpoint variables; the public V2 traces record 6,318 QC/NC values across 3 cases. Initial extra-K40 V2 trace data remain preserved/rejected. R4 boundary measurement is complete; process cause, raw NC units, candidate cost and R5–R9 work remain open.
 - Build receipts pin source/object/executable identity but omit builder-script hashes; a post-build source inventory records available script bytes without claiming execution-time attestation. No new source physics or output tolerances changed.

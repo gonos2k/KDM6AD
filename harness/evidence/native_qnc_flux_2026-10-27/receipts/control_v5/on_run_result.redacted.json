@@ -1,0 +1,101 @@
+{
+  "ack_bytes": 43,
+  "ack_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/ack_comparison.json",
+  "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+  "command_summary": {
+    "applied_components": 0,
+    "applied_rows": 0
+  },
+  "controller_sha256": "f5b059eed69f65dc7185d241554bd321ec61346dd1505250bc225afd2db158a4",
+  "created_at_utc": "2026-10-26T14:54:56.974739+00:00",
+  "endpoint_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/endpoint_comparison.json",
+  "endpoint_comparison_sha256": "0c2ecb220859e6ce29baddeac11fd3ed8443f2d97dfa2562fb8804b64cea27d0",
+  "error": null,
+  "live_session_record_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/live_session_record.json",
+  "live_session_record_sha256": "9f6421927ae3be5dec90cc37d00ce380ade725fe623039ebc4222fae41e76480",
+  "model_calls": {
+    "KDM6_wrapper_entries_expected": 2,
+    "RTTOV": 0,
+    "host_steps": 1,
+    "optimizer": 0
+  },
+  "native_host_steps_completed": 1,
+  "output_checkpoint_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/live_process/live_zv10ut7x/wrfrst_d01_2025-07-19_00:01:00",
+  "output_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "plan_sha256": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7",
+  "qnc_flux_advect_tend_join": {
+    "coordinate_i_j_k": [
+      221,
+      63,
+      6
+    ],
+    "joins": [
+      {
+        "bitwise_equal": true,
+        "flux_raw_hex": "D2296D03",
+        "flux_stage": "RK1_AFTER_Z",
+        "rk_step": 1,
+        "upstream_raw_hex": "D2296D03",
+        "upstream_stage": "RKSCALAR_BEFORE"
+      },
+      {
+        "bitwise_equal": true,
+        "flux_raw_hex": "D1C21A76",
+        "flux_stage": "RK3_AFTER_Y",
+        "rk_step": 3,
+        "upstream_raw_hex": "D1C21A76",
+        "upstream_stage": "RKSCALAR_BEFORE"
+      }
+    ],
+    "same_run_id": "control_pr457_v5_on"
+  },
+  "qnc_flux_rows": 77,
+  "ready_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/ready_comparison.json",
+  "ready_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+  "run_id": "control_pr457_v5_on",
+  "schema": "kdm6.native_qnc_flux_trace_pr457_v5_single_run_result.v1",
+  "secondary_endpoint_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/secondary_endpoint_comparisons.json",
+  "secondary_endpoint_comparison_sha256": "23f887a51ae52d5dbe32c1cec05ed83fce1a8feadb7edb78ac0012302b57ea4b",
+  "selector_runtime_guard_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/selector_runtime_guard.json",
+  "selector_runtime_guard_sha256": "e64659cd47e9ca96dc2bf4b861e21550d92ae82e2e9eb1e38e53a9cc7dd46cb6",
+  "selector_runtime_readback": {
+    "expected_num_tracer": 1,
+    "options": {
+      "chem_opt": "11*0",
+      "km_opt": "4",
+      "madwrf_opt": "0",
+      "tracer_opt": "11*0"
+    },
+    "param_first_scalar": 2,
+    "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/live_process/live_zv10ut7x/namelist.output",
+    "sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3"
+  },
+  "status": "RUN_COMPLETE_FULL_COMPARISONS_PASS",
+  "trace_artifacts": {
+    "host.hex": {
+      "bytes": 71585,
+      "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/v2_trace/host.hex",
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    "kernel.hex": {
+      "bytes": 24041,
+      "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/v2_trace/kernel.hex",
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    "qnc_flux.tsv": {
+      "bytes": 4490,
+      "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/qnc_flux_trace/qnc_flux.tsv",
+      "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+    },
+    "upstream_nc.tsv": {
+      "bytes": 11014,
+      "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v5/control_pr457_v5_on/upstream_nc_trace/upstream_nc.tsv",
+      "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+    }
+  },
+  "trace_mode": "on",
+  "trace_validation_error": null,
+  "trace_validation_traceback": null,
+  "traceback": null,
+  "upstream_nc_rows": 206
+}

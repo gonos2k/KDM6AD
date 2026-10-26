@@ -1,0 +1,20 @@
+{
+  "ack_byte_identical": true,
+  "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+  "both_runs_match_historical_endpoints": true,
+  "case": "alpha025",
+  "endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+  "full_checkpoint_comparison": {
+    "numeric_element_mismatches": 0,
+    "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/pair_comparisons/alpha025_pr457_off_vs_on_full_checkpoint.json",
+    "raw_bitwise_equal": true,
+    "sha256": "deb633cf57ffe726d28b94a951ebbfca89bdf1e4a028e288615805e26a4e5edf",
+    "variable_count": 652
+  },
+  "plan_sha256": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab",
+  "producer_sha256": "941e5bd44da1d16e7830115f75b0445c215da10fa3a27adbb7f7a72753e4707a",
+  "qnc_flux_trace_sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3",
+  "schema": "kdm6.native_qnc_flux_trace_pr457_v6_off_on_pair.v1",
+  "trace_off_run_id": "alpha025_pr457_v6_off",
+  "trace_on_run_id": "alpha025_pr457_v6_on"
+}

@@ -1,0 +1,18 @@
+{
+  "KDM6_wrapper_entries_expected": 2,
+  "RTTOV_calls": 0,
+  "authorization": {
+    "approved_run_id": "alpha025_pr457_v6_on",
+    "path": "<PRIVATE_PROJECT_ROOT>/host/research_evidence/native_qnc_flux_trace_20261026/plans/pr457_v6/go_alpha025_pr457_v6_on.json",
+    "sha256": "549fcaca717147d52a28c8400131d209e466f0a7af4b5bf230c42e9a1e0d58d0",
+    "status": "APPROVED"
+  },
+  "created_at_utc": "2026-10-26T15:20:40.684031+00:00",
+  "free_disk_bytes_at_launch": 6156021760,
+  "host_steps_requested": 1,
+  "plan_sha256": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab",
+  "run_id": "alpha025_pr457_v6_on",
+  "schema": "kdm6.native_qnc_flux_trace_pr457_v6_single_run_launch.v1",
+  "status": "AUTHORIZED_SINGLE_HOST_STEP",
+  "trace_mode": "on"
+}

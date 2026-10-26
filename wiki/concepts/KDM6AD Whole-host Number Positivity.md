@@ -1,7 +1,7 @@
 ---
 title: KDM6AD Whole-host Number Positivity
 type: concept
-date_modified: 2026-09-28
+date_modified: 2026-10-27
 ---
 # KDM6AD Whole-host Number Positivity
 
@@ -58,6 +58,17 @@ not a general positivity rule or a closed physical number budget. See
 
 The separate S15 native face-neighbor capture concerns QIB rime-ice volume,
 not a particle-number field; it does not supply S3 number evidence.
+
+The later MP137 control/alpha0.25 trace follows one QNCLOUD cell and its six
+face neighbors through ordinary RK1 advection and the RK3 positive-definite
+limiter. Both runs take the target RK3 outgoing limiter branch, but the
+candidate's final RK3 QNC is negative and enters KDM that way. The recorded
+face words and same-run tendency joins narrow the applied path. The active
+positive-definite routine has no `qmin` or `ieva_corr` term; those are in a
+different monotonic routine. The missing shared-face/domain ledger and actual
+instruction sequence prevent a closed number budget or a general limiter
+repair. See
+[[sources/native-qnc-flux-limiter-2026-10-27]].
 
 See [[kdm6ad-s3-first-negative-face-plan-2026-09-26]],
 [[REPORT_number_face_flux_2026-09-24]],
