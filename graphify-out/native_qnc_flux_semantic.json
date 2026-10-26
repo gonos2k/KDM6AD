@@ -1,0 +1,175 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "V5/V6 selected target-cell QNC positive-definite flux trace. Complete target PD operand record with source-compatible f32/FMA candidates; no executed-FMA instruction, physical unit, domain conservation, admissible candidate cost, or second assimilation certification.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md": {
+      "bytes": 7083,
+      "sha256": "bec39cafb9ab889692776d3faa9de3ad2e96ecb9c7dca2a57cd56a1ee8817903"
+    },
+    "wiki/sources/native-qnc-flux-limiter-2026-10-27.md": {
+      "bytes": 1763,
+      "sha256": "a88ddac44b59886f6aba0e7c6efdbea050c5bc10420a49ea0538d59187cc2162"
+    },
+    "harness/evidence/native_qnc_flux_2026-10-27/README.md": {
+      "bytes": 3623,
+      "sha256": "0a90d7252449edd54a6f41463d53ad00a8ad2f765e0f7d9ebd95f68cc6836108"
+    },
+    "harness/evidence/native_qnc_flux_2026-10-27/analysis.json": {
+      "bytes": 72315,
+      "sha256": "8f9bc344ea0f804d373b45e89ff224371b5ddae292cb832503fc3aad06945a1c"
+    },
+    "harness/evidence/native_qnc_flux_2026-10-27/manifest.json": {
+      "bytes": 16902,
+      "sha256": "bc6a31a3c5e454a652b01ae9c261fb846817949408bda5063685b0275d2477f9"
+    },
+    "harness/evidence/native_qnc_flux_2026-10-27/execution_sources/SOURCE_RESOLUTION.md": {
+      "bytes": 1955,
+      "sha256": "16338846ecb12b3357a91258eddd6169be7907d80362ab603b38a134c176edbd"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_flux_20261027_report",
+      "label": "Native QNC flux and limiter trace report",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Executed path; Measured scalar transport; Observed limiter; Next decision gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "bec39cafb9ab889692776d3faa9de3ad2e96ecb9c7dca2a57cd56a1ee8817903"
+    },
+    {
+      "id": "native_qnc_flux_20261027_packet",
+      "label": "V5/V6 source-bound raw-bit packet and noninterference receipts",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/README.md",
+      "source_location": "Run accounting; Files",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "0a90d7252449edd54a6f41463d53ad00a8ad2f765e0f7d9ebd95f68cc6836108",
+      "actual_host_steps": 4,
+      "kdm_wrapper_entries": 8,
+      "RTTOV_calls": 0,
+      "optimizer_calls": 0
+    },
+    {
+      "id": "native_qnc_flux_20261027_analysis",
+      "label": "Target PD PH_LOW/FLUX_OUT and RK1/RK3 saved-operand replay",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/analysis.json",
+      "source_location": "/cases/control; /cases/alpha025",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "8f9bc344ea0f804d373b45e89ff224371b5ddae292cb832503fc3aad06945a1c",
+      "target_native_ijk_1based": [
+        221,
+        63,
+        6
+      ],
+      "executed_fma_instruction_confirmed": false,
+      "raw_number_units_certified": false
+    },
+    {
+      "id": "native_qnc_flux_20261027_source_resolution",
+      "label": "V3 executed overlay and generated Fortran source hash resolution; private host content excluded",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/execution_sources/SOURCE_RESOLUTION.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "16338846ecb12b3357a91258eddd6169be7907d80362ab603b38a134c176edbd",
+      "private_host_source_published": false
+    },
+    {
+      "id": "native_qnc_flux_20261027_admissibility",
+      "label": "Active limiter measured but alpha0.25 remains inadmissible; cost and next assimilation unmeasured",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Next decision gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "bec39cafb9ab889692776d3faa9de3ad2e96ecb9c7dca2a57cd56a1ee8817903",
+      "R5": "open",
+      "R6": "open",
+      "R9": "open"
+    },
+    {
+      "id": "native_qnc_flux_20261027_wiki",
+      "label": "Wiki synthesis of bounded QNC PD evidence",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-flux-limiter-2026-10-27.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "a88ddac44b59886f6aba0e7c6efdbea050c5bc10420a49ea0538d59187cc2162"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_flux_20261027_report",
+      "target": "native_qnc_flux_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Public packet"
+    },
+    {
+      "source": "native_qnc_flux_20261027_packet",
+      "target": "native_qnc_flux_20261027_analysis",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/README.md",
+      "source_location": "Files"
+    },
+    {
+      "source": "native_qnc_flux_20261027_packet",
+      "target": "native_qnc_flux_20261027_source_resolution",
+      "relation": "has_source_receipt",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_flux_2026-10-27/execution_sources/SOURCE_RESOLUTION.md",
+      "source_location": "Full page"
+    },
+    {
+      "source": "native_qnc_flux_20261027_analysis",
+      "target": "native_qnc_flux_20261027_admissibility",
+      "relation": "does_not_certify",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Next decision gate"
+    },
+    {
+      "source": "native_qnc_flux_20261027_report",
+      "target": "native_qnc_flux_20261027_admissibility",
+      "relation": "documents",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Next decision gate"
+    },
+    {
+      "source": "native_qnc_flux_20261027_wiki",
+      "target": "native_qnc_flux_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-flux-limiter-2026-10-27.md",
+      "source_location": "Detailed trace report"
+    },
+    {
+      "source": "native_upstream_nc_replayed_rk_update",
+      "target": "native_qnc_flux_20261027_analysis",
+      "relation": "precedes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_FLUX_LIMITER_TRACE_20261027.md",
+      "source_location": "Measured scalar transport"
+    }
+  ],
+  "hyperedges": []
+}

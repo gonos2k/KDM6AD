@@ -1,0 +1,41 @@
+{
+  "ack_byte_identical": true,
+  "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+  "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "mismatches": 0,
+  "numeric_elements_compared": 322426586,
+  "off_result_sha256": "d830a80bd618aca7b2ff01add0efdad0324f42184e0f050e013aabd7089e425d",
+  "off_run_id": "control_pr457_v5_off",
+  "on_result_sha256": "27d33da96ee3592fe01e70054fdb78cec9469c6f16d608f58afe5499bac84ff3",
+  "on_run_id": "control_pr457_v5_on",
+  "raw_bitwise_equal": true,
+  "schema": "kdm6.pr457_v5_external_control_pair.v1",
+  "trace_on_qnc_flux_rows": 77,
+  "trace_on_same_run_join": {
+    "coordinate_i_j_k": [
+      221,
+      63,
+      6
+    ],
+    "joins": [
+      {
+        "bitwise_equal": true,
+        "flux_raw_hex": "D2296D03",
+        "flux_stage": "RK1_AFTER_Z",
+        "rk_step": 1,
+        "upstream_raw_hex": "D2296D03",
+        "upstream_stage": "RKSCALAR_BEFORE"
+      },
+      {
+        "bitwise_equal": true,
+        "flux_raw_hex": "D1C21A76",
+        "flux_stage": "RK3_AFTER_Y",
+        "rk_step": 3,
+        "upstream_raw_hex": "D1C21A76",
+        "upstream_stage": "RKSCALAR_BEFORE"
+      }
+    ],
+    "same_run_id": "control_pr457_v5_on"
+  },
+  "variable_count": 652
+}

@@ -1,0 +1,335 @@
+{
+  "actual_run_accounting": {
+    "RTTOV_calls": 0,
+    "accepted_analysis_updates": 0,
+    "campaign_KDM6_wrapper_entries_v3_v5_v6_total": 12,
+    "campaign_host_steps_v3_v5_v6_completed_total": 6,
+    "historical_v3_KDM6_wrapper_entries": 4,
+    "historical_v3_host_steps_completed": 2,
+    "noninterference_pairs": 2,
+    "off_comparison_KDM6_wrapper_entries": 4,
+    "off_comparison_host_steps_completed": 2,
+    "off_comparison_runs": 2,
+    "optimizer_calls": 0,
+    "paired_KDM6_wrapper_entries_total": 8,
+    "paired_host_steps_completed_total": 4,
+    "prestep_failure_completed_host_steps": 0,
+    "qnc_flux_trace_VAL_rows_per_selected_on_run": 77,
+    "selected_on_KDM6_wrapper_entries": 4,
+    "selected_on_host_steps_completed": 2,
+    "selected_trace_on_runs": 2
+  },
+  "base_commit": "635872146ec12bedf7a7595662d730bb7257f3ec",
+  "execution_source_resolution": {
+    "advect_generated_fortran_output": {
+      "bytes": 377540,
+      "content_included": false,
+      "sha256": "72403b4bb9ac713ec20f06a1ff362c44302bcae32c69d5c5f8769d457975d1b5"
+    },
+    "build_source_snapshot": "execution_sources/native_qnc_flux_advect_overlay_pr457_v3.py.txt",
+    "context_generated_fortran_output": {
+      "bytes": 120524,
+      "content_included": false,
+      "sha256": "cc0352105f196ac17deb00e4e5b0ef1a0f18d08d9572bd77046441406ad06c3d"
+    },
+    "current_overlay_change": "formatting-only Ruff cleanup; generated Fortran output remains byte-identical",
+    "current_overlay_sha256": "d3390212e9a37e208d6b25a9d4322ecaa7541a9c1fd47aa9fa4c3aa0cdf74027",
+    "generated_fortran_source_sha256": "72403b4bb9ac713ec20f06a1ff362c44302bcae32c69d5c5f8769d457975d1b5",
+    "generated_host_fortran_contents_included": false,
+    "snapshot_sha256": "8f8fc66dba4d7cfbb72e8198e77dee5cafbd85814524b84c365883c11e01192b"
+  },
+  "external_source_pins": {
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/native_qnc_flux_advect_overlay.py": "d3390212e9a37e208d6b25a9d4322ecaa7541a9c1fd47aa9fa4c3aa0cdf74027",
+    "harness/native_qnc_flux_context_overlay.py": "09506bea263af4e5dea58f178f16e9a62018c05549a7f38eb4b2bb581f84d4ad",
+    "harness/replay_qnc_flux_limiter_trace.py": "b9dfde89f5d62eac6deb414a99d869c0297d05ded8f67c6914696c340d3170b7"
+  },
+  "files": [
+    {
+      "bytes": 3623,
+      "path": "README.md",
+      "role": "public packet documentation",
+      "sha256": "0a90d7252449edd54a6f41463d53ad00a8ad2f765e0f7d9ebd95f68cc6836108",
+      "source_private_relative_path": null,
+      "source_sha256": null
+    },
+    {
+      "bytes": 72315,
+      "path": "analysis.json",
+      "role": "corrected deterministic offline replay output",
+      "sha256": "8f9bc344ea0f804d373b45e89ff224371b5ddae292cb832503fc3aad06945a1c",
+      "source_private_relative_path": null,
+      "source_sha256": null
+    },
+    {
+      "bytes": 71585,
+      "path": "data/alpha025/host.hex",
+      "role": "same_run_v2_host_trace",
+      "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/v2_trace/host.hex",
+      "source_sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/alpha025/kernel.hex",
+      "role": "same_run_v2_kernel_trace",
+      "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/v2_trace/kernel.hex",
+      "source_sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/alpha025/qnc_flux.tsv",
+      "role": "raw_v2_qnc_flux_77_rows",
+      "sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/qnc_flux_trace/qnc_flux.tsv",
+      "source_sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3"
+    },
+    {
+      "bytes": 11014,
+      "path": "data/alpha025/upstream_nc.tsv",
+      "role": "same_run_upstream_nc_trace",
+      "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/upstream_nc_trace/upstream_nc.tsv",
+      "source_sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/control/host.hex",
+      "role": "same_run_v2_host_trace",
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/v2_trace/host.hex",
+      "source_sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/control/kernel.hex",
+      "role": "same_run_v2_kernel_trace",
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/v2_trace/kernel.hex",
+      "source_sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/control/qnc_flux.tsv",
+      "role": "raw_v2_qnc_flux_77_rows",
+      "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/qnc_flux_trace/qnc_flux.tsv",
+      "source_sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+    },
+    {
+      "bytes": 11014,
+      "path": "data/control/upstream_nc.tsv",
+      "role": "same_run_upstream_nc_trace",
+      "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/upstream_nc_trace/upstream_nc.tsv",
+      "source_sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+    },
+    {
+      "bytes": 1955,
+      "path": "execution_sources/SOURCE_RESOLUTION.md",
+      "role": "executed-source-resolution-note",
+      "sha256": "16338846ecb12b3357a91258eddd6169be7907d80362ab603b38a134c176edbd",
+      "source_private_relative_path": null,
+      "source_sha256": null
+    },
+    {
+      "bytes": 14527,
+      "path": "execution_sources/native_qnc_flux_advect_overlay_pr457_v3.py.txt",
+      "role": "exact_executed_overlay_snapshot",
+      "sha256": "8f8fc66dba4d7cfbb72e8198e77dee5cafbd85814524b84c365883c11e01192b",
+      "source_private_relative_path": "build/host_pr457_v3/source_snapshot/module_advect_em.f90_native_qnc_flux_advect_overlay.py",
+      "source_sha256": "8f8fc66dba4d7cfbb72e8198e77dee5cafbd85814524b84c365883c11e01192b"
+    },
+    {
+      "bytes": 11213,
+      "path": "execution_sources/native_qnc_flux_context_overlay_pr457_v3.py.txt",
+      "role": "executed_context_overlay_snapshot",
+      "sha256": "09506bea263af4e5dea58f178f16e9a62018c05549a7f38eb4b2bb581f84d4ad",
+      "source_private_relative_path": "build/host_pr457_v3/source_snapshot/module_em.f90_native_qnc_flux_context_overlay.py",
+      "source_sha256": "09506bea263af4e5dea58f178f16e9a62018c05549a7f38eb4b2bb581f84d4ad"
+    },
+    {
+      "bytes": 1768,
+      "path": "history/README.md",
+      "role": "historical attempt accounting",
+      "sha256": "0496a88912a81e235d43e88022416645eb319989f038b057784eb9cf3f5a2f09",
+      "source_private_relative_path": "history note derived from preserved private run/source receipts",
+      "source_sha256": null
+    },
+    {
+      "bytes": 92940,
+      "path": "receipts/alpha025_v6/experiment_plan.redacted.json",
+      "redaction": "absolute local roots replaced in JSON keys and values; non-path fields preserved",
+      "role": "executed_run_plan",
+      "sha256": "2f68ffa8ad2f1c78afab853d437e7599cd14e6dcf9ae77386b0506238da3408b",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/experiment_plan.json",
+      "source_sha256": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab"
+    },
+    {
+      "bytes": 763,
+      "path": "receipts/alpha025_v6/launch_receipt.redacted.json",
+      "redaction": "absolute local roots replaced in JSON keys and values; non-path fields preserved",
+      "role": "selected_on_run_launch_receipt",
+      "sha256": "f2ac176a190cbd8a2a8bde335b8cb6496a66e5028ed9bf6ccabe8456795dbdbe",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/launch_receipt.json",
+      "source_sha256": "b23a1a9e06fca562c9cb2898f2f32c3117b712949028c0e4896577b62392edf7"
+    },
+    {
+      "bytes": 483263,
+      "path": "receipts/alpha025_v6/noninterference_full_checkpoint.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "full_checkpoint_pair_comparison",
+      "sha256": "deb633cf57ffe726d28b94a951ebbfca89bdf1e4a028e288615805e26a4e5edf",
+      "source_private_relative_path": "runs/pr457_v6/pair_comparisons/alpha025_pr457_off_vs_on_full_checkpoint.json",
+      "source_sha256": "deb633cf57ffe726d28b94a951ebbfca89bdf1e4a028e288615805e26a4e5edf"
+    },
+    {
+      "bytes": 1082,
+      "path": "receipts/alpha025_v6/noninterference_pair.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "trace_noninterference_pair_receipt",
+      "sha256": "3665f53fd6ba8a1ac97b73662a3738bf31b0dbff23baa4bbbbcf5b36ece2512e",
+      "source_private_relative_path": "runs/pr457_v6/pair_comparisons/alpha025_pr457_off_vs_on.json",
+      "source_sha256": "d0280dd8d67fee1cb52bc482f002b7e4320168df57011874ef5a3bd135594e87"
+    },
+    {
+      "bytes": 3454,
+      "path": "receipts/alpha025_v6/off_run_result.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "noninterference_off_run_result",
+      "sha256": "8dfb4509a93217fdfc8086189acde9bd9713bf3c33533f1466602f8c0700966b",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_off/run_result.json",
+      "source_sha256": "490b8bd40da7cda184573aa0651572283c3d46716e25c12ca3ea30f149b6c40d"
+    },
+    {
+      "bytes": 5157,
+      "path": "receipts/alpha025_v6/on_run_result.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "executed_on_run_result",
+      "sha256": "5cf911961bf8350ebb9e840e3f77273350b57b76950544321754bcd0f733ee97",
+      "source_private_relative_path": "runs/pr457_v6/alpha025_pr457_v6_on/run_result.json",
+      "source_sha256": "e74c0bcc3a34e64d38d2c634ec4e7095b6b6224fcb644b7341104c49f16f131c"
+    },
+    {
+      "bytes": 90823,
+      "path": "receipts/control_v5/experiment_plan.redacted.json",
+      "redaction": "absolute local roots replaced in JSON keys and values; non-path fields preserved",
+      "role": "executed_run_plan",
+      "sha256": "f102f89630360f65c360221fc5394653630eea92bd11f90997b063a567412715",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/experiment_plan.json",
+      "source_sha256": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7"
+    },
+    {
+      "bytes": 760,
+      "path": "receipts/control_v5/launch_receipt.redacted.json",
+      "redaction": "absolute local roots replaced in JSON keys and values; non-path fields preserved",
+      "role": "selected_on_run_launch_receipt",
+      "sha256": "982347214c2067defc9ca3f235c63c803966302af57f37fcaf8c4a039a72f2a6",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/launch_receipt.json",
+      "source_sha256": "aa5bb4243c42786ee750a53b4529a337ddd3ccb4d8c25b5e19bf8af53dbe6db2"
+    },
+    {
+      "bytes": 1279,
+      "path": "receipts/control_v5/noninterference_pair.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "trace_noninterference_pair_receipt",
+      "sha256": "50730ec9765d2a6297af0fd7772a031eaaa17fd600ff70a6beceaf65decd3b6d",
+      "source_private_relative_path": "runs/pr457_v5/control_external_pair_receipt.json",
+      "source_sha256": "c418a3d98bde1711ac5f169871f35c853284af1f34076a90e233af17b4e9a9b4"
+    },
+    {
+      "bytes": 3244,
+      "path": "receipts/control_v5/off_run_result.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "noninterference_off_run_result",
+      "sha256": "f6f69a305d1f0968dc8d93e5856fa0bbbd2745cd05e4e296dc6e441a66dcf09d",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_off/run_result.json",
+      "source_sha256": "d830a80bd618aca7b2ff01add0efdad0324f42184e0f050e013aabd7089e425d"
+    },
+    {
+      "bytes": 4942,
+      "path": "receipts/control_v5/on_run_result.redacted.json",
+      "redaction": "absolute local roots replaced with placeholders; receipt values/sha fields otherwise retained",
+      "role": "executed_on_run_result",
+      "sha256": "caedbd49cbd0ffe5baa3adf66862fdf83c6b45e0617c12aad80aa1af2c6488dd",
+      "source_private_relative_path": "runs/pr457_v5/control_pr457_v5_on/run_result.json",
+      "source_sha256": "27d33da96ee3592fe01e70054fdb78cec9469c6f16d608f58afe5499bac84ff3"
+    },
+    {
+      "bytes": 1784,
+      "path": "receipts/runtime_flags.json",
+      "role": "runtime forward nonadiabatic flag readback",
+      "sha256": "56c250a8a454b7157fa063ee22fdda4337620419951fbf66c59dc026f8e9804e",
+      "source_private_relative_path": "derived from both on-run namelist.output readbacks",
+      "source_sha256": null
+    },
+    {
+      "bytes": 108691,
+      "path": "receipts/shared_host_build_v3.redacted.json",
+      "redaction": "absolute local roots replaced in JSON keys and values; non-path fields preserved",
+      "role": "source_bound_build_receipt_shared_by_v5_and_v6",
+      "sha256": "426cc6490bb184f470398afe662f43ab59af276a47d11f88b91e328fc2067d43",
+      "source_private_relative_path": "build/host_pr457_v3/private_host_build_receipt.json",
+      "source_sha256": "fe17d37f9beecce107ed56debd5ce67aafca058faa31b32a75aa9bdb6d716a01"
+    },
+    {
+      "bytes": 8246,
+      "path": "replay.py",
+      "role": "public_offline_replay_entrypoint",
+      "sha256": "9252d00b3e371838cc3f591da2578c29d34dece562fd2ef39eb8cf72cbe1532b",
+      "source_private_relative_path": null,
+      "source_sha256": null
+    }
+  ],
+  "notes": [
+    "Raw qnc_flux.tsv bytes are unmodified; both contain 77 VAL records.",
+    "Copied JSON receipts redact absolute path strings and keys; original source SHA256 and redacted output SHA256 are recorded separately.",
+    "The source-compatible local advect_scalar_pd PH_LOW replay matches a captured-word FMA-contraction candidate where required; actual compiler instructions are unobserved and shared-face/domain conservation is not closed.",
+    "No model physics fix, candidate acceptance, RTTOV improvement, or second assimilation is established."
+  ],
+  "offline_replay": {
+    "all_captured_replays_match": {
+      "alpha025": true,
+      "control": true
+    },
+    "analysis_path": "analysis.json",
+    "analysis_sha256": "8f9bc344ea0f804d373b45e89ff224371b5ddae292cb832503fc3aad06945a1c",
+    "case_run_ids": {
+      "alpha025": "alpha025_pr457_v6_on",
+      "control": "control_pr457_v5_on"
+    },
+    "compiler_fma_instruction_observed": false,
+    "model_calls": {
+      "KDM6": 0,
+      "RTTOV": 0,
+      "host": 0,
+      "optimizer": 0
+    },
+    "ph_low": {
+      "alpha025": {
+        "fma_candidate_match_count": 8,
+        "operands_captured": true,
+        "separate_operation_matches": false,
+        "source_terms_missing": []
+      },
+      "control": {
+        "fma_candidate_match_count": 24,
+        "operands_captured": true,
+        "separate_operation_matches": true,
+        "source_terms_missing": []
+      }
+    },
+    "shared_face_or_domain_budget_closed": false
+  },
+  "runtime_flags_path": "receipts/runtime_flags.json",
+  "schema": "kdm6.native_qnc_flux_public_packet.v1",
+  "scope": "Selected executed V5 control-on and V6 alpha025-on trace packet. Packet copy made zero host, KDM, RTTOV, and optimizer calls; the separate offline replay uses saved trace files only.",
+  "shared_build_identity": {
+    "host_executable_sha256": "9a83ad7007339a7a479c08c95c4e604c5999ca24b49338dbe452a4e139821e96",
+    "private_build_receipt_source_sha256": "fe17d37f9beecce107ed56debd5ce67aafca058faa31b32a75aa9bdb6d716a01",
+    "runtime_dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+    "v5_plan_sha256": "9a83ad7007339a7a479c08c95c4e604c5999ca24b49338dbe452a4e139821e96",
+    "v6_plan_sha256": "9a83ad7007339a7a479c08c95c4e604c5999ca24b49338dbe452a4e139821e96"
+  }
+}

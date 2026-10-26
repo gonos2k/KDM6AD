@@ -1,0 +1,57 @@
+{
+  "ack_bytes": 11482899,
+  "ack_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/ack_comparison.json",
+  "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+  "command_summary": {
+    "applied_components": 170749,
+    "applied_rows": 117172,
+    "candidate_sha256": "228db9df068836d6777d6182c8b03b72255ce76f5b618e2a2eba50f3632a4974",
+    "wire_delta_sha256": "47907c23038cf1ef8378227a159f96d4f9c93da98b7a59050ac0c7e3f3507465"
+  },
+  "controller_sha256": "941e5bd44da1d16e7830115f75b0445c215da10fa3a27adbb7f7a72753e4707a",
+  "created_at_utc": "2026-10-26T15:18:29.210693+00:00",
+  "endpoint_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/endpoint_comparison.json",
+  "endpoint_comparison_sha256": "deb633cf57ffe726d28b94a951ebbfca89bdf1e4a028e288615805e26a4e5edf",
+  "error": null,
+  "live_session_record_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/live_session_record.json",
+  "live_session_record_sha256": "7f995e6c02cec303f8f2a0328d89a876da5c79b801e82c629f6800354fffa340",
+  "model_calls": {
+    "KDM6_wrapper_entries_expected": 2,
+    "RTTOV": 0,
+    "host_steps": 1,
+    "optimizer": 0
+  },
+  "native_host_steps_completed": 1,
+  "output_checkpoint_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/live_process/live_dvfy0vf_/wrfrst_d01_2025-07-19_00:01:00",
+  "output_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+  "plan_sha256": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab",
+  "qnc_flux_advect_tend_join": null,
+  "qnc_flux_rows": 0,
+  "ready_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/ready_comparison.json",
+  "ready_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+  "run_id": "alpha025_pr457_v6_off",
+  "schema": "kdm6.native_qnc_flux_trace_pr457_v6_single_run_result.v1",
+  "secondary_endpoint_comparison_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/secondary_endpoint_comparisons.json",
+  "secondary_endpoint_comparison_sha256": "dd5bf144fd6a837819f46cb838f323775c63169c70a03975ac94db23a5640a1f",
+  "selector_runtime_guard_path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/selector_runtime_guard.json",
+  "selector_runtime_guard_sha256": "25e4ca50b3d2ba18a2d5bca1a77c57fed4d096298bee8e3508d96cb17f8bf641",
+  "selector_runtime_readback": {
+    "expected_num_tracer": 1,
+    "options": {
+      "chem_opt": "11*0",
+      "km_opt": "4",
+      "madwrf_opt": "0",
+      "tracer_opt": "11*0"
+    },
+    "param_first_scalar": 2,
+    "path": "<PRIVATE_PROJECT>/host/research_evidence/native_qnc_flux_trace_20261026/runs/pr457_v6/alpha025_pr457_v6_off/live_process/live_dvfy0vf_/namelist.output",
+    "sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3"
+  },
+  "status": "RUN_COMPLETE_FULL_COMPARISONS_PASS",
+  "trace_artifacts": {},
+  "trace_mode": "off",
+  "trace_validation_error": null,
+  "trace_validation_traceback": null,
+  "traceback": null,
+  "upstream_nc_rows": 0
+}
