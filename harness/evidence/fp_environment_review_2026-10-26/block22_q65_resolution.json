@@ -1,0 +1,207 @@
+{
+  "epsilon_1e_minus_6_resolution_result": {
+    "JVP_implied_gap_ulps": 72.33640535545564,
+    "interpretation": "At epsilon=1e-6, the centered endpoint-difference lattice is too coarse for this one Q coordinate to meet the frozen tolerance: even the nearest binary64-representable endpoint gap has ratio >1. This is a saved-output resolution limit, not evidence that the JVP is wrong. It does not extend to other epsilons or the post-f32 effective direction.",
+    "nearest_gap_ulps": 72,
+    "nearest_lattice_ratio": 43.87333046157018,
+    "observed_endpoint_gap_ulps": 74.0
+  },
+  "epsilon_results": [
+    {
+      "JVP_implied_gap_in_ulps": 723364.0535545563,
+      "absolute_error": 1.7215742329976247e-10,
+      "best_possible_lattice_error": 9.741517054823179e-12,
+      "best_possible_lattice_ratio": 0.0006984480809325476,
+      "centered_fd_ppmv_per_alpha": 0.00013157932698959485,
+      "coordinate_tolerance_denominator": 1.3947379809687846e-08,
+      "coordinate_tolerance_ratio": 0.012343352346379925,
+      "endpoint_TQ_inputs_bitwise_match_original_requested_direction": {
+        "minus": true,
+        "plus": true
+      },
+      "endpoint_gap_in_local_f64_ulps": 723365.0,
+      "endpoint_gap_ppmv": 2.631586539791897e-06,
+      "epsilon": 0.01,
+      "jvp_ppmv_per_alpha": 0.00013157915483217155,
+      "nearest_lattice_centered_fd": 0.0001315791450906545,
+      "nearest_lattice_gap_ulps_for_JVP": 723364,
+      "no_lattice_value_can_pass_at_this_epsilon": false,
+      "passes_frozen_Q_coordinate_gate": true,
+      "q_minus_ppmv": 31344.80917150789,
+      "q_plus_ppmv": 31344.80917413948
+    },
+    {
+      "JVP_implied_gap_in_ulps": 72336.40535545564,
+      "absolute_error": 7.373372784731658e-10,
+      "best_possible_lattice_error": 7.373372784731658e-10,
+      "best_possible_lattice_ratio": 0.05286566807319087,
+      "centered_fd_ppmv_per_alpha": 0.00013157841749489307,
+      "coordinate_tolerance_denominator": 1.3947374644965147e-08,
+      "coordinate_tolerance_ratio": 0.05286566807319087,
+      "endpoint_TQ_inputs_bitwise_match_original_requested_direction": {
+        "minus": true,
+        "plus": true
+      },
+      "endpoint_gap_in_local_f64_ulps": 72336.0,
+      "endpoint_gap_ppmv": 2.6315683498978615e-07,
+      "epsilon": 0.001,
+      "jvp_ppmv_per_alpha": 0.00013157915483217155,
+      "nearest_lattice_centered_fd": 0.00013157841749489307,
+      "nearest_lattice_gap_ulps_for_JVP": 72336,
+      "no_lattice_value_can_pass_at_this_epsilon": false,
+      "passes_frozen_Q_coordinate_gate": true,
+      "q_minus_ppmv": 31344.80917269211,
+      "q_plus_ppmv": 31344.809172955265
+    },
+    {
+      "JVP_implied_gap_in_ulps": 7233.6405355455645,
+      "absolute_error": 4.8031061770665434e-08,
+      "best_possible_lattice_error": 6.53862033571026e-09,
+      "best_possible_lattice_ratio": 0.46879993855519253,
+      "centered_fd_ppmv_per_alpha": 0.00013153112377040088,
+      "coordinate_tolerance_denominator": 1.3947374644965147e-08,
+      "coordinate_tolerance_ratio": 3.4437349675699815,
+      "endpoint_TQ_inputs_bitwise_match_original_requested_direction": {
+        "minus": true,
+        "plus": true
+      },
+      "endpoint_gap_in_local_f64_ulps": 7231.0,
+      "endpoint_gap_ppmv": 2.6306224754080176e-08,
+      "epsilon": 0.0001,
+      "jvp_ppmv_per_alpha": 0.00013157915483217155,
+      "nearest_lattice_centered_fd": 0.00013158569345250726,
+      "nearest_lattice_gap_ulps_for_JVP": 7234,
+      "no_lattice_value_can_pass_at_this_epsilon": false,
+      "passes_frozen_Q_coordinate_gate": false,
+      "q_minus_ppmv": 31344.809172810536,
+      "q_plus_ppmv": 31344.80917283684
+    },
+    {
+      "JVP_implied_gap_in_ulps": 723.3640535545564,
+      "absolute_error": 2.975769249030473e-07,
+      "best_possible_lattice_error": 6.6220955806124e-08,
+      "best_possible_lattice_ratio": 4.74791546737644,
+      "centered_fd_ppmv_per_alpha": 0.0001318767317570746,
+      "coordinate_tolerance_denominator": 1.3956301952712238e-08,
+      "coordinate_tolerance_ratio": 21.32204690836578,
+      "endpoint_TQ_inputs_bitwise_match_original_requested_direction": {
+        "minus": true,
+        "plus": true
+      },
+      "endpoint_gap_in_local_f64_ulps": 725.0,
+      "endpoint_gap_ppmv": 2.637534635141492e-09,
+      "epsilon": 1e-05,
+      "jvp_ppmv_per_alpha": 0.00013157915483217155,
+      "nearest_lattice_centered_fd": 0.00013151293387636542,
+      "nearest_lattice_gap_ulps_for_JVP": 723,
+      "no_lattice_value_can_pass_at_this_epsilon": true,
+      "passes_frozen_Q_coordinate_gate": false,
+      "q_minus_ppmv": 31344.80917282237,
+      "q_plus_ppmv": 31344.809172825007
+    },
+    {
+      "JVP_implied_gap_in_ulps": 72.33640535545564,
+      "absolute_error": 3.026061030221832e-06,
+      "best_possible_lattice_error": 6.119177768698809e-07,
+      "best_possible_lattice_ratio": 43.87333046157018,
+      "centered_fd_ppmv_per_alpha": 0.00013460521586239338,
+      "coordinate_tolerance_denominator": 1.4038156475871802e-08,
+      "coordinate_tolerance_ratio": 215.5597165071425,
+      "endpoint_TQ_inputs_bitwise_match_original_requested_direction": {
+        "minus": true,
+        "plus": true
+      },
+      "endpoint_gap_in_local_f64_ulps": 74.0,
+      "endpoint_gap_ppmv": 2.6921043172478676e-10,
+      "epsilon": 1e-06,
+      "jvp_ppmv_per_alpha": 0.00013157915483217155,
+      "nearest_lattice_centered_fd": 0.00013096723705530167,
+      "nearest_lattice_gap_ulps_for_JVP": 72,
+      "no_lattice_value_can_pass_at_this_epsilon": true,
+      "passes_frozen_Q_coordinate_gate": false,
+      "q_minus_ppmv": 31344.809172823552,
+      "q_plus_ppmv": 31344.80917282382
+    }
+  ],
+  "gate": {
+    "atol": 1e-08,
+    "criterion": "ratio <= 1",
+    "formula": "abs(FD-JVP)/(atol+rtol*max(abs(FD),abs(JVP)))",
+    "rtol": 3e-05,
+    "scope": "one Q coordinate only; profile coordinate gate, not native17 fieldmax or joint33"
+  },
+  "no_model_or_RTTOV_calls": true,
+  "schema": "kdm6.block22_requested_direction_q65_fd_resolution_replay.v1",
+  "scope": "Original requested continuous proposal only; not post-f32 effective-native C4 direction.",
+  "source_documents": {
+    "direction_lineage_sha256": "603d2c6f42a0218168002c7f158177df5d466c9a61f77cc8a331f5967b9e9504",
+    "experiment_plan_sha256": "fab2afb081d1f74556709a8fbed8dd3f01242ae3aaa417e207ebcf1e617b250f",
+    "input_manifest_sha256": "1aad1ef9ce41faba56cfff6e23fc0bacf3e89c6422f505e65c80ffc269667a5d",
+    "publication_manifest_sha256": "e08ac2d9c5a56b51a75b58d6525b0044c8e953d3dc41cd549eadfca4337b2638",
+    "saved_array_sha256": {
+      "data/ad/control.npz": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+      "data/baseline_K.npz": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d",
+      "data/experiment_plan_v2.json": "fab2afb081d1f74556709a8fbed8dd3f01242ae3aaa417e207ebcf1e617b250f",
+      "data/fd/eps_1e-02_minus/endpoint.npz": "4b8174b2ecd4c1eaaff6cb3981a7fe4d9da3770ccc42f63e041c7f15a3f5769e",
+      "data/fd/eps_1e-02_plus/endpoint.npz": "d69fdf428b11e738703b62f2255d9116a7cd4beb5903965b869c65bbfa1f20d7",
+      "data/fd/eps_1e-03_minus/endpoint.npz": "41c746839b2f3b6edd285b92fe27282fa57d141668086f9273765fbf712ea4ae",
+      "data/fd/eps_1e-03_plus/endpoint.npz": "164443ecda3552379fba8e4b09d96edcba87c0f9d472e05a862c513ba8c6f09b",
+      "data/fd/eps_1e-04_minus/endpoint.npz": "aef7a3f3e6fc82ef08f0be1a532a2e0a435e13b5068313e29fc243135eea0b9a",
+      "data/fd/eps_1e-04_plus/endpoint.npz": "caecace685272312527f44898f094efca9b43e92ac4e11b8376bba563215e6fd",
+      "data/fd/eps_1e-05_minus/endpoint.npz": "e5bdd166f551d647b180cfd1c3a915497a9bbea0c5a83d85caa99c84d6039a32",
+      "data/fd/eps_1e-05_plus/endpoint.npz": "5182fd569e08a964374496223f70ff8778fdf2158a1241519893cfc24131ca14",
+      "data/fd/eps_1e-06_minus/endpoint.npz": "3df3fe501ed515e07578eff9ea07fe41fd3fb7c16e18d3cc340498c98cf12ee7",
+      "data/fd/eps_1e-06_plus/endpoint.npz": "889329b043a8e4c3710e8d9e98235604fcbbec5f433ba6cd9615bf38a8fa2c66",
+      "data/profile_jvp.npz": "c52c9f6f7b6f8d84811fed3d52aeb66651da13c43da6605697ad67c324809e0e",
+      "direction_lineage.json": "603d2c6f42a0218168002c7f158177df5d466c9a61f77cc8a331f5967b9e9504",
+      "input_manifest.json": "1aad1ef9ce41faba56cfff6e23fc0bacf3e89c6422f505e65c80ffc269667a5d",
+      "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "publication_manifest.json": "e08ac2d9c5a56b51a75b58d6525b0044c8e953d3dc41cd549eadfca4337b2638"
+    }
+  },
+  "status": "OFFLINE_SAVED_ARRAY_REPLAY_PASSED",
+  "target_coordinate": {
+    "JVP_Q_ppmv_per_alpha": 0.00013157915483217155,
+    "activation_witness_native_i_j_k1": [
+      167,
+      50,
+      18
+    ],
+    "array_index_zero_based": 64,
+    "baseline_Q_ppmv": 31344.80917282369,
+    "block0": 22,
+    "field": "Q",
+    "flat_index0": 11632,
+    "flat_start0": 11264,
+    "grid": "RTTOV profile layer grid; 66 layers in top-to-surface order, preceded by the 27 fixed upper-reference layer prefix",
+    "independent_80_digit_decimal_chain_rule": {
+      "absolute_difference": "1.737436036494799141994428084366795400285106539271804532790677622E-20",
+      "analytic_JVP_ppmv_per_alpha": "0.00013157915483217152982705336552882412459019376761439462996143460728195467209322378",
+      "dQ_dqv_ppmv_per_kgkg": "1508573.3746107678773683634744936475309255681110990351524849555394804885946689770",
+      "m_dry_air_source_float": 0.0289647,
+      "m_water_vapor_source_float": 0.01801528,
+      "relative_difference": "1.3204493057512711730411106028364251752007622795488793585284379685434661869448260E-16",
+      "saved_profile_Q_JVP_ppmv_per_alpha": "0.0001315791548321715472014137304768155445344746112823486328125"
+    },
+    "level_one_based": 65,
+    "native_i_j_k1": [
+      167,
+      50,
+      2
+    ],
+    "profile_shape": [
+      1,
+      66
+    ],
+    "row0": 368,
+    "units": "ppmv",
+    "verified_native_mapping": {
+      "all_39_native_Q_profile_values_match_source_order_conversion_bitwise": true,
+      "native_levels_in_profile_are_reversed": true,
+      "native_qv_index_zero_based": 1,
+      "native_qv_primal": 0.020126506686210632,
+      "native_qv_tangent_post_finish": 8.722091815131015e-11,
+      "profile_upper_prefix_layers": 27
+    }
+  }
+}

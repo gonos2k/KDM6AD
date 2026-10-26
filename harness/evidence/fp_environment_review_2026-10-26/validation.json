@@ -1,0 +1,83 @@
+{
+  "base_commit": "1c077608e8728bad3a53a868483dbd5916eec214",
+  "baseline_arithmetic": {
+    "J": 11.007963317242059,
+    "M0_cells": 377342,
+    "columns": 65988
+  },
+  "counterexample_missing_FPCR": {
+    "compatible": false,
+    "historical_compatible": true,
+    "snapshot": {
+      "fe_round_to_nearest": true,
+      "fpcr_fz_bit24": null,
+      "fpcr_rounding_mode_bits": null,
+      "raw_fpcr_available": false
+    }
+  },
+  "historical_boundary_gate_sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+  "historical_case_reassessment": {
+    "block00034": {
+      "environment_status": "UNAVAILABLE",
+      "half_ulp_bound_validated": false
+    },
+    "block00040": {
+      "all_snapshots_compatible": true,
+      "capture_sha256": "fab6e871334abc6056283284c182ce821539366948abc55deb8e5301a0d8c436",
+      "checks": {
+        "after_legacy_call": true,
+        "after_library_init": true,
+        "after_new_default_call": true,
+        "after_new_fp64_value_call": true,
+        "after_old_fp64_ad_call": true,
+        "after_refusal_probes": true,
+        "before_abi_calls": true,
+        "before_fp64_actual_mode_calls": true,
+        "before_old_fp64_ad_call": true,
+        "direct_runtime_reference_after": true,
+        "direct_runtime_reference_before": true,
+        "threadinit": true
+      },
+      "snapshot_count": 12
+    },
+    "block34_nonsquare_2x4": {
+      "all_snapshots_compatible": true,
+      "capture_sha256": "7b7b63d9e5f2c892d7e429f1bdf7c2e66a921b4da275474082166f24ce173d6c",
+      "checks": {
+        "after_legacy_call": true,
+        "after_library_init": true,
+        "after_new_default_call": true,
+        "after_new_fp64_value_call": true,
+        "after_old_fp64_ad_call": true,
+        "after_refusal_probes": true,
+        "before_abi_calls": true,
+        "before_fp64_actual_mode_calls": true,
+        "before_old_fp64_ad_call": true,
+        "direct_runtime_reference_after": true,
+        "direct_runtime_reference_before": true,
+        "threadinit": true
+      },
+      "snapshot_count": 12
+    },
+    "dt0": {
+      "all_snapshots_compatible": true,
+      "snapshot_count": 5
+    }
+  },
+  "local_tests": {
+    "focused_boundary_passed": 23,
+    "passed": 151
+  },
+  "new_call_counts": {
+    "KDM": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.fp_environment_review.v1",
+  "scope": "Offline verifier and saved artifact checks only; no new model/RTTOV calls.",
+  "source_sha256": {
+    "harness/native_fp64_value_only_boundary.py": "cbc0b12ad96ec496f4961b9ec0014e4bbe659cd3e84bd9c938970aaada2af88b",
+    "harness/tests/test_native_fp64_value_only_boundary.py": "e4b8f13480f824f4b4d85bec9ddb0709e92668d7dffbc447eac1e83f463880c4"
+  }
+}

@@ -1,7 +1,7 @@
 ---
 title: KDM6AD-k Wiki Index
 type: meta
-date_modified: 2026-10-25
+date_modified: 2026-10-26
 ---
 # KDM6AD-k Wiki
 
@@ -23,6 +23,7 @@ date_modified: 2026-10-25
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/fp-environment-review-2026-10-26|FP environment and saved Q65 review]] — Conservative FP roundoff gate and one saved requested-direction Q65 resolution; block34 FP capture and current host-boundary actions remain open.
 - [[sources/native-block22-saved-response-2026-10-25|Saved block22 observation-response decomposition]] — Replays saved B512 K/profile and alpha endpoints at one IR105-sensitive column; documents the separate fixed-probe JVP, local profile-K projection and nonlinear finite BT response without new model calls or named-process attribution.
 - [[sources/native-ko7-restricted-confirmation-2026-10-25|Restricted full-domain KO7 confirmation]] — One actual alpha=1 post-hoc T/Q projection preserves all 381,528 baseline-supported observations and lowers the fixed objective; source, tendency and no-host/closure limits remain explicit.
 - [[sources/native-domain-ko7-bounded-case-2026-10-25|Full-domain KO7 bounded T/Q case]] — All 65,988 columns, global cost/gradient and three actual bounded proposals completed; support losses reject all updates, with exact public replay and explicit scope.

@@ -6,7 +6,9 @@ Its [report](REPORT.md) and [manifest](interim_snapshot_manifest.json) are
 historical records rather than the current experiment status.
 
 The current plan/checklist documents display a historical-status banner;
-the precision note now clarifies FP-control versus exception-status coverage. To verify their original H1 source hashes, use the byte-identical
+the precision note now clarifies FP-control versus exception-status coverage.
+The current boundary verifier also requires positive FP-environment evidence;
+its H1 implementation and tests are archived separately. To verify original H1 source hashes, use the byte-identical
 archives and commit listed in [historical_source_resolution.json](historical_source_resolution.json).
 The original manifest and numerical runtime receipts were not rewritten.
 

@@ -1,0 +1,47 @@
+{
+  "schema": "kdm6.fp_environment_review_inventory.v1",
+  "base_commit": "1c077608e8728bad3a53a868483dbd5916eec214",
+  "scope": "Current verification and offline replay only; historical manifests/receipts unchanged. Does not include itself.",
+  "files": [
+    {
+      "path": "harness/native_fp64_value_only_boundary.py",
+      "bytes": 83422,
+      "sha256": "cbc0b12ad96ec496f4961b9ec0014e4bbe659cd3e84bd9c938970aaada2af88b"
+    },
+    {
+      "path": "harness/tests/test_native_fp64_value_only_boundary.py",
+      "bytes": 13827,
+      "sha256": "e4b8f13480f824f4b4d85bec9ddb0709e92668d7dffbc447eac1e83f463880c4"
+    },
+    {
+      "path": "docs/NATIVE_ANALYSIS_REVIEW_CHECKLIST_20261026.md",
+      "bytes": 4602,
+      "sha256": "f899dd13e7c4d867269420be2823894dc10e9aa4f03c774518a0d3f6b928c14a"
+    },
+    {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/README.md",
+      "bytes": 3636,
+      "sha256": "e15b29ee9983b58ce19c0197ff2a96b9c0f5c32bc5b267931b38ea90875cea18"
+    },
+    {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.json",
+      "bytes": 10276,
+      "sha256": "47cde276f0c1444366e277b74845db717b26cb96a93837ab2be6d886733c2667"
+    },
+    {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/block22_q65_resolution.py",
+      "bytes": 15094,
+      "sha256": "5b6c5238d4a537e12dc9fb75de3a760c1be0d2b4f5ddc8b700f5b153d18d6fab"
+    },
+    {
+      "path": "harness/evidence/fp_environment_review_2026-10-26/validation.json",
+      "bytes": 2740,
+      "sha256": "9bd2dab88186761b8e2593e0b1eedadc418ff59bbbda90f24b1278ddd34a9307"
+    },
+    {
+      "path": "docs/NATIVE_QC_NC_TRACE_PLAN_20261026.md",
+      "bytes": 9226,
+      "sha256": "17517c736a14a77bfebdf9168edce73f6605c000d7238f6c5618922e8435bd39"
+    }
+  ]
+}

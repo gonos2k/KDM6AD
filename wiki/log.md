@@ -1,9 +1,14 @@
 ---
 title: Wiki Log
 type: meta
-date_modified: 2026-10-25
+date_modified: 2026-10-26
 ---
 # Wiki Log
+
+## [2026-10-26] FP environment and saved Q65 review
+- Added [[sources/fp-environment-review-2026-10-26]]: FP roundoff qualification now requires measured FE/FPCR/FZ evidence; block40 and nonsquare B8 saved captures pass, while block34 remains unconfirmed. Original exception-status preservation is not claimed.
+- Replayed the saved original requested-direction block22 Q65 coordinate: epsilon 1e-6 cannot meet the frozen tolerance even at the nearest representable endpoint; 1e-3 and 1e-2 pass, with 1e-4 and 1e-5 failing. This is not effective-direction C4 or joint33 evidence. No model/RTTOV calls.
+
 
 ## [2026-09-25] S16 freeze-heat replay — bounded evidence; gate remains OPEN
 - Replayed the retained v14 loop-2/column-3/level-0 `t` chain from exact captured f32/f64 operands; the three applied rates and incoming `t` match, while `xlf`/`cpm` differ. Given those operands and the declared source-order model, the independent replay reproduces the stored one-ULP results; production intermediates were not emitted. The trace is in [[kdm6ad-s16-freeze-heat-replay-2026-09-25]].

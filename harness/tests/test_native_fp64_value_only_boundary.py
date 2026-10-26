@@ -190,7 +190,9 @@ def test_dt0_roundtrip_fixture_contains_subnormals_and_signed_zero():
     assert result["signed_zero_preserved"]
 
 
-def test_direct_runtime_reference_format_binds_widened_inputs_and_fpcr(tmp_path):
+@pytest.mark.parametrize("fpcr, compatible", [((1 << 64) - 1, False), (0, True),
+                                             (1 << 22, False), (1 << 24, False)])
+def test_direct_runtime_reference_format_binds_widened_inputs_and_fpcr(tmp_path, fpcr, compatible):
     case = _batch(batch=8, levels=3)
     input_sha = hashlib.sha256(encode_batch_request(case)).hexdigest()
     case = case._replace(input_sha256=input_sha)
@@ -200,7 +202,6 @@ def test_direct_runtime_reference_format_binds_widened_inputs_and_fpcr(tmp_path)
     state_out = state32w + 0.125
     precip = np.full((3, 8), 0.25, dtype=np.float64)
     rhog = np.full((8, 3), 1.0, dtype=np.float64)
-    fpcr = (1 << 64) - 1
     header = REFERENCE_HEADER.pack(REFERENCE_MAGIC, 1, 8, 3, 20.0, 10.0, 10.0,
                                   input_sha.encode("ascii"), fpcr, fpcr, 0, 0, 0)
     payload = np.concatenate((state32w.ravel(), force32w.ravel(), x32w.ravel(),
@@ -211,9 +212,34 @@ def test_direct_runtime_reference_format_binds_widened_inputs_and_fpcr(tmp_path)
     np.testing.assert_array_equal(ref.widened_state, state32w)
     np.testing.assert_array_equal(ref.widened_forcing, force32w)
     np.testing.assert_array_equal(ref.state_out, state_out)
-    assert ref.fp_env_before["raw_fpcr_available"] is False
-    assert _fp_environment_roundoff_compatible(ref.fp_env_before)
+    assert ref.fp_env_before["raw_fpcr_available"] is (fpcr != (1 << 64) - 1)
+    assert _fp_environment_roundoff_compatible(ref.fp_env_before) is compatible
     assert not _fp_environment_roundoff_compatible({**ref.fp_env_before, "fe_round_to_nearest": False})
+
+
+@pytest.mark.parametrize("field", ["fe_round_to_nearest", "raw_fpcr_available",
+                                   "fpcr_rounding_mode_bits", "fpcr_fz_bit24"])
+@pytest.mark.parametrize("unknown", [None, "missing"])
+def test_roundoff_environment_requires_each_measured_control(field, unknown):
+    snapshot = {"fe_round_to_nearest": True, "raw_fpcr_available": True,
+                "fpcr_rounding_mode_bits": 0, "fpcr_fz_bit24": False}
+    if unknown == "missing":
+        snapshot.pop(field)
+    else:
+        snapshot[field] = unknown
+    assert not _fp_environment_roundoff_compatible(snapshot)
+
+
+def test_roundoff_environment_rejects_conflicting_probe_evidence():
+    snapshot = {"fe_round_to_nearest": True, "raw_fpcr_available": True,
+                "fpcr_rounding_mode_bits": 0, "fpcr_fz_bit24": False}
+    assert _fp_environment_roundoff_compatible(snapshot)
+    assert not _fp_environment_roundoff_compatible({**snapshot, "fpcr_round_to_nearest": False})
+    assert not _fp_environment_roundoff_compatible({**snapshot, "fpcr_rounding_mode_bits": False})
+    assert not _fp_environment_roundoff_compatible({**snapshot, "float32_roundtrip": {}})
+    assert not _fp_environment_roundoff_compatible({**snapshot, "float32_roundtrip": []})
+    assert not _fp_environment_roundoff_compatible(
+        {**snapshot, "float32_roundtrip": {"all_bits_preserved": False}})
 
 
 def test_case_capture_metadata_is_durable_and_receipt_bound(tmp_path):
