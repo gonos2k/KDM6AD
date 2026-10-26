@@ -1,0 +1,151 @@
+{
+  "schema": "kdm6.native_upstream_nc_execution_summary.v1",
+  "base_commit": "6787d3c926981e603de6585caae50407ac2c7fd0",
+  "executed_steps": 4,
+  "executed_kdm_wrapper_entries": 8,
+  "new_rttov_calls": 0,
+  "optimizer_calls": 0,
+  "accepted_analysis_updates": 0,
+  "prior_pr455_steps_not_recatalogued": 8,
+  "v4_build_receipt_sha256": "bd64ce5b0c209df1f293d9f6528e72f323edd2b51de5c3a40ea3f3cd4bdfa1d2",
+  "v4_executable_sha256": "59512e7f3b2e6dfc3887e9ce7497fabafd64d87599d136e5cbd2c6d92b8326a6",
+  "v4_dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+  "v4_archive_delta": [
+    "solve_em.o"
+  ],
+  "v6_plan_sha256": "f5ff1a9bbe953cdd2fbf93b17b2d10aec057ef877c6ff48d934c1b834b2de2ca",
+  "v6_controller_sha256": "2bf217aaf723c75419cbe2b07ad6404f27675af7cfa6d3aa4ad08b980ad19044",
+  "runtime_namelist_readback": {
+    "MP_PHYSICS": "137",
+    "NO_MP_HEATING": "0",
+    "USE_THETA_M": "1",
+    "USE_Q_DIABATIC": "0",
+    "RA_LW_PHYSICS": "4",
+    "RA_SW_PHYSICS": "4",
+    "BL_PBL_PHYSICS": "11",
+    "CU_PHYSICS": "37",
+    "MP_ZERO_OUT": "2",
+    "MP_ZERO_OUT_ALL": "0"
+  },
+  "runs": [
+    {
+      "run_id": "control_upstream_nc_v4_off",
+      "case": "control_off",
+      "trace_mode": "off",
+      "run_result_sha256": "d5198e0c775667a3a2638696f54cdbff3f5eedadecc026a12b7b3cdfa76708e2",
+      "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "endpoint_full_comparison_sha256": "c556f6166357c2fb600295efdd7d886b95c652b69747f0edcc1c7e01266f33e4",
+      "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+      "host_steps": 1,
+      "kdm_wrapper_entries": 2,
+      "upstream_trace_rows": 0,
+      "trace_artifacts": {}
+    },
+    {
+      "run_id": "control_upstream_nc_v6_on",
+      "case": "control_on",
+      "trace_mode": "on",
+      "run_result_sha256": "2e3ebe9fc2bbcbfe10907ddf2daa4041ba3048601e8b05a1fc0646383e1e6f1a",
+      "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "endpoint_full_comparison_sha256": "c556f6166357c2fb600295efdd7d886b95c652b69747f0edcc1c7e01266f33e4",
+      "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+      "host_steps": 1,
+      "kdm_wrapper_entries": 2,
+      "upstream_trace_rows": 206,
+      "trace_artifacts": {
+        "host.hex": {
+          "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0",
+          "bytes": 71585
+        },
+        "kernel.hex": {
+          "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2",
+          "bytes": 24041
+        },
+        "upstream_nc.tsv": {
+          "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7",
+          "bytes": 11014
+        }
+      }
+    },
+    {
+      "run_id": "alpha025_upstream_nc_v6_off",
+      "case": "alpha025_off",
+      "trace_mode": "off",
+      "run_result_sha256": "02c993f7e02921d865bd736ca781f88315020155d1561cb958a0bd07d3d57576",
+      "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+      "endpoint_full_comparison_sha256": "ffa25d399029d30e62fc3f084de8019776322578eafc827ba5bc54e83180e247",
+      "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+      "host_steps": 1,
+      "kdm_wrapper_entries": 2,
+      "upstream_trace_rows": 0,
+      "trace_artifacts": {}
+    },
+    {
+      "run_id": "alpha025_upstream_nc_v6_on",
+      "case": "alpha025_on",
+      "trace_mode": "on",
+      "run_result_sha256": "8a66c5fa8cec7b2495cd3f531fcacbab2521cdeb33e05339b7690536c4669dcd",
+      "ready40_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "endpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+      "endpoint_full_comparison_sha256": "ffa25d399029d30e62fc3f084de8019776322578eafc827ba5bc54e83180e247",
+      "ready_full_comparison_sha256": "2cf910951d025408c3eafeacad46b2449473f9b21a21c927e49ae839a674cf6f",
+      "host_steps": 1,
+      "kdm_wrapper_entries": 2,
+      "upstream_trace_rows": 206,
+      "trace_artifacts": {
+        "host.hex": {
+          "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a",
+          "bytes": 71585
+        },
+        "kernel.hex": {
+          "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf",
+          "bytes": 24041
+        },
+        "upstream_nc.tsv": {
+          "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2",
+          "bytes": 11014
+        }
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "case": "control",
+      "off_run_id": "control_upstream_nc_v4_off",
+      "on_run_id": "control_upstream_nc_v6_on",
+      "ack_byte_identical": true,
+      "full_checkpoint_raw_bitwise_equal": true,
+      "variable_count": 652,
+      "numeric_elements_compared": 322426586,
+      "numeric_element_mismatches": 0,
+      "final_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "private_pair_receipt_sha256": "f5530101567e60ae1b4a3ec3f6c41f1075ca8211d533610c613fea5b7528533e"
+    },
+    {
+      "case": "alpha025",
+      "off_run_id": "alpha025_upstream_nc_v6_off",
+      "on_run_id": "alpha025_upstream_nc_v6_on",
+      "ack_byte_identical": true,
+      "full_checkpoint_raw_bitwise_equal": true,
+      "variable_count": 652,
+      "numeric_elements_compared": 322426586,
+      "numeric_element_mismatches": 0,
+      "final_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "private_pair_receipt_sha256": "8b38191698d1ea9aa0186b325619cf2f023903f696a3f02df3c244fa1cf455e0"
+    }
+  ],
+  "scope": "Same original READY40 for four independent full-domain 20-second forward runs; two witness columns logged. No new observation evaluation or assimilation cycle.",
+  "v4_overlay_base_solve_sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79",
+  "v4_overlay_solve_sha256": "a10a2aae453f1d0fcaa96d288d235db0087df3c6a28a4d4035e39f53790c8f71",
+  "v4_overlay_script_sha256": "8fc86b9e447a7f144f9b54c24e2ca0554f5ac2bbc951c6f54f0d0134355e91f1",
+  "kdm_fortran_ffp_contract_off": true,
+  "solve_original_compile_flags_preserved": true,
+  "archive_member_inventory": 378
+}

@@ -1,0 +1,2236 @@
+{
+  "KDM6_calls": 0,
+  "RTTOV_calls": 0,
+  "archive_changed_members": [
+    "solve_em.o"
+  ],
+  "archive_changed_members_vs_original_v1_private": [
+    "kdm6ad_moment_trace_v2.o",
+    "module_mp_kdm6ad.o",
+    "solve_em.o"
+  ],
+  "archive_member_hashes": [
+    {
+      "name": "adapt_timestep_em.o",
+      "occurrence": 0,
+      "sha256": "aa31a4144bfa672bdaa34dbd34db14b072ce4442395f09195cfef437f4cf40e9"
+    },
+    {
+      "name": "bl_gwdo.o",
+      "occurrence": 0,
+      "sha256": "f02d43f9fd0766e0bd9d99b96b64060404a72c3e461e8af304cb718191fc9dcf"
+    },
+    {
+      "name": "bl_ysu.o",
+      "occurrence": 0,
+      "sha256": "55ed30ae0536e91a3f8014bda9bc406e4b30402e18cb0de941dd899cb01e56ce"
+    },
+    {
+      "name": "bobrand.o",
+      "occurrence": 0,
+      "sha256": "04fe39392e3b272d90a9cd36a83c1c5a1b36d0b505ef9a97e3a9dd58e3c0c96a"
+    },
+    {
+      "name": "ccpp_kind_types.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "clog.o",
+      "occurrence": 0,
+      "sha256": "76eea22a08ee2d0a9230ef0636899abb0459d4b5b91b756762f07ca3f425ebb7"
+    },
+    {
+      "name": "collect_on_comm.o",
+      "occurrence": 0,
+      "sha256": "62bde87de65ab490c50fa6ff374457c13ce26efe59322b532fd28dedf2f3618a"
+    },
+    {
+      "name": "complex_number_module.o",
+      "occurrence": 0,
+      "sha256": "0b2243563b0c5fc2c7cd20a5e61e9f1a15b9c79d9e5b185a1eaa532fc4654f9b"
+    },
+    {
+      "name": "couple_or_uncouple_em.o",
+      "occurrence": 0,
+      "sha256": "d7a5b28bd4d7782453fd8c4aaafa407482a4db9f508ffc8e2ea544053a4350d2"
+    },
+    {
+      "name": "cu_ntiedtke.o",
+      "occurrence": 0,
+      "sha256": "c941a71039bf50c0e6c569033eb0cafade28a40e56e291f9f923d14facc05597"
+    },
+    {
+      "name": "dfi.o",
+      "occurrence": 0,
+      "sha256": "cb3943f301ffb5b0cd3b2f4ab3d5cf99447eb21f706259f12cf72fdb255b7ea7"
+    },
+    {
+      "name": "hires_timer.o",
+      "occurrence": 0,
+      "sha256": "15c1d215f8ea263a53728cbea8af6aa9f9c93452a6de718e7334f648417d8e0d"
+    },
+    {
+      "name": "init_modules.o",
+      "occurrence": 0,
+      "sha256": "8d153fd90cebfe9a0256f8731b4b7294a38668a007836c79248ab59c42b256c2"
+    },
+    {
+      "name": "init_modules_em.o",
+      "occurrence": 0,
+      "sha256": "44c82e970a626bc2c081f3a9fbf3a6c47ff0d97e62fb41d0a64cd6bed7c1235f"
+    },
+    {
+      "name": "input_wrf.o",
+      "occurrence": 0,
+      "sha256": "9e64840963623ea764fae192b8a3a2af1ba6331ee9dbfc9f970422635c11a720"
+    },
+    {
+      "name": "interp_domain_em.o",
+      "occurrence": 0,
+      "sha256": "96f6d9aa5f26e18e94dbe997234bc1af30213c7d72abe7f8054588e74db5fe6f"
+    },
+    {
+      "name": "interp_fcn.o",
+      "occurrence": 0,
+      "sha256": "6a6992c8917345ffd1579e058f7dcd1931da6b9b971fb4bf4680163038267b86"
+    },
+    {
+      "name": "kdm6_iso_c.o",
+      "occurrence": 0,
+      "sha256": "6f906e851c59b40ded7f868200981f239163bf1a6ea53a96cfa11070f6088b51"
+    },
+    {
+      "name": "kdm6ad_moment_trace_v2.o",
+      "occurrence": 0,
+      "sha256": "1e9f02269a3a9a0a8e04ba5727f6170b025d8c491d24ce2e195363b14e2ff994"
+    },
+    {
+      "name": "kdm6ad_native_trace.o",
+      "occurrence": 0,
+      "sha256": "b72ebb75c7baf53785c4f02483793cd8e8656153b0b322964055257bbcbc283e"
+    },
+    {
+      "name": "kdm6ad_step_control.o",
+      "occurrence": 0,
+      "sha256": "4a7e4f1987f004646990c96d171a7c13220295b9b97ec7b8bb29d562d563e207"
+    },
+    {
+      "name": "landread.o",
+      "occurrence": 0,
+      "sha256": "cf2b205302508916b3fbe9b50b8a887e25f1df7dba0e83b60552db7066bcc5bf"
+    },
+    {
+      "name": "libmassv.o",
+      "occurrence": 0,
+      "sha256": "e868b14e64ac74ccc2ead12d0298838cce4d1d1cc89af49e28431a07230a7550"
+    },
+    {
+      "name": "mediation_feedback_domain.o",
+      "occurrence": 0,
+      "sha256": "05d0e0a1121a4d28a6ea4cacec73b2972e11ee53df73a5ad17e885044daa574a"
+    },
+    {
+      "name": "mediation_force_domain.o",
+      "occurrence": 0,
+      "sha256": "af56cf295a8863286ee863317550b94ea7ce1c5bb7ef93bf70ea93588b28d565"
+    },
+    {
+      "name": "mediation_integrate.o",
+      "occurrence": 0,
+      "sha256": "5f7aa35cbfa276a6ecf802c67e061972b7c373c46d79824200b1119e0dd5daff"
+    },
+    {
+      "name": "mediation_interp_domain.o",
+      "occurrence": 0,
+      "sha256": "5351d75abee11c62a2665c143b5087dacbc9f65b619f3d4c9b1942baa9d4ab46"
+    },
+    {
+      "name": "mediation_nest_move.o",
+      "occurrence": 0,
+      "sha256": "80c733506b71a111a1a01d8142b199e52a679605886a0210ca08e8a45ec99ce4"
+    },
+    {
+      "name": "mediation_wrfmain.o",
+      "occurrence": 0,
+      "sha256": "7072f007e64c9250cca24356537d54ec64608faae8b982282e7ec067b855021a"
+    },
+    {
+      "name": "module_HLaw.o",
+      "occurrence": 0,
+      "sha256": "c69bb6b5dc081e166d879543c7909ed645fb7780b8633932d8a5b5712048b83f"
+    },
+    {
+      "name": "module_MPP.o",
+      "occurrence": 0,
+      "sha256": "8add84bfeba70c4530882e421238aaac9b1fee8f5a0b46b1a0c7062d426b5bb0"
+    },
+    {
+      "name": "module_advect_em.o",
+      "occurrence": 0,
+      "sha256": "4957afb769365c4a069e763058650e0126bd11ad6f8b8bd8ac43a3cd4790ffdf"
+    },
+    {
+      "name": "module_after_all_rk_steps.o",
+      "occurrence": 0,
+      "sha256": "b4d60173f7a07cfd65557c715e192f686b5a4705bfe3a32f01bdb4bf86858ddb"
+    },
+    {
+      "name": "module_alloc_space_0.o",
+      "occurrence": 0,
+      "sha256": "5f8781f69ae7b9c2b675c3df0da8db0010b564e0b25b170f4ad384f57f5d3d37"
+    },
+    {
+      "name": "module_alloc_space_1.o",
+      "occurrence": 0,
+      "sha256": "98ae8cb47678954b5a50a333122ccfad8f018ed71a6675889ac90777686e73f2"
+    },
+    {
+      "name": "module_alloc_space_2.o",
+      "occurrence": 0,
+      "sha256": "25d335c85fb033bf33777489deb86791dc8d3840f2ca5a20c23ef7992116ab9e"
+    },
+    {
+      "name": "module_alloc_space_3.o",
+      "occurrence": 0,
+      "sha256": "10f14175c622b31bd9a3f2c6b9aca2c1aaa150799ecbb4f5a9e39d12820dc76a"
+    },
+    {
+      "name": "module_alloc_space_4.o",
+      "occurrence": 0,
+      "sha256": "878226c22167d6a920fade859fc7043c9a81e6fd3b6fdb0c77c114e7ed7033fc"
+    },
+    {
+      "name": "module_alloc_space_5.o",
+      "occurrence": 0,
+      "sha256": "182f0d0775847e900d21ca59db71fb16617f9c80060a72f10c289a97aab9dbc6"
+    },
+    {
+      "name": "module_alloc_space_6.o",
+      "occurrence": 0,
+      "sha256": "6bf14e6dd40af2a93a22c28496b7404a91b23a2bbf9391fe539c7c60486ce67f"
+    },
+    {
+      "name": "module_alloc_space_7.o",
+      "occurrence": 0,
+      "sha256": "621a02f47c20005ba22ba4a1ce760c5db175b3e9b0553317c58ce71cac8d40ec"
+    },
+    {
+      "name": "module_alloc_space_8.o",
+      "occurrence": 0,
+      "sha256": "92ce08beb54cc1ee1a96a8d1b653026bfc89dd03e9041bf2ac9b8c5416b33975"
+    },
+    {
+      "name": "module_alloc_space_9.o",
+      "occurrence": 0,
+      "sha256": "4f36ad58a02ba26bd7eac0d7df233c342dd1bd4d338dbd36445c7c075d471458"
+    },
+    {
+      "name": "module_avgflx_em.o",
+      "occurrence": 0,
+      "sha256": "d26d36542db4ba0e3f9f0c56ea968dccfbfdbcfebd16ea00617b126de222da6a"
+    },
+    {
+      "name": "module_bc.o",
+      "occurrence": 0,
+      "sha256": "5936c404793ff49510420264595740997689e78c4720ffea51bdba30a6865e54"
+    },
+    {
+      "name": "module_bc_em.o",
+      "occurrence": 0,
+      "sha256": "d25443b98560217e321093dd500e4586cdb8c66e5d0914aac6af2129c744e229"
+    },
+    {
+      "name": "module_bc_time_utilities.o",
+      "occurrence": 0,
+      "sha256": "664a38749e210249df2756bdb5677800a9c3d8e90f8ea16f13ee175ffb2792b3"
+    },
+    {
+      "name": "module_bep_bem_helper.o",
+      "occurrence": 0,
+      "sha256": "e16027db6f63ad4f9a81d5c86f439abb266b44458d7c160325c76945804de4b8"
+    },
+    {
+      "name": "module_big_step_utilities_em.o",
+      "occurrence": 0,
+      "sha256": "d94e9dd9066b637711537655e7d07f4cb8e144d74b5563d59af828f0a01113af"
+    },
+    {
+      "name": "module_bl_acm.o",
+      "occurrence": 0,
+      "sha256": "23eaa89abd7b62d7d5aacf261670b0720aa3f7c2d96d27480ef822e6b428fe58"
+    },
+    {
+      "name": "module_bl_boulac.o",
+      "occurrence": 0,
+      "sha256": "94ebdb5af9a0eb0de4eb3ecae98cf2b5c7748c531beb82f775bc0028740f8ad8"
+    },
+    {
+      "name": "module_bl_camuwpbl_driver.o",
+      "occurrence": 0,
+      "sha256": "e0894b734e348fe8b7d363b4b5bd4189cf7655141ea51f7fc3c3bee607d0f000"
+    },
+    {
+      "name": "module_bl_eepsilon.o",
+      "occurrence": 0,
+      "sha256": "26e775ec6cfd075b516e62dc52d41ab9cb6a65d62758068cc7d92ec3d16eb1d8"
+    },
+    {
+      "name": "module_bl_fogdes.o",
+      "occurrence": 0,
+      "sha256": "055c9d0d75de1165fb6bae9bfa64ee82abb88a968e37a11214c81a5508aec785"
+    },
+    {
+      "name": "module_bl_gbmpbl.o",
+      "occurrence": 0,
+      "sha256": "509ae7892260767b95b3d27b03ff2d3b01adafd1039a0f97111f665b0610e396"
+    },
+    {
+      "name": "module_bl_gfs.o",
+      "occurrence": 0,
+      "sha256": "6e00eb572fa2c1e2f55e8252e8e62b4a340e446b00e2f2ac8dab7a4529f3682b"
+    },
+    {
+      "name": "module_bl_gfsedmf.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_bl_gwdo.o",
+      "occurrence": 0,
+      "sha256": "9ce7bc2bd2ea5960fdad68cc84c73b385341c23a972d64697283e8208f1ba43c"
+    },
+    {
+      "name": "module_bl_gwdo_gsl.o",
+      "occurrence": 0,
+      "sha256": "88a35ebe6e25ebc603238a81148026f0813856cc20ede2f7fca39f89b13c36eb"
+    },
+    {
+      "name": "module_bl_keps.o",
+      "occurrence": 0,
+      "sha256": "bcf4f82a493b570d606c6ee03f84974482518d5236907ec6a416e15ac1ebc477"
+    },
+    {
+      "name": "module_bl_mfshconvpbl.o",
+      "occurrence": 0,
+      "sha256": "730e4f72bc5b5bc496e40929fb2f99907f1237f2ae25b613165aa451b381efe2"
+    },
+    {
+      "name": "module_bl_mrf.o",
+      "occurrence": 0,
+      "sha256": "8324ae63b74f7c66b76fb0828bcc9619138600203ba73050f8cd554f25040607"
+    },
+    {
+      "name": "module_bl_myjpbl.o",
+      "occurrence": 0,
+      "sha256": "65aeecf06ab0e4dedf341fbde22cc5f4d6925dcd21e3f17e8bddf240bbfac68a"
+    },
+    {
+      "name": "module_bl_myjurb.o",
+      "occurrence": 0,
+      "sha256": "7f712750a031a777c11828df66f19bcbb62c2921a53fdaf2b244c8031798aad1"
+    },
+    {
+      "name": "module_bl_mynn.o",
+      "occurrence": 0,
+      "sha256": "6674a1d8bdf18b9186115adbdd6cc9330fdca5babd3963478cc75a18ed4802bd"
+    },
+    {
+      "name": "module_bl_mynn_common.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_bl_mynn_wrapper.o",
+      "occurrence": 0,
+      "sha256": "6258b7f0b837725fa1ac15887fedcf52c8721ba41819b847edce9a7c93e99004"
+    },
+    {
+      "name": "module_bl_qnsepbl.o",
+      "occurrence": 0,
+      "sha256": "88129a76e3304049193f30d229006246055cfb236a521173ec0c7b00aae46dac"
+    },
+    {
+      "name": "module_bl_shinhong.o",
+      "occurrence": 0,
+      "sha256": "80507604537df85a2c490f6d6762c899e73dc56fa96410a4099ae7241d4e9738"
+    },
+    {
+      "name": "module_bl_temf.o",
+      "occurrence": 0,
+      "sha256": "9f1da24b36e0fa5b103eff6d6da4273667d41accec2467b85f3db6baedf8178d"
+    },
+    {
+      "name": "module_bl_ysu.o",
+      "occurrence": 0,
+      "sha256": "607a550fd2cda9e8d912d17e8fe4fdd1394e2736f4f99079f697c59bdd2cc07e"
+    },
+    {
+      "name": "module_cam_bl_diffusion_solver.o",
+      "occurrence": 0,
+      "sha256": "43940f08a0c2a9108861776b10d514d7bfd3cfcae4586bb0e9f312139edfbdfe"
+    },
+    {
+      "name": "module_cam_bl_eddy_diff.o",
+      "occurrence": 0,
+      "sha256": "98edf53d4bf79e9f501daebaa5829aa629e6c32b42a0cde9c0debbd380a01779"
+    },
+    {
+      "name": "module_cam_cldwat.o",
+      "occurrence": 0,
+      "sha256": "7d61e2caadc7ae2c45abf35dae1174ab400db1067306d206140c704f7cdee6cf"
+    },
+    {
+      "name": "module_cam_constituents.o",
+      "occurrence": 0,
+      "sha256": "37b5b0de1060f617597fc10947d8a7e90ecb8adaae90448c05032a84ebb9b8de"
+    },
+    {
+      "name": "module_cam_error_function.o",
+      "occurrence": 0,
+      "sha256": "dff2d5ce4c9079b99cb46f819907e66e6512eae2cf3f94a98a0cec40463fbf83"
+    },
+    {
+      "name": "module_cam_esinti.o",
+      "occurrence": 0,
+      "sha256": "60a3136d7f6697c42944f5d1eeeaf270563f74ea194c1c022c766e12342a9c5b"
+    },
+    {
+      "name": "module_cam_gffgch.o",
+      "occurrence": 0,
+      "sha256": "b80b7d8ce00f80eab1601ca99fccb68e59b1f20522989d353f038c5a9725757d"
+    },
+    {
+      "name": "module_cam_infnan.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_cam_molec_diff.o",
+      "occurrence": 0,
+      "sha256": "4f2ba107717e9d6496f3064f7896e4693c7091276e13d301f6b6124642762207"
+    },
+    {
+      "name": "module_cam_mp_cldwat2m_micro.o",
+      "occurrence": 0,
+      "sha256": "117ed19adcd435c73c505c0acb1b1448056246a618c451495cd9deeac619ccb6"
+    },
+    {
+      "name": "module_cam_mp_conv_water.o",
+      "occurrence": 0,
+      "sha256": "6df8178d78fcc796d16fb39b84b43c01b6e5929d437e099d2f7020107605a617"
+    },
+    {
+      "name": "module_cam_mp_microp_aero.o",
+      "occurrence": 0,
+      "sha256": "0555bf70f4fdb842605da2e9f0fa280c06984e8024890d714abbea0033ccc954"
+    },
+    {
+      "name": "module_cam_mp_modal_aero_initialize_data_phys.o",
+      "occurrence": 0,
+      "sha256": "f9718ce1711fe2cc16f66e638e59c3f3ef4b1f3947c7cfdf1b6d91b202ef6f44"
+    },
+    {
+      "name": "module_cam_mp_ndrop.o",
+      "occurrence": 0,
+      "sha256": "c09eb62de2f9336663246017ea0e09b0463196f7540aabb81e5c4d2588b729e8"
+    },
+    {
+      "name": "module_cam_mp_qneg3.o",
+      "occurrence": 0,
+      "sha256": "aec5cab2ee560915d047fe6eaa97c20950dfbcfb7ce3f8bd0e68928410bfe78e"
+    },
+    {
+      "name": "module_cam_mp_radconstants.o",
+      "occurrence": 0,
+      "sha256": "a22d6482f965beef99c25dd0c94e91afa50eb5705e5d41b37faf5d0edd8fb7e7"
+    },
+    {
+      "name": "module_cam_physconst.o",
+      "occurrence": 0,
+      "sha256": "b844bcca0cd352ebebe3a1bbdde952df37741b03692df4cd8d738520fe494a40"
+    },
+    {
+      "name": "module_cam_shr_const_mod.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_cam_shr_kind_mod.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_cam_support.o",
+      "occurrence": 0,
+      "sha256": "b6e6d81ddfc9341f4e2f0178eb56cbec05953b6b9a5597ef91fa9ee9fb2dd042"
+    },
+    {
+      "name": "module_cam_trb_mtn_stress.o",
+      "occurrence": 0,
+      "sha256": "87d183c0a542afec24cf4a514248e6af59d18c2f6936677586a2d150aa500588"
+    },
+    {
+      "name": "module_cam_upper_bc.o",
+      "occurrence": 0,
+      "sha256": "c60d64f6e1ae4183547874ff86b02be22a2822192450552719eb93fe21dee688"
+    },
+    {
+      "name": "module_cam_wv_saturation.o",
+      "occurrence": 0,
+      "sha256": "2099623bdffa25851c97f17d6234b2d68ff31570c81ee665a3bdf422d7e5cfa6"
+    },
+    {
+      "name": "module_check_a_mundo.o",
+      "occurrence": 0,
+      "sha256": "19acc27b3a4caf6d57462d6e555c0ea067195230850959d6c4c5d9f9c165add6"
+    },
+    {
+      "name": "module_checkerror.o",
+      "occurrence": 0,
+      "sha256": "a5414467ed7c8c1bc0018d87f43ed39fb9db6b9857bbbd94a9c3215415efa725"
+    },
+    {
+      "name": "module_chem_share.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_clear_halos.o",
+      "occurrence": 0,
+      "sha256": "c2e91ac89369efd8ad7174097a467ff28de732c6d983c2905aba66f9aeb6e7f6"
+    },
+    {
+      "name": "module_comm_dm.o",
+      "occurrence": 0,
+      "sha256": "c171aba27169a026274fb0cca59bb23cd0c915f8f3c658c4f4564fa5d22654e3"
+    },
+    {
+      "name": "module_comm_dm_0.o",
+      "occurrence": 0,
+      "sha256": "0423409dea1566d0d893aa49f38ab6c242e2adf6573554f04cea9889ac976e04"
+    },
+    {
+      "name": "module_comm_dm_1.o",
+      "occurrence": 0,
+      "sha256": "deb0118f247385b28bef6e442636c73c1fb8673846124c70c7f1d78a519b41be"
+    },
+    {
+      "name": "module_comm_dm_2.o",
+      "occurrence": 0,
+      "sha256": "258874a6ce1c9aaf3159fec15f1c92768b53dc6ee1dbb51f28d6a0670a1c5e18"
+    },
+    {
+      "name": "module_comm_dm_3.o",
+      "occurrence": 0,
+      "sha256": "1312679b7744801e83ae04922791e7f351fce7c10bdbb39ae76c3f20b12f8550"
+    },
+    {
+      "name": "module_comm_dm_4.o",
+      "occurrence": 0,
+      "sha256": "cc898d321d04f31c2418e03702b64b401ad5e3e820aef314b0b100cf1dbe91b0"
+    },
+    {
+      "name": "module_comm_nesting_dm.o",
+      "occurrence": 0,
+      "sha256": "e4ee46ebf4f9dca8ee96cec80b69f442ea227758a5b864a0eaba3eaf7582202b"
+    },
+    {
+      "name": "module_compute_geop.o",
+      "occurrence": 0,
+      "sha256": "56e008d83413c4322176baa79d5c36a2617e9bafdba72ea38a834b01fbe9c14d"
+    },
+    {
+      "name": "module_configure.o",
+      "occurrence": 0,
+      "sha256": "652037978278be58cbf3ab061915b93034f4348775421fa5048f05275c8ab916"
+    },
+    {
+      "name": "module_convtrans_prep.o",
+      "occurrence": 0,
+      "sha256": "a595b24187e3511ce2a899c6d1e6b465b41c6bd3b13c66936f436fc02ba0f013"
+    },
+    {
+      "name": "module_cpl.o",
+      "occurrence": 0,
+      "sha256": "ad6028910092c24c405a7f9703a4516fb37dff8c2aceed88430977b9ec7baa87"
+    },
+    {
+      "name": "module_cpl_oasis3.o",
+      "occurrence": 0,
+      "sha256": "70a6a4a9037345cb1db9c9736c9ef92a5c015c50eefe3d0af19d66ce7f60a2e6"
+    },
+    {
+      "name": "module_ctrans_aqchem.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_cu_bmj.o",
+      "occurrence": 0,
+      "sha256": "3c7908589cd4f4aada3707a75bcf70ccd4c97b7fbfaf297c5b0bbd6ae1781c6a"
+    },
+    {
+      "name": "module_cu_camzm.o",
+      "occurrence": 0,
+      "sha256": "53f5a8c0672bc76210fad535575ddec050cf6a68ebddea1c3263645dcb48ca28"
+    },
+    {
+      "name": "module_cu_camzm_driver.o",
+      "occurrence": 0,
+      "sha256": "7f79fe9ff80a7421a0ed165a02f9ca95e31638b28202f68020604d2be4c45401"
+    },
+    {
+      "name": "module_cu_g3.o",
+      "occurrence": 0,
+      "sha256": "eccfe8d2d4853ab3ef6ec8f4714150f9b2068ac20a1d73751c198a02e3b8c6a4"
+    },
+    {
+      "name": "module_cu_gd.o",
+      "occurrence": 0,
+      "sha256": "12b9bda200c418ceca3f29e8f036787c1996a6038acc58cd9cb34b339a9beee9"
+    },
+    {
+      "name": "module_cu_gf_ctrans.o",
+      "occurrence": 0,
+      "sha256": "5f6b02a74c709c360f79ac46ba1f5ea189e467acbf0dd722a8f1e91ce1603729"
+    },
+    {
+      "name": "module_cu_gf_deep.o",
+      "occurrence": 0,
+      "sha256": "3de4e93e9a98d9dd1d9ea791971448ddb4a2e7bd894f09b4538f11a6b68cd890"
+    },
+    {
+      "name": "module_cu_gf_sh.o",
+      "occurrence": 0,
+      "sha256": "a6913c4bcd24d5b826acb75ee2503398c98a9e1738d173ce7cf208d6f636cf16"
+    },
+    {
+      "name": "module_cu_gf_wrfdrv.o",
+      "occurrence": 0,
+      "sha256": "bb8091185af152769bdc33f387409ffc143ef4f18f3c89ee5575c3d9fd2a2d42"
+    },
+    {
+      "name": "module_cu_kf.o",
+      "occurrence": 0,
+      "sha256": "64ac104931ec22974ece037cc8cf28756a80b1924ef94c7878194d7b844fce3c"
+    },
+    {
+      "name": "module_cu_kfcup.o",
+      "occurrence": 0,
+      "sha256": "6b937821ad6c069360003228b54664cd96d2c002d76faf94a090817aa9179302"
+    },
+    {
+      "name": "module_cu_kfeta.o",
+      "occurrence": 0,
+      "sha256": "bff41d2830a726dc0b64cc60257f448cb4478022ea154a206ce2dd03d325c696"
+    },
+    {
+      "name": "module_cu_ksas.o",
+      "occurrence": 0,
+      "sha256": "d5e3c64b8cd1d981b9411733d4f19d29f27ab4db797cc57ae2e54aa36b5ac66d"
+    },
+    {
+      "name": "module_cu_ksas2.o",
+      "occurrence": 0,
+      "sha256": "08f5ccdf24ce0e2c4dd74807823db2ab2779d3fcb94346854ff1b4cb12a594bb"
+    },
+    {
+      "name": "module_cu_mskf.o",
+      "occurrence": 0,
+      "sha256": "6717e1225674f12a2d73a9aa28bf005395acca2aa4d29d5ec49646aa233829c8"
+    },
+    {
+      "name": "module_cu_nsas.o",
+      "occurrence": 0,
+      "sha256": "0c2ca9f2da5835962e18a2f7726985fe2bc9d1393c5b9ac8fa0a1fe3cb6def28"
+    },
+    {
+      "name": "module_cu_ntiedtke.o",
+      "occurrence": 0,
+      "sha256": "23eddb9299f900a9cbd6ad4cacef0a187ade668e30bc920ad403cf256bfee411"
+    },
+    {
+      "name": "module_cu_osas.o",
+      "occurrence": 0,
+      "sha256": "0bcc4136d91c3deeee780d80791ff917ec2c6d7884f4d85bb0e3489ba1a288bb"
+    },
+    {
+      "name": "module_cu_sas.o",
+      "occurrence": 0,
+      "sha256": "38a9b1074a386e976bff0427f2374983cd48e90f33b05755feb96bad089dbd57"
+    },
+    {
+      "name": "module_cu_scalesas.o",
+      "occurrence": 0,
+      "sha256": "89f971717df2b4e01758f0fcc08392720f88e578fddd90230fd4d9ac5a27c3e5"
+    },
+    {
+      "name": "module_cu_tiedtke.o",
+      "occurrence": 0,
+      "sha256": "3e54749cd211e6de5cb19fd438d55dcb979fea0f30a81bd49407e14a246e23e2"
+    },
+    {
+      "name": "module_cumulus_driver.o",
+      "occurrence": 0,
+      "sha256": "e137d224960ff73cf2b3bb976ccf233b687de3a243f145e7ba218bf48e623dd9"
+    },
+    {
+      "name": "module_damping_em.o",
+      "occurrence": 0,
+      "sha256": "c1d108dbc40ea9586d9c8526e8aaf0d7a46afa1d23b25579ff1528d2643caf22"
+    },
+    {
+      "name": "module_data_cam_mam_aero.o",
+      "occurrence": 0,
+      "sha256": "61c68d0409aa7245ac59c58f6cc02f81ad3ac19a9411bfda4605debae867dbcd"
+    },
+    {
+      "name": "module_data_cam_mam_asect.o",
+      "occurrence": 0,
+      "sha256": "cd626f7c394c26f1d47aa9e44ffe0497961bf52cf9b95d7f34cf318434afb51c"
+    },
+    {
+      "name": "module_data_gocart_dust.o",
+      "occurrence": 0,
+      "sha256": "bec82d6b9750e15ad989e50cac7f70c3626f8bb9c8af4606da66f4be93871384"
+    },
+    {
+      "name": "module_date_time.o",
+      "occurrence": 0,
+      "sha256": "a81784d96022edf2de2f8d93db1394892b0c174e2de1ba749e94f5c029d3b1d5"
+    },
+    {
+      "name": "module_diag_afwa.o",
+      "occurrence": 0,
+      "sha256": "4cbef585f9f545d46fc1d67d5b4bef4e21acdd95fba8eeedab99f27dc2f082f8"
+    },
+    {
+      "name": "module_diag_cl.o",
+      "occurrence": 0,
+      "sha256": "eab0ea48a0a43d05890cd1d8974dfb1cc3cd70e9b02d00f4a5375778a5607f54"
+    },
+    {
+      "name": "module_diag_fogvis.o",
+      "occurrence": 0,
+      "sha256": "b3af031917ffce86fadbc140b636f488316340f6fb56dc883a8fd59a2fb9f5a9"
+    },
+    {
+      "name": "module_diag_functions.o",
+      "occurrence": 0,
+      "sha256": "f121b2a21bcdfba5ab795547bc4ddd509104597e25666a06412eb9b7c44104d8"
+    },
+    {
+      "name": "module_diag_hailcast.o",
+      "occurrence": 0,
+      "sha256": "02db6eafe8964658a9477a7d974b4c69097accae17583414c045732fb114f6a3"
+    },
+    {
+      "name": "module_diag_misc.o",
+      "occurrence": 0,
+      "sha256": "ec1ea6da4ba7ec2d9d31db4bcac3542e51dc8e4ba3718c975b83eae8b5f84e43"
+    },
+    {
+      "name": "module_diag_nwp.o",
+      "occurrence": 0,
+      "sha256": "ffe84bab826b9634303f0729c1277f8728806a28c4dd39b680217493042b4c82"
+    },
+    {
+      "name": "module_diag_pld.o",
+      "occurrence": 0,
+      "sha256": "ff9fa7ca388dac59c9b4b4a9e617ad385b4028f7bf668c23920665295fd8c262"
+    },
+    {
+      "name": "module_diag_rasm.o",
+      "occurrence": 0,
+      "sha256": "7108f9b8d363cdf3ed2e19a7d4bd83237683a7d480de19d893614cb5b5f03c26"
+    },
+    {
+      "name": "module_diag_solar.o",
+      "occurrence": 0,
+      "sha256": "dfda0ee13cd9246b7474427a8d183489a336527c8d32474a1880bf9c51d58614"
+    },
+    {
+      "name": "module_diag_trad_fields.o",
+      "occurrence": 0,
+      "sha256": "edbe179a5627ebbf8c8ef3b35e48554573299ab19bf1faf38f595fd6e48e5814"
+    },
+    {
+      "name": "module_diag_zld.o",
+      "occurrence": 0,
+      "sha256": "bc48c73eee83fc991db4cd78b15d6ddf69fe78d264d2cfeb1e37ef48c0f91b1f"
+    },
+    {
+      "name": "module_diagnostics_driver.o",
+      "occurrence": 0,
+      "sha256": "8dc36c20e16196937dcc71e6b189c554fdfa9a16a50244317109817772537053"
+    },
+    {
+      "name": "module_diffusion_em.o",
+      "occurrence": 0,
+      "sha256": "c53861559e4f2068bd18be21702179d51280fa38ed1043c4a0936ced0562ffbc"
+    },
+    {
+      "name": "module_dm.o",
+      "occurrence": 0,
+      "sha256": "1c4c9d047b658f210a136ee90e516602b9b3fa3cbf9f674ce2cd28e5177646a1"
+    },
+    {
+      "name": "module_domain.o",
+      "occurrence": 0,
+      "sha256": "a36f1ffa48b8008a1b4f6bcafc3779aeac5709cbcce9f8374f6509f21e5cd7a9"
+    },
+    {
+      "name": "module_domain_type.o",
+      "occurrence": 0,
+      "sha256": "f0308db51da501ac2722ee7ea23a21ce889f47e1012357caabedfc86c7e351a9"
+    },
+    {
+      "name": "module_driver_constants.o",
+      "occurrence": 0,
+      "sha256": "8bcf79eb5d6fa9973ed305baa39a709a0d8cf841d2b25d800753237f6acdc2ab"
+    },
+    {
+      "name": "module_dust_emis.o",
+      "occurrence": 0,
+      "sha256": "04be5890ae916ec79b7bf0fcb92adbc9ff122f8984391f11b7d4e65bce1c4cd2"
+    },
+    {
+      "name": "module_em.o",
+      "occurrence": 0,
+      "sha256": "7be51c5276e3e28cefe6482377b9fb9d7e8cb3d1db972efbf2ad2b24137348c2"
+    },
+    {
+      "name": "module_fdda_psufddagd.o",
+      "occurrence": 0,
+      "sha256": "e2022e82b1d48426acead55fe15d2a1597e5ac6032666c533b07e5f33f92f704"
+    },
+    {
+      "name": "module_fdda_spnudging.o",
+      "occurrence": 0,
+      "sha256": "97209b45618e54217da3fa71632c177b9cee6536b3449938501be565e46f2263"
+    },
+    {
+      "name": "module_fddagd_driver.o",
+      "occurrence": 0,
+      "sha256": "9e89f66159862a83e73da31cac5f3e09795be48bc3f98fbebfaae70732d2dda2"
+    },
+    {
+      "name": "module_fddaobs_driver.o",
+      "occurrence": 0,
+      "sha256": "bb2b6b84078312a5af7bd3143d0d3c60c121dff061d0986c926a7c3eeb86faa0"
+    },
+    {
+      "name": "module_fddaobs_rtfdda.o",
+      "occurrence": 0,
+      "sha256": "a46f733d0fb9cc1ff1f310bd3f4b7fa11e27fcae19c36059c7ee7d74629286aa"
+    },
+    {
+      "name": "module_fire_emis.o",
+      "occurrence": 0,
+      "sha256": "dd7cf5ac824d5a77a13ba7c39a940eb5fa29bc3d7b01fd8e3055b72ce2125df5"
+    },
+    {
+      "name": "module_firebrand_spotting.o",
+      "occurrence": 0,
+      "sha256": "0f3bd817b809fb1c1186ea6a8bb051ffd61c50f741710db05b954efec4f7f0e9"
+    },
+    {
+      "name": "module_firebrand_spotting_mpi.o",
+      "occurrence": 0,
+      "sha256": "d4658b95aa00d7b296d0f5f6388baceb5b1d0199f9ea9a292670d2d8238ab766"
+    },
+    {
+      "name": "module_first_rk_step_part1.o",
+      "occurrence": 0,
+      "sha256": "2109ae9ab0d6f45d4e41c5cd1d50db41ef8c0dc6363be9e87b1a8dfffc8b0391"
+    },
+    {
+      "name": "module_first_rk_step_part2.o",
+      "occurrence": 0,
+      "sha256": "929d55619abc582b220aa443841cd9e8113991059263eb849a7022b3e0147ef7"
+    },
+    {
+      "name": "module_force_scm.o",
+      "occurrence": 0,
+      "sha256": "b01c71daa7665429016070cefb5caaffe43acaeff68d668ca62edd9436ca7866"
+    },
+    {
+      "name": "module_fr_fire_atm.o",
+      "occurrence": 0,
+      "sha256": "165e9619ea988c36dcbe50cd10b9cd8853a574ff85c92318ee3ceb62313d09f0"
+    },
+    {
+      "name": "module_fr_fire_core.o",
+      "occurrence": 0,
+      "sha256": "16f9784d1f67fafaf274661b344566b1000b84f5188314f13a1bb64fd36bfd97"
+    },
+    {
+      "name": "module_fr_fire_driver.o",
+      "occurrence": 0,
+      "sha256": "9f18662d158804b23cac202283f0ad784c403aa2092ecd396d0212e9405c5877"
+    },
+    {
+      "name": "module_fr_fire_driver_wrf.o",
+      "occurrence": 0,
+      "sha256": "5359c2857d57a51716343f8d52085c6b4cccb247221c6718702306a314e70764"
+    },
+    {
+      "name": "module_fr_fire_model.o",
+      "occurrence": 0,
+      "sha256": "f139fb966852a43fa6fe4bfc7b1e2a89f4b00cd9c3c43dcbed614c2138907cfc"
+    },
+    {
+      "name": "module_fr_fire_phys.o",
+      "occurrence": 0,
+      "sha256": "f998a31b5a49988ce68429f730420317b0d0478fc32f15d53e01669403440655"
+    },
+    {
+      "name": "module_fr_fire_util.o",
+      "occurrence": 0,
+      "sha256": "6ccba0d3daf9237d39328ce2a5eb4bb0c7fda2dca7b77a3db4d7c97a3e9fa096"
+    },
+    {
+      "name": "module_get_file_names.o",
+      "occurrence": 0,
+      "sha256": "90485af716d98da65332ba7f8c86a12358cf8fb1159d6ceb0d3f533ff221a913"
+    },
+    {
+      "name": "module_gfs_funcphys.o",
+      "occurrence": 0,
+      "sha256": "b36e30d0ae2b7738e29b477cd51e1798c72bb8cea586d712d94341de40bc5554"
+    },
+    {
+      "name": "module_gfs_machine.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_gfs_physcons.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_gocart_coupling.o",
+      "occurrence": 0,
+      "sha256": "e3c7a02d1f23a6816d3fea89b759042c06b65aff376eae301d347ed87e50e0b3"
+    },
+    {
+      "name": "module_ieva_em.o",
+      "occurrence": 0,
+      "sha256": "d6d2d4516c1b07330bff3480448c75a3c559572adc2505b8cb0ecab99813af56"
+    },
+    {
+      "name": "module_init_utilities.o",
+      "occurrence": 0,
+      "sha256": "1641fb0a1f86f85f2ba6e3b915a2d6e583918443690f3de235e31439a944b2bd"
+    },
+    {
+      "name": "module_integrate.o",
+      "occurrence": 0,
+      "sha256": "b86a031cbbdfc3efd301d154fed7dbfb2d43f39c55342afa63a60c2dd89b242d"
+    },
+    {
+      "name": "module_interp_nmm.o",
+      "occurrence": 0,
+      "sha256": "86514bb17d77f304a7ff75f76dd8048365ae243bc66b56a9ac21d82ba488792c"
+    },
+    {
+      "name": "module_interp_store.o",
+      "occurrence": 0,
+      "sha256": "c8cbfbf44679ddf8d7c3a3dd563f8bedd3332269710d478a10ae6d20032a4b2d"
+    },
+    {
+      "name": "module_io.o",
+      "occurrence": 0,
+      "sha256": "c3c0b47fc3398befb9c9995f27646be4e04695564e33b17a7c84f38029fa7b70"
+    },
+    {
+      "name": "module_io_domain.o",
+      "occurrence": 0,
+      "sha256": "3b7e23b01eb3f27124cb5d004da7b6dad83bd9d3200eca79d7b5a89f26a0adab"
+    },
+    {
+      "name": "module_io_quilt.o",
+      "occurrence": 0,
+      "sha256": "22901a64aca791d0fa14f023a7361e1e8fc96d2cb4c48103d1f20ad8e82b6bb7"
+    },
+    {
+      "name": "module_io_wrf.o",
+      "occurrence": 0,
+      "sha256": "b6a775810b6f572c689cf57edb6a59bd8bd489199bf8257491a998c14c1085cb"
+    },
+    {
+      "name": "module_irrigation.o",
+      "occurrence": 0,
+      "sha256": "ebf5d8db14b18971a5ac68e23a0e2ed9bd5ff577653e4c17a1660cf17e65c871"
+    },
+    {
+      "name": "module_libmassv.o",
+      "occurrence": 0,
+      "sha256": "161bfce2795c24b794776318cbe6a39a9ec4c56a6415bfefed08c033548b37f2"
+    },
+    {
+      "name": "module_lightning_driver.o",
+      "occurrence": 0,
+      "sha256": "b29aa345bbb82b9f68fb6f9af32e9538db24929c6bb8a64a90c212e8007fe5c1"
+    },
+    {
+      "name": "module_llxy.o",
+      "occurrence": 0,
+      "sha256": "4af3db82cb30ec9a11ceea348bec958a8d698d4949ecd67dae71019b8000f0ee"
+    },
+    {
+      "name": "module_ltng_cpmpr92z.o",
+      "occurrence": 0,
+      "sha256": "6b13626422c56af41b58ff9770745eda2a0baa6830df81642e149a0b7bd8c344"
+    },
+    {
+      "name": "module_ltng_crmpr92.o",
+      "occurrence": 0,
+      "sha256": "af6b6c66469aa85f55ca5ca55a6e9f1362a87ded9063eae9bf2caa5f5c787f22"
+    },
+    {
+      "name": "module_ltng_iccg.o",
+      "occurrence": 0,
+      "sha256": "1bd6f70380a57815e6da2f255ed253a1ac7c53dffceba97f298a9f6f97e2ecfe"
+    },
+    {
+      "name": "module_ltng_lpi.o",
+      "occurrence": 0,
+      "sha256": "2c7a3aa23775dc985580ca127be77af9adabff81d781d2c22699e051cf8eb5cf"
+    },
+    {
+      "name": "module_machine.o",
+      "occurrence": 0,
+      "sha256": "8dd93e0c226ceed906a2c29d3c1a8af03381e0a57d957a6ce45f9177a5d8aefa"
+    },
+    {
+      "name": "module_madwrf.o",
+      "occurrence": 0,
+      "sha256": "59725fa3abd18190d4e08bbe2b330faa86d6244fa4db6fe72d5128a647e56c6e"
+    },
+    {
+      "name": "module_microphysics_driver.o",
+      "occurrence": 0,
+      "sha256": "a89608fd8dcda6bbb71713efdd9da9e5eeec1585bb3cc1b08161c80e171a081e"
+    },
+    {
+      "name": "module_microphysics_zero_out.o",
+      "occurrence": 0,
+      "sha256": "d4dfa7b751c4781029d8fa666ac0dbc63fc145de4d2d80dcc5080c25dd97e6a6"
+    },
+    {
+      "name": "module_mixactivate.o",
+      "occurrence": 0,
+      "sha256": "ab62f5a993bf173698dc0067762dc2ac60b7d3a9906d957c4d2c1fb5e8a7dc59"
+    },
+    {
+      "name": "module_model_constants.o",
+      "occurrence": 0,
+      "sha256": "63a5517185aea2609c926b2fd8e3ac9f586713d53b7468c402f4c47d44e40dc9"
+    },
+    {
+      "name": "module_mp_SBM_polar_radar.o",
+      "occurrence": 0,
+      "sha256": "afd9292ec4706035c56b52269b47891aa1a032c990df220dd4bc868baf233fe5"
+    },
+    {
+      "name": "module_mp_cammgmp_driver.o",
+      "occurrence": 0,
+      "sha256": "719ee1b3de7e18515c44bfceb4ad942439435667bd7dc01df960ff309d229770"
+    },
+    {
+      "name": "module_mp_etanew.o",
+      "occurrence": 0,
+      "sha256": "1f3995bd7061abb2ac9cee7150bf8ccb8a1f2996099f36c531f029bf545228b8"
+    },
+    {
+      "name": "module_mp_fast_sbm.o",
+      "occurrence": 0,
+      "sha256": "e1eb4b0d3d525e26979b5648f9b518ceaf24ce4ca0309651eed426f4cd694ebd"
+    },
+    {
+      "name": "module_mp_fer_hires.o",
+      "occurrence": 0,
+      "sha256": "d8e75e59524eb3c2567e27346d7cd5da858b3e11ad347e8b38293477f0f86f8c"
+    },
+    {
+      "name": "module_mp_full_sbm.o",
+      "occurrence": 0,
+      "sha256": "13e058a1e7ccc90ab1ff8ff3f1255b89feae8ad5a4ae27fb33140459043be027"
+    },
+    {
+      "name": "module_mp_gsfcgce.o",
+      "occurrence": 0,
+      "sha256": "5c9a8e210b2da201deb13a35d37ebaa65187d26cb02656f643ad81d8852eeb6f"
+    },
+    {
+      "name": "module_mp_gsfcgce_4ice_nuwrf.o",
+      "occurrence": 0,
+      "sha256": "2eea63a9fd7f005df5fcaedcd15d8c9101a4980334a143126f056fc8b07185d1"
+    },
+    {
+      "name": "module_mp_jensen_ishmael.o",
+      "occurrence": 0,
+      "sha256": "e347a3b1627087f1d516b119ae674413f691268fcf5a4ca2716e48bd42369993"
+    },
+    {
+      "name": "module_mp_kdm6.o",
+      "occurrence": 0,
+      "sha256": "9c103f267d61582c45a9d7e2dfd6753a3c0d2d165bf47c241f7c4729eca90721"
+    },
+    {
+      "name": "module_mp_kdm6_cons.o",
+      "occurrence": 0,
+      "sha256": "415799b05c05133f08cd2ae13c9e199c31138145b927e0b77ef6cf894ec0bcf1"
+    },
+    {
+      "name": "module_mp_kdm6ad.o",
+      "occurrence": 0,
+      "sha256": "fe1410d43f0f49381906632ca7083ac12a730899e4eade4dd3241e5fccb2499b"
+    },
+    {
+      "name": "module_mp_kdm6ad_cons.o",
+      "occurrence": 0,
+      "sha256": "144b09a86e07b4de3fd89f638eaa0d39a01fc0e0799aae343d44f761959cd13f"
+    },
+    {
+      "name": "module_mp_kessler.o",
+      "occurrence": 0,
+      "sha256": "3f22932ccb198555cea0b91796e449906d4668dd10963b1e5cccd583ee884b5d"
+    },
+    {
+      "name": "module_mp_lin.o",
+      "occurrence": 0,
+      "sha256": "d5628b896bbbd34307e7d9e28b817cdb0a0bffbbdf5caefb29da34b219209d7c"
+    },
+    {
+      "name": "module_mp_milbrandt2mom.o",
+      "occurrence": 0,
+      "sha256": "bfaf917b819fbe170977c84d06c9da9fc8f3436b2ad2cc622af08edd655405f7"
+    },
+    {
+      "name": "module_mp_morr_two_moment.o",
+      "occurrence": 0,
+      "sha256": "e85c63fb753af906ee944570fb8dc1569fad49b5ad14f5999a44693c773eefe3"
+    },
+    {
+      "name": "module_mp_morr_two_moment_aero.o",
+      "occurrence": 0,
+      "sha256": "33549791046779b5ea85600cf7ae82a47304510a1479f7aec6f7a81a735feef8"
+    },
+    {
+      "name": "module_mp_nssl_2mom.o",
+      "occurrence": 0,
+      "sha256": "e96732aa51c445ce862198c1e02be58f5b27788b0c57abfa7f734aa39ad4ebc1"
+    },
+    {
+      "name": "module_mp_ntu.o",
+      "occurrence": 0,
+      "sha256": "8eecae74eebc01b67c88740c00df2f5f6051d40f137976e1b8369be5991cd41c"
+    },
+    {
+      "name": "module_mp_p3.o",
+      "occurrence": 0,
+      "sha256": "7854d9ea3878c471f3f12c8cef5e4caa74d036dce4595e4257fc103a45734b07"
+    },
+    {
+      "name": "module_mp_radar.o",
+      "occurrence": 0,
+      "sha256": "0b8c9fad52c1cba23b0e94eee51f136b0d13ece556b9ab33ee262771cc168158"
+    },
+    {
+      "name": "module_mp_sbu_ylin.o",
+      "occurrence": 0,
+      "sha256": "4f3a7a8c35609fe1149f72d90cba57a5dbd62bbf2ce183a37eec54414d6aa3fb"
+    },
+    {
+      "name": "module_mp_thompson.o",
+      "occurrence": 0,
+      "sha256": "4e3776b64547f52ca76a90b907b0f18315999a66b79638946d71598aa4f46ffd"
+    },
+    {
+      "name": "module_mp_wdm5.o",
+      "occurrence": 0,
+      "sha256": "0318514c9e851539921d935ffc1a57cba122de4d0f3bb7cde9bbb6e5c7e2a29a"
+    },
+    {
+      "name": "module_mp_wdm6.o",
+      "occurrence": 0,
+      "sha256": "3edd14a4672578cf30c9818671533d657f48f910900bd947f20f061821afc38e"
+    },
+    {
+      "name": "module_mp_wdm7.o",
+      "occurrence": 0,
+      "sha256": "e1c3811c5e168b9593847a177d2c5055585eeff9c9c9463b74eaf9f1b599cc60"
+    },
+    {
+      "name": "module_mp_wsm3.o",
+      "occurrence": 0,
+      "sha256": "a2a7b7347d543056637b19080bd314af5ca247b5924f39b5e97600b3553ab4d0"
+    },
+    {
+      "name": "module_mp_wsm5.o",
+      "occurrence": 0,
+      "sha256": "5defcc1870730a85864c6df3e71a53857f5a53db2e71fc0b00b949bac8bce874"
+    },
+    {
+      "name": "module_mp_wsm6.o",
+      "occurrence": 0,
+      "sha256": "7b13191e5841aff00ac3f8128fb58d131de7ff9734f9b06b54ffa8d86c26ba48"
+    },
+    {
+      "name": "module_mp_wsm6r.o",
+      "occurrence": 0,
+      "sha256": "8d37ceff05bb1304bff767a805837b1331d9f10a687b8ccd5f7125ba6ea830ee"
+    },
+    {
+      "name": "module_mp_wsm7.o",
+      "occurrence": 0,
+      "sha256": "65b47648442f8b5f3800732a6f6b2f80f75b9365c501cbdee6e6d4c88f51b9ef"
+    },
+    {
+      "name": "module_nesting.o",
+      "occurrence": 0,
+      "sha256": "d41a3f2e66a4f710d2c89e8d7547100e71b5667e180969b6a7463e8faa705309"
+    },
+    {
+      "name": "module_optional_input.o",
+      "occurrence": 0,
+      "sha256": "370a7610b50158bb3de69e80e727f17f294d3e952a41326dd2d9833b0e328909"
+    },
+    {
+      "name": "module_pbl_driver.o",
+      "occurrence": 0,
+      "sha256": "afcae64f1a569fb33feae7044a6e0db2c9d672fbbf2f91c645f110979caf21a6"
+    },
+    {
+      "name": "module_physics_addtendc.o",
+      "occurrence": 0,
+      "sha256": "a23cb1b6c7eafbb36e179f60cb8ccc96280f3ee263f778a2f65cd0372e921b93"
+    },
+    {
+      "name": "module_physics_init.o",
+      "occurrence": 0,
+      "sha256": "6ac6a6a19d15b5ed3af650c3cad461e8289bcd3e8a3e17f91fc619cdb175b9b0"
+    },
+    {
+      "name": "module_polarfft.o",
+      "occurrence": 0,
+      "sha256": "50efadbb3740c60e9b328fbc030b445527d3f73fb5119bafd54797ec56a468cd"
+    },
+    {
+      "name": "module_progtm.o",
+      "occurrence": 0,
+      "sha256": "fb538138730c0c0ed9c00f71c6a25c9bb94c127433f4917a8baa90a202bd68e8"
+    },
+    {
+      "name": "module_quilt_outbuf_ops.o",
+      "occurrence": 0,
+      "sha256": "7e9df77f30f07da99c87ab7c0b4645ac49b84ceb32aa2bc4924e87574f96bc41"
+    },
+    {
+      "name": "module_ra_aerosol.o",
+      "occurrence": 0,
+      "sha256": "7622bb7f167490a9e5e681e9a79beb5ff72375e28a80473cd3219cf8f889f065"
+    },
+    {
+      "name": "module_ra_cam.o",
+      "occurrence": 0,
+      "sha256": "5e4a8f04d11e0298cbf1920f42cb3ed41090d11277c5addd3644232c6c363fec"
+    },
+    {
+      "name": "module_ra_cam_support.o",
+      "occurrence": 0,
+      "sha256": "7c899c911cb883fe0e5776eadf0cfea21e2ff794451df32714d01f0c8715b110"
+    },
+    {
+      "name": "module_ra_clWRF_support.o",
+      "occurrence": 0,
+      "sha256": "15f5cd78394a75e5f6ed3355e14b4b7b23579a427256f993d3642684c6d0a285"
+    },
+    {
+      "name": "module_ra_eclipse.o",
+      "occurrence": 0,
+      "sha256": "ecf4e2ac8662b4cd0d14c91ecbff21dc1a9a9ac232c317a049c242c40e9a40fe"
+    },
+    {
+      "name": "module_ra_effective_radius.o",
+      "occurrence": 0,
+      "sha256": "8daa2121b4a62127c2f1b38a607c47be9c6543bf52812c7a601152247dffd310"
+    },
+    {
+      "name": "module_ra_farms.o",
+      "occurrence": 0,
+      "sha256": "b53373087ba87eb16e60c222a5197555bcd33d6684702600bc147dbeca90561e"
+    },
+    {
+      "name": "module_ra_flg.o",
+      "occurrence": 0,
+      "sha256": "5c9a59950c534a421c41b05d55c5449b708fe5ec5697a255d251724c3ee1b02d"
+    },
+    {
+      "name": "module_ra_gfdleta.o",
+      "occurrence": 0,
+      "sha256": "e1977ffcc8cbfdca9bf79ecb924bdd0918085a1f91c2588bce14e27631ddea26"
+    },
+    {
+      "name": "module_ra_goddard.o",
+      "occurrence": 0,
+      "sha256": "7d4440417f070a0e5f035a4861dda0c32ba13da2528143d1a2396ba29eced24d"
+    },
+    {
+      "name": "module_ra_gsfcsw.o",
+      "occurrence": 0,
+      "sha256": "88683464308dcc30106b1e21cefd236c6ff729b976e3ad6ebeb91ce819751351"
+    },
+    {
+      "name": "module_ra_hs.o",
+      "occurrence": 0,
+      "sha256": "30d82d5c8ae472a5e965a47a4ee11c423f081c38218c4d00fd2547bb96976d63"
+    },
+    {
+      "name": "module_ra_rrtm.o",
+      "occurrence": 0,
+      "sha256": "4e7abd5738f163e4c3dc583b3581ad620f57caeed1ca675b5686ad2b38fcea53"
+    },
+    {
+      "name": "module_ra_rrtmg_aero_optical_util_cmaq.o",
+      "occurrence": 0,
+      "sha256": "27e406c9b7b849bb3dbedbf25cb453f2c1287d0825bcfda41d36561a7c08ef0d"
+    },
+    {
+      "name": "module_ra_rrtmg_lw.o",
+      "occurrence": 0,
+      "sha256": "9df678944600ddcce73db3ebe6a100fd93fe590b4ee985e63f58599ea948421b"
+    },
+    {
+      "name": "module_ra_rrtmg_lwf.o",
+      "occurrence": 0,
+      "sha256": "f02a2b789a442858dd54039a0af27ecd5b44a1c5cf651d62c01a703cc36794ca"
+    },
+    {
+      "name": "module_ra_rrtmg_lwk.o",
+      "occurrence": 0,
+      "sha256": "fb742f05109a1a5017d9980049e682bd2eba8644caae4e0b3734992b2ae5c07a"
+    },
+    {
+      "name": "module_ra_rrtmg_sw.o",
+      "occurrence": 0,
+      "sha256": "24411966339666f2dd61a458b9a5af3c513ff5d99f0b9f5917652c51871a6ff3"
+    },
+    {
+      "name": "module_ra_rrtmg_swf.o",
+      "occurrence": 0,
+      "sha256": "f537d83c1c1d70adc0fa7e8ee4e3882273c29582ddb529c81be2399d4f5edf87"
+    },
+    {
+      "name": "module_ra_rrtmg_swk.o",
+      "occurrence": 0,
+      "sha256": "0005aae0db8ab4924f97ef0b674656029ff688d1ec2894682884bc45d2aac739"
+    },
+    {
+      "name": "module_ra_sw.o",
+      "occurrence": 0,
+      "sha256": "fa14308ff19c8b1e650c5dc9b8b6dcb8990515aaf60d72e2c5b51425061e3f21"
+    },
+    {
+      "name": "module_radiation_driver.o",
+      "occurrence": 0,
+      "sha256": "90404247264d08b977f6e29cac30f6a4c445782558697db16dbdcc8eee3cc56d"
+    },
+    {
+      "name": "module_random.o",
+      "occurrence": 0,
+      "sha256": "862e40e240e38474281acf3404118c3e8318fc3302397cce90b587574fe0cb28"
+    },
+    {
+      "name": "module_sf_3dpwp.o",
+      "occurrence": 0,
+      "sha256": "38a05ce80a68aafbdbd67031940f4dc8273f3bf4fe6d513157cc7a9c0d9d8a15"
+    },
+    {
+      "name": "module_sf_bem.o",
+      "occurrence": 0,
+      "sha256": "d606434e021506239e6edcbb3b8c73e370eda463ceb3e3d912de5f8aaddeedfa"
+    },
+    {
+      "name": "module_sf_bep.o",
+      "occurrence": 0,
+      "sha256": "30639b218adeb9a803b624d2777c2c6dc16e4fa36057c12ae63f3c21a3926ed3"
+    },
+    {
+      "name": "module_sf_bep_bem.o",
+      "occurrence": 0,
+      "sha256": "cd5c937b8ebeaf68991f6933f67c57716e22901ce51b1b6daba7aa4b46a6fdb4"
+    },
+    {
+      "name": "module_sf_clm.o",
+      "occurrence": 0,
+      "sha256": "05b7dd2572cfed6e53005da959a3f5691f8f891c86251fa722e7154686e26a3b"
+    },
+    {
+      "name": "module_sf_ctsm.o",
+      "occurrence": 0,
+      "sha256": "5726a487a355012f74d7fcc39445b12d359da27e7fa412beb9cae83294b2c010"
+    },
+    {
+      "name": "module_sf_exchcoef.o",
+      "occurrence": 0,
+      "sha256": "6868f627e52162f7aa0e0970c46805f9c8da4172b9198a0248e0259a30f24997"
+    },
+    {
+      "name": "module_sf_fogdes.o",
+      "occurrence": 0,
+      "sha256": "675aef8dbd1cd0ee5de4448359423ced82efe11f12c99d80b0e203aeac97218f"
+    },
+    {
+      "name": "module_sf_gecros.o",
+      "occurrence": 0,
+      "sha256": "5da79ed82079465f03e0de67c3f72ee674c598e445917ff9ef99ee3288f0883c"
+    },
+    {
+      "name": "module_sf_gfdl.o",
+      "occurrence": 0,
+      "sha256": "2a2ae82d0834d25cd6a09cc7851230063e7a2348ff2c927f11dfb7450372697e"
+    },
+    {
+      "name": "module_sf_gfs.o",
+      "occurrence": 0,
+      "sha256": "a6ab2a450bed6689caf120579d99dd90356b089ac72593732b1dca6f92b4c724"
+    },
+    {
+      "name": "module_sf_idealscmsfclay.o",
+      "occurrence": 0,
+      "sha256": "3b53c42e5046b4cfdb5ede5470a31f02f44fcca49ab3fa0c4b6cc3402ef972ea"
+    },
+    {
+      "name": "module_sf_lake.o",
+      "occurrence": 0,
+      "sha256": "dbabfbc20c9da5ad7674fb20a4be24cd6a8613408be57e57de06f9d2b83be308"
+    },
+    {
+      "name": "module_sf_myjsfc.o",
+      "occurrence": 0,
+      "sha256": "4a33df17d897c7d16627ef1ca7157c06a9ef3b96d927b09c8c876de3ec423742"
+    },
+    {
+      "name": "module_sf_mynn.o",
+      "occurrence": 0,
+      "sha256": "95aae0fea06508ce8712bc2a9d218d107e77b86ded408aa1cdd59acf2af9d0c2"
+    },
+    {
+      "name": "module_sf_noah_seaice.o",
+      "occurrence": 0,
+      "sha256": "100738f6c531c4b32a8980167f787c4ecfb81552b5eafa810ec5fb196705eba1"
+    },
+    {
+      "name": "module_sf_noah_seaice_drv.o",
+      "occurrence": 0,
+      "sha256": "203e84a9c5d6e9e36893bc1baa64740446fa2dc4f0e317c3c7fd4f26234f507a"
+    },
+    {
+      "name": "module_sf_noahdrv.o",
+      "occurrence": 0,
+      "sha256": "d6ab79fcb7140c5db5ae33d7b6a6d808b2c81cb6c01943dfad10971941962549"
+    },
+    {
+      "name": "module_sf_noahlsm.o",
+      "occurrence": 0,
+      "sha256": "a6e578eb1ebdd5aad339b0edde98324bde190009913080909be2a3a6ee59d74a"
+    },
+    {
+      "name": "module_sf_noahlsm_glacial_only.o",
+      "occurrence": 0,
+      "sha256": "29b1347a2c09d5bec9d870337130d85f3e8bc04ae5c90a29083dc362947585db"
+    },
+    {
+      "name": "module_sf_noahmp_glacier.o",
+      "occurrence": 0,
+      "sha256": "a2209ef74bb458d37f66a77f3bd8504f14923e67542d421c99e2faf0f7ca5fe9"
+    },
+    {
+      "name": "module_sf_noahmp_groundwater.o",
+      "occurrence": 0,
+      "sha256": "b12a266e9d557469699b85ab2ea425f5acf2453aa947797926700636d89f1dc3"
+    },
+    {
+      "name": "module_sf_noahmpdrv.o",
+      "occurrence": 0,
+      "sha256": "0b56e4de63f7cbefc414251a2d55323049da1d3632949d4c85e2fd73030c65cd"
+    },
+    {
+      "name": "module_sf_noahmplsm.o",
+      "occurrence": 0,
+      "sha256": "647369cea109ec3d3e87a59efb0312624e7687edbbf9fe450149707f2c01ed8b"
+    },
+    {
+      "name": "module_sf_ocean_driver.o",
+      "occurrence": 0,
+      "sha256": "e2f3d37cfd4852c465a26b5ee65a232b60deaeb0972234dc83c4ce914e7f80d6"
+    },
+    {
+      "name": "module_sf_oml.o",
+      "occurrence": 0,
+      "sha256": "309686f811557ace513d232cf8b7161cef35c579fd8640e9306e31ddcbef63c9"
+    },
+    {
+      "name": "module_sf_pxlsm.o",
+      "occurrence": 0,
+      "sha256": "0555b89ede24bc31394e8d7c7e7cb34d5b031de1922b5570b30b3db8a48e2d5d"
+    },
+    {
+      "name": "module_sf_pxlsm_data.o",
+      "occurrence": 0,
+      "sha256": "2b18c6f34af76a313df0330811bb71394fe0d452bbe267b77ebc17f093d976f9"
+    },
+    {
+      "name": "module_sf_pxsfclay.o",
+      "occurrence": 0,
+      "sha256": "75da04624b64d9ab87b4ef18f31b303869794858ca37aa4481d66895222a1541"
+    },
+    {
+      "name": "module_sf_qnsesfc.o",
+      "occurrence": 0,
+      "sha256": "b1ca8708ca5dde269b5525aeed3f9f1fb13a99654550360d4e0c9e6c55c22938"
+    },
+    {
+      "name": "module_sf_ruclsm.o",
+      "occurrence": 0,
+      "sha256": "36178a6f1a6087e0b1b240f60d27bfe65d7f92973cb717de1f35b1af4d650899"
+    },
+    {
+      "name": "module_sf_scmflux.o",
+      "occurrence": 0,
+      "sha256": "222accef1980cfc2ed03872a95ac30f052247f2b07aa051b596af37aad3b560c"
+    },
+    {
+      "name": "module_sf_scmskintemp.o",
+      "occurrence": 0,
+      "sha256": "d7b12cdda73d2c45582e1509fad77949c1f0144997729677339c74634c2ae77d"
+    },
+    {
+      "name": "module_sf_sfcdiags.o",
+      "occurrence": 0,
+      "sha256": "4d0a63e7d659058e26bbf3111a6703fcff293b255e5e6b50dd4b2f8d577bcc25"
+    },
+    {
+      "name": "module_sf_sfcdiags_ruclsm.o",
+      "occurrence": 0,
+      "sha256": "1f18efcb84ade3338d25edf82bf7c4ecc24a4ef8418d9486633b7a9ba7f42ebf"
+    },
+    {
+      "name": "module_sf_sfclay.o",
+      "occurrence": 0,
+      "sha256": "2b217af74753ced44c06c094a2647a229de104c68768b11ea676cacf7a3c2fd2"
+    },
+    {
+      "name": "module_sf_sfclayrev.o",
+      "occurrence": 0,
+      "sha256": "8afa2fde3982ef83ea464d78bcc271c95a4b9c82e26491edf432c4cca0d0f2d0"
+    },
+    {
+      "name": "module_sf_slab.o",
+      "occurrence": 0,
+      "sha256": "5ab215061f01b1143430d3642e062064b99134c462e72687c2bc6a722f3b3530"
+    },
+    {
+      "name": "module_sf_ssib.o",
+      "occurrence": 0,
+      "sha256": "32915d9afa3f9ee275d896bde676142cb1555f6ff56332b1865820c0cf765a05"
+    },
+    {
+      "name": "module_sf_sstskin.o",
+      "occurrence": 0,
+      "sha256": "1bcf06606f00e68c0a421f4543ba10101cdaadd8cecec96b3e5533af88021cb3"
+    },
+    {
+      "name": "module_sf_temfsfclay.o",
+      "occurrence": 0,
+      "sha256": "165ae31f353f4a47fd1d28c1d4d11469228a717df8751f3c5f1c04f526e9b69c"
+    },
+    {
+      "name": "module_sf_tmnupdate.o",
+      "occurrence": 0,
+      "sha256": "8c5435d839f96fb3e2373c39cc23e6d24073ee87fe516ecc700b1a0f1486eb2e"
+    },
+    {
+      "name": "module_sf_urban.o",
+      "occurrence": 0,
+      "sha256": "491e8936fc8701780fc6f812501bffc6a0046c62d00ea9f720a9789acdfde381"
+    },
+    {
+      "name": "module_sf_ysl.o",
+      "occurrence": 0,
+      "sha256": "cf0c0dbc5e9f0614d0e4ab123f88e58050cb7072dfebbf4bfe7d2c7844d9a80b"
+    },
+    {
+      "name": "module_sfs_driver.o",
+      "occurrence": 0,
+      "sha256": "1ddb1fbe4cb5670816839c9d6f8129d79fcdfb36c0a422d94538617462ddc9e6"
+    },
+    {
+      "name": "module_sfs_nba.o",
+      "occurrence": 0,
+      "sha256": "0dce73004c7f5f9bc966d0404d7ae40d2efcd4dd0f96b320c0040656039b1e3b"
+    },
+    {
+      "name": "module_shallowcu_driver.o",
+      "occurrence": 0,
+      "sha256": "bb138f251603ca504c4c1a2882c50a4b886faf450f0d29c25a11f0a5de64de25"
+    },
+    {
+      "name": "module_shcu_camuwshcu.o",
+      "occurrence": 0,
+      "sha256": "115d8ddd962687cf3b60f199bc76dda4c2bcf266ea4b24b4fe907ae7ae2fc550"
+    },
+    {
+      "name": "module_shcu_camuwshcu_driver.o",
+      "occurrence": 0,
+      "sha256": "bf2ceea5e1dcbecec19af5536171c26230942245f9554ba7722f24a3424cd07b"
+    },
+    {
+      "name": "module_shcu_deng.o",
+      "occurrence": 0,
+      "sha256": "a88447544ac115468a1a333e12818684ba6ff9f154601549bef71235c8ef4d6b"
+    },
+    {
+      "name": "module_shcu_grims.o",
+      "occurrence": 0,
+      "sha256": "966c0f1d1be61e77abc482e4dca9ca1c2e27c582303da8002ae03d2d650a2960"
+    },
+    {
+      "name": "module_shcu_nscv.o",
+      "occurrence": 0,
+      "sha256": "5708435ff0fb7782c497098595b1a2b52d9c57fea227e5f081dfe799c2165159"
+    },
+    {
+      "name": "module_sm.o",
+      "occurrence": 0,
+      "sha256": "11fc53bcddf5fb7d40434592d2a618979aa79c8384bb66fa2cdd6982a92c4a02"
+    },
+    {
+      "name": "module_small_step_em.o",
+      "occurrence": 0,
+      "sha256": "923c7be0501a15da720b009035631be0c6493970f059f5039b1858cf5b5d558a"
+    },
+    {
+      "name": "module_soil_pre.o",
+      "occurrence": 0,
+      "sha256": "36a636dfa2fe25c48eed59fb29aea04359256684d5120b86de195659b45c110f"
+    },
+    {
+      "name": "module_solvedebug_em.o",
+      "occurrence": 0,
+      "sha256": "4d566cb676902998c5748a0ad985ec266d5d269656bb709ba25a36de43dceed4"
+    },
+    {
+      "name": "module_state_description.o",
+      "occurrence": 0,
+      "sha256": "d5e0de4e5ab4c1e07e180a499c880cc9be97377a435f4828040ab1e85a676431"
+    },
+    {
+      "name": "module_stoch.o",
+      "occurrence": 0,
+      "sha256": "4567c38234841860208d52fe686e7be5a2106922bc2bef3efe107478f51bd807"
+    },
+    {
+      "name": "module_streams.o",
+      "occurrence": 0,
+      "sha256": "9b51ec84fc9308f8ec8a47730d3efc68caef0c3b3e898581b335a530ffd442c9"
+    },
+    {
+      "name": "module_string_tools.o",
+      "occurrence": 0,
+      "sha256": "498027c47f872e524dad1e140d79a2196bbad4144dc060d38676b4eadac746fb"
+    },
+    {
+      "name": "module_surface_driver.o",
+      "occurrence": 0,
+      "sha256": "171c343e1eaf00762a22b3ae30b9e45240d6134e5603789190317ad7699add6e"
+    },
+    {
+      "name": "module_tiles.o",
+      "occurrence": 0,
+      "sha256": "ac5f314d3a284a85dfde7f4113b4eca5d114d5c7f4d51b01cbad4323ce6e9325"
+    },
+    {
+      "name": "module_timing.o",
+      "occurrence": 0,
+      "sha256": "aae7c3c2b7aef4308b73fac50548c5f89bfd623cad007d3469606846fec86afe"
+    },
+    {
+      "name": "module_trajectory.o",
+      "occurrence": 0,
+      "sha256": "dfd0435224f6cf81046ca1ebb7822df0fd0fd17dc938649295c8c70809b629ea"
+    },
+    {
+      "name": "module_wind_fitch.o",
+      "occurrence": 0,
+      "sha256": "5b1dc2b64a56ec3d85cd8d7b172daa56186b678d04f78622883f81e90998584f"
+    },
+    {
+      "name": "module_wind_mav.o",
+      "occurrence": 0,
+      "sha256": "ca52a66b74aa816fc0683581108e1dbda935c090f4ea39daee100e9b9ae7a3d6"
+    },
+    {
+      "name": "module_wps_io_arw.o",
+      "occurrence": 0,
+      "sha256": "6a1fe902385e5e5432556b139c20921c56d01aa735f0f4072366f924dc95e4d0"
+    },
+    {
+      "name": "module_wrf_error.o",
+      "occurrence": 0,
+      "sha256": "3745672355cb8d477ac58ef34ba8fa0f42c18cda11429ea41a4ed025c8d3617d"
+    },
+    {
+      "name": "mp_radar.o",
+      "occurrence": 0,
+      "sha256": "9fa08302f01f53db74220ee8c425fe9ca0b476a7ab3626cce67479309eb45a62"
+    },
+    {
+      "name": "mp_wsm6.o",
+      "occurrence": 0,
+      "sha256": "a730d05328db6e14e2194eaf1a5d9c6545f2e2e2aefee2e418fc73a17de14ee7"
+    },
+    {
+      "name": "mp_wsm6_effectRad.o",
+      "occurrence": 0,
+      "sha256": "9cf24dcb2b755b7d80daf4968bf57eb0d7f4eb89fc457dd4e23993be01c589b1"
+    },
+    {
+      "name": "nest_init_utils.o",
+      "occurrence": 0,
+      "sha256": "8ca37b5916075d8270c2eae864eacf84eef1a811c9603d97b7e54075b0f8270c"
+    },
+    {
+      "name": "nl_get_0_routines.o",
+      "occurrence": 0,
+      "sha256": "d68ad2c2f88bbacd43ae8e67219e96902de9851cb24712f367b7ebb25d6921bc"
+    },
+    {
+      "name": "nl_get_1_routines.o",
+      "occurrence": 0,
+      "sha256": "c39dc39f0777b33dab890d464dea64fee3e2d423d986840a3ae769aa9a0a3fc1"
+    },
+    {
+      "name": "nl_get_2_routines.o",
+      "occurrence": 0,
+      "sha256": "a7ee35f2929401dac9b5a0537fe0e4024c4ec16108c81fb9cf4567300f286508"
+    },
+    {
+      "name": "nl_get_3_routines.o",
+      "occurrence": 0,
+      "sha256": "de99397c61475cc4a3e75ce269a97e3a4a840e25eaa44ee3786a6a8747dcb305"
+    },
+    {
+      "name": "nl_get_4_routines.o",
+      "occurrence": 0,
+      "sha256": "a311f5586412cd2c84d6403552d1b13b0cf701802230acc6bae808843dfce6ef"
+    },
+    {
+      "name": "nl_get_5_routines.o",
+      "occurrence": 0,
+      "sha256": "bb059579f382bcc87cf080f0f6610091c8cd5f80f5cabad2d7895e71e0773378"
+    },
+    {
+      "name": "nl_get_6_routines.o",
+      "occurrence": 0,
+      "sha256": "24bc914134ef750d0b8d11133643525b0f36e3bcee6020eabb9ba95291d38e78"
+    },
+    {
+      "name": "nl_get_7_routines.o",
+      "occurrence": 0,
+      "sha256": "c989a4a7593a10c7f6fcf6f4b7df95a6a6c6efaf2a8118209d01419e90da9451"
+    },
+    {
+      "name": "nl_set_0_routines.o",
+      "occurrence": 0,
+      "sha256": "5f26054731e941b29071e1cc6e0f16a3bcdcef3b21d64f3dbdbab98fa65923a9"
+    },
+    {
+      "name": "nl_set_1_routines.o",
+      "occurrence": 0,
+      "sha256": "8b945a9f9261c60c74e32e7065b26ec9a0a63fd78ca760b326a7deec61055f3a"
+    },
+    {
+      "name": "nl_set_2_routines.o",
+      "occurrence": 0,
+      "sha256": "77da07cefbed478b0efe7e4662eddb1a0156c6f27e97a0f122e49e14fe25a587"
+    },
+    {
+      "name": "nl_set_3_routines.o",
+      "occurrence": 0,
+      "sha256": "96cb38c809238ab2518f10df9a0ca4c5d33eebb4a30a78bf1828b82957d64b46"
+    },
+    {
+      "name": "nl_set_4_routines.o",
+      "occurrence": 0,
+      "sha256": "50ffd7885ac7657081ece6e54f69749deb6842bf971076c55e7f1313507baaea"
+    },
+    {
+      "name": "nl_set_5_routines.o",
+      "occurrence": 0,
+      "sha256": "370ba828b9520ae0310616d7304a1c32fc9de741f9e5f231bef0dd092cafc9af"
+    },
+    {
+      "name": "nl_set_6_routines.o",
+      "occurrence": 0,
+      "sha256": "b0efe363d382bdd4d64bec6cf14a7747fd31d2ca39aaadb7f90878f7d1d2bfd3"
+    },
+    {
+      "name": "nl_set_7_routines.o",
+      "occurrence": 0,
+      "sha256": "6bef4b04df62194e26cac3da241f93e7ceed2f5c2d7d2c09e2eaa5bd164e96bb"
+    },
+    {
+      "name": "output_wrf.o",
+      "occurrence": 0,
+      "sha256": "92b3640abdbb598df6b02e1175360002b80672d9858ab7de5c47aaf985b101ad"
+    },
+    {
+      "name": "set_timekeeping.o",
+      "occurrence": 0,
+      "sha256": "1ec991ff4b2e87401585d5cc7a37ca4da7da9b6b8e84a3d52c0fdd352013cb07"
+    },
+    {
+      "name": "setfeenv.o",
+      "occurrence": 0,
+      "sha256": "ea17412bf9d68a1b16a6fec159d8ac02c2b10fd7eb89152dc6145231f343784b"
+    },
+    {
+      "name": "sf_sfclayrev.o",
+      "occurrence": 0,
+      "sha256": "eff338abd96e4f264844e660b928f4cb149afdff861070e2bdf907ac3e8dfdeb"
+    },
+    {
+      "name": "shift_domain_em.o",
+      "occurrence": 0,
+      "sha256": "bdc691cc6fb1f970fcbed5eada4c71cdc5abf749d5f53eb92db0f2c23226d364"
+    },
+    {
+      "name": "sint.o",
+      "occurrence": 0,
+      "sha256": "0f33f9c5d437857139335e775aae3773398640a6e8a96faaea31f5b353ba0eaa"
+    },
+    {
+      "name": "solve_em.o",
+      "occurrence": 0,
+      "sha256": "4ad27f1debf7787f6a032bbcbd4a78019977fa4ccd79bf5cb4c75728ed009286"
+    },
+    {
+      "name": "solve_interface.o",
+      "occurrence": 0,
+      "sha256": "33bd1c1e60cc5f238d0f2494127bf3dd666e6ce8bc8d6a23fedeb043ee3ac4e9"
+    },
+    {
+      "name": "start_domain.o",
+      "occurrence": 0,
+      "sha256": "30e33dc1c9049653484458fc333619da8137db981460b8008bf2c3c9c2f15a31"
+    },
+    {
+      "name": "start_em.o",
+      "occurrence": 0,
+      "sha256": "5ad2229b2a601b456c690c2439ce7a5a8f1f1be8fa6742e37f2a22d85342d5e2"
+    },
+    {
+      "name": "track_driver.o",
+      "occurrence": 0,
+      "sha256": "bc479b0e59fa446abbeeeeca63b94db399dbb52436938ba5cfc407d98302752a"
+    },
+    {
+      "name": "track_driver.o",
+      "occurrence": 1,
+      "sha256": "bc479b0e59fa446abbeeeeca63b94db399dbb52436938ba5cfc407d98302752a"
+    },
+    {
+      "name": "track_input.o",
+      "occurrence": 0,
+      "sha256": "a06e8cd921d5eb50a5d00dfa0f67ff08e3cde6a00631e62d484a1793cfe29846"
+    },
+    {
+      "name": "wrf_bdyin.o",
+      "occurrence": 0,
+      "sha256": "cb0258d56231bd3108918b9ebbe05ed684ec2fde394b5e121de28da40167b9b4"
+    },
+    {
+      "name": "wrf_bdyout.o",
+      "occurrence": 0,
+      "sha256": "17680d3cd96585dba82bb2b0baf1388cf0d628ecebc0b80797f95e23b1278e7a"
+    },
+    {
+      "name": "wrf_debug.o",
+      "occurrence": 0,
+      "sha256": "8de6314c9df521f2f164077ce1994f6a7a7dfa243c1be1c429b4734df334827a"
+    },
+    {
+      "name": "wrf_ext_read_field.o",
+      "occurrence": 0,
+      "sha256": "4ed802d14db3c79eca1a285b087d1da61d85f3e0137b8ce83cada2fa0c8cdcfe"
+    },
+    {
+      "name": "wrf_ext_write_field.o",
+      "occurrence": 0,
+      "sha256": "2e4acb65366d1b48ec3ffbc8c6cf69aa157b09ecd165a7ac3b27a72203f2c1f4"
+    },
+    {
+      "name": "wrf_fddaobs_in.o",
+      "occurrence": 0,
+      "sha256": "7a7e0e46ad6d844a018b8e232fd2fe80bc56588738ba51616a408bfadc5c2c79"
+    },
+    {
+      "name": "wrf_num_bytes_between.o",
+      "occurrence": 0,
+      "sha256": "8a583516fe8cd271fcb3f0e6347b788b3050ef51585b3ea98234ab4c5512398f"
+    },
+    {
+      "name": "wrf_shutdown.o",
+      "occurrence": 0,
+      "sha256": "f5d03032544d9b072a81dee9d77df0e097f902985b2ce10be9095294dc08d65e"
+    },
+    {
+      "name": "wrf_timeseries.o",
+      "occurrence": 0,
+      "sha256": "5a818c2c97cf9acdf76efde995d52432ce6e7421c0fc35c3b263a679e8bbdb82"
+    },
+    {
+      "name": "wrf_tsin.o",
+      "occurrence": 0,
+      "sha256": "def7c99254e5eb2003aee354a9a62c4959257059d57ff7a8c1cb2bc9e65497e4"
+    }
+  ],
+  "archive_member_inventory": 378,
+  "baseline_build_receipt": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/private_wrf_build_receipt.json",
+  "baseline_build_receipt_sha256": "bf9b6715870f0016cfd830a80649845f3d9fd5908a16967d900847d5c2131249",
+  "baseline_fortran_object_sha256": {
+    "module_mp_kdm6ad.o": "e9898b60336a9dc22cff3798124ab7fa9fc4ac29701e673af95390a23bd68ce7",
+    "solve_em.o": "3adaa130a338a8ed0bb12f84145398279c8787eef3a7280f5dd06f45180e93b4"
+  },
+  "baseline_host_executable": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/execution/wrf_mp137_native_fp64_value.exe",
+  "baseline_host_executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0",
+  "baseline_private_archive": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7/libwrflib.native_fp64_value.a",
+  "baseline_private_archive_sha256": "ead9ce932d3f33a865d27dcf4ce092827ff13f4747ebf52581054e8dacda25bc",
+  "build_revision_KDM6_calls": 0,
+  "build_revision_RTtov_calls": 0,
+  "build_revision_host_steps": 0,
+  "capi_build_receipt": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/capi_v2/build_receipt.json",
+  "capi_build_receipt_sha256": "bb0bf2e5d6bf5ac888d2349d292425e9e7fb5d7a0a838db2c4b6d7dac6aaea4b",
+  "capi_dso_runtime_copy": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib",
+  "capi_dso_runtime_copy_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+  "capi_dso_source_sha256": "ab2bde85329c0afb9ccb2de88477879965291efd61700bf84ca1bafb0208aedd",
+  "capi_operational_export_count": 14,
+  "capi_trace_context_export": "_kdm6_moment_trace_context_c",
+  "capi_v2_export_count": 16,
+  "compiled_fortran_objects": {
+    "kdm6ad_moment_trace_v2.o": {
+      "command": [
+        "/opt/homebrew/bin/mpif90",
+        "-o",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/objects/kdm6ad_moment_trace_v2.o",
+        "-c",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "-ffp-contract=off",
+        "-J",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/fortran_mod",
+        "<PR455_WORKTREE>/harness/native_trace/kdm6ad_moment_trace_v2.f90"
+      ],
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/objects/kdm6ad_moment_trace_v2.o",
+      "sha256": "1e9f02269a3a9a0a8e04ba5727f6170b025d8c491d24ce2e195363b14e2ff994"
+    },
+    "module_mp_kdm6ad.o": {
+      "command": [
+        "mpif90",
+        "-o",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/objects/module_mp_kdm6ad.o",
+        "-c",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "-ffp-contract=off",
+        "-I../dyn_em",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/esmf_time_f90",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/main",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/io_netcdf",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/io_int",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/frame",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/share",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/phys",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/wrftladj",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/chem",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/inc",
+        "-I/opt/homebrew/include",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/overlay_source/phys/module_mp_kdm6ad.f90",
+        "-J",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/fortran_mod",
+        "-I",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/fortran_mod"
+      ],
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/objects/module_mp_kdm6ad.o",
+      "sha256": "fe1410d43f0f49381906632ca7083ac12a730899e4eade4dd3241e5fccb2499b"
+    },
+    "solve_em.o": {
+      "command": [
+        "mpif90",
+        "-o",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/objects/solve_em.o",
+        "-c",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "-I../dyn_em",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/esmf_time_f90",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/main",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/io_netcdf",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/external/io_int",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/frame",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/share",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/phys",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/wrftladj",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/chem",
+        "-I<LOCAL_KDM6AD_ROOT>/host/KIM-meso_v1.0/inc",
+        "-I/opt/homebrew/include",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/overlay_source/dyn_em/solve_em.f90",
+        "-J",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/fortran_mod",
+        "-I",
+        "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/fortran_mod"
+      ],
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/objects/solve_em.o",
+      "sha256": "4ad27f1debf7787f6a032bbcbd4a78019977fa4ccd79bf5cb4c75728ed009286"
+    }
+  },
+  "created_at_utc": "2026-10-26T10:39:08.174082+00:00",
+  "dso_load_commands": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib:\n\t@rpath/libkdm6_native_fp64_value.2.dylib (compatibility version 2.0.0, current version 2.0.0)\n\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.27.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n",
+  "dso_rpaths": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib:\nLoad command 0\n      cmd LC_SEGMENT_64\n  cmdsize 632\n  segname __TEXT\n   vmaddr 0x0000000000000000\n   vmsize 0x00000000000d0000\n  fileoff 0\n filesize 851968\n  maxprot 0x00000005\n initprot 0x00000005\n   nsects 7\n    flags 0x0\nSection\n  sectname __text\n   segname __TEXT\n      addr 0x0000000000001ff8\n      size 0x00000000000b7208\n    offset 8184\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x80000400\n reserved1 0\n reserved2 0\nSection\n  sectname __stubs\n   segname __TEXT\n      addr 0x00000000000b9200\n      size 0x0000000000000bd0\n    offset 758272\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x80000408\n reserved1 0 (index into indirect symbol table)\n reserved2 12 (size of stubs)\nSection\n  sectname __init_offsets\n   segname __TEXT\n      addr 0x00000000000b9dd0\n      size 0x0000000000000004\n    offset 761296\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x00000016\n reserved1 0\n reserved2 0\nSection\n  sectname __const\n   segname __TEXT\n      addr 0x00000000000b9de0\n      size 0x0000000000001e5b\n    offset 761312\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __gcc_except_tab\n   segname __TEXT\n      addr 0x00000000000bbc3c\n      size 0x000000000000ba1c\n    offset 769084\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __cstring\n   segname __TEXT\n      addr 0x00000000000c7658\n      size 0x000000000000573c\n    offset 816728\n     align 2^0 (1)\n    reloff 0\n    nreloc 0\n     flags 0x00000002\n reserved1 0\n reserved2 0\nSection\n  sectname __unwind_info\n   segname __TEXT\n      addr 0x00000000000ccd94\n      size 0x0000000000001600\n    offset 839060\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nLoad command 1\n      cmd LC_SEGMENT_64\n  cmdsize 232\n  segname __DATA_CONST\n   vmaddr 0x00000000000d0000\n   vmsize 0x0000000000004000\n  fileoff 851968\n filesize 16384\n  maxprot 0x00000003\n initprot 0x00000003\n   nsects 2\n    flags 0x10\nSection\n  sectname __const\n   segname __DATA_CONST\n      addr 0x00000000000d0000\n      size 0x0000000000000d58\n    offset 851968\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __got\n   segname __DATA_CONST\n      addr 0x00000000000d0d58\n      size 0x00000000000008f0\n    offset 855384\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000006\n reserved1 252 (index into indirect symbol table)\n reserved2 0\nLoad command 2\n      cmd LC_SEGMENT_64\n  cmdsize 392\n  segname __DATA\n   vmaddr 0x00000000000d4000\n   vmsize 0x0000000000004000\n  fileoff 868352\n filesize 16384\n  maxprot 0x00000003\n initprot 0x00000003\n   nsects 4\n    flags 0x0\nSection\n  sectname __data\n   segname __DATA\n      addr 0x00000000000d4000\n      size 0x00000000000000d0\n    offset 868352\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __thread_vars\n   segname __DATA\n      addr 0x00000000000d40d0\n      size 0x0000000000000048\n    offset 868560\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000013\n reserved1 0\n reserved2 0\nSection\n  sectname __thread_bss\n   segname __DATA\n      addr 0x00000000000d4118\n      size 0x0000000000000038\n    offset 0\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000012\n reserved1 0\n reserved2 0\nSection\n  sectname __bss\n   segname __DATA\n      addr 0x00000000000d4150\n      size 0x0000000000000008\n    offset 0\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000001\n reserved1 0\n reserved2 0\nLoad command 3\n      cmd LC_SEGMENT_64\n  cmdsize 72\n  segname __LINKEDIT\n   vmaddr 0x00000000000d8000\n   vmsize 0x0000000000040000\n  fileoff 884736\n filesize 246592\n  maxprot 0x00000001\n initprot 0x00000001\n   nsects 0\n    flags 0x0\nLoad command 4\n          cmd LC_ID_DYLIB\n      cmdsize 72\n         name @rpath/libkdm6_native_fp64_value.2.dylib (offset 24)\n   time stamp 1 Thu Jan  1 09:00:01 1970\n      current version 2.0.0\ncompatibility version 2.0.0\nLoad command 5\n      cmd LC_DYLD_CHAINED_FIXUPS\n  cmdsize 16\n  dataoff 884736\n datasize 14704\nLoad command 6\n      cmd LC_DYLD_EXPORTS_TRIE\n  cmdsize 16\n  dataoff 899440\n datasize 344\nLoad command 7\n     cmd LC_SYMTAB\n cmdsize 24\n  symoff 901112\n   nsyms 2138\n  stroff 937472\n strsize 173448\nLoad command 8\n            cmd LC_DYSYMTAB\n        cmdsize 80\n      ilocalsym 0\n      nlocalsym 1829\n     iextdefsym 1829\n     nextdefsym 16\n      iundefsym 1845\n      nundefsym 293\n         tocoff 0\n           ntoc 0\n      modtaboff 0\n        nmodtab 0\n   extrefsymoff 0\n    nextrefsyms 0\n indirectsymoff 935320\n  nindirectsyms 538\n      extreloff 0\n        nextrel 0\n      locreloff 0\n        nlocrel 0\nLoad command 9\n     cmd LC_UUID\n cmdsize 24\n    uuid B7BF53C5-D4EE-332A-AAB4-D840BA7779D3\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform 1\n    minos 26.7\n      sdk 27.0\n   ntools 1\n     tool 3\n  version 27037.1\nLoad command 11\n      cmd LC_SOURCE_VERSION\n  cmdsize 16\n  version 0.0\nLoad command 12\n          cmd LC_LOAD_DYLIB\n      cmdsize 48\n         name @rpath/libtorch.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 13\n          cmd LC_LOAD_DYLIB\n      cmdsize 56\n         name @rpath/libtorch_cpu.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 14\n          cmd LC_LOAD_DYLIB\n      cmdsize 48\n         name @rpath/libc10.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 15\n          cmd LC_LOAD_DYLIB\n      cmdsize 48\n         name /usr/lib/libc++.1.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 2200.27.0\ncompatibility version 1.0.0\nLoad command 16\n          cmd LC_LOAD_DYLIB\n      cmdsize 56\n         name /usr/lib/libSystem.B.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 1359.0.0\ncompatibility version 1.0.0\nLoad command 17\n          cmd LC_RPATH\n      cmdsize 80\n         path /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib (offset 12)\nLoad command 18\n      cmd LC_FUNCTION_STARTS\n  cmdsize 16\n  dataoff 899784\n datasize 1328\nLoad command 19\n      cmd LC_DATA_IN_CODE\n  cmdsize 16\n  dataoff 901112\n datasize 0\nLoad command 20\n      cmd LC_CODE_SIGNATURE\n  cmdsize 16\n  dataoff 1110928\n datasize 20400\n",
+  "fortran_kdm6_ffp_contract_off": true,
+  "fortran_sources": {
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/dyn_em/solve_em.F": {
+      "role": "saved original source review input",
+      "sha256": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/dyn_em/solve_em.f90": {
+      "role": "stale generated source rejected for S15 interface mismatch",
+      "sha256": "f2b6748ea4b2fc02881a085bd33f8d1fdcd3a2aac233d6ca7492fd25d0694a36"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/phys/module_mp_kdm6ad.F": {
+      "role": "saved original source review input",
+      "sha256": "8b47bc625c6b402626e888fe02e5e380fd8557cc582c5c8db4d3be54b97550fa"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/phys/module_mp_kdm6ad.f90": {
+      "role": "saved baseline compiled/preprocessed wrapper source",
+      "sha256": "457c9b904711397f4cbc01fbcd588c48a7739200ce50d00e30098209d220207a"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/fortran_overlay_receipt.json": {
+      "sha256": "51cf928ef86783929fd5d56c78cad2944bd29d8c824ddfff9777de5e46079527"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/overlay_source/dyn_em/solve_em.f90": {
+      "base_source_sha256": "2e82c883af596e50bb7daa879ff8597a8c572ce03d2b14d0859629201f61c0ea",
+      "compiled_source_sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79",
+      "sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/overlay_source/phys/module_mp_kdm6ad.f90": {
+      "base_source_sha256": "457c9b904711397f4cbc01fbcd588c48a7739200ce50d00e30098209d220207a",
+      "compiled_source_sha256": "fab26aa9f5fece94b2560c49991304b4b71134eb664b3e23a01725fed9535141",
+      "sha256": "fab26aa9f5fece94b2560c49991304b4b71134eb664b3e23a01725fed9535141"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/preprocessed/solve_em.f90": {
+      "role": "freshly preprocessed authoritative solve_em.F; rebuilt object matched executed V1 object",
+      "sha256": "2e82c883af596e50bb7daa879ff8597a8c572ce03d2b14d0859629201f61c0ea"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/source_snapshots/pre_owner_kbounds_v2/kdm6ad_moment_trace_v2.f90": {
+      "role": "preserved V2 trace module source",
+      "sha256": "b0e914a0d4777e8c463ee20ceceeb393e2a6a635d0551cb3fa785f9f562bb287"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/overlay_source/dyn_em/solve_em.f90": {
+      "role": "V4 compiled upstream-NC solve overlay",
+      "sha256": "a10a2aae453f1d0fcaa96d288d235db0087df3c6a28a4d4035e39f53790c8f71"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/solve_overlay_receipt.json": {
+      "role": "V4 solve overlay input/output receipt",
+      "sha256": "d41c0c763ba490ad4ca59bd55005e864a6462d18085dc9604f5808af700f8ede"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/source/native_upstream_nc_trace_overlay.py": {
+      "role": "byte-identical archived V4 solve overlay producer",
+      "sha256": "8fc86b9e447a7f144f9b54c24e2ca0554f5ac2bbc951c6f54f0d0134355e91f1"
+    },
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/source/solve_em_v3.f90": {
+      "role": "preserved V3 solve F90 input",
+      "sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79"
+    },
+    "<PR455_WORKTREE>/harness/native_moment_trace_overlay.py": {
+      "sha256": "6c84cd4135812a8634d73a09e2cf29a6d9500314523bdea2cdb2824825705d94"
+    },
+    "<PR455_WORKTREE>/harness/native_trace/kdm6ad_moment_trace_v2.f90": {
+      "role": "V3 corrected trace module source",
+      "sha256": "7c17514726e733901645d5a79fd4727fea7721f8d1033a81b3ce60a0b342a224"
+    },
+    "<ISOLATED_WORKTREE>/harness/native_upstream_nc_trace_overlay.py": {
+      "role": "V4 solve overlay producer",
+      "sha256": "8fc86b9e447a7f144f9b54c24e2ca0554f5ac2bbc951c6f54f0d0134355e91f1"
+    }
+  },
+  "host_kdm6_undefined_symbols": [
+    "_kdm6_get_abi_version_c",
+    "_kdm6_handle_close_c",
+    "_kdm6_handle_jvp_c",
+    "_kdm6_handle_vjp_c",
+    "_kdm6_moment_trace_context_c",
+    "_kdm6_native_fp64_value_c",
+    "_kdm6_step_ad_c",
+    "_kdm6_step_v2_args_size_c",
+    "_kdm6_step_v2_c"
+  ],
+  "host_load_commands": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/wrf_mp137_upstream_nc_v4.exe:\n\t/opt/homebrew/opt/netcdf-fortran/lib/libnetcdff.7.dylib (compatibility version 7.0.0, current version 7.1.0)\n\t/opt/homebrew/opt/netcdf/lib/libnetcdf.22.dylib (compatibility version 22.0.0, current version 22.0.0)\n\t<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib (compatibility version 2.0.0, current version 2.0.0)\n\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempif08.40.dylib (compatibility version 81.0.0, current version 81.3.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempi_ignore_tkr.40.dylib (compatibility version 81.0.0, current version 81.1.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_mpifh.40.dylib (compatibility version 81.0.0, current version 81.1.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi.40.dylib (compatibility version 81.0.0, current version 81.7.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (compatibility version 6.0.0, current version 6.0.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)\n",
+  "host_rpaths": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/wrf_mp137_upstream_nc_v4.exe:\nLoad command 0\n      cmd LC_SEGMENT_64\n  cmdsize 72\n  segname __PAGEZERO\n   vmaddr 0x0000000000000000\n   vmsize 0x0000000100000000\n  fileoff 0\n filesize 0\n  maxprot 0x00000000\n initprot 0x00000000\n   nsects 0\n    flags 0x0\nLoad command 1\n      cmd LC_SEGMENT_64\n  cmdsize 552\n  segname __TEXT\n   vmaddr 0x0000000100000000\n   vmsize 0x0000000002e74000\n  fileoff 0\n filesize 48709632\n  maxprot 0x00000005\n initprot 0x00000005\n   nsects 6\n    flags 0x0\nSection\n  sectname __text\n   segname __TEXT\n      addr 0x0000000100003f60\n      size 0x0000000002bd8890\n    offset 16224\n     align 2^5 (32)\n    reloff 0\n    nreloc 0\n     flags 0x80000400\n reserved1 0\n reserved2 0\nSection\n  sectname __text_startup\n   segname __TEXT\n      addr 0x0000000102bdc800\n      size 0x0000000000000054\n    offset 45991936\n     align 2^5 (32)\n    reloff 0\n    nreloc 0\n     flags 0x80000400\n reserved1 0\n reserved2 0\nSection\n  sectname __stubs\n   segname __TEXT\n      addr 0x0000000102bdc854\n      size 0x0000000000000bdc\n    offset 45992020\n     align 2^2 (4)\n    reloff 0\n    nreloc 0\n     flags 0x80000408\n reserved1 0 (index into indirect symbol table)\n reserved2 12 (size of stubs)\nSection\n  sectname __const\n   segname __TEXT\n      addr 0x0000000102bdd430\n      size 0x00000000001886c8\n    offset 45995056\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __cstring\n   segname __TEXT\n      addr 0x0000000102d65af8\n      size 0x000000000005d3e9\n    offset 47602424\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000002\n reserved1 0\n reserved2 0\nSection\n  sectname __eh_frame\n   segname __TEXT\n      addr 0x0000000102dc2ee8\n      size 0x00000000000ae238\n    offset 47984360\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x6800000b\n reserved1 0\n reserved2 0\nLoad command 2\n      cmd LC_SEGMENT_64\n  cmdsize 232\n  segname __DATA_CONST\n   vmaddr 0x0000000102e74000\n   vmsize 0x0000000000008000\n  fileoff 48709632\n filesize 32768\n  maxprot 0x00000003\n initprot 0x00000003\n   nsects 2\n    flags 0x10\nSection\n  sectname __const\n   segname __DATA_CONST\n      addr 0x0000000102e74000\n      size 0x0000000000004648\n    offset 48709632\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __got\n   segname __DATA_CONST\n      addr 0x0000000102e78648\n      size 0x0000000000000830\n    offset 48727624\n     align 2^3 (8)\n    reloff 0\n    nreloc 0\n     flags 0x00000006\n reserved1 253 (index into indirect symbol table)\n reserved2 0\nLoad command 3\n      cmd LC_SEGMENT_64\n  cmdsize 312\n  segname __DATA\n   vmaddr 0x0000000102e7c000\n   vmsize 0x000000002d524000\n  fileoff 48742400\n filesize 360448\n  maxprot 0x00000003\n initprot 0x00000003\n   nsects 3\n    flags 0x0\nSection\n  sectname __data\n   segname __DATA\n      addr 0x0000000102e7c000\n      size 0x0000000000054560\n    offset 48742400\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000000\n reserved1 0\n reserved2 0\nSection\n  sectname __common\n   segname __DATA\n      addr 0x0000000102ed0560\n      size 0x000000002a4d8670\n    offset 0\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000001\n reserved1 0\n reserved2 0\nSection\n  sectname __bss\n   segname __DATA\n      addr 0x000000012d3a8bd0\n      size 0x0000000002ff5814\n    offset 0\n     align 2^4 (16)\n    reloff 0\n    nreloc 0\n     flags 0x00000001\n reserved1 0\n reserved2 0\nLoad command 4\n      cmd LC_SEGMENT_64\n  cmdsize 72\n  segname __LINKEDIT\n   vmaddr 0x00000001303a0000\n   vmsize 0x000000000012c000\n  fileoff 49102848\n filesize 1225280\n  maxprot 0x00000001\n initprot 0x00000001\n   nsects 0\n    flags 0x0\nLoad command 5\n      cmd LC_DYLD_CHAINED_FIXUPS\n  cmdsize 16\n  dataoff 49102848\n datasize 5120\nLoad command 6\n      cmd LC_DYLD_EXPORTS_TRIE\n  cmdsize 16\n  dataoff 49107968\n datasize 265720\nLoad command 7\n     cmd LC_SYMTAB\n cmdsize 24\n  symoff 49386240\n   nsyms 17831\n  stroff 49673600\n strsize 538160\nLoad command 8\n            cmd LC_DYSYMTAB\n        cmdsize 80\n      ilocalsym 0\n      nlocalsym 4218\n     iextdefsym 4218\n     nextdefsym 13351\n      iundefsym 17569\n      nundefsym 262\n         tocoff 0\n           ntoc 0\n      modtaboff 0\n        nmodtab 0\n   extrefsymoff 0\n    nextrefsyms 0\n indirectsymoff 49671536\n  nindirectsyms 515\n      extreloff 0\n        nextrel 0\n      locreloff 0\n        nlocrel 0\nLoad command 9\n          cmd LC_LOAD_DYLINKER\n      cmdsize 32\n         name /usr/lib/dyld (offset 12)\nLoad command 10\n     cmd LC_UUID\n cmdsize 24\n    uuid AF585DBC-9F9F-39F9-BF02-4CD4159D057D\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform 1\n    minos 26.7\n      sdk 26.7\n   ntools 1\n     tool 3\n  version 27037.1\nLoad command 12\n      cmd LC_SOURCE_VERSION\n  cmdsize 16\n  version 0.0\nLoad command 13\n       cmd LC_MAIN\n   cmdsize 24\n  entryoff 45991936\n stacksize 0\nLoad command 14\n          cmd LC_LOAD_DYLIB\n      cmdsize 80\n         name /opt/homebrew/opt/netcdf-fortran/lib/libnetcdff.7.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 7.1.0\ncompatibility version 7.0.0\nLoad command 15\n          cmd LC_LOAD_DYLIB\n      cmdsize 72\n         name /opt/homebrew/opt/netcdf/lib/libnetcdf.22.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 22.0.0\ncompatibility version 22.0.0\nLoad command 16\n          cmd LC_LOAD_DYLIB\n      cmdsize 160\n         name <LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 2.0.0\ncompatibility version 2.0.0\nLoad command 17\n          cmd LC_LOAD_DYLIB\n      cmdsize 48\n         name @rpath/libtorch.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 18\n          cmd LC_LOAD_DYLIB\n      cmdsize 56\n         name @rpath/libtorch_cpu.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 19\n          cmd LC_LOAD_DYLIB\n      cmdsize 48\n         name @rpath/libc10.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 0.0.0\ncompatibility version 0.0.0\nLoad command 20\n          cmd LC_LOAD_DYLIB\n      cmdsize 88\n         name /opt/homebrew/opt/open-mpi/lib/libmpi_usempif08.40.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 81.3.0\ncompatibility version 81.0.0\nLoad command 21\n          cmd LC_LOAD_DYLIB\n      cmdsize 96\n         name /opt/homebrew/opt/open-mpi/lib/libmpi_usempi_ignore_tkr.40.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 81.1.0\ncompatibility version 81.0.0\nLoad command 22\n          cmd LC_LOAD_DYLIB\n      cmdsize 80\n         name /opt/homebrew/opt/open-mpi/lib/libmpi_mpifh.40.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 81.1.0\ncompatibility version 81.0.0\nLoad command 23\n          cmd LC_LOAD_DYLIB\n      cmdsize 72\n         name /opt/homebrew/opt/open-mpi/lib/libmpi.40.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 81.7.0\ncompatibility version 81.0.0\nLoad command 24\n          cmd LC_LOAD_DYLIB\n      cmdsize 88\n         name /opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 6.0.0\ncompatibility version 6.0.0\nLoad command 25\n          cmd LC_LOAD_DYLIB\n      cmdsize 88\n         name /opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 1.0.0\ncompatibility version 1.0.0\nLoad command 26\n          cmd LC_LOAD_DYLIB\n      cmdsize 56\n         name /usr/lib/libSystem.B.dylib (offset 24)\n   time stamp 2 Thu Jan  1 09:00:02 1970\n      current version 1359.0.0\ncompatibility version 1.0.0\nLoad command 27\n          cmd LC_RPATH\n      cmdsize 80\n         path /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib (offset 12)\nLoad command 28\n          cmd LC_RPATH\n      cmdsize 32\n         path @loader_path (offset 12)\nLoad command 29\n          cmd LC_RPATH\n      cmdsize 96\n         path /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin24/15 (offset 12)\nLoad command 30\n          cmd LC_RPATH\n      cmdsize 64\n         path /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc (offset 12)\nLoad command 31\n          cmd LC_RPATH\n      cmdsize 64\n         path /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current (offset 12)\nLoad command 32\n      cmd LC_FUNCTION_STARTS\n  cmdsize 16\n  dataoff 49373688\n datasize 12552\nLoad command 33\n      cmd LC_DATA_IN_CODE\n  cmdsize 16\n  dataoff 49386240\n datasize 0\nLoad command 34\n      cmd LC_CODE_SIGNATURE\n  cmdsize 16\n  dataoff 50211760\n datasize 116368\n",
+  "host_steps": 0,
+  "link_command": [
+    "mpif90",
+    "-o",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/wrf_mp137_upstream_nc_v4.exe",
+    "-mmacosx-version-min=26.7",
+    "-Wl,-headerpad_max_install_names",
+    "-O2",
+    "-ftree-vectorize",
+    "-funroll-loops",
+    "-w",
+    "-ffree-form",
+    "-ffree-line-length-none",
+    "-fconvert=big-endian",
+    "-frecord-marker=4",
+    "-fallow-argument-mismatch",
+    "-fallow-invalid-boz",
+    "-Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+    "wrf.o",
+    "wrf_kdm6ad_exit.o",
+    "../main/module_wrf_top.o",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/libwrflib.native_upstream_nc_v4.a",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/fftpack/fftpack5/libfftpack.a",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/io_grib1/libio_grib1.a",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/io_grib_share/libio_grib_share.a",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/io_int/libwrfio_int.a",
+    "-L<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/esmf_time_f90",
+    "-lesmf_time",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/RSL_LITE/librsl_lite.a",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/frame/module_internal_header_util.o",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/frame/pack_utils.o",
+    "-L<LOCAL_KDM6AD_ROOT>/host/research_evidence/mp137_two_step_20261020/build/external/io_netcdf",
+    "-lwrfio_nf",
+    "-L/opt/homebrew/lib",
+    "-lnetcdff",
+    "-lnetcdf",
+    "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/lib/libkdm6_c.2.0.0.dylib",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib",
+    "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib"
+  ],
+  "link_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "model_run_authorized": false,
+  "module_revision": {
+    "compile_command": [
+      "/opt/homebrew/bin/mpif90",
+      "-o",
+      "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/objects/kdm6ad_moment_trace_v2.o",
+      "-c",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-w",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz",
+      "-ffp-contract=off",
+      "-J",
+      "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/fortran_mod",
+      "<PR455_WORKTREE>/harness/native_trace/kdm6ad_moment_trace_v2.f90"
+    ],
+    "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "object_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/objects/kdm6ad_moment_trace_v2.o",
+    "object_sha256": "1e9f02269a3a9a0a8e04ba5727f6170b025d8c491d24ce2e195363b14e2ff994",
+    "source_path": "<PR455_WORKTREE>/harness/native_trace/kdm6ad_moment_trace_v2.f90",
+    "source_sha256": "7c17514726e733901645d5a79fd4727fea7721f8d1033a81b3ce60a0b342a224",
+    "superseded_module_source_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/source_snapshots/pre_owner_kbounds_v2/kdm6ad_moment_trace_v2.f90",
+    "superseded_module_source_sha256": "b0e914a0d4777e8c463ee20ceceeb393e2a6a635d0551cb3fa785f9f562bb287"
+  },
+  "private_archive_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/libwrflib.native_upstream_nc_v4.a",
+  "private_archive_sha256": "358b6d18992bc8522f84bcfe09d2a0695b46d583979102c5e70707911c0f47d6",
+  "private_executable": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/execution/wrf_mp137_upstream_nc_v4.exe",
+  "private_executable_sha256": "59512e7f3b2e6dfc3887e9ce7497fabafd64d87599d136e5cbd2c6d92b8326a6",
+  "reconstructed_v1_solve_source_sha256": "2e82c883af596e50bb7daa879ff8597a8c572ce03d2b14d0859629201f61c0ea",
+  "revision": "V4_SOLVE_ONLY_UPSTREAM_NC",
+  "schema": "kdm6.native_moment_trace_v2_private_host_build.v1",
+  "sdkroot": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+  "solve_em_original_compile_flags_preserved": true,
+  "solve_source_reconstruction_audit": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v2_attempt4_preprocess_object_metadata_mismatch/source_reconstruction_comparison.json",
+  "solve_source_reconstruction_audit_sha256": "a60c304da40bc168963cccf08513d1cf305d38b1cef18436cf0f191b8caee562",
+  "source_commit": null,
+  "status": "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS",
+  "supersedes_build_receipt": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_qc_nc_trace_20261026/build/host_v3/private_host_build_receipt.json",
+  "supersedes_build_receipt_sha256": "87830262677455577b5cd66b534a2ae7c38c2909ec0c0abb035101dd7698c9c1",
+  "torch_payload": {
+    "libc10.dylib": {
+      "path": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+      "sha256": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b"
+    },
+    "libomp.dylib": {
+      "path": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libomp.dylib",
+      "sha256": "6256bee09e93c28d71c65711cc69224d69994c6965648b628b70a22772fe98d4"
+    },
+    "libtorch.dylib": {
+      "path": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+      "sha256": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910"
+    },
+    "libtorch_cpu.dylib": {
+      "path": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib",
+      "sha256": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987"
+    }
+  },
+  "upstream_nc_trace": {
+    "base_f90_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/source/solve_em_v3.f90",
+    "base_f90_sha256": "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79",
+    "environment_variable": "KDM6AD_UPSTREAM_NC_TRACE_DIR",
+    "overlay_f90_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/overlay_source/dyn_em/solve_em.f90",
+    "overlay_f90_sha256": "a10a2aae453f1d0fcaa96d288d235db0087df3c6a28a4d4035e39f53790c8f71",
+    "overlay_report_path": "<LOCAL_KDM6AD_ROOT>/host/research_evidence/native_upstream_nc_trace_20261026/build/host_v4/solve_overlay_receipt.json",
+    "overlay_report_sha256": "d41c0c763ba490ad4ca59bd55005e864a6462d18085dc9604f5808af700f8ede",
+    "overlay_script_path": "<ISOLATED_WORKTREE>/harness/native_upstream_nc_trace_overlay.py",
+    "overlay_script_sha256": "8fc86b9e447a7f144f9b54c24e2ca0554f5ac2bbc951c6f54f0d0134355e91f1",
+    "trace_off_runs_planned": 0,
+    "trace_on_runs_planned": 2
+  },
+  "public_redaction": {
+    "original_private_receipt_sha256": "bd64ce5b0c209df1f293d9f6528e72f323edd2b51de5c3a40ea3f3cd4bdfa1d2",
+    "paths_only": "Local absolute workspace path prefixes replaced; all recorded source/object/executable hashes retained.",
+    "model_calls_added_by_redaction": 0
+  }
+}

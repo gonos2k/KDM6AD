@@ -1,0 +1,13 @@
+Traversal: BFS depth=2 | Start: ['Source-order binary32 replay places opposite RK3 QNC signs at the main witness'] | 6 nodes found
+
+NODE Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word [src=harness/evidence/native_upstream_nc_2026-10-26/input_manifest.json loc=/targets; /runs/control; /runs/alpha025 community=1617]
+NODE Full-domain upstream QNC RK trace report for control and alpha0.25 [src=docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md loc=Executed comparison; First signed change; Interpretation and limits community=1617]
+NODE Wiki synthesis of the upstream QNC RK trace and its bounded interpretation [src=wiki/sources/native-upstream-nc-rk-2026-10-26.md loc=Full page community=1617]
+NODE Four actual same-origin host steps in two trace-off/on pairs with exact checkpoint noninterference [src=harness/evidence/native_upstream_nc_2026-10-26/receipts/execution_summary.json loc=/execution_summary/runs; /execution_summary/pairs community=1617]
+NODE Source-order binary32 replay places opposite RK3 QNC signs at the main witness [src=harness/evidence/native_upstream_nc_2026-10-26/analysis.json loc=/runs/alpha025/analysis/targets/target_221_63_6; /runs/control/analysis/targets/target_221_63_6 community=1617]
+NODE Second witness starts at READY with zero QNC and positive QC, so it is an inherited mismatch [src=harness/evidence/native_upstream_nc_2026-10-26/analysis.json loc=/runs/alpha025/analysis/targets/target_91_94_4; /runs/control/analysis/targets/target_91_94_4 community=1617]
+EDGE Source-order binary32 replay places opposite RK3 QNC signs at the main witness --shares_data_with [EXTRACTED]--> Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word
+EDGE Source-order binary32 replay places opposite RK3 QNC signs at the main witness --conceptually_related_to [EXTRACTED]--> Second witness starts at READY with zero QNC and positive QC, so it is an inherited mismatch
+EDGE Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word --references [EXTRACTED]--> Full-domain upstream QNC RK trace report for control and alpha0.25
+EDGE Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word --references [EXTRACTED]--> Wiki synthesis of the upstream QNC RK trace and its bounded interpretation
+EDGE Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word --shares_data_with [EXTRACTED]--> Four actual same-origin host steps in two trace-off/on pairs with exact checkpoint noninterference

@@ -1,0 +1,314 @@
+"""Prepare a V4 private WRF relink with a solve_em-only upstream NC trace."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+
+ROOT = Path("/Users/yhlee/KDM6AD-k")
+EVIDENCE = ROOT / "host/research_evidence/native_upstream_nc_trace_20261026"
+BUILD = EVIDENCE / "build"
+V3_DIR = ROOT / "host/research_evidence/native_qc_nc_trace_20261026/build/host_v3"
+V3_RECEIPT = V3_DIR / "private_host_build_receipt.json"
+V3_ARCHIVE = V3_DIR / "libwrflib.native_moment_trace_v3.a"
+V3_EXECUTABLE = V3_DIR / "execution/wrf_mp137_native_moment_trace_v3.exe"
+V2_MODULE_DIR = ROOT / "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/fortran_mod"
+V3_SOLVE_SOURCE = ROOT / "host/research_evidence/native_qc_nc_trace_20261026/build/host_v2/overlay_source/dyn_em/solve_em.f90"
+V3_SOLVE_SOURCE_SHA256 = "17de10c1e376eca42777853bc9cb8a9d5d6d12b474f45c56a50e6800e790af79"
+V3_SOLVE_OBJECT_SHA256 = "8a5f956e7434cbec32dc787cd865577a3145e528e4e35d4678b6c00c32541066"
+SOURCE_DYN = ROOT / "host/research_evidence/mp137_two_step_20261020/build/dyn_em"
+WRF_MAIN = ROOT / "host/research_evidence/mp137_two_step_20261020/build/main"
+CAPI_RECEIPT = ROOT / "host/research_evidence/native_qc_nc_trace_20261026/build/capi_v2/build_receipt.json"
+V2_BUILDER = ROOT / "host/research_evidence/native_qc_nc_trace_20261026/build_private_host_v2.py"
+TORCH = Path("/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _load_helpers():
+    spec = importlib.util.spec_from_file_location("private_host_v2_build_helpers", V2_BUILDER)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load the preserved APFS/archive helpers")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _rewrite_solve_command(command: list[str], old_source: Path, new_source: Path,
+                           old_module_dir: Path, new_module_dir: Path,
+                           output: Path) -> list[str]:
+    rewritten = list(command)
+    for index, token in enumerate(rewritten):
+        if token == "-o":
+            rewritten[index + 1] = str(output)
+        elif token == "-J" and rewritten[index + 1] == str(old_module_dir):
+            rewritten[index + 1] = str(new_module_dir)
+        elif token == "-I" and rewritten[index + 1] == str(old_module_dir):
+            rewritten[index + 1] = str(new_module_dir)
+        elif token == str(old_source):
+            rewritten[index] = str(new_source)
+    if str(output) not in rewritten or str(new_source) not in rewritten or str(new_module_dir) not in rewritten:
+        raise ValueError("V3 solve compile command was not fully redirected into V4")
+    return rewritten
+
+
+def _resolve_overlay(source: Path, base_source_sha: str, output_source_sha: str,
+                     overlay_script: Path, overlay_script_sha: str) -> dict:
+    if sha256_file(V3_SOLVE_SOURCE) != V3_SOLVE_SOURCE_SHA256:
+        raise ValueError("preserved V3 solve overlay source changed")
+    if sha256_file(source) != output_source_sha:
+        raise ValueError("upstream NC solve overlay source differs from its pin")
+    if sha256_file(overlay_script) != overlay_script_sha:
+        raise ValueError("upstream NC solve overlay script differs from its pin")
+    if base_source_sha != V3_SOLVE_SOURCE_SHA256:
+        raise ValueError("upstream NC overlay does not declare the preserved V3 source as its base")
+    return {
+        "base_f90_path": str(V3_SOLVE_SOURCE),
+        "base_f90_sha256": base_source_sha,
+        "overlay_f90_path": str(source),
+        "overlay_f90_sha256": output_source_sha,
+        "overlay_script_path": str(overlay_script),
+        "overlay_script_sha256": overlay_script_sha,
+    }
+
+
+def build(output: Path, overlay_script: Path,
+          output_source_sha: str, overlay_script_sha: str) -> dict:
+    h = _load_helpers()
+    clonefile, run, archive_members = h.clonefile, h.run, h.archive_members
+    output = output.resolve()
+    overlay_script = overlay_script.resolve()
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"V4 build output must be new: {output}")
+    for path in (V3_RECEIPT, V3_ARCHIVE, V3_EXECUTABLE, V3_SOLVE_SOURCE,
+                 overlay_script, CAPI_RECEIPT):
+        if not path.is_file():
+            raise FileNotFoundError(path)
+    if sha256_file(V3_SOLVE_SOURCE) != V3_SOLVE_SOURCE_SHA256:
+        raise ValueError("V3 solve F90 source pin changed")
+    if sha256_file(overlay_script) != overlay_script_sha:
+        raise ValueError("V4 solve overlay script differs from its pin")
+    trace_environment = "KDM6AD_UPSTREAM_NC_TRACE_DIR"
+
+    v3 = json.loads(V3_RECEIPT.read_text())
+    capi = json.loads(CAPI_RECEIPT.read_text())
+    if (sha256_file(V3_EXECUTABLE) != v3["private_executable_sha256"]
+            or sha256_file(V3_ARCHIVE) != v3["private_archive_sha256"]):
+        raise ValueError("preserved V3 host artifacts differ from their receipt")
+    if capi["dso_sha256"] != v3["capi_dso_source_sha256"]:
+        raise ValueError("V3 CAPI source DSO no longer matches its receipt")
+
+    v3_members = archive_members(V3_ARCHIVE)
+    expected_v3 = {(item["name"], item["occurrence"]): item["sha256"]
+                   for item in v3["archive_member_hashes"]}
+    if v3_members != expected_v3:
+        raise ValueError("V3 archive member inventory differs from its receipt")
+    solve_key = ("solve_em.o", 0)
+    if v3_members.get(solve_key) != V3_SOLVE_OBJECT_SHA256:
+        raise ValueError("V3 solve archive member differs from the pinned host object")
+
+    output.mkdir(parents=True)
+    source_dir = output / "source"
+    module_dir = output / "fortran_mod"
+    objects = output / "objects"
+    stage = output / "archive_member"
+    execution = output / "execution"
+    runtime = execution / "lib"
+    for directory in (source_dir, module_dir, objects, stage, runtime):
+        directory.mkdir(parents=True)
+    base_source_copy = source_dir / "solve_em_v3.f90"
+    clonefile(V3_SOLVE_SOURCE, base_source_copy)
+    staged_solve = output / "overlay_source/dyn_em/solve_em.f90"
+    staged_solve.parent.mkdir(parents=True)
+    overlay_report_path = output / "solve_overlay_receipt.json"
+    overlay_stdout = run([sys.executable, str(overlay_script), "--source", str(base_source_copy),
+                          "--output", str(staged_solve), "--apply"],
+                         log=output / "apply_solve_overlay.log")
+    overlay_report = json.loads(overlay_stdout)
+    overlay_file = overlay_report.get("file", {})
+    if (overlay_report.get("status") != "applied"
+            or overlay_file.get("source_sha256") != V3_SOLVE_SOURCE_SHA256
+            or overlay_file.get("overlay_sha256") != output_source_sha
+            or sha256_file(staged_solve) != output_source_sha):
+        raise RuntimeError("V4 solve overlay input/output hashes differ from the reviewed pins")
+    overlay_report_path.write_text(json.dumps(overlay_report, sort_keys=True, indent=2) + "\n")
+    overlay = {
+        "base_f90_path": str(base_source_copy),
+        "base_f90_sha256": V3_SOLVE_SOURCE_SHA256,
+        "overlay_f90_path": str(staged_solve),
+        "overlay_f90_sha256": output_source_sha,
+        "overlay_script_path": str(overlay_script),
+        "overlay_script_sha256": overlay_script_sha,
+        "overlay_report_path": str(overlay_report_path),
+        "overlay_report_sha256": sha256_file(overlay_report_path),
+    }
+    overlay_script_copy = source_dir / overlay_script.name
+    clonefile(overlay_script, overlay_script_copy)
+    # Reuse the exact module interface from V3; only solve_em is rebuilt.
+    v3_module = V3_DIR / "fortran_mod/kdm6ad_moment_trace_v2.mod"
+    if not v3_module.is_file():
+        raise FileNotFoundError(v3_module)
+    clonefile(v3_module, module_dir / v3_module.name)
+    old_solve_command = v3["compiled_fortran_objects"]["solve_em.o"]["command"]
+    # The reused historical solve command references V2's module output; keep
+    # every original flag/path and redirect that search directory to V4.
+    v3_module_dir = V2_MODULE_DIR
+    solve_object = objects / "solve_em.o"
+    compile_command = _rewrite_solve_command(old_solve_command, V3_SOLVE_SOURCE,
+                                             staged_solve, v3_module_dir,
+                                             module_dir, solve_object)
+    run(compile_command, cwd=SOURCE_DYN, log=output / "compile_solve_em.log")
+    if sha256_file(solve_object) == v3_members[solve_key]:
+        raise ValueError("upstream trace overlay did not change the V3 solve object")
+
+    archive = output / "libwrflib.native_upstream_nc_v4.a"
+    clonefile(V3_ARCHIVE, archive)
+    staged_object = stage / "solve_em.o"
+    clonefile(solve_object, staged_object)
+    run(["/usr/bin/ar", "-r", str(archive), str(staged_object)], cwd=stage,
+        log=output / "replace_solve_archive_member.log")
+    run(["/usr/bin/ranlib", "-c", str(archive)], log=output / "ranlib.log")
+    v4_members = archive_members(archive)
+    if set(v4_members) != set(v3_members):
+        raise RuntimeError("V4 changed archive member inventory")
+    changed = sorted(name for key, name in ((key, key[0]) for key in v3_members)
+                     if v3_members[key] != v4_members[key])
+    if changed != ["solve_em.o"]:
+        raise RuntimeError(f"V4 archive delta relative to V3 is not solve-only: {changed}")
+    for name in ("module_mp_kdm6ad.o", "kdm6ad_moment_trace_v2.o", "kdm6_iso_c.o",
+                 "module_big_step_utilities_em.o"):
+        key = (name, 0)
+        if v4_members[key] != v3_members[key]:
+            raise RuntimeError(f"V4 unexpectedly changed preserved object {name}")
+
+    v3_dso = Path(v3["capi_dso_runtime_copy"])
+    dso = runtime / "libkdm6_c.2.0.0.dylib"
+    clonefile(v3_dso, dso)
+    if sha256_file(dso) != v3["capi_dso_runtime_copy_sha256"]:
+        raise RuntimeError("V4 DSO copy differs from V3 signed runtime DSO")
+    final = execution / "wrf_mp137_upstream_nc_v4.exe"
+    link_command = list(v3["link_command"])
+    for index, token in enumerate(link_command):
+        if token == "-o":
+            link_command[index + 1] = str(final)
+        elif token == str(V3_ARCHIVE):
+            link_command[index] = str(archive)
+        elif token == str(v3_dso):
+            link_command[index] = str(dso)
+    if not all(token in link_command for token in (str(final), str(archive), str(dso))):
+        raise ValueError("V4 link command did not redirect executable/archive/DSO")
+    env = os.environ.copy()
+    env["SDKROOT"] = v3["sdkroot"]
+    env["MACOSX_DEPLOYMENT_TARGET"] = "26.7"
+    run(link_command, cwd=WRF_MAIN, env=env, log=output / "link_private_wrf.log")
+    run(["install_name_tool", "-change", "@rpath/libkdm6_native_fp64_value.2.dylib",
+         str(dso), str(final)])
+    run(["codesign", "--force", "--sign", "-", str(final)])
+    run(["codesign", "--verify", "--strict", str(final)])
+    run(["codesign", "--verify", "--strict", str(dso)])
+
+    undefined = run(["nm", "-u", str(final)]).splitlines()
+    if not any(item.strip().endswith("_kdm6_native_fp64_value_c") for item in undefined):
+        raise RuntimeError("V4 host lost the private FP64 bridge symbol")
+    if not any(item.strip().endswith("_kdm6_moment_trace_context_c") for item in undefined):
+        raise RuntimeError("V4 host lost the private trace context symbol")
+    linked = run(["otool", "-L", str(final)])
+    rpaths = run(["otool", "-l", str(final)])
+    dso_linked = run(["otool", "-L", str(dso)])
+    dso_rpaths = run(["otool", "-l", str(dso)])
+    if str(dso) not in linked or str(TORCH) not in rpaths or str(TORCH) not in dso_rpaths:
+        raise RuntimeError("V4 host lost private DSO/Torch runtime relocations")
+    for name, info in v3["torch_payload"].items():
+        payload = Path(info["path"])
+        if not payload.is_file() or sha256_file(payload) != info["sha256"]:
+            raise RuntimeError(f"V4 pinned Torch payload changed: {name}")
+
+    receipt = dict(v3)
+    compiled = dict(v3["compiled_fortran_objects"])
+    compiled["solve_em.o"] = {
+        "path": str(solve_object), "sha256": sha256_file(solve_object),
+        "command": compile_command, "log_sha256": sha256_file(output / "compile_solve_em.log"),
+    }
+    sources = dict(v3["fortran_sources"])
+    sources[str(base_source_copy)] = {"sha256": sha256_file(base_source_copy), "role": "preserved V3 solve F90 input"}
+    sources[str(staged_solve)] = {"sha256": sha256_file(staged_solve), "role": "V4 compiled upstream-NC solve overlay"}
+    sources[str(overlay_script)] = {"sha256": sha256_file(overlay_script), "role": "V4 solve overlay producer"}
+    sources[str(overlay_script_copy)] = {"sha256": sha256_file(overlay_script_copy), "role": "byte-identical archived V4 solve overlay producer"}
+    sources[str(overlay_report_path)] = {"sha256": sha256_file(overlay_report_path), "role": "V4 solve overlay input/output receipt"}
+    receipt.update({
+        "revision": "V4_SOLVE_ONLY_UPSTREAM_NC",
+        "status": "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "supersedes_build_receipt": str(V3_RECEIPT),
+        "supersedes_build_receipt_sha256": sha256_file(V3_RECEIPT),
+        "private_archive_path": str(archive),
+        "private_archive_sha256": sha256_file(archive),
+        "archive_member_inventory": len(v4_members),
+        "archive_member_hashes": [{"name": name, "occurrence": occurrence, "sha256": digest}
+                                  for (name, occurrence), digest in sorted(v4_members.items())],
+        "archive_changed_members": changed,
+        "capi_dso_runtime_copy": str(dso),
+        "capi_dso_runtime_copy_sha256": sha256_file(dso),
+        "private_executable": str(final),
+        "private_executable_sha256": sha256_file(final),
+        "link_command": link_command,
+        "link_log_sha256": sha256_file(output / "link_private_wrf.log"),
+        "host_load_commands": linked,
+        "host_rpaths": rpaths,
+        "dso_load_commands": dso_linked,
+        "dso_rpaths": dso_rpaths,
+        "host_kdm6_undefined_symbols": [item.strip() for item in undefined if "kdm6" in item],
+        "compiled_fortran_objects": compiled,
+        "fortran_sources": sources,
+        "solve_em_original_compile_flags_preserved": True,
+        "upstream_nc_trace": {
+            **overlay,
+            "environment_variable": trace_environment,
+            "trace_on_runs_planned": 2,
+            "trace_off_runs_planned": 0,
+        },
+        "build_revision_host_steps": 0,
+        "build_revision_KDM6_calls": 0,
+        "build_revision_RTtov_calls": 0,
+        "host_steps": 0,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+        "model_run_authorized": False,
+    })
+    receipt_path = output / "private_host_build_receipt.json"
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+    return receipt
+
+
+def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=BUILD / "host_v4")
+    parser.add_argument("--overlay-script", type=Path, required=True)
+    parser.add_argument("--solve-output-sha256", required=True)
+    parser.add_argument("--overlay-script-sha256", required=True)
+    args = parser.parse_args()
+    receipt = build(args.output, args.overlay_script, args.solve_output_sha256,
+                    args.overlay_script_sha256)
+    print(json.dumps({"status": receipt["status"],
+                      "executable": receipt["private_executable"],
+                      "executable_sha256": receipt["private_executable_sha256"],
+                      "archive_changed_members": receipt["archive_changed_members"],
+                      "host_steps": 0, "KDM6_calls": 0, "RTTOV_calls": 0}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

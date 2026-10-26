@@ -10,6 +10,10 @@ date_modified: 2026-10-26
 - Build receipts pin source/object/executable identity but omit builder-script hashes; a post-build source inventory records available script bytes without claiming execution-time attestation. No new source physics or output tolerances changed.
 
 
+## [2026-10-26] Native upstream QNC RK trace
+- Added [[sources/native-upstream-nc-rk-2026-10-26]] and the current report: four actual 40→60 s full-domain steps compare control/alpha0.25 with trace-off/on pairs. The source-order binary32 replay locates opposite RK3 signs at `(221,63,6)`; it does not certify a named cause, raw NC units, candidate admissibility or cost. Four host steps, eight KDM entries, zero RTTOV/optimizer calls, and no accepted update.
+- The selected T/Q hook was in a private compiled snapshot, not canonical active host source. No floor or observation-mask change was introduced.
+
 ## [2026-10-26] FP environment and saved Q65 review
 - Added [[sources/fp-environment-review-2026-10-26]]: FP roundoff qualification now requires measured FE/FPCR/FZ evidence; block40 and nonsquare B8 saved captures pass, while block34 remains unconfirmed. Original exception-status preservation is not claimed.
 - Replayed the saved original requested-direction block22 Q65 coordinate: epsilon 1e-6 cannot meet the frozen tolerance even at the nearest representable endpoint; 1e-3 and 1e-2 pass, with 1e-4 and 1e-5 failing. This is not effective-direction C4 or joint33 evidence. No model/RTTOV calls.

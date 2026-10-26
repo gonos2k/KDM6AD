@@ -1,0 +1,23 @@
+{
+  "schema": "kdm6.native_upstream_nc_validation.v1",
+  "base_commit": "6787d3c926981e603de6585caae50407ac2c7fd0",
+  "actual_host_steps": 4,
+  "actual_kdm_wrapper_entries": 8,
+  "new_rttov_calls": 0,
+  "optimizer_calls": 0,
+  "paired_full_checkpoint_variables": 652,
+  "paired_numeric_elements": 322426586,
+  "pair_count": 2,
+  "paired_numeric_mismatches": 0,
+  "paired_ack_byte_identical": true,
+  "upstream_trace_values_per_on_run": 206,
+  "on_run_count": 2,
+  "premicro_to_kdm_mp_input_bitwise_match": true,
+  "rk3_to_premicro_bitwise_match": true,
+  "public_replay_byte_identical_to_analysis": true,
+  "focused_tests_passed": 29,
+  "whole_harness_undefined_name_check": "passed",
+  "historical_pr455_manifest_entries_resolved": 52,
+  "historical_source_snapshots_used": 2,
+  "science_scope": "Selected raw f32 state-update boundaries; no compiled-instruction audit, named-process allocation, admitted full-host candidate, RTTOV cost, or second assimilation."
+}

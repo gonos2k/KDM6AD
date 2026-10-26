@@ -1,0 +1,22 @@
+{
+  "schema": "kdm6.native_upstream_nc_prelaunch_history.v1",
+  "events": [
+    {
+      "event": "initial_two_run_plan_superseded",
+      "private_receipt_sha256": "1d30875b7d754fa1450f8cbb78586152a7d22767b339852d0cfa185a979f5aba",
+      "additional_host_steps": 0
+    },
+    {
+      "event": "v4_control_on_prelaunch_rejection",
+      "private_receipt_sha256": "e3de3953255891e6ccd773c6e94949a30e50ed31dcc5ee1f2ee264c2a74af316",
+      "additional_host_steps": 0
+    },
+    {
+      "event": "v5_plan_superseded",
+      "private_receipt_sha256": "aa34f25d3daeb59829f7484c81f7868f88df73ece79da50d3b536c2a1d1e5b8a",
+      "additional_host_steps": 0
+    }
+  ],
+  "executed_campaign": "V4 control-off plus V6 control-on and alpha0.25 off/on, four host steps total",
+  "claim": "Failed preparation and superseded plans did not create additional host model calls."
+}

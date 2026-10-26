@@ -1,0 +1,207 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Actual four-step V4/V6-controller upstream QNC trace. Evidence identifies the RK boundary and exact selected values; it does not establish raw NC units, named-process causality, alpha0.25 admissibility, candidate cost, or a subsequent assimilation.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md": {
+      "bytes": 4033,
+      "sha256": "f66973b50d3ed0cf6aef4dc4985278c2f19ee56f4fe0970b857f233c5a5c0068"
+    },
+    "wiki/sources/native-upstream-nc-rk-2026-10-26.md": {
+      "bytes": 1608,
+      "sha256": "7aaf6a99b6ee2c81869fd01a3e444f5eeed31d77711aa614914b5cd9940dfe41"
+    },
+    "harness/evidence/native_upstream_nc_2026-10-26/README.md": {
+      "bytes": 6669,
+      "sha256": "ec275bce8e169310e09236c58686a8843e27862d73a2b673d54bc3e3e172555d"
+    },
+    "harness/evidence/native_upstream_nc_2026-10-26/analysis.json": {
+      "bytes": 193153,
+      "sha256": "29119dc2d00cd90b14662065aaa507d1a16f2757ecad9b7ef6609a8f45273d10"
+    },
+    "harness/evidence/native_upstream_nc_2026-10-26/input_manifest.json": {
+      "bytes": 2188,
+      "sha256": "3f2f0ffeacd7ae85e00f1223ea0098febbdcdb3564df1ed7b4e83fe6c7a26615"
+    },
+    "harness/evidence/native_upstream_nc_2026-10-26/receipts/execution_summary.json": {
+      "bytes": 6978,
+      "sha256": "5329d03e9a03967e13409aabf6c27a93dd670f2650c6ff4cba1ee72ca9cc5dee"
+    },
+    "wiki/index.md": {
+      "bytes": 15960,
+      "sha256": "826b135942420dc047516a465a43086c2fc3966707fd5585ea0be2ee36e7f057"
+    },
+    "wiki/log.md": {
+      "bytes": 59745,
+      "sha256": "4e6ae23d39d19ad410ba9a6b0553e6c67351a7dc9c05211acdbddf0ff93f93b8"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_upstream_nc_trace_20261026_report",
+      "label": "Full-domain upstream QNC RK trace report for control and alpha0.25",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "Executed comparison; First signed change; Interpretation and limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "f66973b50d3ed0cf6aef4dc4985278c2f19ee56f4fe0970b857f233c5a5c0068"
+    },
+    {
+      "id": "native_upstream_nc_rk_2026_10_26_wiki_source",
+      "label": "Wiki synthesis of the upstream QNC RK trace and its bounded interpretation",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-upstream-nc-rk-2026-10-26.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "7aaf6a99b6ee2c81869fd01a3e444f5eeed31d77711aa614914b5cd9940dfe41"
+    },
+    {
+      "id": "native_upstream_nc_execution_summary",
+      "label": "Four actual same-origin host steps in two trace-off/on pairs with exact checkpoint noninterference",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/receipts/execution_summary.json",
+      "source_location": "/execution_summary/runs; /execution_summary/pairs",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "5329d03e9a03967e13409aabf6c27a93dd670f2650c6ff4cba1ee72ca9cc5dee",
+      "actual_host_steps": 4,
+      "kdm_wrapper_entries": 8,
+      "checkpoint_variables": 652,
+      "numeric_elements_per_pair": 322426586,
+      "RTTOV_calls": 0,
+      "optimizer_calls": 0,
+      "accepted_updates": 0
+    },
+    {
+      "id": "native_upstream_nc_trace_packet",
+      "label": "Two selected-column traces bind the host pre-microphysics QNC word to the KDM MP_INPUT word",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/input_manifest.json",
+      "source_location": "/targets; /runs/control; /runs/alpha025",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "3f2f0ffeacd7ae85e00f1223ea0098febbdcdb3564df1ed7b4e83fe6c7a26615",
+      "trace_on_rows_per_case": 206
+    },
+    {
+      "id": "native_upstream_nc_replayed_rk_update",
+      "label": "Source-order binary32 replay places opposite RK3 QNC signs at the main witness",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/analysis.json",
+      "source_location": "/runs/alpha025/analysis/targets/target_221_63_6; /runs/control/analysis/targets/target_221_63_6",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "29119dc2d00cd90b14662065aaa507d1a16f2757ecad9b7ef6609a8f45273d10",
+      "control_rk3_qnc": 3.4425406456,
+      "alpha025_rk3_qnc": -3.8143992424,
+      "raw_number_units_certified": false,
+      "compiler_fma_instruction_captured": false
+    },
+    {
+      "id": "native_upstream_nc_inherited_qc_nc_mismatch",
+      "label": "Second witness starts at READY with zero QNC and positive QC, so it is an inherited mismatch",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/analysis.json",
+      "source_location": "/runs/alpha025/analysis/targets/target_91_94_4; /runs/control/analysis/targets/target_91_94_4",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "29119dc2d00cd90b14662065aaa507d1a16f2757ecad9b7ef6609a8f45273d10",
+      "native_coordinates_1based": [
+        91,
+        94,
+        4
+      ]
+    },
+    {
+      "id": "native_upstream_nc_admissibility_status",
+      "label": "Alpha0.25 remains inadmissible on fixed observation support; no candidate cost or accepted update is established",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "Interpretation and limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "f66973b50d3ed0cf6aef4dc4985278c2f19ee56f4fe0970b857f233c5a5c0068",
+      "R5": "open",
+      "named_process_cause": "not identified",
+      "observation_mask_changed": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_upstream_nc_trace_20261026_report",
+      "target": "native_upstream_nc_trace_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "Reproducibility"
+    },
+    {
+      "source": "native_upstream_nc_trace_20261026_report",
+      "target": "native_upstream_nc_execution_summary",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "Executed comparison"
+    },
+    {
+      "source": "native_upstream_nc_trace_packet",
+      "target": "native_upstream_nc_replayed_rk_update",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/analysis.json",
+      "source_location": "/input_manifest_sha256"
+    },
+    {
+      "source": "native_upstream_nc_replayed_rk_update",
+      "target": "native_upstream_nc_inherited_qc_nc_mismatch",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "First signed change; second witness"
+    },
+    {
+      "source": "native_upstream_nc_trace_20261026_report",
+      "target": "native_upstream_nc_admissibility_status",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_UPSTREAM_NC_TRACE_20261026.md",
+      "source_location": "Interpretation and limits"
+    },
+    {
+      "source": "native_upstream_nc_rk_2026_10_26_wiki_source",
+      "target": "native_upstream_nc_trace_20261026_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-upstream-nc-rk-2026-10-26.md",
+      "source_location": "See detailed trace report"
+    },
+    {
+      "source": "native_upstream_nc_rk_2026_10_26_wiki_source",
+      "target": "native_upstream_nc_trace_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-upstream-nc-rk-2026-10-26.md",
+      "source_location": "Public packet link"
+    },
+    {
+      "source": "native_upstream_nc_execution_summary",
+      "target": "native_upstream_nc_trace_packet",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_upstream_nc_2026-10-26/receipts/execution_summary.json",
+      "source_location": "/execution_summary/runs"
+    }
+  ],
+  "hyperedges": []
+}
