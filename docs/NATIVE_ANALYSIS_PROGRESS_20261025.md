@@ -1,5 +1,9 @@
 # Native satellite analysis progress — 2026-10-25
 
+Latest follow-up: [2026-10-26 actual QC–NC boundary measurements](NATIVE_ANALYSIS_PROGRESS_20261026.md).
+The selected witness measurements are now complete; the dated execution record
+below and its original candidate-rejection outcomes are preserved.
+
 As of `2026-10-25T15:15:15Z`, after immutable interim snapshot H1
 (`7d4d2d85b9c444b7cae9e842bec9ff332a013814`). This dated page supplements H1;
 it does not revise the earlier packet or checklist hashes.

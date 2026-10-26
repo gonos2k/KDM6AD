@@ -1,0 +1,50 @@
+{
+  "schema": "kdm6.native_moment_context_publication.v1",
+  "scope": "Selected raw native QC/NC profiles only; no new model calls or number-unit certification.",
+  "producer_sha256": "dd953d587abf7a5ec937c7d0879550648510e1160cf7fcac92ba6b3eeb76ffd3",
+  "ready": {
+    "name": "wrfrst_d01_2025-07-19_00:00:40",
+    "sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+    "bytes": 1289873468
+  },
+  "final": {
+    "name": "wrfrst_d01_2025-07-19_00:01:00",
+    "sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "bytes": 1289873468
+  },
+  "targets_one_based_i_j": [
+    [
+      155,
+      25
+    ],
+    [
+      221,
+      63
+    ],
+    [
+      91,
+      94
+    ]
+  ],
+  "native_shape_i_k_j": [
+    234,
+    39,
+    282
+  ],
+  "context": {
+    "name": "context.npz",
+    "sha256": "3bc406f45a77a138b6099cae08e94d4545fc1533404723948f2c86f1d30e234a",
+    "bytes": 1020
+  },
+  "array_keys": [
+    "ready_qc",
+    "ready_nc",
+    "final_qc",
+    "final_nc"
+  ],
+  "array_shape": [
+    3,
+    39
+  ],
+  "array_dtype": "float32"
+}

@@ -1,0 +1,43 @@
+Traversal: BFS depth=2 | Start: ['measured()', 'Measured', 'Measured'] | 29 nodes found
+
+NODE pathlib [src= loc= community=1532]
+NODE sys [src= loc= community=272]
+NODE pytest [src= loc= community=1524]
+NODE test_replay_native_number.py [src=harness/tests/test_replay_native_number.py loc=L1 community=151]
+NODE replay_native_number [src= loc= community=273]
+NODE This fixture precipitates only at f32, and that scopes every comparison built on it [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L1 community=768]
+NODE The column-water orders are precision drift, and the `mstep` attribution rested on them [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L1 community=765]
+NODE synthetic_rows() [src=harness/tests/test_replay_native_number.py loc=L11 community=151]
+NODE measured() [src=harness/tests/test_replay_native_number.py loc=L56 community=151]
+NODE test_measures_are_distinct_and_surface_is_separate() [src=harness/tests/test_replay_native_number.py loc=L19 community=151]
+NODE test_incomplete_or_inconsistent_updates_rejected() [src=harness/tests/test_replay_native_number.py loc=L31 community=151]
+NODE test_top_offer_is_not_endpoint_difference() [src=harness/tests/test_replay_native_number.py loc=L40 community=151]
+NODE test_actual_native_capture() [src=harness/tests/test_replay_native_number.py loc=L61 community=151]
+NODE test_scalar_records_are_lossless_and_unique() [src=harness/tests/test_replay_native_number.py loc=L47 community=151]
+NODE test_actual_evidence_faults() [src=harness/tests/test_replay_native_number.py loc=L72 community=151]
+NODE What that explains [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L33 community=768]
+NODE test_optimized_python_refuses_replay() [src=harness/tests/test_replay_native_number.py loc=L88 community=151]
+NODE What is withdrawn, and what is not [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L75 community=768]
+NODE Limits [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L138 community=768]
+NODE FINDING_column_water_orders_v1.md [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L1 community=765]
+NODE Measured [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L18 community=765]
+NODE Why it was not visible before [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L91 community=765]
+NODE The normalisation (owner §6.4) [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L108 community=768]
+NODE What that costs [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L57 community=765]
+NODE Measured [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L20 community=768]
+NODE FINDING_fixture_precipitates_only_at_f32_v1.md [src=harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md loc=L1 community=768]
+NODE Limits [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L103 community=765]
+NODE Native-ledger arithmetic checks; synthetic rows are not model evidence. [src=harness/tests/test_replay_native_number.py loc=L1 community=151]
+NODE Grades after this [src=harness/evidence/FINDING_column_water_orders_v1.md loc=L81 community=765]
+EDGE Measured --contains [EXTRACTED]--> The column-water orders are precision drift, and the `mstep` attribution rested on them
+EDGE Measured --contains [EXTRACTED]--> This fixture precipitates only at f32, and that scopes every comparison built on it
+EDGE measured() --contains [EXTRACTED]--> test_replay_native_number.py
+EDGE measured() --calls [EXTRACTED context=call]--> test_actual_evidence_faults()
+EDGE measured() --calls [EXTRACTED context=call]--> test_actual_native_capture()
+EDGE test_replay_native_number.py --imports_from [EXTRACTED context=import]--> pathlib
+EDGE test_replay_native_number.py --imports [EXTRACTED context=import]--> pytest
+EDGE test_replay_native_number.py --imports_from [EXTRACTED context=import]--> replay_native_number
+EDGE test_replay_native_number.py --imports [EXTRACTED context=import]--> sys
+EDGE test_replay_native_number.py --rationale_for [EXTRACTED]--> Native-ledger arithmetic checks; synthetic rows are not model evidence.
+EDGE test_replay_native_number.py --contains [EXTRACTED]--> synthetic_rows()
+... (truncated — 0 more nodes cut by ~1400-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

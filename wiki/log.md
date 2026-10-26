@@ -5,6 +5,11 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-26] Native QC-NC boundary trace V2
+- Added [[sources/native-qc-nc-boundary-2026-10-26]]: control, alpha1 and alpha0.25 corrected off/on full-physics pairs preserve all 652 checkpoint variables; the public V2 traces record 6,318 QC/NC values across 3 cases. Initial extra-K40 V2 trace data remain preserved/rejected. R4 boundary measurement is complete; process cause, raw NC units, candidate cost and R5–R9 work remain open.
+- Build receipts pin source/object/executable identity but omit builder-script hashes; a post-build source inventory records available script bytes without claiming execution-time attestation. No new source physics or output tolerances changed.
+
+
 ## [2026-10-26] FP environment and saved Q65 review
 - Added [[sources/fp-environment-review-2026-10-26]]: FP roundoff qualification now requires measured FE/FPCR/FZ evidence; block40 and nonsquare B8 saved captures pass, while block34 remains unconfirmed. Original exception-status preservation is not claimed.
 - Replayed the saved original requested-direction block22 Q65 coordinate: epsilon 1e-6 cannot meet the frozen tolerance even at the nearest representable endpoint; 1e-3 and 1e-2 pass, with 1e-4 and 1e-5 failing. This is not effective-direction C4 or joint33 evidence. No model/RTTOV calls.

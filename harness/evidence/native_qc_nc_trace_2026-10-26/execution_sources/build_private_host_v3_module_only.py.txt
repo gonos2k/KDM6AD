@@ -1,0 +1,289 @@
+"""Rebuild only the private V2 moment-trace Fortran module and relink as V3."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path("/Users/yhlee/KDM6AD-k")
+EVIDENCE = ROOT / "host/research_evidence/native_qc_nc_trace_20261026"
+BUILD = EVIDENCE / "build"
+V2_DIR = BUILD / "host_v2"
+V2_RECEIPT = V2_DIR / "private_host_build_receipt.json"
+V1_PRIVATE = ROOT / "host/research_evidence/native_full_physics_forward_20261025/build/native_fp64_host_wrf_v7"
+V1_RECEIPT = V1_PRIVATE / "private_wrf_build_receipt.json"
+V1_ARCHIVE = V1_PRIVATE / "libwrflib.native_fp64_value.a"
+OLD_MODULE_SOURCE = EVIDENCE / "source_snapshots/pre_owner_kbounds_v2/kdm6ad_moment_trace_v2.f90"
+OLD_MODULE_SHA = "b0e914a0d4777e8c463ee20ceceeb393e2a6a635d0551cb3fa785f9f562bb287"
+SOURCE_WORKTREE = Path("/private/tmp/KDM6AD-qc-nc-trace-20261026/harness/native_trace/kdm6ad_moment_trace_v2.f90")
+WRF_MAIN = ROOT / "host/research_evidence/mp137_two_step_20261020/build/main"
+CAPI_RECEIPT = BUILD / "capi_v2/build_receipt.json"
+TORCH = Path("/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib")
+EXPECTED_ADDED_EXPORT = "_kdm6_moment_trace_context_c"
+EXPECTED_VALUE_EXPORT = "_kdm6_native_fp64_value_c"
+HELPER_SCRIPT = EVIDENCE / "build_private_host_v2.py"
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def load_helpers():
+    spec = importlib.util.spec_from_file_location("private_host_v2_helpers", HELPER_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load the archived APFS/archive build helpers")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def compile_new_module(source: Path, module_dir: Path, object_path: Path, command: list[str], run, log: Path):
+    rewritten = list(command)
+    for i, token in enumerate(rewritten):
+        if token == "-o":
+            rewritten[i + 1] = str(object_path)
+        elif token == "-J":
+            rewritten[i + 1] = str(module_dir)
+        elif token == str(SOURCE_WORKTREE):
+            rewritten[i] = str(source)
+    if str(object_path) not in rewritten or str(source) not in rewritten or str(module_dir) not in rewritten:
+        raise ValueError("could not rewrite saved module compile command for the V3 output")
+    run(rewritten, cwd=source.parent, log=log)
+    return rewritten
+
+
+def build(output: Path, source: Path, expected_source_sha: str) -> dict:
+    h = load_helpers()
+    clonefile, run, archive_members = h.clonefile, h.run, h.archive_members
+    output = output.resolve()
+    source = source.resolve()
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"V3 output must be new: {output}")
+    for path in (V2_RECEIPT, V1_RECEIPT, V1_ARCHIVE, OLD_MODULE_SOURCE, source, CAPI_RECEIPT):
+        if not path.is_file():
+            raise FileNotFoundError(path)
+    if sha256_file(OLD_MODULE_SOURCE) != OLD_MODULE_SHA:
+        raise ValueError("preserved V2 trace module snapshot changed")
+    if sha256_file(source) != expected_source_sha:
+        raise ValueError("revised trace module differs from the caller-pinned source hash")
+
+    v2 = json.loads(V2_RECEIPT.read_text())
+    v1 = json.loads(V1_RECEIPT.read_text())
+    capi = json.loads(CAPI_RECEIPT.read_text())
+    v2_exe = Path(v2["private_executable"])
+    v2_archive = Path(v2["private_archive_path"])
+    v2_dso = Path(v2["capi_dso_runtime_copy"])
+    if sha256_file(v2_exe) != v2["private_executable_sha256"]:
+        raise ValueError("V2 executable no longer matches its build receipt")
+    if sha256_file(v2_archive) != v2["private_archive_sha256"]:
+        raise ValueError("V2 archive no longer matches its build receipt")
+    if sha256_file(v2_dso) != v2["capi_dso_runtime_copy_sha256"]:
+        raise ValueError("V2 runtime DSO copy no longer matches its build receipt")
+    if v2["fortran_sources"][str(SOURCE_WORKTREE)]["sha256"] != OLD_MODULE_SHA:
+        raise ValueError("V2 receipt does not bind the old source snapshot used for rollback comparison")
+    if capi.get("status") != "BUILT_NO_PHYSICAL_CALLS":
+        raise ValueError("CAPI v2 source receipt is not the no-call build")
+    if EXPECTED_ADDED_EXPORT not in capi.get("exported_symbols", []):
+        raise ValueError("CAPI DSO lacks the private moment context export")
+    if capi.get("dso_sha256") != v2["capi_dso_source_sha256"]:
+        raise ValueError("CAPI source DSO differs from the V2 host build")
+
+    v2_members = archive_members(v2_archive)
+    v1_members = archive_members(V1_ARCHIVE)
+    v1_expected = {(x["name"], x["occurrence"]): x["sha256"] for x in v1["private_wrf_archive_member_sha256"]}
+    if v1_members != v1_expected:
+        raise ValueError("preserved V1 private archive no longer matches its original receipt")
+    v2_expected = {(x["name"], x["occurrence"]): x["sha256"] for x in v2["archive_member_hashes"]}
+    if v2_members != v2_expected:
+        raise ValueError("V2 private archive member hashes differ from its receipt")
+    module_key = ("kdm6ad_moment_trace_v2.o", 0)
+    if module_key not in v2_members or module_key in v1_members:
+        raise ValueError("expected the V2 archive to add exactly its trace module member")
+    original_changes = sorted(
+        name for (name, occurrence) in v1_members
+        if v1_members[(name, occurrence)] != v2_members.get((name, occurrence))
+    )
+    if original_changes != ["module_mp_kdm6ad.o", "solve_em.o"]:
+        raise ValueError(f"unexpected V2-fortran object delta relative to V1 private archive: {original_changes}")
+
+    output.mkdir(parents=True)
+    module_dir = output / "fortran_mod"
+    objects = output / "objects"
+    archive_stage = output / "archive_member"
+    execution = output / "execution"
+    runtime = execution / "lib"
+    for directory in (module_dir, objects, archive_stage, runtime):
+        directory.mkdir(parents=True)
+
+    compiled = v2["compiled_fortran_objects"]["kdm6ad_moment_trace_v2.o"]
+    object_path = objects / "kdm6ad_moment_trace_v2.o"
+    compile_command = compile_new_module(source, module_dir, object_path, compiled["command"],
+                                         run, output / "compile_moment_trace_module.log")
+    if sha256_file(object_path) == v2_members[module_key]:
+        raise ValueError("V3 requested correction produced the unchanged V2 trace object")
+    if "-ffp-contract=off" not in compile_command:
+        raise ValueError("V3 trace module compile lost -ffp-contract=off")
+
+    private_archive = output / "libwrflib.native_moment_trace_v3.a"
+    clonefile(v2_archive, private_archive)
+    staged_object = archive_stage / object_path.name
+    clonefile(object_path, staged_object)
+    run(["/usr/bin/ar", "-r", str(private_archive), str(staged_object)], cwd=archive_stage,
+        log=output / "replace_archive_member.log")
+    run(["/usr/bin/ranlib", "-c", str(private_archive)], log=output / "ranlib.log")
+    v3_members = archive_members(private_archive)
+    if set(v3_members) != set(v2_members):
+        raise RuntimeError("V3 changed archive member inventory")
+    changed_v2 = sorted(name for (name, occurrence) in v2_members
+                        if v2_members[(name, occurrence)] != v3_members[(name, occurrence)])
+    if changed_v2 != ["kdm6ad_moment_trace_v2.o"]:
+        raise RuntimeError(f"V3 archive delta relative to V2 must be one module: {changed_v2}")
+    changed_v1 = sorted(name for (name, occurrence) in v1_members
+                        if v1_members[(name, occurrence)] != v3_members.get((name, occurrence)))
+    if changed_v1 != ["module_mp_kdm6ad.o", "solve_em.o"]:
+        raise RuntimeError(f"V3 changed unexpected original V1 archive members: {changed_v1}")
+    if v3_members[("kdm6_iso_c.o", 0)] != v1_members[("kdm6_iso_c.o", 0)]:
+        raise RuntimeError("V3 changed the V1 private ISO binding")
+    if v3_members[("module_big_step_utilities_em.o", 0)] != v1_members[("module_big_step_utilities_em.o", 0)]:
+        raise RuntimeError("V3 changed the V1 finish trace object")
+    for name in ("module_mp_kdm6ad.o", "solve_em.o"):
+        if v3_members[(name, 0)] != v2_members[(name, 0)]:
+            raise RuntimeError(f"V3 changed existing V2 object unexpectedly: {name}")
+
+    copied_dso = runtime / "libkdm6_c.2.0.0.dylib"
+    clonefile(v2_dso, copied_dso)
+    if sha256_file(copied_dso) != v2["capi_dso_runtime_copy_sha256"]:
+        raise RuntimeError("V3 private runtime DSO differs from V2 signed runtime copy")
+    final = execution / "wrf_mp137_native_moment_trace_v3.exe"
+    link_command = list(v2["link_command"])
+    for i, token in enumerate(link_command):
+        if token == "-o":
+            link_command[i + 1] = str(final)
+        elif token == str(v2_archive):
+            link_command[i] = str(private_archive)
+        elif token == str(v2_dso):
+            link_command[i] = str(copied_dso)
+    if str(final) not in link_command or str(private_archive) not in link_command or str(copied_dso) not in link_command:
+        raise ValueError("V3 link command did not replace all private host artifacts")
+
+    env = os.environ.copy()
+    env["SDKROOT"] = v2["sdkroot"]
+    env["MACOSX_DEPLOYMENT_TARGET"] = "26.7"
+    run(link_command, cwd=WRF_MAIN, env=env, log=output / "link_private_wrf.log")
+    run(["install_name_tool", "-change", "@rpath/libkdm6_native_fp64_value.2.dylib",
+         str(copied_dso), str(final)])
+    run(["codesign", "--force", "--sign", "-", str(final)])
+    run(["codesign", "--verify", "--strict", str(final)])
+    run(["codesign", "--verify", "--strict", str(copied_dso)])
+
+    undefined = run(["nm", "-u", str(final)]).splitlines()
+    if not any(line.strip().endswith(EXPECTED_VALUE_EXPORT) for line in undefined):
+        raise RuntimeError("V3 executable does not reference the V1 native value-only C entry")
+    if not any(line.strip().endswith(EXPECTED_ADDED_EXPORT) for line in undefined):
+        raise RuntimeError("V3 executable does not reference the private trace context export")
+    linked = run(["otool", "-L", str(final)])
+    rpaths = run(["otool", "-l", str(final)])
+    dso_linked = run(["otool", "-L", str(copied_dso)])
+    dso_rpaths = run(["otool", "-l", str(copied_dso)])
+    if str(copied_dso) not in linked:
+        raise RuntimeError("V3 executable does not load its private runtime DSO")
+    for name in ("libtorch.dylib", "libtorch_cpu.dylib", "libc10.dylib"):
+        if f"@rpath/{name}" not in linked or f"@rpath/{name}" not in dso_linked:
+            raise RuntimeError(f"V3 Torch runtime relocation missing {name}")
+    if str(TORCH) not in rpaths or str(TORCH) not in dso_rpaths:
+        raise RuntimeError("V3 host or DSO does not retain the pinned Torch RPATH")
+    for name, evidence in v2["torch_payload"].items():
+        payload = Path(evidence["path"])
+        if not payload.is_file() or sha256_file(payload) != evidence["sha256"]:
+            raise RuntimeError(f"V3 pinned Torch payload changed: {name}")
+
+    receipt = dict(v2)
+    compiled_units = dict(v2["compiled_fortran_objects"])
+    compiled_units["kdm6ad_moment_trace_v2.o"] = {
+        "path": str(object_path),
+        "sha256": sha256_file(object_path),
+        "command": compile_command,
+        "log_sha256": sha256_file(output / "compile_moment_trace_module.log"),
+    }
+    fortran_sources = dict(v2["fortran_sources"])
+    fortran_sources[str(source)] = {"sha256": sha256_file(source), "role": "V3 corrected trace module source"}
+    fortran_sources[str(OLD_MODULE_SOURCE)] = {"sha256": sha256_file(OLD_MODULE_SOURCE), "role": "preserved V2 trace module source"}
+    receipt.update({
+        "schema": "kdm6.native_moment_trace_v2_private_host_build.v1",
+        "revision": "V3_MODULE_ONLY_OWNER_CALL_BOUNDS",
+        "status": "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS",
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "supersedes_build_receipt": str(V2_RECEIPT),
+        "supersedes_build_receipt_sha256": sha256_file(V2_RECEIPT),
+        "private_archive_path": str(private_archive),
+        "private_archive_sha256": sha256_file(private_archive),
+        "archive_member_inventory": len(v3_members),
+        "archive_member_hashes": [{"name": n, "occurrence": o, "sha256": digest}
+                                  for (n, o), digest in sorted(v3_members.items())],
+        "archive_changed_members": changed_v2,
+        "archive_changed_members_vs_original_v1_private": ["kdm6ad_moment_trace_v2.o", *changed_v1],
+        "capi_dso_runtime_copy": str(copied_dso),
+        "capi_dso_runtime_copy_sha256": sha256_file(copied_dso),
+        "private_executable": str(final),
+        "private_executable_sha256": sha256_file(final),
+        "compiled_fortran_objects": compiled_units,
+        "fortran_sources": fortran_sources,
+        "link_command": link_command,
+        "link_log_sha256": sha256_file(output / "link_private_wrf.log"),
+        "host_load_commands": linked,
+        "host_rpaths": rpaths,
+        "dso_load_commands": dso_linked,
+        "dso_rpaths": dso_rpaths,
+        "host_kdm6_undefined_symbols": [line.strip() for line in undefined if "kdm6" in line],
+        "module_revision": {
+            "source_path": str(source),
+            "source_sha256": sha256_file(source),
+            "superseded_module_source_path": str(OLD_MODULE_SOURCE),
+            "superseded_module_source_sha256": OLD_MODULE_SHA,
+            "object_path": str(object_path),
+            "object_sha256": sha256_file(object_path),
+            "compile_command": compile_command,
+            "compile_log_sha256": sha256_file(output / "compile_moment_trace_module.log"),
+        },
+        "build_revision_host_steps": 0,
+        "build_revision_KDM6_calls": 0,
+        "build_revision_RTtov_calls": 0,
+        "host_steps": 0,
+        "KDM6_calls": 0,
+        "RTTOV_calls": 0,
+        "model_run_authorized": False,
+    })
+    receipt_path = output / "private_host_build_receipt.json"
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+    return receipt
+
+
+def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=BUILD / "host_v3")
+    parser.add_argument("--module-source", type=Path, required=True)
+    parser.add_argument("--module-source-sha256", required=True)
+    args = parser.parse_args()
+    receipt = build(args.output, args.module_source, args.module_source_sha256)
+    print(json.dumps({"status": receipt["status"],
+                      "executable": receipt["private_executable"],
+                      "executable_sha256": receipt["private_executable_sha256"],
+                      "archive_changed_members_vs_v2": receipt["archive_changed_members"],
+                      "host_steps": 0, "KDM6_calls": 0, "RTTOV_calls": 0}, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

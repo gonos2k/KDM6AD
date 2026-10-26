@@ -1,0 +1,71 @@
+"""Publish compact completed moment-trace evidence; no physical execution."""
+from pathlib import Path
+import gc,hashlib,json,re,shutil,subprocess,sys
+WT=Path('/private/tmp/KDM6AD-qc-nc-trace-20261026')
+ROOT=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qc_nc_trace_20261026')
+PACKET=WT/'harness/evidence/native_qc_nc_trace_2026-10-26'
+CASES=[('initial_control_off','four_case_v1','control_v2_off'),('initial_control_on','four_case_v1','control_v2_on'),('control_off','four_case_v2','control_v3_off'),('control_on','four_case_v2','control_v3_on'),('alpha1_off','four_case_v2','alpha1_v3_off'),('alpha1_on','four_case_v2','alpha1_v3_on'),('alpha025_off','alpha025_pair_v2','alpha025_v2_off'),('alpha025_on','alpha025_pair_v2','alpha025_v2_on')]
+
+def sha(p):
+ h=hashlib.sha256()
+ with Path(p).open('rb') as f:
+  for b in iter(lambda:f.read(8<<20),b''):h.update(b)
+ return h.hexdigest()
+
+def fresh(p,x):
+ with p.open('x') as f:json.dump(x,f,indent=2,sort_keys=True,allow_nan=False);f.write('\n')
+
+def asset(p):return {'file':str(p.relative_to(PACKET)),'bytes':p.stat().st_size,'sha256':sha(p)}
+
+def red(x):
+ if isinstance(x,dict):return {red(k):red(v) for k,v in x.items()}
+ if isinstance(x,list):return [red(v) for v in x]
+ if isinstance(x,str):return x.replace(str(WT),'${PUBLIC_WORKTREE}').replace('/Users/yhlee/KDM6AD-k','${CANONICAL_ROOT}').replace('/Users/yhlee','${USER_HOME}')
+ return x
+
+def main():
+ receipts=PACKET/'receipts';sources=PACKET/'execution_sources';receipts.mkdir(exist_ok=False);sources.mkdir(exist_ok=False)
+ source_pin={'publication_producer_sha256':sha(Path(__file__)),'scope':'Frozen before publication; source itself copied byte-for-byte.'}
+ fresh(ROOT/'PUBLIC_PACKET_PUBLICATION_PIN_v1.json',source_pin)
+ rows=[]
+ for label,group,name in CASES:
+  case=ROOT/'runs'/group/name;result_path=case/'run_result.json';result=json.loads(result_path.read_text());assert result['status']=='STEP_COMPLETE'
+  live=result['live_session_record'];assert result['native_host_steps_completed']==1 and live['returncode']==0
+  directory=next((case/'live_process').glob('live_*'));text=(directory/'rsl.out.0000').read_text();nml=(directory/'namelist.output').read_text()
+  cfg={key:re.search(r'^\s*'+key+r'\s*=\s*([^,\n]+)',nml,re.M|re.I).group(1).strip() for key in ['mp_physics','no_mp_heating','use_theta_m','use_q_diabatic','mp_zero_out','mp_zero_out_all','mp_zero_out_thresh','ra_lw_physics','ra_sw_physics','bl_pbl_physics','cu_physics','sf_surface_physics']}
+  assert cfg['no_mp_heating']=='0' and cfg['use_theta_m']=='1' and cfg['use_q_diabatic']=='0' and cfg['mp_zero_out']=='2' and cfg['mp_zero_out_all']=='0'
+  patterns={'kdm6_wrapper':r'module_mp_kdm6ad: entering kdm6ad wrapper\b','kdm6_dispatch':r'microphysics_driver: calling kdm6ad\b','rrtmg_lw':r'call\s+rrtmg_lw\b','rrtmg_sw':r'call\s+rrtmg_sw\b','surface_driver':r'call\s+surface_driver\b','pbl_driver':r'call\s+pbl_driver\b','cumulus_driver':r'call\s+cumulus_driver\b','shinhong_pbl':r'in SHINHONG PBL\b','ksas':r'in ksas_cps\b','finish_driver':r'call\s+moist_physics_finish\b'}
+  counts={key:len(re.findall(pattern,text,re.I)) for key,pattern in patterns.items()};assert counts['kdm6_wrapper']==2
+  assert result['ready_comparison']['raw_bitwise_equal'] and result['ready_comparison']['numeric_element_mismatches']==0
+  ack=directory/'control/applied_0000000002.txt';parts=ack.open().readline()
+  row={'run_id':name,'campaign_group':group,'label':label,'result_sha256':sha(result_path),'producer_sha256':result['controller_sha256'],'final_checkpoint_sha256':result['output_checkpoint_sha256'],'ready_checkpoint_sha256':result['ready_comparison']['new_ready_sha256'],'complete_ready_variable_count':652,'ready_numeric_elements':322426586,'ready_mismatches':0,'host_steps':1,'output_time':result['output_time'],'physical_clock':'40->60 s, independent common-origin reproduction','rsl_source_sha256':sha(directory/'rsl.out.0000'),'namelist_output_sha256':sha(directory/'namelist.output'),'runtime_config':cfg,'module_markers':counts,'applied':result['command_counts'],'ack_sha256':sha(ack),'loaded_CAPI_library_lines':red(live['loaded_library_lines']),'actual_executable_sha256':live['executable_sha256'],'actual_CAPI_sha256':live['library_candidate_sha256'],'trace_artifacts':red(result['v2_trace_files']),'source_plan_sha256':result['plan_sha256']}
+  rows.append(row);del result,live;gc.collect()
+ pairs=[]
+ for label,file,left,right in [('control','v3_control_off_vs_on.json','control_off','control_on'),('alpha1','v3_alpha1_off_vs_on.json','alpha1_off','alpha1_on'),('alpha025','v3_alpha025_off_vs_on.json','alpha025_off','alpha025_on')]:
+  a=json.loads((ROOT/file).read_text());assert a['raw_bitwise_equal'] and a['full_file_sha_equal'];l=next(x for x in rows if x['label']==left);r=next(x for x in rows if x['label']==right);assert l['ack_sha256']==r['ack_sha256']
+  pairs.append({'case':label,'raw_bitwise_equal':True,'full_file_sha_equal':True,'variable_count':652,'numeric_elements':322426586,'numeric_element_mismatches':0,'final_sha256':l['final_checkpoint_sha256'],'ack_byte_identical':True,'ack_sha256':l['ack_sha256'],'applied':l['applied'],'comparison_producer_sha256':a['producer_sha256'],'original_private_comparison_sha256':sha(ROOT/file)})
+ noninterf={'schema':'kdm6.native_moment_trace_noninterference.v1','scope':'Actual paired native runs, not inferred from selected trace values. All serialized variables compared. No general balance/Markov/derivative certificate.','pairs':pairs}
+ fresh(receipts/'noninterference.json',noninterf)
+ ledger={'schema':'kdm6.native_moment_trace_execution_ledger.v1','actual_host_steps_completed':8,'actual_KDM_wrapper_entries':sum(r['module_markers']['kdm6_wrapper'] for r in rows),'new_RTTOV_calls':0,'optimizer_calls':0,'accepted_full_host_updates':0,'rows':rows,'initial_two_control_steps_retained':True,'initial_trace_scope_rejection':'Initial on stream included18topstoragek40rows outside39nativelevels; raw trace preserved, strict reader rejected, producer fixed and4same-binarycomparisons repeated. No rows dropped or numeric tolerance changed.','prelaunch_rejections_with_zero_host_starts':['frozen reader source changed then restored exactly before launch','one invalid renamed V3 command-line run-id'], 'number_units':'raw legacy coordinates, not newly certified','initial_prior_history':'Common40sorigin already contains an earlier unaccepted diagnostic T/Q history; this is not a pristine forecast comparison.'}
+ fresh(receipts/'execution_ledger.json',ledger)
+ for name,p in [('host_v2_build.json',ROOT/'build/host_v2/private_host_build_receipt.json'),('host_v3_build.json',ROOT/'build/host_v3/private_host_build_receipt.json'),('CAPI_build.json',ROOT/'build/capi_v2/build_receipt.json')]:fresh(receipts/name,{'original_private_receipt_sha256':sha(p),'receipt':red(json.loads(p.read_text())),'redaction':'Private path prefixes replaced; original unredacted receipt SHA retained.'})
+ for name in ['run_native_moment_trace_v2.py','run_native_moment_trace_v3.py','run_native_moment_trace_alpha025_v2.py','build_capi_v2.py','build_private_host_v2.py','audit_checkpoint_pair_v1.py','deduplicate_own_checkpoint_v1.py','publish_packet_v1.py']:
+  p=ROOT/name;shutil.copyfile(p,sources/(name+'.txt'))
+ shutil.copyfile(ROOT/'source_snapshots/pre_owner_kbounds_v2/kdm6ad_moment_trace_v2.f90',sources/'kdm6ad_moment_trace.initial.f90.txt')
+ initial=PACKET/'engineering_history';initial.mkdir(exist_ok=False)
+ for name in ['host.hex','kernel.hex']:shutil.copyfile(ROOT/'runs/four_case_v1/control_v2_on/v2_trace'/name,initial/('initial_control_'+name))
+ runs=[]
+ for name in ['control_v3_on','alpha1_v3_on','alpha025_v2_on']:
+  base=PACKET/'data'/name;runs.append({'run_id':name,'expected_call_count':2,'traces':{'host':asset(base/'host.hex'),'kernel':asset(base/'kernel.hex')},'context_npz':asset(base/'context.npz')})
+ manifest={'schema':'kdm6.native_moment_trace_replay_inputs.v1','levels':39,'global_shape_i_k_j':[234,39,282],'step':3,'dt_hex64':'4034000000000000','ncmin_land_hex64':'4024000000000000','ncmin_sea_hex64':'4024000000000000','targets':[{'name':n,'i':i,'j':j,'witness_k':k} for n,i,j,k in [('native155_25',155,25,19),('native221_63',221,63,6),('native91_94',91,94,4)]],'levels_of_interest':[19,6,4],'runs':runs,'comparisons':[{'control_run_id':'control_v3_on','candidate_run_id':name} for name in ['alpha1_v3_on','alpha025_v2_on']],'instrumentation_noninterference':asset(receipts/'noninterference.json')}
+ fresh(PACKET/'input_manifest.json',manifest)
+ completed=subprocess.run([sys.executable,'-m','harness.evidence.native_qc_nc_trace_2026-10-26.replay'],cwd=WT,capture_output=True,text=True)
+ # Directory contains hyphens: use direct script with an explicit repository PYTHONPATH.
+ if completed.returncode:
+  import os
+  env={**os.environ,'PYTHONPATH':str(WT)};completed=subprocess.run([sys.executable,str(PACKET/'replay.py')],cwd=WT,env=env,capture_output=True,text=True)
+ if completed.returncode:raise RuntimeError(completed.stderr)
+ with (PACKET/'analysis.json').open('x') as f:f.write(completed.stdout)
+ print(json.dumps({'status':'PUBLISHED_REPLAY_PASSED','actual_host_steps':8,'KDM_wrapper_entries':16,'analysis_sha256':sha(PACKET/'analysis.json'),'publication_producer_sha256':sha(Path(__file__))}))
+
+if __name__=='__main__':main()

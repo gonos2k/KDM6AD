@@ -1,0 +1,30 @@
+"""Storage-only APFS clone of a verified identical, closed diagnostic output."""
+from pathlib import Path
+import argparse,hashlib,json,os,subprocess,tempfile
+ROOT=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qc_nc_trace_20261026/runs')
+
+def sha(p):
+ h=hashlib.sha256()
+ with p.open('rb') as f:
+  for b in iter(lambda:f.read(8<<20),b''):h.update(b)
+ return h.hexdigest()
+
+def main():
+ p=argparse.ArgumentParser();p.add_argument('--reference',type=Path,required=True);p.add_argument('--target',type=Path,required=True);p.add_argument('--receipt',type=Path,required=True);a=p.parse_args()
+ t=a.target.resolve(strict=True);r=a.reference.resolve(strict=True)
+ if not t.is_relative_to(ROOT) or t==r or a.target.is_symlink():raise ValueError('only own new regular diagnostic outputs may be deduplicated')
+ if a.receipt.exists():raise FileExistsError(a.receipt)
+ before=sha(t);source=sha(r)
+ if before!=source:raise ValueError('storage dedup requires full file SHA identity')
+ fd,name=tempfile.mkstemp(prefix='.'+t.name+'.cow-',dir=t.parent);os.close(fd);tmp=Path(name);tmp.unlink()
+ try:
+  subprocess.run(['/bin/cp','-c','-p',str(r),str(tmp)],check=True)
+  if sha(tmp)!=before or sha(t)!=before:raise ValueError('bytes changed during APFS clone')
+  os.replace(tmp,t)
+ finally:tmp.unlink(missing_ok=True)
+ if sha(t)!=before:raise RuntimeError('post-clone hash mismatch')
+ out={'scope':'Storage-only APFS clone of bit-identical new output; no model calculation or data change. Historical reference untouched.','reference':str(r),'target':str(t),'sha256_before_and_after':before,'producer_sha256':sha(Path(__file__))}
+ with a.receipt.open('x') as f:json.dump(out,f,indent=2);f.write('\n')
+ print(json.dumps({'target':str(t),'sha256_unchanged':before}))
+
+if __name__=='__main__':main()

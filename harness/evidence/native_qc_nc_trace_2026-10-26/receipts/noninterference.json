@@ -1,0 +1,61 @@
+{
+  "pairs": [
+    {
+      "ack_byte_identical": true,
+      "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+      "applied": {
+        "applied_components": 0,
+        "applied_rows": 0
+      },
+      "case": "control",
+      "comparison_producer_sha256": "50abe8b6724e59df26eed738029901db91fe2ca272cdd8c93fc3370f11123a82",
+      "final_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "full_file_sha_equal": true,
+      "numeric_element_mismatches": 0,
+      "numeric_elements": 322426586,
+      "original_private_comparison_sha256": "c6f6b419105ddfc7c9cc1669ab03a1db18703e573a399d8af0a22ff9cd483e28",
+      "raw_bitwise_equal": true,
+      "variable_count": 652
+    },
+    {
+      "ack_byte_identical": true,
+      "ack_sha256": "6adc74d59538393a856d85cd4734c0f5dd5cf3ab62009db165035598edc2e18b",
+      "applied": {
+        "applied_components": 855443,
+        "applied_rows": 561407,
+        "candidate_sha256": "cba9b44e397ab9f13af36410f20a7c4c28426452fc75f568e9d57828fd57ec0b",
+        "wire_delta_sha256": "cdf31f6f2ff6b5688cf3f9d56375f28aa5adb19f77bad629d02218e256f71fbf"
+      },
+      "case": "alpha1",
+      "comparison_producer_sha256": "50abe8b6724e59df26eed738029901db91fe2ca272cdd8c93fc3370f11123a82",
+      "final_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+      "full_file_sha_equal": true,
+      "numeric_element_mismatches": 0,
+      "numeric_elements": 322426586,
+      "original_private_comparison_sha256": "360536a2b877b2ea90350aa48f7fb00d2a9e2ef9e357d47bad523bcf81673bca",
+      "raw_bitwise_equal": true,
+      "variable_count": 652
+    },
+    {
+      "ack_byte_identical": true,
+      "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+      "applied": {
+        "applied_components": 170749,
+        "applied_rows": 117172,
+        "candidate_sha256": "228db9df068836d6777d6182c8b03b72255ce76f5b618e2a2eba50f3632a4974",
+        "wire_delta_sha256": "47907c23038cf1ef8378227a159f96d4f9c93da98b7a59050ac0c7e3f3507465"
+      },
+      "case": "alpha025",
+      "comparison_producer_sha256": "50abe8b6724e59df26eed738029901db91fe2ca272cdd8c93fc3370f11123a82",
+      "final_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "full_file_sha_equal": true,
+      "numeric_element_mismatches": 0,
+      "numeric_elements": 322426586,
+      "original_private_comparison_sha256": "b85aab3f58edca7a066993779d6290e1d9d7ce0d78ddb8ceaf26de1d39737c0a",
+      "raw_bitwise_equal": true,
+      "variable_count": 652
+    }
+  ],
+  "schema": "kdm6.native_moment_trace_noninterference.v1",
+  "scope": "Actual paired native runs, not inferred from selected trace values. All serialized variables compared. No general balance/Markov/derivative certificate."
+}

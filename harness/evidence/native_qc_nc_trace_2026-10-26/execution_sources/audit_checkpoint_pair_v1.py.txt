@@ -1,0 +1,28 @@
+"""Independent raw-bit comparison of two complete saved native checkpoints."""
+from pathlib import Path
+import argparse,hashlib,json,sys
+sys.path.insert(0,'/private/tmp/KDM6AD-qc-nc-trace-20261026')
+from netCDF4 import Dataset
+from harness.native_replay_compare import compare_frames
+
+
+def sha(p):
+ h=hashlib.sha256()
+ with Path(p).open('rb') as f:
+  for b in iter(lambda:f.read(8<<20),b''):h.update(b)
+ return h.hexdigest()
+
+
+def main():
+ p=argparse.ArgumentParser();p.add_argument('--reference',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True);p.add_argument('--label',required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ if a.output.exists() or a.output.is_symlink():raise FileExistsError(a.output)
+ left,right=sha(a.reference),sha(a.candidate)
+ with Dataset(a.reference) as x,Dataset(a.candidate) as y:
+  x.set_auto_maskandscale(False);y.set_auto_maskandscale(False)
+  r=compare_frames(x,y,0,0,'2025-07-19_00:01:00')
+ r.update(label=a.label,reference_checkpoint={'path':str(a.reference),'sha256':left},candidate_checkpoint={'path':str(a.candidate),'sha256':right},full_file_sha_equal=left==right,producer_sha256=sha(Path(__file__)),scope='Offline comparison of all serialized checkpoint variables; no new model/RTTOV calls.')
+ with a.output.open('x') as f:json.dump(r,f,indent=2,allow_nan=False);f.write('\n')
+ print(json.dumps({k:r.get(k) for k in ['label','raw_bitwise_equal','full_file_sha_equal','variable_count_candidate','numeric_elements_compared','numeric_element_mismatches']}))
+ if not r.get('raw_bitwise_equal'):raise SystemExit(1)
+
+if __name__=='__main__':main()

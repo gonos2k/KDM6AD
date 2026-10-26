@@ -1,0 +1,267 @@
+{
+  "schema": "kdm6.native_qc_nc_trace_inventory.v1",
+  "base_commit": "a1c63630ec760b797d485a33537075003aa8d812",
+  "scope": "Current public producers, consumers, verification and actual-run compact artifacts. Does not include this inventory itself.",
+  "files": [
+    {
+      "path": "docs/NATIVE_ANALYSIS_PROGRESS_20261026.md",
+      "bytes": 3387,
+      "sha256": "7b848d7426f6a1715d0efe526e48cbcae877c313016e169c21b1aa5c22b7f96a"
+    },
+    {
+      "path": "docs/NATIVE_MOMENT_TRACE_V2.md",
+      "bytes": 6365,
+      "sha256": "7cd99df808127c49f282c264623309f7f1cff9df5e5b43594f77747b87e86e19"
+    },
+    {
+      "path": "harness/analyze_native_moment_trace.py",
+      "bytes": 18691,
+      "sha256": "4f87a59c2c05aeca37846f25f63f2fa70b6ddbd7d77994018ed3200e1b5fbfec"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/README.md",
+      "bytes": 7119,
+      "sha256": "cae11d3cba33cd08ec251c5d2cc3e8a18457d30e477f680259b3e78f656f43cf"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/analysis.json",
+      "bytes": 872218,
+      "sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/context.npz",
+      "bytes": 1014,
+      "sha256": "35f12b1f66f559970a5fc71a1f79dbbbc81440a7f4b3ccb989c4d5fd9016995a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "67d24543b60992940199d05259300918383fe6f21515fb6039bcd07f3d6db64e"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/host.hex",
+      "bytes": 71585,
+      "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha025_v2_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/context.npz",
+      "bytes": 1025,
+      "sha256": "87ed7bbdf56d2951a3ec2d0ea08301c81f4b88221fff207a33114b6322dd2ac4"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "a0ca720526d73e7d2904e83ffe5b0139eb6e1f0a06efa29f86558af28be58292"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/host.hex",
+      "bytes": 71585,
+      "sha256": "9be7af8e92a72da5ac9015a17dc4ac47ac7df3685a21c0900768270066928fa9"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/alpha1_v3_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "79f324eb82023dc86b104af3e94a9dc7bf84872852b82c28e54ccdd55fbffb9a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/context.npz",
+      "bytes": 1020,
+      "sha256": "3bc406f45a77a138b6099cae08e94d4545fc1533404723948f2c86f1d30e234a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/context_source.json",
+      "bytes": 1079,
+      "sha256": "9d3a08c3123a2a84fe665ee60b7b7ea4fea9364aa97fe9fc0e0be8c43c36601a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/host.hex",
+      "bytes": 71585,
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/data/control_v3_on/kernel.hex",
+      "bytes": 24041,
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/engineering_history/initial_control_host.hex",
+      "bytes": 72383,
+      "sha256": "7811c1af7690029f01abd73455f85a96becfbb46c0e0f38c71362e0ebfd3c8cd"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/engineering_history/initial_control_kernel.hex",
+      "bytes": 24041,
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/audit_checkpoint_pair_v1.py.txt",
+      "bytes": 1640,
+      "sha256": "50abe8b6724e59df26eed738029901db91fe2ca272cdd8c93fc3370f11123a82"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/build_capi_v2.py.txt",
+      "bytes": 5044,
+      "sha256": "cd9609428656e7a63c43a820b5051853019d9cabd8f82e7b61e30709b52733b0"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/build_private_host_v2.py.txt",
+      "bytes": 31222,
+      "sha256": "19f2e4f0ca5acd36e27080ab563d7c5c67001a6e35f6794f2231300143219992"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/build_private_host_v3_module_only.py.txt",
+      "bytes": 15202,
+      "sha256": "cdce4e1603f986bb243f4b6bfa929bbcc3596b3ae005a01b51f91c0517d238b0"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/deduplicate_own_checkpoint_v1.py.txt",
+      "bytes": 1788,
+      "sha256": "e74f1245cfadcb32a84ff3b323dadda309fa9636181540c4fc437cbf3597c770"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/kdm6ad_moment_trace.initial.f90.txt",
+      "bytes": 7537,
+      "sha256": "b0e914a0d4777e8c463ee20ceceeb393e2a6a635d0551cb3fa785f9f562bb287"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/publish_packet_v1.py.txt",
+      "bytes": 9295,
+      "sha256": "2135ae907c02cf2d03ee7c90d314b9c220833d186873db141f79236854c67abf"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/run_native_moment_trace_alpha025_v2.py.txt",
+      "bytes": 32932,
+      "sha256": "1f25b6850ed7a0ed574af64e3e47e609873593d14b00f9287a13f29ed2d3c84a"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/run_native_moment_trace_v2.py.txt",
+      "bytes": 29080,
+      "sha256": "0b33573b761fea48ed12f1da55525071ecafc8c06151ab88d4bbd6c3ac0987bc"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/execution_sources/run_native_moment_trace_v3.py.txt",
+      "bytes": 32977,
+      "sha256": "40e306ef6150cc4760e19258bbbf0f15762b102ccb7e55569e05c8e00bfc52c4"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/input_manifest.json",
+      "bytes": 3074,
+      "sha256": "7580bae179b1c13de4aea7a3536d962d80c02a703937e22b6bc618f4c114aae7"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/CAPI_build.json",
+      "bytes": 8363,
+      "sha256": "374da7a14d23b78344d8e334d3ae9bd778000b6175855ef52cd95245f430144c"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/build_producer_provenance.json",
+      "bytes": 2174,
+      "sha256": "76aa0334a5bd74628248deaed3d45f4fc1ae953b7ffd70d43042b5e71ac19e13"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/execution_ledger.json",
+      "bytes": 23192,
+      "sha256": "2913a6bbfbafd7ae9b9fdfb28eee46f732ca5f5179f62d9f9cb0e6227a687575"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/host_v2_build.json",
+      "bytes": 96583,
+      "sha256": "7f434b557f5813e5c4e40bd99459bca6bb7bce61ab981731f8a0c8a7cc6a19bd"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/host_v3_build.json",
+      "bytes": 98988,
+      "sha256": "23965e2c8cfe776a3ba4d49aaa893c819b1e7a0df3df5dd871dcf0c880531793"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/noninterference.json",
+      "bytes": 2827,
+      "sha256": "14b7bea7d1ffe69f9fbd6fc3abf3f44eaf0b0cb429b7ec24fa6ed2f04245fc42"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/receipts/solve_source_reconstruction_redacted.json",
+      "bytes": 4971,
+      "sha256": "a60c304da40bc168963cccf08513d1cf305d38b1cef18436cf0f191b8caee562"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/replay.py",
+      "bytes": 9946,
+      "sha256": "f8c902254d24add08f6ba6fcbaa6078220562a4bf8f6dd0c523a29e148ab4cbd"
+    },
+    {
+      "path": "harness/evidence/native_qc_nc_trace_2026-10-26/validation.json",
+      "bytes": 1170,
+      "sha256": "4564fae3f3a400a40c6be5239e949aa81c40c042e323dcbdf17f3f3a48a47552"
+    },
+    {
+      "path": "harness/extract_native_moment_context.py",
+      "bytes": 3857,
+      "sha256": "dd953d587abf7a5ec937c7d0879550648510e1160cf7fcac92ba6b3eeb76ffd3"
+    },
+    {
+      "path": "harness/native_moment_trace_cpp_overlay.py",
+      "bytes": 1885,
+      "sha256": "3c74f5815ca06208a7f304699ea6fe899b45fb748d65a93b917f0a3d896f5ddf"
+    },
+    {
+      "path": "harness/native_moment_trace_overlay.py",
+      "bytes": 10631,
+      "sha256": "6c84cd4135812a8634d73a09e2cf29a6d9500314523bdea2cdb2824825705d94"
+    },
+    {
+      "path": "harness/native_moment_trace_records.py",
+      "bytes": 20082,
+      "sha256": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944"
+    },
+    {
+      "path": "harness/native_trace/kdm6ad_moment_trace_v2.f90",
+      "bytes": 7820,
+      "sha256": "7c17514726e733901645d5a79fd4727fea7721f8d1033a81b3ce60a0b342a224"
+    },
+    {
+      "path": "harness/native_trace/native_moment_trace_v2.hpp",
+      "bytes": 4412,
+      "sha256": "659256af332e8747febeb8bb0363854ff0b797a92099dbabc82b2a99a1bc7dfd"
+    },
+    {
+      "path": "harness/tests/test_analyze_native_moment_trace.py",
+      "bytes": 12681,
+      "sha256": "7550c6b09ef87035bb2b23e19b7e4d899ae6676202a4d284f1d860821c4e658a"
+    },
+    {
+      "path": "harness/tests/test_extract_native_moment_context.py",
+      "bytes": 2796,
+      "sha256": "43fce9194ad52f484320bd8faeb6bb23abce05d2a1a60dc39155974bd6f01e6c"
+    },
+    {
+      "path": "harness/tests/test_native_moment_trace_cpp_overlay.py",
+      "bytes": 8484,
+      "sha256": "d73ebef5463bd3c24ac3de27960800eb1a3102a2b477d1a95b584f77e66cb8cf"
+    },
+    {
+      "path": "harness/tests/test_native_moment_trace_overlay.py",
+      "bytes": 5619,
+      "sha256": "e8416fd077a59dade6aed9007673ccfa22f45b2628293eebf627e4fde206359c"
+    },
+    {
+      "path": "harness/tests/test_native_moment_trace_owner_kbounds.py",
+      "bytes": 3806,
+      "sha256": "a9d29ab49ce6b7a37d29413cdddf584e19b9707d436ed5503769cd02a368817c"
+    },
+    {
+      "path": "harness/tests/test_native_moment_trace_records.py",
+      "bytes": 14016,
+      "sha256": "1c38d2c155b08163af443f520f99152f8556411fc9c24f244321fd25dc636305"
+    },
+    {
+      "path": "harness/tests/test_replay_native_moment_trace.py",
+      "bytes": 6297,
+      "sha256": "8ab859cd8437af0a588977ab671e50b0e4d616ffeeff9090d419346eeab6c2f8"
+    }
+  ]
+}

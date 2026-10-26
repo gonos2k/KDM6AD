@@ -1,0 +1,30 @@
+{
+  "accepted_analysis_updates": 0,
+  "actual_KDM_wrapper_entries": 16,
+  "actual_host_steps": 8,
+  "base_commit": "a1c63630ec760b797d485a33537075003aa8d812",
+  "independent_historical_endpoint_matches": true,
+  "local_focused_tests_passed": 67,
+  "native_shape_i_k_j": [
+    234,
+    39,
+    282
+  ],
+  "new_RTTOV_calls": 0,
+  "numeric_elements_per_pair_comparison": 322426586,
+  "on_trace_values_each": 2106,
+  "optimizer_calls": 0,
+  "paired_ACK_files_byte_identical": true,
+  "paired_checkpoints_raw_bitwise_equal": true,
+  "paired_complete_checkpoint_variables": 652,
+  "prior_PR454_8_file_inventory_preserved": true,
+  "public_replay_byte_identical": true,
+  "public_replay_output_sha256": "681ef65d744e378c7cb0ea595aef53c4c05f939875f5d28374f1224ca2a5e639",
+  "representation_cast_mismatches": 0,
+  "representation_widen_mismatches": 0,
+  "schema": "kdm6.native_moment_trace_validation.v1",
+  "science_scope": "Selected state boundary measurements; upstream process, number units, conservation, derivatives, admissible full-host candidate and cycling remain unproved.",
+  "trace_values": 6318,
+  "valid_on_traces": 3,
+  "whole_harness_undefined_names": "passed"
+}
