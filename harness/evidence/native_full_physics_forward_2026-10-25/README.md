@@ -5,8 +5,8 @@ This packet preserves the source and evidence cutoff at UTC
 Its [report](REPORT.md) and [manifest](interim_snapshot_manifest.json) are
 historical records rather than the current experiment status.
 
-The two current plan/checklist documents now display a historical-status
-banner. To verify their original H1 source hashes, use the byte-identical
+The current plan/checklist documents display a historical-status banner;
+the precision note now clarifies FP-control versus exception-status coverage. To verify their original H1 source hashes, use the byte-identical
 archives and commit listed in [historical_source_resolution.json](historical_source_resolution.json).
 The original manifest and numerical runtime receipts were not rewritten.
 

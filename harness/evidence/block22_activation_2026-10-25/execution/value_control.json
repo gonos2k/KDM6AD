@@ -1,0 +1,95 @@
+{
+  "B": 512,
+  "L": 39,
+  "block_index": 22,
+  "build_receipt_sha256": "a4cb6281180d25105aaeaac8451bca43ed60fe202b915868cd59f87eb885c572",
+  "candidate_library": "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/libkdm6_actual_qr.2.0.0.dylib",
+  "candidate_library_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+  "cross_mode_exact_fields": {},
+  "cross_mode_noninterference_passed": true,
+  "cross_mode_reference_dir": null,
+  "elapsed_seconds": 1.6979458746500313,
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "mode": "control",
+  "no_AD_calls": true,
+  "no_RTTOV_calls": true,
+  "no_host_steps_or_cycles": true,
+  "parent_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "parent_value_gates_passed": true,
+  "process_peak_rss_bytes": 589447168,
+  "range": [
+    11264,
+    11776
+  ],
+  "run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "schema": "kdm6.block22_activation_value_call.v1",
+  "trace": null,
+  "value_calls": [
+    {
+      "KDM_JVP_calls": 0,
+      "KDM_VJP_calls": 0,
+      "KDM_forward_calls": 1,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 0,
+      "parent_reference_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/baseline/chunk_00022/attempt_0952eb5c7acd486282b3aa2c4f8839dc/result.npz",
+      "parent_reference_npz_sha256": "1d6436896a56bc0772c747e33e0fe990afb5cd218c292f051d7761dce312c5df",
+      "physical_output_comparison": {
+        "all_exact": true,
+        "exact_fields": {
+          "cloud_bg": true,
+          "cloud_nc": true,
+          "cloud_ni": true,
+          "cloud_nn": true,
+          "cloud_nr": true,
+          "cloud_qc": true,
+          "cloud_qg": true,
+          "cloud_qi": true,
+          "cloud_qr": true,
+          "cloud_qs": true,
+          "finish": true,
+          "native_after_p_center_Pa": true,
+          "native_after_phi_interfaces": true,
+          "native_after_qv": true,
+          "native_after_thm_pert": true,
+          "rho_d": true
+        },
+        "missing_fields": []
+      },
+      "state": "baseline",
+      "state_TQ_matches_saved_parent": true
+    },
+    {
+      "KDM_JVP_calls": 0,
+      "KDM_VJP_calls": 0,
+      "KDM_forward_calls": 1,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 0,
+      "parent_reference_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/TRIAL_alpha_0p25/chunk_00022/attempt_1530cbcbb5cb4f38bae42393f8ead892/result.npz",
+      "parent_reference_npz_sha256": "904ef1a95cdc6864e05477e4559b8e74a486e84dbf7dfbebed7279275e735ffc",
+      "physical_output_comparison": {
+        "all_exact": true,
+        "exact_fields": {
+          "cloud_bg": true,
+          "cloud_nc": true,
+          "cloud_ni": true,
+          "cloud_nn": true,
+          "cloud_nr": true,
+          "cloud_qc": true,
+          "cloud_qg": true,
+          "cloud_qi": true,
+          "cloud_qr": true,
+          "cloud_qs": true,
+          "finish": true,
+          "native_after_p_center_Pa": true,
+          "native_after_phi_interfaces": true,
+          "native_after_qv": true,
+          "native_after_thm_pert": true,
+          "rho_d": true
+        },
+        "missing_fields": []
+      },
+      "state": "alpha025",
+      "state_TQ_matches_saved_parent": true
+    }
+  ]
+}

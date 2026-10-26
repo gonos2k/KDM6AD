@@ -1,0 +1,128 @@
+{
+  "schema": "kdm6.native_gradient_concentration.v1",
+  "source_z_sha256": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+  "definition": "sum of squared accepted projected normalized controls per column, proportional to projected g_z squared; ranking does not claim efficacy or FD validity.",
+  "total_z_squared": 3.9011292383268876,
+  "top_columns": [
+    {
+      "rank": 1,
+      "flat_index0": 11632,
+      "native_i1": 167,
+      "native_j1": 50,
+      "dominant_level1": 18,
+      "dominant_control": "QV",
+      "block0": 22,
+      "row0": 368,
+      "fraction_squared_gradient": 0.3826549515954047,
+      "cumulative_fraction": 0.3826549515954047
+    },
+    {
+      "rank": 2,
+      "flat_index0": 58950,
+      "native_i1": 217,
+      "native_j1": 252,
+      "dominant_level1": 7,
+      "dominant_control": "QV",
+      "block0": 115,
+      "row0": 70,
+      "fraction_squared_gradient": 0.21783699157361291,
+      "cumulative_fraction": 0.6004919431690177
+    },
+    {
+      "rank": 3,
+      "flat_index0": 29921,
+      "native_i1": 204,
+      "native_j1": 128,
+      "dominant_level1": 20,
+      "dominant_control": "QV",
+      "block0": 58,
+      "row0": 225,
+      "fraction_squared_gradient": 0.16990051812683313,
+      "cumulative_fraction": 0.7703924612958507
+    },
+    {
+      "rank": 4,
+      "flat_index0": 33333,
+      "native_i1": 106,
+      "native_j1": 143,
+      "dominant_level1": 9,
+      "dominant_control": "QV",
+      "block0": 65,
+      "row0": 53,
+      "fraction_squared_gradient": 0.1262870561605976,
+      "cumulative_fraction": 0.8966795174564484
+    },
+    {
+      "rank": 5,
+      "flat_index0": 28302,
+      "native_i1": 223,
+      "native_j1": 121,
+      "dominant_level1": 18,
+      "dominant_control": "QV",
+      "block0": 55,
+      "row0": 142,
+      "fraction_squared_gradient": 0.01181870269833533,
+      "cumulative_fraction": 0.9084982201547837
+    },
+    {
+      "rank": 6,
+      "flat_index0": 44065,
+      "native_i1": 74,
+      "native_j1": 189,
+      "dominant_level1": 5,
+      "dominant_control": "QV",
+      "block0": 86,
+      "row0": 33,
+      "fraction_squared_gradient": 0.009109411357063696,
+      "cumulative_fraction": 0.9176076315118474
+    },
+    {
+      "rank": 7,
+      "flat_index0": 29230,
+      "native_i1": 215,
+      "native_j1": 125,
+      "dominant_level1": 14,
+      "dominant_control": "QV",
+      "block0": 57,
+      "row0": 46,
+      "fraction_squared_gradient": 0.0035732512484886307,
+      "cumulative_fraction": 0.921180882760336
+    },
+    {
+      "rank": 8,
+      "flat_index0": 52881,
+      "native_i1": 232,
+      "native_j1": 226,
+      "dominant_level1": 18,
+      "dominant_control": "QV",
+      "block0": 103,
+      "row0": 145,
+      "fraction_squared_gradient": 0.0025010120804742266,
+      "cumulative_fraction": 0.9236818948408102
+    },
+    {
+      "rank": 9,
+      "flat_index0": 5524,
+      "native_i1": 143,
+      "native_j1": 24,
+      "dominant_level1": 19,
+      "dominant_control": "QV",
+      "block0": 10,
+      "row0": 404,
+      "fraction_squared_gradient": 0.0022522315146326216,
+      "cumulative_fraction": 0.9259341263554428
+    },
+    {
+      "rank": 10,
+      "flat_index0": 56337,
+      "native_i1": 178,
+      "native_j1": 241,
+      "dominant_level1": 7,
+      "dominant_control": "QV",
+      "block0": 110,
+      "row0": 17,
+      "fraction_squared_gradient": 0.0018858523184081242,
+      "cumulative_fraction": 0.927819978673851
+    }
+  ]
+}

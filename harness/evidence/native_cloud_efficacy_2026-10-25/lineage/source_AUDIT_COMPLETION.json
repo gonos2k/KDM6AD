@@ -1,0 +1,92 @@
+{
+  "KDM6_calls": 0,
+  "RTTOV_calls": 0,
+  "chunks": 129,
+  "columns": 65988,
+  "export_manifest_sha256": "66a358255ed136c809ecf83d174e5bbbe7bd89f9b62b8e2efbd0405eb3cbf077",
+  "failed_source_hashes": 0,
+  "host_calls": 0,
+  "input_manifest_sha256": "e89e816e606b1f2b061c04d5c6509b9a0e83d0b170501fe667d0ed3a35e6c8b8",
+  "limits": [
+    "This is one saved native KDM state response at a fixed analysis time; it does not show a new gradient or optimizer relinearization after applying the state change.",
+    "The user\u2019s one-shot cloud-analysis effectiveness goal is not met by this evidence; the high-score sample is concentrated and warmed-IR105 / QC-empty cohorts require physical interpretation.",
+    "A warm IR105 residual is not cloud truth; no cloud retrieval or independent cloud observation is available here.",
+    "RTTOV CFRAC is a bounded binary/near-binary profile diagnostic, not continuous cloud-cover truth.",
+    "QC==0 alone does not establish an optically empty column; QI and QS must also be checked. QG and QR are not part of the stated QI+QS direct ice optical mapping.",
+    "Column LWP/IWP are per-column physical integrals; cohort summaries are unweighted column statistics, not area-integrated regional mass or a closed precipitation budget.",
+    "The candidate is a restricted alpha=1 control endpoint with unchanged original support; no convergence, forecast, host-cycle, time-advance or optimizer-algorithm change is claimed."
+  ],
+  "native_field_bundles": {
+    "NATIVE_CFRAC_GATE_v1.npz": {
+      "bytes": 451063,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_CFRAC_GATE_v1.npz",
+      "sha256": "3622ed1664d9d08acc2dd2074eefc5f3d3fda54e1f07d9303f196209292303db"
+    },
+    "NATIVE_CLOUD_COLUMN_INTEGRALS_v1.npz": {
+      "bytes": 1765051,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_CLOUD_COLUMN_INTEGRALS_v1.npz",
+      "sha256": "33ac3c8be97a9e7a77e9a95190c7167c7a2cb8d68ec22efcfde8e9683172f797"
+    },
+    "NATIVE_CLOUD_PHASE_FIELDS_v1.npz": {
+      "bytes": 7383257,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_CLOUD_PHASE_FIELDS_v1.npz",
+      "sha256": "576817d354de1389f9ad6573dd007eba9c60d6118c172b02855403c96f968e0a"
+    },
+    "NATIVE_FIXED_SUPPORT_AND_BT_v1.npz": {
+      "bytes": 9232876,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_FIXED_SUPPORT_AND_BT_v1.npz",
+      "sha256": "09e74283ada87887d7697d53aec36a7fe371da529fd9cadb5b85deff15d21d02"
+    },
+    "NATIVE_INTERFACE_GEOMETRY_v1.npz": {
+      "bytes": 29576243,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_INTERFACE_GEOMETRY_v1.npz",
+      "sha256": "f9548ca436c54a0c2ca72723f88343efb04f9851f66c473969652d4cbd2a17fd"
+    },
+    "NATIVE_LAYER_MASS_WEIGHTS_v1.npz": {
+      "bytes": 25550262,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_LAYER_MASS_WEIGHTS_v1.npz",
+      "sha256": "f90f42ec292bd87284ca7f1786c1fe2142c125740cf2e5e555a044b253061d9c"
+    },
+    "NATIVE_PRESSURE_CENTERS_v1.npz": {
+      "bytes": 36810729,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_PRESSURE_CENTERS_v1.npz",
+      "sha256": "6e4af10a8a7e0e01156cd2479c856094d9c6c2265bc5f82aacf1581d72be1549"
+    },
+    "NATIVE_QV_FIELDS_v1.npz": {
+      "bytes": 29625898,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_QV_FIELDS_v1.npz",
+      "sha256": "de06bad07b39f0bd8a97df08e05eb667e1da22caa8e4ec1ce2fbbcbda8166995"
+    },
+    "NATIVE_TEMPERATURE_FIELDS_v1.npz": {
+      "bytes": 36849449,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/NATIVE_TEMPERATURE_FIELDS_v1.npz",
+      "sha256": "41f92666c1d88d67390e31860f59a736608c1dc8aa6e16687af9bdd57e9fcde6"
+    }
+  },
+  "optimizer_calls": 0,
+  "plot_files": {
+    "bt_cohort_distributions.png": {
+      "bytes": 112452,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/bt_cohort_distributions.png",
+      "sha256": "9bbb850ca49fcc234a419442a40f1dfe8123e78fcaa77c093064f3fc2e160222"
+    },
+    "native_level_deltas.png": {
+      "bytes": 98501,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/native_level_deltas.png",
+      "sha256": "c6c01d85f237b2df5c3bb61a6791ec4b45d4032156713ec5318a84b47c86c2d2"
+    },
+    "native_response_maps.png": {
+      "bytes": 470943,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/native_response_maps.png",
+      "sha256": "f2aad55e49d2d1c570b8a1bc8029b33e362156c5f88eecf2ed0e63a718d0c390"
+    }
+  },
+  "process_exit_code": 0,
+  "producer_sha256": "defc04ccc8ebb394ccb25c77d7b9fcbc8494543e93f1ee7e9cd79aa182e5db30",
+  "producer_source_snapshot": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/execution_sources/audit_native_cloud_efficacy_v13.py.txt",
+  "schema": "kdm6.native_cloud_efficacy_audit_completion.v2",
+  "status": "COMPLETE_CLEAN_EXIT0",
+  "summary_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_cloud_efficacy_20261025/efficacy_audit_v1/results_v7/EFFICACY_AUDIT.json",
+  "summary_sha256": "75c0ca4078b76efac7bfa2d8018e46cb9fb7a6df4f4327aa3d209dae7be00857",
+  "verified_source_file_count": 903
+}

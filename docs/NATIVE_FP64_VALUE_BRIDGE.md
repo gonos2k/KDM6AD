@@ -31,8 +31,11 @@ Radiation, PBL, surface and cumulus remain in the native full-host forward.
 The new entry requires `value_only=1`, returns a null handle, and rejects
 recorded AD. It does not differentiate quantization, provide a full-host
 JVP/VJP, or change the existing FP64 AD entry. `param_grad_flags` remains zero.
-Keep the established scalar/domain checks, single-thread fence and FP
-environment restoration. Invalid requests leave outputs untouched before
+Keep the established scalar/domain checks and single-thread fence. The FP
+guard restores the environment captured after scalar validation; the boundary
+tests verify rounding/FPCR control bits. Floating scalar checks can set sticky
+exception flags before the guard is constructed, so preservation of the
+caller's original exception-status flags is not claimed. Invalid requests leave outputs untouched before
 tensor execution; outputs after an internal numerical error are discarded.
 
 ## Budget at writeback

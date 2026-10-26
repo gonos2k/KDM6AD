@@ -1,0 +1,158 @@
+from __future__ import annotations
+from datetime import datetime, timezone
+import hashlib, json, os, shutil, subprocess
+from pathlib import Path
+
+RESEARCH = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025")
+OUT = RESEARCH / "overlay_final_build_v1"
+SOURCE = RESEARCH / "overlay_final" / "coordinator.cpp"
+SOURCE_RECEIPT = RESEARCH / "overlay_final" / "source_receipt.json"
+CASE = Path("/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/CASE_MANIFEST.json")
+case = json.loads(CASE.read_text())
+paths = case["case_preparation"]["paths"]
+build_root = Path(paths["candidate_library"]).parent
+PREPARED = build_root / "prepared.json"
+BUILD_RECEIPT = Path(paths["candidate_build_receipt"])
+ARCHIVE = build_root / "libkdm6_actual_qr.a"
+PARENT_DSO = Path(paths["candidate_library"])
+if OUT.exists() or OUT.is_symlink():
+    raise FileExistsError(f"refusing to overwrite {OUT}")
+
+def sha(path):
+    h = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+src_receipt = json.loads(SOURCE_RECEIPT.read_text())
+build_receipt = json.loads(BUILD_RECEIPT.read_text())
+prepared = json.loads(PREPARED.read_text())
+if sha(SOURCE) != src_receipt["coordinator_sha256"]:
+    raise ValueError("reviewed coordinator source SHA mismatch")
+if src_receipt.get("trace_env") != "KDM6_BLOCK22_ACTIVATION_TRACE":
+    raise ValueError("unexpected observer trace environment")
+if src_receipt.get("B") != 512 or src_receipt.get("L") != 39:
+    raise ValueError("observer contract is not B512 x L39")
+for path, expected in prepared["source_sha256"].items():
+    if sha(path) != expected:
+        raise ValueError(f"parent actual-QR source pin changed: {path}")
+parent_archive_sha = sha(ARCHIVE)
+parent_dso_sha = sha(PARENT_DSO)
+if parent_archive_sha != build_receipt["archive_sha256"] or parent_dso_sha != build_receipt["library_sha256"]:
+    raise ValueError("parent actual-QR archive/DSO no longer matches build receipt")
+
+compile_cmd = list(prepared["compile_command"])
+if "-ffp-contract=off" not in compile_cmd or "-c" not in compile_cmd or "-o" not in compile_cmd:
+    raise ValueError("prepared compile recipe lacks -ffp-contract=off or compile operands")
+src_index = compile_cmd.index("-c") + 1
+out_index = compile_cmd.index("-o") + 1
+compile_cmd[src_index] = str(SOURCE)
+
+OUT.mkdir(parents=True, exist_ok=False)
+object_path = OUT / "coordinator.cpp.o"
+compile_cmd[out_index] = str(object_path)
+subprocess.run(compile_cmd, check=True)
+if not object_path.is_file():
+    raise RuntimeError("coordinator object was not created")
+
+archive_path = OUT / "libkdm6_actual_qr_block22.a"
+shutil.copy2(ARCHIVE, archive_path)
+ar = shutil.which("ar") or "/usr/bin/ar"
+members_before = subprocess.check_output([ar, "-t", str(ARCHIVE)], text=True).splitlines()
+if members_before.count("coordinator.cpp.o") != 1:
+    raise ValueError("expected exactly one coordinator.cpp.o archive member")
+if "sedimentation.cpp.o" not in members_before:
+    raise ValueError("actual-QR sedimentation object is absent from parent archive")
+subprocess.run([ar, "-r", str(archive_path), str(object_path)], check=True)
+subprocess.run([ar, "-s", str(archive_path)], check=True)
+members_after = subprocess.check_output([ar, "-t", str(archive_path)], text=True).splitlines()
+if members_after != members_before:
+    raise ValueError("archive member order changed")
+
+def member_bytes(archive, member):
+    return subprocess.check_output([ar, "-p", str(archive), member])
+
+member_audit = {}
+for index, member in enumerate(members_before):
+    before = member_bytes(ARCHIVE, member)
+    after = member_bytes(archive_path, member)
+    changed = before != after
+    allowed = member in ("coordinator.cpp.o", "__.SYMDEF")
+    member_audit[member] = {
+        "archive_entry_index0_including_symdef": index,
+        "changed": changed,
+        "change_allowed": allowed,
+        "parent_sha256": hashlib.sha256(before).hexdigest(),
+        "overlay_sha256": hashlib.sha256(after).hexdigest(),
+    }
+    if changed and not allowed:
+        raise ValueError(f"unexpected archive member changed: {member}")
+if not member_audit["coordinator.cpp.o"]["changed"]:
+    raise ValueError("coordinator member did not change")
+if member_audit["sedimentation.cpp.o"]["changed"]:
+    raise ValueError("actual-QR sedimentation member was not preserved")
+
+link_cmd = list(build_receipt["link_commands"][1])
+parent_archive_arg = str(ARCHIVE)
+if parent_archive_arg not in link_cmd:
+    raise ValueError("pinned DSO link command does not name the expected archive")
+link_cmd = [str(archive_path) if item == parent_archive_arg else item for item in link_cmd]
+new_dso = OUT / "libkdm6_actual_qr_block22_observer.2.0.0.dylib"
+link_cmd[link_cmd.index("-o") + 1] = str(new_dso)
+install_index = link_cmd.index("-install_name")
+old_install_name = link_cmd[install_index + 1]
+link_cmd[install_index + 1] = "@rpath/libkdm6_actual_qr_block22_observer.2.dylib"
+subprocess.run(link_cmd, check=True)
+if not new_dso.is_file():
+    raise RuntimeError("overlay DSO was not created")
+
+def exports(path):
+    text = subprocess.check_output(["nm", "-gU", str(path)], text=True, stderr=subprocess.STDOUT)
+    return sorted(line.split()[-1] for line in text.splitlines() if line.split())
+old_exports = exports(PARENT_DSO)
+new_exports = exports(new_dso)
+if old_exports != new_exports:
+    raise ValueError("C ABI export surface changed")
+
+if sha(ARCHIVE) != build_receipt["archive_sha256"] or sha(PARENT_DSO) != build_receipt["library_sha256"]:
+    raise ValueError("parent archive or DSO was modified")
+receipt = {
+    "schema": "kdm6.block22_activation_coordinator_build.v1",
+    "created_at_utc": datetime.now(timezone.utc).isoformat(),
+    "scope": "one coordinator translation unit; actual-QR sedimentation object and other archive members preserved",
+    "source": {"path": str(SOURCE), "sha256": sha(SOURCE),
+               "review_receipt": str(SOURCE_RECEIPT), "review_receipt_sha256": sha(SOURCE_RECEIPT)},
+    "parent_build": {"DSO": str(PARENT_DSO), "DSO_sha256": parent_dso_sha,
+        "archive": str(ARCHIVE), "archive_sha256": parent_archive_sha,
+        "prepared_receipt": str(PREPARED), "prepared_sha256": sha(PREPARED),
+        "build_receipt": str(BUILD_RECEIPT), "build_receipt_sha256": sha(BUILD_RECEIPT)},
+    "isolated_outputs": {"object": str(object_path), "object_sha256": sha(object_path),
+        "archive": str(archive_path), "archive_sha256": sha(archive_path),
+        "DSO": str(new_dso), "DSO_sha256": sha(new_dso)},
+    "compile_command": compile_cmd,
+    "compile_command_has_ffp_contract_off": "-ffp-contract=off" in compile_cmd,
+    "link_command": link_cmd,
+    "old_install_name": old_install_name,
+    "archive_members": members_before,
+    "member_changes": member_audit,
+    "archive_member14_1based_including_symdef": members_before[13] if len(members_before) > 13 else None,
+    "changed_member": "coordinator.cpp.o",
+    "actual_qr_sedimentation_member_preserved": not member_audit["sedimentation.cpp.o"]["changed"],
+    "exported_symbols_unchanged": old_exports == new_exports,
+    "exported_symbol_count": len(old_exports),
+    "source_public_install_changed": False,
+    "KDM_or_RTTOV_calls": 0,
+}
+out_receipt = OUT / "build_receipt.json"
+payload = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode()
+fd = os.open(out_receipt, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+with os.fdopen(fd, "wb") as stream:
+    stream.write(payload)
+    stream.flush()
+    os.fsync(stream.fileno())
+print(json.dumps({"receipt": str(out_receipt), "receipt_sha256": sha(out_receipt),
+    "object_sha256": sha(object_path), "archive_sha256": sha(archive_path),
+    "DSO_sha256": sha(new_dso), "ffp_contract_off": "-ffp-contract=off" in compile_cmd,
+    "changed_member": "coordinator.cpp.o", "actual_qr_sedimentation_preserved": True,
+    "exports_unchanged": old_exports == new_exports, "exported_symbol_count": len(old_exports)}, sort_keys=True))

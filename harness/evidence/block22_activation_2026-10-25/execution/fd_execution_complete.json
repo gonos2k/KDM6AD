@@ -1,0 +1,14 @@
+{
+  "RTTOV_calls": 0,
+  "completed_at_utc": "2026-10-25T02:28:10.153050+00:00",
+  "endpoint_count": 10,
+  "fullB_KDM_calls": 10,
+  "fullB_fd_bundle": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v2/fd_execution_v10/centered_fd_fullB.npz",
+  "fullB_fd_bundle_sha256": "c3003e836bf8692d3fadddb960897a9d9cb5efd8628309480435db78802b7759",
+  "launch_plan_sha256": "4f16e12178f9870063f3890bd7fbdaf3eeac1929d283c2c00d28ac4f32be0e71",
+  "prior_orphaned_KDM6_calls": 1,
+  "schema": "kdm6.block22_centered_fd_execution.v1",
+  "status": "COMPLETE_ALL_ENDPOINTS",
+  "summary_sha256": "9831a334aab5e5fa3530d3bf029307ad072f6d2062498a34853f287cc7158acb",
+  "total_campaign_KDM6_calls_including_orphan": 11
+}

@@ -1,0 +1,413 @@
+"""Fresh-process full-B block22 value gate for the actual-QR activation observer.
+
+This script is prepared for controlled execution after source review. One process
+loads one DSO once and evaluates both the saved baseline and alpha=.25 controls
+over the original B512/L39 block. It performs no RTTOV calls, AD calls, host
+steps, or full-domain calls. Instrumented output is gated only by
+KDM6_BLOCK22_ACTIVATION_TRACE.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import resource
+import sys
+import time
+
+import numpy as np
+
+RESEARCH = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025"
+)
+PARENT = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4"
+)
+SOURCE_V2 = Path(
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_restricted_20261025/source_v2"
+)
+PREP = RESEARCH / "input_prep_v1"
+BUILD_RECEIPT = RESEARCH / "overlay_final_build_v1" / "build_receipt.json"
+MODES = ("control", "trace_off", "trace_on")
+
+
+def sha256_file(path):
+    result = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(8 << 20), b""):
+            result.update(block)
+    return result.hexdigest()
+
+
+def write_json_new(path, value):
+    encoded = (json.dumps(value, sort_keys=True, indent=2) + "\n").encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def same_bits(left, right):
+    a = np.asarray(left)
+    b = np.asarray(right)
+    return a.shape == b.shape and a.dtype == b.dtype and a.tobytes() == b.tobytes()
+
+
+def numpy_copy(value):
+    return np.array(value.detach().cpu().numpy(), copy=True)
+
+
+def tensor_from(value, torch):
+    return torch.from_numpy(np.ascontiguousarray(value, dtype=np.float64))
+
+
+def load_inputs():
+    preparation_path = PREP / "BLOCK22_PREPARATION.json"
+    bundle_path = PREP / "block22_fullB_inputs.npz"
+    preparation = json.loads(preparation_path.read_text())
+    if sha256_file(bundle_path) != preparation["input_npz_sha256"]:
+        raise ValueError("prepared block22 input bundle hash changed")
+    arrays = {}
+    with np.load(bundle_path, allow_pickle=False) as archive:
+        arrays = {name: archive[name] for name in archive.files}
+    if arrays["block__flat_indices"].shape != (512,):
+        raise ValueError("block22 flat indices must retain B=512")
+    if arrays["block__rest"].shape != (10, 512, 39):
+        raise ValueError("rest state must retain the original full B512 x L39 shape")
+    if arrays["block__ph"].shape != (512, 40):
+        raise ValueError("PH must retain full B512 x 40 interfaces")
+    if arrays["block__theta_m"].shape != (512, 39):
+        raise ValueError("theta_m must retain the original full B512 x L39 shape")
+    if arrays["block__qv"].shape != (512, 39):
+        raise ValueError("QV must retain the original full B512 x L39 shape")
+    expected_flat = np.arange(11264, 11776, dtype=np.int32)
+    if not same_bits(arrays["block__flat_indices"], expected_flat):
+        raise ValueError("prepared flat indices differ from the original chunk22")
+    if not same_bits(arrays["block__i"], expected_flat % 234):
+        raise ValueError("prepared native I mapping differs")
+    if not same_bits(arrays["block__j"], expected_flat // 234):
+        raise ValueError("prepared native J mapping differs")
+    if not same_bits(arrays["block__theta_m"], arrays["parent_baseline__theta_m"]):
+        raise ValueError("saved baseline input T differs from the V4 baseline artifact")
+    if not same_bits(arrays["block__qv"], arrays["parent_baseline__qv"]):
+        raise ValueError("saved baseline input Q differs from the V4 baseline artifact")
+    if not same_bits(
+        arrays["block__theta_m"] + arrays["parent_alpha025__delta_theta"],
+        arrays["parent_alpha025__theta_m"],
+    ):
+        raise ValueError("alpha=.25 theta input does not reproduce saved trial")
+    if not same_bits(
+        arrays["block__qv"] + arrays["parent_alpha025__delta_qv"],
+        arrays["parent_alpha025__qv"],
+    ):
+        raise ValueError("alpha=.25 Q input does not reproduce saved trial")
+    return preparation, arrays
+
+
+def load_model_config(mode, build_receipt):
+    sys.path.insert(0, str(SOURCE_V2))
+    from harness.prepare_native_satellite_case import load_case_config
+    from harness.run_native_candidate_observation import (
+        EXPERIMENT,
+        _runtime_environment,
+    )
+    from harness.run_native_satellite_case import make_physics
+    import torch
+
+    case_manifest = json.loads((PARENT / "CASE_MANIFEST.json").read_text())
+    config = load_case_config(case_manifest["case_preparation"]["paths"])
+    if mode == "control":
+        library = Path(case_manifest["case_preparation"]["paths"]["candidate_library"])
+        expected = build_receipt["parent_build"]["DSO_sha256"]
+    else:
+        library = Path(build_receipt["isolated_outputs"]["DSO"])
+        expected = build_receipt["isolated_outputs"]["DSO_sha256"]
+    actual = sha256_file(library)
+    if actual != expected:
+        raise ValueError("selected DSO differs from the prepared build receipt")
+    config["paths"]["candidate_library"] = library
+    torch.set_num_threads(1)
+    return (
+        config,
+        EXPERIMENT,
+        _runtime_environment,
+        make_physics,
+        torch,
+        library,
+        actual,
+    )
+
+
+def build_minimal_block(arrays):
+    return {
+        "B": 512,
+        "L": 39,
+        "xland": arrays["block__xland"],
+        "geometry": {
+            name: arrays[f"block__geometry__{name}"]
+            for name in ("phb", "c3h", "c4h", "c3f", "c4f")
+        },
+    }
+
+
+def output_arrays(output):
+    result = {
+        "finish": np.stack([numpy_copy(value) for value in output.finish]),
+        "rho_d": numpy_copy(output.rho_d),
+    }
+    for name, value in output.native_profile._asdict().items():
+        result["native_after_" + name] = numpy_copy(value)
+    for name, value in output.cloud_state._asdict().items():
+        result["cloud_" + name] = numpy_copy(value)
+    return result
+
+
+def compare_parent_outputs(saved, parent_archive, prefix):
+    checked = {}
+    missing = []
+    for name, value in saved.items():
+        key = prefix + name if prefix + name in parent_archive else name
+        if key not in parent_archive:
+            missing.append(name)
+        else:
+            checked[name] = same_bits(value, parent_archive[key])
+    return {
+        "exact_fields": checked,
+        "missing_fields": missing,
+        "all_exact": bool(checked) and all(checked.values()) and not missing,
+    }
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode", choices=MODES, required=True, help="one fresh process per DSO mode"
+    )
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--compare-mode-dir",
+        type=Path,
+        help="prior control/off result directory for exact cross-mode comparison",
+    )
+    args = parser.parse_args(argv)
+    if args.output_dir.exists() or args.output_dir.is_symlink():
+        raise FileExistsError(args.output_dir)
+    if args.mode == "control" and args.compare_mode_dir is not None:
+        raise ValueError(
+            "control is the root reference mode and has no prior compare-mode"
+        )
+    if args.mode != "control" and args.compare_mode_dir is None:
+        raise ValueError("trace modes must compare against a completed prior mode")
+    prep, arrays = load_inputs()
+    if args.mode != "control":
+        prior_receipt = args.compare_mode_dir / "execution.json"
+        if not prior_receipt.is_file():
+            raise FileNotFoundError(prior_receipt)
+        prior = json.loads(prior_receipt.read_text())
+        if not prior.get("parent_value_gates_passed"):
+            raise ValueError(
+                "cannot compare to a prior mode whose parent output gates failed"
+            )
+
+    build_receipt = json.loads(BUILD_RECEIPT.read_text())
+    (
+        config,
+        experiment,
+        runtime_environment,
+        make_physics,
+        torch,
+        library,
+        library_sha,
+    ) = load_model_config(args.mode, build_receipt)
+    block = build_minimal_block(arrays)
+    prepared_path = args.output_dir.parent / (args.output_dir.name + ".prepared.json")
+    if prepared_path.exists() or prepared_path.is_symlink():
+        raise FileExistsError(prepared_path)
+    args.output_dir.parent.mkdir(parents=True, exist_ok=True)
+    write_json_new(
+        prepared_path,
+        {
+            "schema": "kdm6.block22_activation_value_call_prepared.v1",
+            "mode": args.mode,
+            "run_id": json.loads((PARENT / "CASE_MANIFEST.json").read_text())["run_id"],
+            "block_index": 22,
+            "B": 512,
+            "L": 39,
+            "range": [11264, 11776],
+            "input_bundle_sha256": prep["input_npz_sha256"],
+            "candidate_library": str(library),
+            "candidate_library_sha256": library_sha,
+            "build_receipt_sha256": sha256_file(BUILD_RECEIPT),
+            "mode_environment": {
+                "factorial_mode": experiment["factorial_mode"],
+                "qr_transport": experiment["qr_transport"],
+                "dt_seconds": experiment["dt_seconds"],
+            },
+            "per_process_call_budget": {
+                "KDM_forward": 2,
+                "KDM_JVP": 0,
+                "KDM_VJP": 0,
+                "RTTOV_direct": 0,
+                "RTTOV_K": 0,
+                "native_host": 0,
+            },
+            "new_model_call_executed": False,
+        },
+    )
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    trace_path = args.output_dir / "activation_trace.tsv"
+    os.environ.pop("KDM6_BLOCK22_ACTIVATION_TRACE", None)
+    if args.mode == "trace_on":
+        os.environ["KDM6_BLOCK22_ACTIVATION_TRACE"] = str(trace_path)
+
+    def tensor(value):
+        return tensor_from(value, torch)
+
+    inputs = (
+        tensor(arrays["block__theta_m"]),
+        tensor(arrays["block__qv"]),
+        tensor(arrays["block__mu"]),
+        tensor(arrays["block__ph"]),
+        tensor(arrays["block__rest"]),
+    )
+    states = (
+        ("baseline", inputs[0], inputs[1], "baseline"),
+        (
+            "alpha025",
+            tensor(arrays["parent_alpha025__theta_m"]),
+            tensor(arrays["parent_alpha025__qv"]),
+            "alpha025",
+        ),
+    )
+    model = None
+    records = []
+    saved_arrays = {}
+    started = time.monotonic()
+    with runtime_environment(experiment):
+        os.environ.pop("KDM6_BLOCK22_ACTIVATION_TRACE", None)
+        if args.mode == "trace_on":
+            os.environ["KDM6_BLOCK22_ACTIVATION_TRACE"] = str(trace_path)
+        model = make_physics(config, block)
+        with torch.no_grad():
+            for label, theta, qv, ref_prefix in states:
+                output = model(theta, qv, inputs[2], inputs[3], inputs[4])
+                values = output_arrays(output)
+                saved_arrays.update(
+                    {label + "__" + name: value for name, value in values.items()}
+                )
+                parent_npz_path = Path(
+                    prep["parent_artifacts"][
+                        "baseline_npz" if label == "baseline" else "alpha025_npz"
+                    ]["path"]
+                )
+                with np.load(parent_npz_path, allow_pickle=False) as parent_npz:
+                    expected = {name: parent_npz[name] for name in parent_npz.files}
+                comparison = compare_parent_outputs(values, expected, "parent_")
+                state_input_equal = same_bits(
+                    theta.detach().cpu().numpy(),
+                    arrays["block__theta_m"]
+                    if label == "baseline"
+                    else arrays["parent_alpha025__theta_m"],
+                ) and same_bits(
+                    qv.detach().cpu().numpy(),
+                    arrays["parent_baseline__qv"]
+                    if label == "baseline"
+                    else arrays["parent_alpha025__qv"],
+                )
+                records.append(
+                    {
+                        "state": label,
+                        "state_TQ_matches_saved_parent": state_input_equal,
+                        "parent_reference_npz": str(parent_npz_path),
+                        "parent_reference_npz_sha256": sha256_file(parent_npz_path),
+                        "physical_output_comparison": comparison,
+                        "KDM_forward_calls": 1,
+                        "KDM_JVP_calls": 0,
+                        "KDM_VJP_calls": 0,
+                        "RTTOV_direct_calls": 0,
+                        "RTTOV_K_calls": 0,
+                    }
+                )
+    elapsed = time.monotonic() - started
+    if model is not None:
+        del model
+    compare_outputs = {}
+    if args.compare_mode_dir is not None:
+        prior_npz_path = args.compare_mode_dir / "values.npz"
+        with np.load(prior_npz_path, allow_pickle=False) as prior_npz:
+            for name in saved_arrays:
+                compare_outputs[name] = same_bits(saved_arrays[name], prior_npz[name])
+    with args.output_dir.joinpath("values.npz").open("xb") as stream:
+        np.savez(stream, **saved_arrays)
+        stream.flush()
+        os.fsync(stream.fileno())
+    trace_info = None
+    if args.mode == "trace_on":
+        if not trace_path.is_file():
+            raise FileNotFoundError(
+                "instrumented DSO did not create the requested trace"
+            )
+        trace_info = {
+            "path": str(trace_path),
+            "bytes": trace_path.stat().st_size,
+            "sha256": sha256_file(trace_path),
+        }
+    value_gate = all(
+        r["state_TQ_matches_saved_parent"]
+        and r["physical_output_comparison"]["all_exact"]
+        for r in records
+    )
+    cross_mode_gate = args.compare_mode_dir is None or all(compare_outputs.values())
+    receipt = {
+        "schema": "kdm6.block22_activation_value_call.v1",
+        "mode": args.mode,
+        "run_id": json.loads((PARENT / "CASE_MANIFEST.json").read_text())["run_id"],
+        "parent_run_id": prep["parent_run_id"],
+        "block_index": 22,
+        "B": 512,
+        "L": 39,
+        "range": [11264, 11776],
+        "candidate_library": str(library),
+        "candidate_library_sha256": library_sha,
+        "build_receipt_sha256": sha256_file(BUILD_RECEIPT),
+        "input_bundle_sha256": prep["input_npz_sha256"],
+        "value_calls": records,
+        "cross_mode_reference_dir": str(args.compare_mode_dir)
+        if args.compare_mode_dir
+        else None,
+        "cross_mode_exact_fields": compare_outputs,
+        "parent_value_gates_passed": value_gate,
+        "cross_mode_noninterference_passed": cross_mode_gate,
+        "elapsed_seconds": elapsed,
+        "process_peak_rss_bytes": int(
+            resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        ),
+        "trace": trace_info,
+        "no_RTTOV_calls": True,
+        "no_AD_calls": True,
+        "no_host_steps_or_cycles": True,
+    }
+    write_json_new(args.output_dir / "execution.json", receipt)
+    print(
+        json.dumps(
+            {
+                "mode": args.mode,
+                "parent_value_gates_passed": value_gate,
+                "cross_mode_noninterference_passed": cross_mode_gate,
+                "KDM_forward_calls": 2,
+                "RTTOV_calls": 0,
+                "elapsed_seconds": elapsed,
+                "trace": trace_info,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

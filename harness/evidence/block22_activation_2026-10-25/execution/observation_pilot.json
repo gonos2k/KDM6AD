@@ -1,0 +1,148 @@
+{
+  "calls": {
+    "alpha025": {
+      "K_recovered": 0,
+      "RTTOV_K_calls": 0,
+      "RTTOV_direct_calls": 1,
+      "baseline_K_recovery_receipt_sha256": "545291b363cc5bd23cc5a6de3feadf79c6c072c92988b09bba318c9511677fce",
+      "bt_abs_difference_per_channel": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bt_kma_v3_0": [
+        250.86694800441825,
+        266.07925599272,
+        253.10102173459913,
+        268.185783718453,
+        267.06115253220634,
+        265.54415226761284,
+        259.0357304539278
+      ],
+      "bt_matches_parent_bitwise": true,
+      "bt_max_abs_difference": 0.0,
+      "native_ijk1": [
+        167,
+        50,
+        18
+      ],
+      "new_KDM_calls": 0,
+      "preflight_receipt_sha256": "343dff5af0c5a5b3fea49a0691e20a6f0088561df4f3a85f7898abfb5bd9f2ca",
+      "producer_sha256": "300338241270596119c24d26b8235d82e524f1eb175bb2d6a7289667b4adb69b",
+      "profile_fields_match_parent_bitwise": {
+        "CFRAC": true,
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "profile_valid_matches_parent": true,
+      "quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quality_matches_parent": true,
+      "receipt_sha256": "af6725027efa124ba74d859ceadfb2e1ab0ea4bbb6de4643d02698c1387dc7d1",
+      "rttov_receipt": {
+        "K_calls": 0,
+        "K_recovered": 0,
+        "baseline_operator": false,
+        "bt_coordinate": "kma_v3_0",
+        "case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/pilot_v2/alpha025/case_direct",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "config_hash": "27d04fc8c944e48d",
+        "direct_calls": 1,
+        "driver_flags": {
+          "case_do_direct": true,
+          "case_do_k": false,
+          "template_do_direct": true,
+          "template_do_k": true
+        },
+        "mode": "direct",
+        "nprofiles": 1,
+        "per_profile_geometry_surface": true,
+        "pressure_gradients": true,
+        "source_flat_indices": [
+          11632
+        ]
+      },
+      "schema": "kdm6.block22_alpha025_direct_target_receipt.v1",
+      "status": "ONE_DIRECT_RTTOV_CALL_COMPLETE_PENDING_ROOT_REVIEW",
+      "support_mask_matches_parent": true,
+      "target_flat0": 11632,
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/pilot_v2/alpha025/target_observation.npz",
+      "target_npz_sha256": "85b7eeb3a3438f038dc41d2d38860b496e1070f6a6bfebf6fffd21537ce833ce",
+      "target_row0": 368
+    },
+    "baseline": {
+      "K_calls": 1,
+      "K_profile_fields_match_parent_bitwise": {
+        "HYDRO6": true,
+        "HYDRO7": true,
+        "HYDRO_DEFF6": true,
+        "HYDRO_DEFF7": true,
+        "P": true,
+        "P_HALF": true,
+        "Q": true,
+        "T": true
+      },
+      "K_recovered": 0,
+      "bt_kma_v3_0": [
+        251.15808105601587,
+        275.27456521304646,
+        259.0426167048654,
+        277.2934836204166,
+        275.51584981578844,
+        272.24224912275713,
+        262.7492087103915
+      ],
+      "direct_calls": 0,
+      "mode": "K",
+      "quality": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "recovery_receipt_sha256": "545291b363cc5bd23cc5a6de3feadf79c6c072c92988b09bba318c9511677fce",
+      "rows": [
+        368
+      ],
+      "target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/pilot_v2/baseline/target_observation.npz",
+      "target_npz_sha256": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d"
+    }
+  },
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "new_KDM_calls": 0,
+  "preflight_receipt_sha256": "343dff5af0c5a5b3fea49a0691e20a6f0088561df4f3a85f7898abfb5bd9f2ca",
+  "receipt_sha256": "6ebe06e206dad444c7cbf4224d3dfa6d36729a7bea42b7a51ea7946d5ad36e1b",
+  "saved_actual_direction_ad_npz_sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+  "saved_value_npz_sha256": "6189e21c0fbc93ec41a9f6de5632ac159c99e77a0e785ccebbf12e351db81c92",
+  "schema": "kdm6.block22_target_observation_pilot_result.v1",
+  "selection_contract": "B512 KDM outputs loaded unchanged; only observation-profile row 368 selected for RTTOV N=1 pilot; source/QC/moment metadata retained from original row.",
+  "status": "PILOT_COMPLETE_PENDING_ROOT_REVIEW"
+}

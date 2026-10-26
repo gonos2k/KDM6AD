@@ -1,0 +1,42 @@
+{
+  "AD_products_sha256": "d56bbd41c3e30dd239e6b9770d719a51fa76bf6639e722f279af5630119b81af",
+  "AD_receipt_sha256": "30e1e20b38a6134c68342a096cc3404d34c4bf91c5678c7396122b53cc1b6fb3",
+  "KDM6_calls": 0,
+  "RTTOV_calls": 0,
+  "basepoints": {
+    "alpha025": {
+      "KDM6_calls": 0,
+      "RTTOV_calls": 0,
+      "post_finish_native_prep_jvp_calls": 1,
+      "primal_rho_bitwise_matches_saved": true,
+      "primal_rho_sha256": "3f7d962de81d684b7cb3698df7277849891d9c713b3651e1d9731b42c6d2b59e",
+      "tangent_rho_finite": true,
+      "tangent_rho_sha256": "5927b4ab8fa98e44b87c87909e26934873cc1eb82d9c590dca66634e5a2cd266"
+    },
+    "baseline": {
+      "KDM6_calls": 0,
+      "RTTOV_calls": 0,
+      "post_finish_native_prep_jvp_calls": 1,
+      "primal_rho_bitwise_matches_saved": true,
+      "primal_rho_sha256": "3f7d962de81d684b7cb3698df7277849891d9c713b3651e1d9731b42c6d2b59e",
+      "tangent_rho_finite": true,
+      "tangent_rho_sha256": "5927b4ab8fa98e44b87c87909e26934873cc1eb82d9c590dca66634e5a2cd266"
+    }
+  },
+  "created_at_utc": "2026-10-25T02:06:42.223963+00:00",
+  "derived_from": [
+    "saved post-finish primal native T and QV",
+    "saved post-finish tangent native T and QV",
+    "fixed baseline MU, PH and prep geometry",
+    "pinned native_prep_jvp through NativeBatchMicrophysics._prep_batch"
+  ],
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "not_captured_by_KDM_AD_driver": true,
+  "parent_case_manifest_sha256": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+  "product_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/driver_v1/postprep_rho_jvp_v2/postprep_rho_jvp.npz",
+  "product_npz_sha256": "adc326922983aa7df05a94517777b1f40faa7647d7fb37594bd288cc81fa356e",
+  "schema": "kdm6.block22_postprep_rho_jvp_replay.v1",
+  "source_v2_batch_adapter_sha256": "c21fb137ccb1f9f724233b83e784d970fb3b98db9f87f3a3a898b3547090a0f9",
+  "source_v2_native_prep_sha256": "b5386603f0cb7f021b7d4c46493bfc77599fd2dcea49d5a67e845904b9b95ed5",
+  "status": "PURE_PREP_REPLAY_COMPLETE"
+}

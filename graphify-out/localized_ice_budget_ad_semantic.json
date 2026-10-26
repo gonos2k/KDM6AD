@@ -254,7 +254,15 @@
           "bytes": 8429,
           "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
         }
-      }
+      },
+      "strict_source_paths": [
+        "libtorch/bridge/kdm6_c_api.cpp",
+        "libtorch/bridge/kdm6_c_api.h",
+        "harness/tests/test_localized_ice_evidence.py"
+      ],
+      "available_revisions_are_not_execution_commit_attestation": true,
+      "PR453_integration_main": "59d7926ceba90cbce07be57937930249ff2f3ef2",
+      "H1_historical_source_routing_preserved": true
     },
     {
       "id": "localized_ice_historical_capi_source_pair",
@@ -412,6 +420,49 @@
           "sha256": "c0d7bb44417b1caa8bd847c13a1e2eb67fae6473b4e2ff84857f7dcee4c3b173"
         }
       }
+    },
+    {
+      "id": "pr453_main_integration_history",
+      "label": "PR453 integrated with main 59d7926 while preserving its H1 historical banner/source routing; no numerical/runtime evidence changed in integration",
+      "file_type": "document",
+      "source_file": "harness/evidence/pr453_additional_review_2026-10-26/README.md",
+      "source_location": "L1-L20",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "reviewed_PR_head": "a0e4c622e435b4ad816c20110c88cf62f0a538b0",
+      "integrated_main": "59d7926ceba90cbce07be57937930249ff2f3ef2",
+      "merge_conflict": "one add/add checklist conflict resolved to the PR H1 banner/current-progress link",
+      "existing_PR453_production_files_bit_identical": true,
+      "numeric_products_changed": false,
+      "source_sha256": "0733c9b12c17b5bcf53b7a5b543b3f094eac926b785033e7c1e85e30cfb84ba3"
+    },
+    {
+      "id": "pr453_fp_environment_preflight_refusal_probe",
+      "label": "Invalid scalar preflight may add FE_INEXACT before the guard; rounding and output/handle guarantees remain intact, caller exception-status preservation is not claimed",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/pr453_additional_review_2026-10-26/fenv_probe_result.json",
+      "source_location": "/result; /calls; /scope",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "executed_library_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+      "probe_source_sha256": "943815fce5a82c782be9f71a7b174f0abe2224e36df4ceeb678b3a9f63dcf6fe",
+      "rc": -6,
+      "flags_before": 2,
+      "flags_after": 18,
+      "added_FE_INEXACT": 16,
+      "rounding_preserved": true,
+      "handle_null": true,
+      "output_unchanged": true,
+      "ABI_refusals": 1,
+      "KDM_kernel_forwards": 0,
+      "host_steps": 0,
+      "RTTOV_calls": 0,
+      "no_AD_claim": true,
+      "related_doc": "docs/NATIVE_FP64_VALUE_BRIDGE.md",
+      "related_doc_sha256": "6f4f22d8dd66b63f7e409e7f915319b1a5a01db79d81f4b2abd371465ab8b492",
+      "source_sha256": "f0efeabf84227ba5d27c5a336bb39e957febe2e2af981419ccc75e61f5880bc0"
     }
   ],
   "edges": [
@@ -551,6 +602,36 @@
       "relation": "requires_original_historical_test_digest_without_relaxing_other_manifest_hashes",
       "source_file": "harness/tests/test_localized_ice_evidence.py",
       "source_location": "L178-L201",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "pr453_main_integration_history",
+      "target": "localized_ice_historical_source_resolution",
+      "relation": "preserves_exact_historical_source_routing_and_H1_document_history_during_integration",
+      "source_file": "harness/evidence/pr453_additional_review_2026-10-26/README.md",
+      "source_location": "L1-L13",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "pr453_main_integration_history",
+      "target": "pr453_fp_environment_preflight_refusal_probe",
+      "relation": "adds_a_documentation_scope_note_for_a_read_only_scalar_preflight_probe_without_runtime_or_numeric_changes",
+      "source_file": "harness/evidence/pr453_additional_review_2026-10-26/README.md",
+      "source_location": "L14-L20",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "localized_ice_current_inventory_source_resolver_test",
+      "target": "localized_ice_historical_source_resolution",
+      "relation": "checks_the_exact_manifest_pin_and_whitelisted_source_hashes_while_preserving_direct_hash_checks_for_all_other_artifacts",
+      "source_file": "harness/tests/test_localized_ice_evidence.py",
+      "source_location": "L174-L204",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "_origin": "semantic"

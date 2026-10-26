@@ -1,0 +1,30 @@
+{
+  "KDM6_calls": 0,
+  "RTTOV_calls": 0,
+  "absolute_provenance_paths_required_for_arithmetic": false,
+  "audit_source_snapshot_path": "lineage/source/audit_native_cloud_efficacy_v13.py.txt",
+  "audit_source_snapshot_sha256": "defc04ccc8ebb394ccb25c77d7b9fcbc8494543e93f1ee7e9cd79aa182e5db30",
+  "chunks": 129,
+  "columns": 65988,
+  "export_input_manifest_path": "lineage/export/input_manifest.json",
+  "export_input_manifest_sha256": "e89e816e606b1f2b061c04d5c6509b9a0e83d0b170501fe667d0ed3a35e6c8b8",
+  "export_manifest_path": "lineage/export/output_manifest.json",
+  "export_manifest_sha256": "66a358255ed136c809ecf83d174e5bbbe7bd89f9b62b8e2efbd0405eb3cbf077",
+  "host_calls": 0,
+  "limits": [
+    "This is one saved native KDM state response at a fixed analysis time; it does not show a new gradient or optimizer relinearization after applying the state change.",
+    "The user\u2019s one-shot cloud-analysis effectiveness goal is not met by this evidence; the high-score sample is concentrated and warmed-IR105 / QC-empty cohorts require physical interpretation.",
+    "A warm IR105 residual is not cloud truth; no cloud retrieval or independent cloud observation is available here.",
+    "RTTOV CFRAC is a bounded binary/near-binary profile diagnostic, not continuous cloud-cover truth.",
+    "QC==0 alone does not establish an optically empty column; QI and QS must also be checked. QG and QR are not part of the stated QI+QS direct ice optical mapping.",
+    "Column LWP/IWP are per-column physical integrals; cohort summaries are unweighted column statistics, not area-integrated regional mass or a closed precipitation budget.",
+    "The candidate is a restricted alpha=1 control endpoint with unchanged original support; no convergence, forecast, host-cycle, time-advance or optimizer-algorithm change is claimed."
+  ],
+  "optimizer_calls": 0,
+  "portable_summary_path": "EFFICACY_AUDIT.json",
+  "portable_summary_sha256": "bb96a0f17baf1144bbab53e9b3e698019037a33efa0b9ccd24fc33fa47382ebd",
+  "schema": "kdm6.native_cloud_efficacy_packet_completion.v1",
+  "source_completion_sha256": "7733d86e39cbd9578675ade7d9795df47c9433fd24312c09f43d9113efbfbc6f",
+  "source_summary_sha256": "75c0ca4078b76efac7bfa2d8018e46cb9fb7a6df4f4327aa3d209dae7be00857",
+  "status": "CURATED_PORTABLE_PACKET_READY"
+}

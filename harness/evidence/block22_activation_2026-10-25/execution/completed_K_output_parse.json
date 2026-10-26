@@ -1,0 +1,114 @@
+{
+  "KMA_transform_metadata": [
+    [
+      1.0000056378804125,
+      0.999999843542428,
+      1.0000108889632997,
+      0.9999948394821822,
+      0.9999911948972541,
+      0.9999912730836018,
+      0.999601974209259
+    ]
+  ],
+  "K_profile_fields_match_parent_bitwise": {
+    "HYDRO6": true,
+    "HYDRO7": true,
+    "HYDRO_DEFF6": true,
+    "HYDRO_DEFF7": true,
+    "P": true,
+    "P_HALF": true,
+    "Q": true,
+    "T": true
+  },
+  "additional_KDM_calls_for_recovery": 0,
+  "additional_RTTOV_calls_for_recovery": 0,
+  "attempt_receipt_sha256": "427f5eac83648448d1a75ae40bea57f72776996706cd5bca803421f25224f580",
+  "bt_matches_parent_bitwise": true,
+  "channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "fixed_or_uncontracted_K_fields": [
+    "CFRACTION",
+    "CO2",
+    "CTP",
+    "HYDRO",
+    "HYDRO_DEFF",
+    "HYDRO_FRAC",
+    "HYDRO_FRAC_EFF",
+    "NEAR_SURFACE(1)%Q2M",
+    "NEAR_SURFACE(1)%T2M",
+    "NEAR_SURFACE(1)%WIND_FETCH",
+    "NEAR_SURFACE(1)%WIND_U10M",
+    "NEAR_SURFACE(1)%WIND_V10M",
+    "O3",
+    "SKIN(1)%FASTEM",
+    "SKIN(1)%FOAM_FRACTION",
+    "SKIN(1)%SALINITY",
+    "SKIN(1)%T"
+  ],
+  "fixed_or_uncontracted_scope": "RTTOV emitted additional O3/CO2/surface/diagnostic K blocks; only the eight live differentiable observation-profile fields are contracted. O3/CO2 remain fixed reference inputs here.",
+  "fresh_RTTOV_K_calls_already_completed": 1,
+  "input_bundle_sha256": "49787fdd96fa6f4835b06c241251b18458a30b54438eb5a902eeb37246b7917f",
+  "native_ijk1": [
+    167,
+    50,
+    18
+  ],
+  "observation_profile_source": "pinned full-B saved physics outputs rebuilt through source_v2 native profile builder; bitwise equal to parent full-batch target profile",
+  "pilot_helper_source_snapshot_sha256": "42816f2d011f0e1a33bda45568cee05a81b68e3866913e1723ad8ff66b2992b2",
+  "producer_sha256": "603e738daac345ed79d423970cb11fa923a8d6963d7b05fc44a00f3adbf26c07",
+  "profile_fields_match_parent_bitwise": {
+    "CFRAC": true,
+    "HYDRO6": true,
+    "HYDRO7": true,
+    "HYDRO_DEFF6": true,
+    "HYDRO_DEFF7": true,
+    "P": true,
+    "P_HALF": true,
+    "Q": true,
+    "T": true
+  },
+  "profile_nprofiles": 1,
+  "quality_matches_parent_bitwise": true,
+  "raw_case_outputs": {
+    "k/profiles_k.txt": {
+      "bytes": 276328,
+      "sha256": "3766db94304f4a2aac2bb93875da9da16a736baaacbe2702c22fb1212abb2738"
+    },
+    "k/radiance.txt": {
+      "bytes": 1155,
+      "sha256": "4a2ab0e9afec718d562536c708af5cede582992afb2c88d62d527dd0028b6577"
+    },
+    "rttov_test.txt": {
+      "bytes": 5336,
+      "sha256": "2f5d770a522ffd5419109486388e86f53ef2ff25479cd4825d3cfd9b65abd809"
+    },
+    "run.sh": {
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "run.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "run.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "receipt_sha256": "785e36f3c27fea298145569b7e9c893bc6982b517525116a150fdfa0db06ebac",
+  "recovered_target_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_block22_activation_20261025/observation_prep_v1/pilot_v2/baseline/target_observation.npz",
+  "recovered_target_npz_sha256": "98098d0084d2f7b375540712556d8c5521ca076347d8b6173f7ab00ea3e0ad9d",
+  "saved_fullB_values_sha256": "6189e21c0fbc93ec41a9f6de5632ac159c99e77a0e785ccebbf12e351db81c92",
+  "schema": "kdm6.block22_baseline_k_saved_output_recovery.v1",
+  "status": "ONE_FRESH_K_PARSED_AND_RECONSTRUCTED_NO_RERUN",
+  "target_flat0": 11632,
+  "target_row0": 368,
+  "target_support_all_channels": true
+}

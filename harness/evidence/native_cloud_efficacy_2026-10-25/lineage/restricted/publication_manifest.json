@@ -1,0 +1,230 @@
+{
+  "schema": "kdm6.native_satellite_restricted_publication.v1",
+  "status": "RESTRICTED_UPDATE_ACCEPTED",
+  "run_id": "24e16697eec34ea28ff0ae51cf6be0144391f80af5ebc21f19223b06ed087139",
+  "parent_run_id": "b2779685e0f5ef6c8d6627e4d74a4904d2dbea06bb3052b4c0586c28dbb27fc7",
+  "parent_publication_manifest_sha256": "bc67f05376b52f9f11c30f88e83988bcb0772f7701698885c7f5e88ed12355b5",
+  "created_at_UTC": "2026-10-24T23:31:42.732431+00:00",
+  "columns": 65988,
+  "blocks": 129,
+  "levels": 39,
+  "accepted": true,
+  "globalZ": 381528.0,
+  "original_parent_status": "COMPLETED_NO_ACCEPTABLE_UPDATE",
+  "model_calls": {
+    "KDM_forward": 129,
+    "KDM_JVP": 0,
+    "KDM_VJP": 0,
+    "RTTOV_K": 0,
+    "RTTOV_K_replayed": 0,
+    "RTTOV_direct": 129
+  },
+  "artifacts": {
+    "baseline_applied_qc.npz": {
+      "sha256": "4a27a4ce8cca6577bbab40add848bdaa91e1cdbe23e91c437d7d860787c7e1f2",
+      "bytes": 1395963
+    },
+    "baseline_applied_tq.npz": {
+      "sha256": "7b0e60a4ef57a746a4780ef776d73081ebd219e91ce48ff722c11fb9fa9e115e",
+      "bytes": 23598237
+    },
+    "candidate_applied_qc.npz": {
+      "sha256": "0ad1b5851f3db735fcc794f451fa4eeed2a25b983e1b0a40eafa9b3e04175cec",
+      "bytes": 1395801
+    },
+    "candidate_applied_tq.npz": {
+      "sha256": "b3e5f7d9b5c652b7aca875250126fbe6023d6e28a230a99fbaad9b146b10b26e",
+      "bytes": 32998125
+    },
+    "candidate_input_delta.npz": {
+      "sha256": "b5ecf7e396186377a06623e753e48f4c61f2d67930e1f4bace4b93fbf38818bc",
+      "bytes": 26132753
+    },
+    "candidate_input_state.npz": {
+      "sha256": "c32bf411412b6955f3ad0c2e6f4215e9cfc4124d43362a7d4dbcd1b0f426dcb5",
+      "bytes": 32233194
+    },
+    "channel_10.png": {
+      "sha256": "e23c046255491af86af38088522b59ce6cb27836b27edd95af255236c22a5565",
+      "bytes": 703572
+    },
+    "channel_11.png": {
+      "sha256": "0fa0c3935302510dd3fd22902e97803a68d38eb0092a9f5a012f82056af475c3",
+      "bytes": 906752
+    },
+    "channel_12.png": {
+      "sha256": "7521477da58dbdb46224182d5b3947ca406faefe77122c69906a8b74aa21722c",
+      "bytes": 899279
+    },
+    "channel_13.png": {
+      "sha256": "a5804419dd2497ab311a8b7538e3fdc4b8a7ea156d224a58f07a85e500d4be3e",
+      "bytes": 900850
+    },
+    "channel_14.png": {
+      "sha256": "954d3fad9bf80f9bfcd7661325a8877293159755c117b8e628a76807d09940c2",
+      "bytes": 896240
+    },
+    "channel_15.png": {
+      "sha256": "c40ac447d45dbe2fb36d8cab6515fc906e7ede8582f4e5e50b584ecac5da0f63",
+      "bytes": 871515
+    },
+    "channel_16.png": {
+      "sha256": "b490e446f093a0b5711ffd373e36ced431cc772dd5e3a81eee2e407dbbb79d69",
+      "bytes": 821428
+    },
+    "channel_comparison.npz": {
+      "sha256": "a79a02eefc12dd112b5374843bb1d4be445c95aa72016f3908050d2329acb949",
+      "bytes": 12927170
+    },
+    "column_rate_response.npz": {
+      "sha256": "abd503442093b05e23c2f24370c71948e3992062462b34a84b1d4bba32c348b1",
+      "bytes": 3188702
+    },
+    "control_updates_and_reasons.png": {
+      "sha256": "f7e5707f426014228b21894adfef8bb9c50956a6ca7472c4fa1081190b1c6e60",
+      "bytes": 129520
+    },
+    "execution/ACTUAL_CONFIRMATION_REQUEST.json": {
+      "sha256": "e6b9218d0a59d10e760cc1228bd01606066b4419c2900edc5bf8ad0e4e944c7f",
+      "bytes": 1354
+    },
+    "execution/CASE_MANIFEST.json": {
+      "sha256": "76f981eb2f92fdef6f19495aa6f143e467dde634ed6106b4d9a50c1a310f502b",
+      "bytes": 243171
+    },
+    "execution/CONFIRMATION.json": {
+      "sha256": "ff4be67c40df76d864516b495754f9da746211e183a007def0659fee6413df58",
+      "bytes": 1437436
+    },
+    "execution/FULL_RECONSTRUCTION_AUDIT.json": {
+      "sha256": "091212c29182f821346b780a1c34e60f9e2389c1189f368a43741b3e01293c19",
+      "bytes": 483906
+    },
+    "execution/PREFLIGHT_PARENT_RUN_V4_20261025.json": {
+      "sha256": "bca4981852768d52db0f0a208286544b2c348aec4336ebfc32e68b2996934286",
+      "bytes": 10465
+    },
+    "execution/PROCESS_EXIT.json": {
+      "sha256": "c05532a955a91e4f54fd730627feb71374bfed8a8db07d3fae2d16c7be3cb62b",
+      "bytes": 94
+    },
+    "execution/PROCESS_STARTED.json": {
+      "sha256": "fdd2dd4719b4285c23d5c9151e5a4796488e4008d4de69189460fba2eab15d03",
+      "bytes": 655
+    },
+    "execution/SOURCE_SNAPSHOT_v2.json": {
+      "sha256": "ea9ae1c2d58c58f3f8d0f1ab4b873a1659cd3c30f3991bd3934614a89d2c045b",
+      "bytes": 29928
+    },
+    "execution_sources/curation_replay_native_satellite_case.py.txt": {
+      "sha256": "5715af0be5edc2d6ecfc8e51d570092f9b65699b54944d6e2e1d8673c9c664cd",
+      "bytes": 35657
+    },
+    "execution_sources/curation_summarize_native_satellite_case.py.txt": {
+      "sha256": "7903dbf5bd071233c8b992a0d2543491c13c5ce3bf730469913b03fe39de419b",
+      "bytes": 95191
+    },
+    "execution_sources/executed_native_satellite_objective.py.txt": {
+      "sha256": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40",
+      "bytes": 16891
+    },
+    "execution_sources/executed_run_native_satellite_case.py.txt": {
+      "sha256": "ee23e31fd50cfed35e58caceaf9effbef5b62bd905893c7873d1cc15ccfabd6a",
+      "bytes": 87401
+    },
+    "execution_sources/figure_renderer.py.txt": {
+      "sha256": "70667d110f0883037cc2416970d002b642551c0233edf4f8b5ba78f5fd5f5e33",
+      "bytes": 95387
+    },
+    "execution_sources/publish_restricted_case.py.txt": {
+      "sha256": "e89bc4dfaeaad940857dcc7be538750b32baa91f4ef6b6cac0377b53352b5290",
+      "bytes": 9065
+    },
+    "figure_layout_receipt.json": {
+      "sha256": "2cff9038a6f6b4ec58b3b5e007f6a8f307135b37e23f8315c35ece1ca6aa7f68",
+      "bytes": 664
+    },
+    "history/original_summary_maps/control_updates_and_reasons.png": {
+      "sha256": "aa30f97becc3e19ce87d30c74af64673a27e5c311d4f0ac6d8122ca2e3b674a5",
+      "bytes": 113458
+    },
+    "original_trial_fail29_crosswalk.json": {
+      "sha256": "4d66c990164d0284522818fefe95989ec35cd311989403e44f2fe1f06f863f52",
+      "bytes": 28541
+    },
+    "publication_sources.json": {
+      "sha256": "37ca3a436b71c607482a82f9570e80c6269c3cb5963e97f49b57df542cedb7fb",
+      "bytes": 8232
+    },
+    "restricted_block_screen.json": {
+      "sha256": "d636e77504a663d7f6c801a40f743541c499354611744e5304d76c4c2405d644",
+      "bytes": 58597
+    },
+    "restricted_candidate_sourcebound.json": {
+      "sha256": "2a45cd8269a5c331274c9be0024d3451346c8bf33bec639fdeabe9d7e205d9ed",
+      "bytes": 2862
+    },
+    "restricted_controls.npz": {
+      "sha256": "462fbc5b8995f3c88a1a10a59de0bb3014fb4bfa88444071c5668de4cacace11",
+      "bytes": 25871542
+    },
+    "source_plan_20261025.md": {
+      "sha256": "5645d1a2feb5dbe5d671df3ebb9f03e4c8c0b40518eceb5980dd4592ccbba452",
+      "bytes": 44329
+    },
+    "summary.json": {
+      "sha256": "622d20ddad610d87fbbceed4a0013cbd655012401d628dfefe3daac3e58deb74",
+      "bytes": 50648
+    },
+    "tendencies/H_RATE_K_per_s.npz": {
+      "sha256": "d164a7c673a8e5c215a7059084ce5aef25027fd793709ca61a3f3a623dfad7cc",
+      "bytes": 11761442
+    },
+    "tendencies/QC_RATE_kg_per_kg_dry_air_per_s.npz": {
+      "sha256": "4ae28201fc6bfb0581ff3270aa5c3e9a7ed2bad06a9b3c3e67e5f959ce244f10",
+      "bytes": 3489660
+    },
+    "tendencies/QV_RATE_kg_per_kg_dry_air_per_s.npz": {
+      "sha256": "3a99824d61a3a716c96c483f687b73504bf684e1be77dd893393aee40edc1eb6",
+      "bytes": 7842203
+    },
+    "tendencies/applied_water_columns.npz": {
+      "sha256": "f9b9bbab0e0fd0b6a8cc37078b1c80fac42ad82754154f6688670cf120534287",
+      "bytes": 33415188
+    },
+    "tendencies/finish_theta_coordinates.npz": {
+      "sha256": "d4ccec98ece7c7634fc7138f1159b93657dbc6cb34adad59da42cf97f56687b9",
+      "bytes": 36883296
+    },
+    "tendencies/initial_qc.npz": {
+      "sha256": "90d50310144253706b9d4a562d7cc9e0a2d01b08cd49809875d7dbe5c624cfa7",
+      "bytes": 981362
+    },
+    "tendencies/rate_relation_audit.json": {
+      "sha256": "74a39a3b03206b6cad3903e3ae0155c4af6da1d689977fcc557191e1ef07fb4f",
+      "bytes": 1001
+    },
+    "tendencies/tendency_crosswalk.json": {
+      "sha256": "01ffae64b6d5af8be3c4e87ad59a0c08e9623400409ea2593713cddde4872a76",
+      "bytes": 37759
+    },
+    "tendency_response.png": {
+      "sha256": "34ff0299c9c702475a71f4edf63835390dad342afc3fb792ba833cfccf789a62",
+      "bytes": 476352
+    },
+    "tendency_vertical_profiles.png": {
+      "sha256": "9be41289b92db369a1e867a0fb4ebe50940bfb79e949949eca739571b423c7c9",
+      "bytes": 144223
+    },
+    "water_phase_changes.png": {
+      "sha256": "ae9531f5c70523f620c3ef68a807c9a8c79115adfb250d6b3a02acdeb84f4f7c",
+      "bytes": 553834
+    }
+  },
+  "limits": [
+    "Post-hoc restricted one-step offline experiment on the same KO7 scene.",
+    "No host/RK cycle, forecast skill or convergence certification.",
+    "Published arithmetic does not re-execute private KDM/RTTOV or authenticate navigation/pixel UTC.",
+    "Legacy number units and physical-budget closure remain qualified."
+  ]
+}

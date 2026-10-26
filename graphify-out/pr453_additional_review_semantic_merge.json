@@ -1,0 +1,10 @@
+{
+  "fragments": [
+    "full_physics_forward_semantic.json",
+    "native_analysis_progress_20261025_semantic.json",
+    "localized_ice_budget_ad_semantic.json",
+    "activation_report_semantic.json",
+    "native_cloud_efficacy_packet_semantic.json"
+  ],
+  "scope": "Main integration adds historical activation/effectiveness evidence; new review narrows FP control/status wording without numerical or runtime changes."
+}

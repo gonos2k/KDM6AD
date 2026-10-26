@@ -1,0 +1,172 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Semantic extraction for the portable native cloud efficacy packet only. It records the saved baseline/restricted-candidate lineage, full-domain physical-field diagnostics, fixed-support BT cohorts, stored CFRAC gate, and stated one-shot limits. No source model, RTTOV, host, optimizer, or graph CLI was executed while curating this packet. Token use unmetered.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "native_cloud_efficacy_packet_readme",
+      "label": "Portable offline native cloud efficacy packet and scientific limits",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md",
+      "source_location": "L1-L25",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "claims": [
+        "The audit pairs saved baseline and restricted alpha=1 native fields over 65,988 columns and 39 bottom-first levels.",
+        "IR105 uses baseline fixed support; the packet separates liquid-empty QC-only cohorts from optically empty QC/QI/QS cohorts.",
+        "The one-shot saved state response does not meet the full cloud-analysis goal because another gradient/relinearization is needed after the state change."
+      ]
+    },
+    {
+      "id": "native_cloud_efficacy_portable_summary",
+      "label": "Full-domain metrics, cohort definitions, phase changes, and validity gates",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json",
+      "source_location": "/cohort_counts; /IR105_deltaBT_absolute_distribution; /IR105_residual_skill_and_absolute_error_gain; /physical_cloud_column_response; /physical_layer_level_deltas_bottomfirst; /qc_and_phase_transitions; /stored_RTTOV_CFRAC_gate; /limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "cohort_counts": {
+        "m0_IR105": 54504,
+        "m0_IR105_nonzero_restricted_control": 43062,
+        "QC_empty_warm_B_minus_O_gt_10K": 11730,
+        "QC_empty_warm_nonzero_control": 9699
+      },
+      "qc_zero_to_positive_layer_cells": 0,
+      "qc_positive_to_zero_layer_cells": 14,
+      "cfrac_change_cells": 11,
+      "cfrac_new_positive_cells": 0,
+      "unsupported_cfrac_rows_are_unknown": true,
+      "new_model_calls": 0
+    },
+    {
+      "id": "native_cloud_efficacy_split_native_state",
+      "label": "Lossless split native temperature, humidity, cloud phases, pressure, geometry, and weights",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/native_fields/NATIVE_TEMPERATURE_FIELDS_v1.npz",
+      "source_location": "arrays: flat_index, baseline_T_native_K_bottomfirst, candidate_T_native_K_bottomfirst",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "precision": "binary64, lossless",
+      "levels": 39,
+      "order": "native bottom-first"
+    },
+    {
+      "id": "native_cloud_efficacy_split_cloud_phases",
+      "label": "Paired baseline and candidate QC, QI, QS, and QG at native levels",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/native_fields/NATIVE_CLOUD_PHASE_FIELDS_v1.npz",
+      "source_location": "arrays: baseline__qc_kgkg, baseline__qi_kgkg, baseline__qs_kgkg, candidate__qc_kgkg, candidate__qi_kgkg, candidate__qs_kgkg; QG retained separately",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "units": "kg/kg dry-air mixing ratios",
+      "optical_mapping": "QC to liquid; QI+QS to ice; QG is not folded into that optical ice mapping"
+    },
+    {
+      "id": "native_cloud_efficacy_layer_geometry_weights",
+      "label": "Same native layer geometry and per-phase DEN times DELZ weights",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/native_fields/NATIVE_LAYER_MASS_WEIGHTS_v1.npz",
+      "source_location": "arrays: baseline_DEN_times_DELZ_kg_m2, candidate_DEN_times_DELZ_kg_m2",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "paired_phi_and_DELZ_bits_equal": true,
+      "purpose": "reconstruct per-column phase integrals at the same native height levels"
+    },
+    {
+      "id": "native_cloud_efficacy_stored_cfrac_gate",
+      "label": "Stored RTTOV profile CFRAC and separate QC/QI/QS threshold diagnostic",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/native_fields/NATIVE_CFRAC_GATE_v1.npz",
+      "source_location": "arrays: profile_valid and baseline/candidate profile_CFRAC native39 bottom-first",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "threshold_g_m3": 1e-6,
+      "stored_cfrac_positive_value": 0.999999,
+      "invalid_profile_policy": "CFRAC is NaN/unknown for profile-invalid columns, not inferred clear",
+      "meaning_limit": "Detached binary gate, not continuous cloud-cover truth or an optimizer control"
+    },
+    {
+      "id": "native_cloud_efficacy_fixed_support_bt_source",
+      "label": "Baseline/candidate BT, observations, fixed support, and weights",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/inputs/channel_comparison.npz",
+      "source_location": "arrays: observed_bt, baseline_bt, candidate_bt, mask, weights",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "channel_id": 13,
+      "channel_name": "IR105",
+      "support_rule": "baseline fixed-support mask; not reselected for candidate"
+    },
+    {
+      "id": "native_cloud_efficacy_restricted_controls",
+      "label": "Source-bound restricted controls and frozen block mask",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/data/inputs/restricted_controls.npz",
+      "source_location": "array: z[2,65988,39]; sourcebound freeze_blocks_0based in lineage/restricted/restricted_candidate_sourcebound.json",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "frozen_original_blocks": 25,
+      "active_control_columns_on_m0_IR105": 43062,
+      "interpretation_limit": "Nonzero restricted control support; does not establish forecast efficacy"
+    },
+    {
+      "id": "native_cloud_efficacy_source_lineage",
+      "label": "Exact v7 export, input, source, and completion receipts",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/publication_manifest.json",
+      "source_location": "/source_summary_sha256; /export_manifest_sha256; /export_input_manifest_sha256; /audit_source_snapshot_sha256; /artifacts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "portable_replay_inputs": [
+        "data/native_fields/",
+        "data/inputs/channel_comparison.npz",
+        "data/inputs/restricted_controls.npz"
+      ],
+      "path_limit": "Absolute workstation paths occur only in copied lineage receipts; arithmetic uses the relative packet data."
+    }
+  ],
+  "edges": [
+    {"source": "native_cloud_efficacy_packet_readme", "target": "native_cloud_efficacy_portable_summary", "relation": "explains_metrics_and_scope_of", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md", "source_location": "L5-L25", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_portable_summary", "target": "native_cloud_efficacy_split_native_state", "relation": "summarizes_paired_native_state_fields_from", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json", "source_location": "/physical_layer_level_deltas_bottomfirst", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_portable_summary", "target": "native_cloud_efficacy_split_cloud_phases", "relation": "reports_phase_changes_from", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json", "source_location": "/physical_cloud_column_response; /qc_and_phase_transitions", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_split_cloud_phases", "target": "native_cloud_efficacy_layer_geometry_weights", "relation": "uses_per_level_mass_weights_for_column_integrals", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json", "source_location": "/physical_cloud_column_response", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_split_cloud_phases", "target": "native_cloud_efficacy_stored_cfrac_gate", "relation": "distinguishes_water_phase_fields_from_stored_optical_gate", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md", "source_location": "L17-L19", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_portable_summary", "target": "native_cloud_efficacy_fixed_support_bt_source", "relation": "computes_fixed_support_BT_cohorts_from", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json", "source_location": "/IR105_deltaBT_absolute_distribution; /IR105_residual_skill_and_absolute_error_gain", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_portable_summary", "target": "native_cloud_efficacy_restricted_controls", "relation": "defines_active_unfrozen_control_cohorts_from", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/EFFICACY_AUDIT.json", "source_location": "/cohort_definitions; /cohort_counts", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_source_lineage", "target": "native_cloud_efficacy_portable_summary", "relation": "pins_source_and_artifact_identity_for", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/publication_manifest.json", "source_location": "/artifacts; /audit_source_snapshot_sha256", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"},
+    {"source": "native_cloud_efficacy_packet_readme", "target": "native_cloud_efficacy_source_lineage", "relation": "documents_portable_inputs_and_lineage_paths", "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md", "source_location": "L21-L25", "confidence": "EXTRACTED", "confidence_score": 1.0, "_origin": "semantic"}
+  ],
+  "hyperedges": [
+    {
+      "id": "native_cloud_efficacy_offline_paired_audit_chain",
+      "label": "Source-pinned saved baseline/candidate data support native phase, fixed-support BT, and CFRAC diagnostics without new model calls",
+      "nodes": [
+        "native_cloud_efficacy_packet_readme",
+        "native_cloud_efficacy_portable_summary",
+        "native_cloud_efficacy_split_native_state",
+        "native_cloud_efficacy_split_cloud_phases",
+        "native_cloud_efficacy_layer_geometry_weights",
+        "native_cloud_efficacy_stored_cfrac_gate",
+        "native_cloud_efficacy_fixed_support_bt_source",
+        "native_cloud_efficacy_restricted_controls",
+        "native_cloud_efficacy_source_lineage"
+      ],
+      "relation": "supports_offline_native_cloud_efficacy_audit_with_explicit_one_shot_limits",
+      "source_file": "harness/evidence/native_cloud_efficacy_2026-10-25/README.md",
+      "source_location": "L1-L25",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ]
+}

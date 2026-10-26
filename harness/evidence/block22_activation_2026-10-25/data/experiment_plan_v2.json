@@ -1,0 +1,114 @@
+{
+  "schema": "kdm6.block22_activation_experiment_plan.v2",
+  "base_commit": "340c9a1d969f4aaf25765a6c4a1a6eef96b910ae",
+  "scope": "Actual localized diagnostic experiment; original full-B physics retained; no host integration or optimizer update.",
+  "batch": {
+    "block0": 22,
+    "flat_start0": 11264,
+    "flat_stop0": 11776,
+    "B": 512,
+    "L": 39,
+    "target_row0": 368,
+    "target_flat0": 11632,
+    "target_native_ijk1": [
+      167,
+      50,
+      18
+    ],
+    "observed_levels_bottom0": [
+      4,
+      16,
+      17,
+      18
+    ]
+  },
+  "selectors": {
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "op_precision": "fp64",
+    "threads": 1,
+    "dt_s": 20
+  },
+  "mechanism_phases": [
+    0.0,
+    0.25
+  ],
+  "noninterference": {
+    "conditions": [
+      "original_control",
+      "instrumented_off",
+      "instrumented_on"
+    ],
+    "base_points": [
+      0.0,
+      0.25
+    ],
+    "gates": "Exact shape/dtype/raw-byte equality for full saved values and selected first-order products; same actual candidate direction/cotangent."
+  },
+  "direction": {
+    "recipe": "Original accepted proposal dtheta=0.2*z_theta; dqv=0.02*qv_baseline*z_qv. Original block22 is not frozen; no further normalization.",
+    "support": "All original 512 columns in this block; fixed rest/MU/PH/geometry/land/surface.",
+    "input_rule": "x(epsilon)=x_baseline+epsilon*delta; each endpoint rebuilt from baseline once."
+  },
+  "local_FD": {
+    "base_alpha": 0.0,
+    "epsilons": [
+      0.01,
+      0.001,
+      0.0001,
+      1e-05,
+      1e-06
+    ],
+    "scheme": "independent centered forward endpoints",
+    "primary_outputs": "Target row all39 levels raw12+finish5, eight differentiable RTTOV profile fields (66 layers/67 P_HALF), seven actual target BTs and fixed-support target Huber sum. All 33 field categories must pass at one common epsilon. Full-B values/tangents retained as separate diagnostics.",
+    "state_scaled_atol": 1e-08,
+    "state_rtol": 3e-05,
+    "finish_scaled_atol": 1e-09,
+    "finish_rtol": 3e-06,
+    "BT_cost_atol": 1e-08,
+    "BT_cost_rtol": 3e-05,
+    "dot_rtol": 1e-10,
+    "scale_source": "harness.verify_localized_ice_ad.SCALES/ATOL/RTOL; harness.verify_native_obs_ad.FD_ATOL/FD_RTOL/DOT_RTOL",
+    "acceptance": "All primary outputs must pass at a common epsilon; preserve every failed field/epsilon and branch change. Numerical agreement does not certify unrecorded branches.",
+    "profile_coordinate_atol": 1e-08,
+    "profile_coordinate_rtol": 3e-05,
+    "profile_fields": [
+      "T",
+      "Q",
+      "P",
+      "P_HALF",
+      "HYDRO6",
+      "HYDRO7",
+      "HYDRO_DEFF6",
+      "HYDRO_DEFF7"
+    ],
+    "profile_units": [
+      "K",
+      "ppmv",
+      "hPa",
+      "hPa",
+      "g/m3",
+      "g/m3",
+      "um",
+      "um"
+    ],
+    "support_gate": "Original target seven-channel mask/quality and all66 CFRAC values retained; record profile topology/finish/cleanup and captured activation/schedule branch comparisons.",
+    "cost": "Same baseline observation, original fixed target weights and KMA-BT Huber sigma/delta. Target cost contribution, not a new full-domain objective evaluation."
+  },
+  "diagnostics": [
+    "Actual activation entrance after state update/reclass",
+    "Raw post-nonnegative/pre-reservoir rate, capped and gated rate",
+    "Post-pcact state/qs1, pcond/complete evaporation, raw/final NCCN",
+    "Threshold/final DSD gates and exact cap ties",
+    "Pair schedule/microphysics ordinals and dt; all512 main/ice schedules",
+    "Target and full-B boolean signatures; quality/mask/CFRAC/profile topology at FD endpoints"
+  ],
+  "observation": "Reuse pinned native profile/writer/actual RTTOV-K. A target-only RTTOV batch may be used after comparison with the saved full-batch target BT/profile; full-B KDM is mandatory.",
+  "limits": [
+    "Historical raw number coordinates remain conditional, not physical-unit certification.",
+    "No forecast skill, full-domain new experiment, host cycle, optimization or closed physical-budget claim.",
+    "Failure of a directional check is retained; no tolerance or moment floor adjustment."
+  ],
+  "supersedes_plan_sha256": "6134431d7fc71016d711813fe57c929300866b9f4463cfd4ae457bccde8bf8fd",
+  "revision_reason": "Before any centered-FD endpoint, include each differentiable profile coordinate in the common-epsilon criterion so large NC/BT signals cannot hide a missing weak pressure or temperature path."
+}
