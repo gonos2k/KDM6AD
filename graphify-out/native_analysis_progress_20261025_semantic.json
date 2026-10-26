@@ -1,0 +1,712 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Current full-domain control observation baseline, frozen byte-identical packet reconstruction, three rejected fixed-support full-host T/Q trials, Q-min admission path, C4 conditional gate status and explicit remaining optimizer/full-host-AD limits; the paired host-pair plan and receipts are historical H1 context.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "nodes": [
+    {
+      "id": "native_analysis_progress_20261025",
+      "label": "Final current progress: full baseline direct observation is complete; all three tested full-host T/Q trials are inadmissible on fixed support",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L1-L63",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "host_steps_completed": [
+        "control",
+        "alpha=1",
+        "alpha=0.5"
+      ],
+      "host_time": "40 s to 60 s for each run from matching ready state",
+      "alpha1_profile_gate": "QC-positive with NC=0 at flat 5770, native (i=155,j=25,k=19); not new cloud evidence",
+      "alpha05": "ACK reports 311455 cleared updates; profiles and cost unassessed",
+      "alpha025": "prepared and held",
+      "rttov_continuation": "73 authorized calls pending; 72 unattempted chunks plus chunk55 recovery",
+      "expected_call_ledger": "130 requests including preserved failure; 129 successful results expected",
+      "full_domain_cost_complete": false,
+      "full_host_gradient_claimed": false,
+      "outer_iteration_claimed": false,
+      "forecast_cycle_claimed": false,
+      "source_sha256": "e7ac86adc6a6ab1e0919e4e1953e2f14760067bfd9c475cd17c7349d2b070596",
+      "as_of_utc": "2026-10-25T15:15:15Z",
+      "alpha05_fixed_support_invalid_rows": 12,
+      "alpha05_channels_lost": 84,
+      "alpha05_cost_valid": false,
+      "c7_rttov_requests_spent": 58,
+      "c7_filtered_chunk55_rttov_process_success": true,
+      "c7_filtered_chunk55_durable_result_written": false,
+      "c7_chunk55_repeated_rttov_call": false,
+      "c7_remaining_chunks_unattempted": 72,
+      "c7_total_planned_requests": 130,
+      "c7_expected_successful_results": 129,
+      "c4_KDM_forwards_including_baselines": 26,
+      "c4_JVP_calls": 3,
+      "c4_VJP_calls": 3,
+      "c4_direct_RTTOV_calls": 21,
+      "c4_rank1_rank2_common33_pass": false,
+      "c4_orphan_retry_authorized_but_held": true,
+      "oracle_related_tests_passed": 71,
+      "c7_continuation_status": "filtered chunk55 RTTOV success; postprocessing failure before NPZ; zero-call recovery in progress; 72 further chunks unattempted",
+      "host_candidates_completed": [
+        "alpha=1",
+        "alpha=0.5",
+        "alpha=0.25"
+      ],
+      "all_tested_candidates_admissible": false,
+      "accepted_update": false,
+      "candidate_cost_complete": false,
+      "full_domain_control_RTTOV_columns": 65988,
+      "full_domain_control_unique_successful_chunks": 129,
+      "full_domain_control_support_cells": 377342,
+      "full_domain_control_support_columns": 53906,
+      "full_domain_control_cost": 11.007963317242059,
+      "full_domain_control_numerator": 4153766.894054753,
+      "raw_KO_missing_columns": 0,
+      "full_domain_exclusion_reason_counts": {
+        "initial_negative_number_rows": 41,
+        "native_profile_invalid_rows": 1033,
+        "qmin_profile": 1,
+        "direct_rttov_quality_nonzero_rows": 11007
+      },
+      "alpha05_known_lost_rows": 12,
+      "alpha05_known_lost_channels": 84,
+      "alpha025_known_lost_rows": 13,
+      "alpha025_known_lost_channels": 91,
+      "alpha025_full_M_support_confirmation_pending": true,
+      "C4_KDM_forwards_including_baselines": 45,
+      "C4_JVP_calls": 4,
+      "C4_VJP_calls": 4,
+      "C4_direct_RTTOV_calls": 38,
+      "C4_common_33_pass": false,
+      "C4_native17_rank1_epsilon1e6_ratio": 0.17599,
+      "C5_outer_iterations_implemented": false,
+      "full_host_AD_claimed": false,
+      "cloud_analysis_goal_met": false,
+      "c7_continuation_calls_total": 130,
+      "c7_successful_unique_chunks": 129,
+      "c7_original_failed_attempt_preserved": true,
+      "c7_qmin_recovery_additional_RTTOV_calls": 0,
+      "c7_remaining_unattempted_chunks": 0,
+      "alpha1_lost_M0_rows": 53,
+      "alpha1_lost_M0_channel_cells": 371,
+      "alpha05_lost_M0_rows": 63,
+      "alpha05_lost_M0_channel_cells": 441,
+      "alpha025_lost_M0_rows": 55,
+      "alpha025_lost_M0_channel_cells": 385,
+      "all_losses_confirmed_pre_RTTOV": true,
+      "C4_RTTOV_K_calls": 4,
+      "C4_host_calls": 0,
+      "C5_C6_C9_complete": false,
+      "C7_full_domain_control_baseline_complete": true,
+      "C8_full_physics_steps_complete": true
+    },
+    {
+      "id": "native_rttov_qmin_admission",
+      "label": "RTTOV Q-min is a pre-call profile-admission rule that preserves source water and native rows",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_RTTOV_WATER_ADMISSION.md",
+      "source_location": "L1-L61",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "gas_input_units": "ppmv moist air",
+      "converted_internal_units": "ppmv dry air",
+      "strict_rejection": "Q_dry < 1e-11 ppmv; equality admitted",
+      "row_policy": "Exclude only unsupported profile from RTTOV; preserve original full native row and Q values",
+      "no_floor_or_clip": true,
+      "no_mask_shrink_after_fixed_support": true,
+      "source_sha256": "8713d388b646ccf2290987818dca7e5ee94b8648c8ebbd0c2f6eacb7920fcd99",
+      "chunk55_current_status": "Saved-output recovery completed with zero additional RTTOV calls; full baseline direct assessment now passes for all 65,988 columns",
+      "full_domain_baseline_cost_available": true,
+      "candidate_observation_cost_available": false
+    },
+    {
+      "id": "native_rttov_qmin_saved_precheck",
+      "label": "The saved precheck found the single zero-Q RTTOV input profile; subsequent full baseline used filtered chunk55 recovery and preserved the original failure",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_rttov_water_admission_2026-10-25/qmin_precheck.json",
+      "source_location": "/baseline_staged_profiles/invalid_profiles/0; /candidate_staged_profiles/invalid_profiles/0; /old_direct_call_records; /status",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "QMIN_INVENTORY_COMPLETE_NO_RTTOV_CALLS",
+      "baseline_profiles_scanned": 64914,
+      "candidate_profiles_scanned": 64903,
+      "flat_index": 28195,
+      "native_i_j_k_1based": [
+        116,
+        121,
+        30
+      ],
+      "q_wet_ppmv": 0.0,
+      "q_internal_dry_ppmv": 0.0,
+      "qmin_internal_dry_ppmv": 1e-11,
+      "KDM_calls": 0,
+      "K_calls": 0,
+      "RTTOV_calls_from_audit": 0,
+      "host_steps": 0,
+      "source_sha256": "37297b04bd525a3a0d1026e7377f75917a7f12626a52f7c048dbbb1a3ccbfa29",
+      "full_baseline_direct_status": "FULL_DOMAIN_DIRECT_ONLY_AGGREGATE_PASS"
+    },
+    {
+      "id": "native_observation_batch_qmin_guard",
+      "label": "Shared observation row validator rejects invalid Q conversion or below-qmin profiles before RTTOV",
+      "file_type": "code",
+      "source_file": "harness/native_observation_batch.py",
+      "source_location": "L97-L115; L238-L304",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "admission_error": "rttov_hard_qmin_invalid",
+      "state_water_rewritten": false,
+      "AD_graph_for_admitted_rows_preserved": true,
+      "source_sha256": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb"
+    },
+    {
+      "id": "native_observation_batch_qmin_tests",
+      "label": "Focused tests cover wet-to-dry conversion, strict threshold boundary, no mutation and pre-call rejection",
+      "file_type": "code",
+      "source_file": "harness/tests/test_native_observation_batch.py",
+      "source_location": "L243-L315",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "focused_test_count": 37,
+      "ruff": "passed",
+      "source_sha256": "7ce56f4bdffab06ba29d2ce2ebc79d6cd8e802959d5345dcafd4298971378252"
+    },
+    {
+      "id": "native_full_physics_interim_H1",
+      "label": "H1 historical host-pair report at 2026-10-25 13:23:54Z; current results are in the separate progress and observation/trial packets",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/REPORT.md",
+      "source_location": "L1-L10; L84-L109; L137-L149",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "immutable_snapshot_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "candidate_RTTOV_complete": false,
+      "source_sha256": "24d7777be2530c495ade4931e3d9a0caa454a3876f2d8bd201aca93305ebe01b",
+      "historical_snapshot": "H1",
+      "historical_as_of_utc": "2026-10-25T13:23:54Z",
+      "historical_not_current_status": true
+    },
+    {
+      "id": "oracle_ci_qmin_checkpoint_test",
+      "label": "Existing Oracle Torch job includes the native checkpoint observation tests",
+      "file_type": "code",
+      "source_file": ".github/workflows/oracle-ci.yml",
+      "source_location": "L81-L86",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "workflow_added": false,
+      "test_file": "harness/tests/test_native_checkpoint_observation.py",
+      "related_tests_passed": 71,
+      "source_sha256": "96f2eef029d70e77aff35a06ee7aaf3c40ef85eb0a45e48913ce919dbc35d728"
+    },
+    {
+      "id": "native_full_physics_M0_baseline",
+      "label": "Control checkpoint direct RTTOV baseline covers all native columns and defines fixed M0 support and baseline-only cost",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/manifest.json",
+      "source_location": "/analysis/global_cost; /analysis/global_support_Z; /analysis/row_reason_counts; /request_ledger",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "FULL_DOMAIN_DIRECT_ONLY_AGGREGATE_PASS",
+      "native_columns": 65988,
+      "successful_unique_chunks": 129,
+      "failed_attempts_preserved": 1,
+      "M0_supported_columns": 53906,
+      "M0_channel_cells": 377342,
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "baseline_cost": 11.007963317242059,
+      "Huber_numerator": 4153766.894054753,
+      "raw_KO_missing_columns": 0,
+      "candidate_cost_claimed": false,
+      "map_npz_sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4",
+      "baseline_npz_sha256": "c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144",
+      "source_sha256": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663",
+      "producer_kind": "Frozen independent reconstruction from all 129 hash-pinned saved chunk outputs",
+      "all_saved_array_bytes_equal_to_original_packet": true,
+      "NPZ_container_bytes_equal_to_original_packet": true,
+      "first_writer_source_sha256": "not captured before manifest metadata was finalized",
+      "reconstruction_does_not_retroactively_identify_first_writer": true
+    },
+    {
+      "id": "native_full_physics_M0_support_maps",
+      "label": "Spatial masks separate source KO coverage from native profile validity, RTTOV quality and frozen support",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_support_maps.npz",
+      "source_location": "arrays source_ko_coverage_all7, checkpoint_profile_valid, direct_rt_quality_bad_channel_count_0_7, fresh_support_channel_count_0_7, outer_one_cell_edge_ring",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "grid_shape": [
+        282,
+        234
+      ],
+      "native_columns": 65988,
+      "all_source_columns_covered": true,
+      "edge_supported_columns": 160,
+      "edge_supported_channel_cells": 1120,
+      "interior_supported_columns": 53746,
+      "interior_supported_channel_cells": 376222,
+      "edge_columns_are_not_labeled_missing_source": true,
+      "source_sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4",
+      "preview_sha256": "a88b1802e961b6b27ced5729e824416f1823908af3bfadcc33d20cf1b4f0e8b1"
+    },
+    {
+      "id": "native_full_physics_three_trial_admission",
+      "label": "All three full-host T/Q backtracks lost fixed M0 support before RTTOV and no update was admissible",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_trials_2026-10-25/trial_summary.json",
+      "source_location": "/outcome; /trials/0/hard_moment_findings; /trials/1/hard_moment_findings; /trials/2/hard_moment_findings; /overall_limitations",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "outcome": "NO_ADMISSIBLE_TESTED_FULL_HOST_UPDATE (3 trials)",
+      "control_and_each_trial_ready_match_bitwise": true,
+      "all_three_host_steps_completed": true,
+      "trial_lost_M0_rows": [
+        53,
+        63,
+        55
+      ],
+      "trial_lost_M0_channel_cells": [
+        371,
+        441,
+        385
+      ],
+      "losses_are_pre_RTTOV_profile_guard": true,
+      "candidate_direct_RTTOV_calls": [
+        0,
+        0,
+        0
+      ],
+      "candidate_cost_defined": false,
+      "accepted_update": false,
+      "support_was_reduced": false,
+      "number_floor_or_moment_repair_applied": false,
+      "source_sha256": "2c71828bbc739fb3e49a363fb198c68846d9636e7f3bc222ff7d3cf8512ba07c",
+      "trial_summary_sha256": "2c71828bbc739fb3e49a363fb198c68846d9636e7f3bc222ff7d3cf8512ba07c",
+      "direction_scope": "The three tested candidates scaled the historical PR448 KDM-only accepted direction; the three current full-host updates themselves were all inadmissible."
+    },
+    {
+      "id": "native_C4_conditional_component_campaign_status",
+      "label": "Conditional C4 component campaign remains below common profile/BT/cost gate despite one native-17 rank-1 epsilon case passing",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L52-L59",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "KDM_forwards_including_baselines": 45,
+      "JVP_calls": 4,
+      "VJP_calls": 4,
+      "RTTOV_K_calls": 4,
+      "direct_RTTOV_calls": 38,
+      "host_calls": 0,
+      "common33_pass": false,
+      "native17_rank1_epsilon_1e6_ratio": 0.17599,
+      "C4_gate_failure_proves_AD_bug": false,
+      "derivative_certificate_claimed": false,
+      "source_sha256": "e7ac86adc6a6ab1e0919e4e1953e2f14760067bfd9c475cd17c7349d2b070596"
+    },
+    {
+      "id": "native_full_physics_H1_source_resolution",
+      "label": "H1 manifest and both source-document pins resolve to exact archived bytes at commit 7d4d2d85",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "source_location": "/historical_manifest_sha256; /sources",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+      "archived_source_documents": 2,
+      "executed_physics_artifacts_changed": false,
+      "source_sha256": "db489c26304980ee3d5b48bca3fcb653e6b09c75acfb40045b87714a9fc3391b"
+    },
+    {
+      "id": "native_full_physics_observation_frozen_reconstruction",
+      "label": "Frozen offline reconstruction reread all 129 hash-pinned source chunks and reproduced the baseline packet and NPZ container byte-for-byte",
+      "file_type": "dataset",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/reconstruction_receipt.json",
+      "source_location": "/status; /container_bytes_equal; /all_array_bytes_equal; /verified_source_chunks",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic",
+      "status": "INDEPENDENT_PACKET_RECONSTRUCTION_PASS",
+      "verified_source_chunks": 129,
+      "all_array_bytes_equal": true,
+      "NPZ_container_bytes_equal": true,
+      "model_calls": 0,
+      "RTTOV_calls": 0,
+      "reconstruction_source_sha256": "5d3a4ca387bdd905f6a4bdd2d7961a79f93080ac74b70413cc7d981b4088d946",
+      "reconstruction_receipt_sha256": "43dbcec6af5c090c1d478858b82fff426ec42f5d46ea05c44997c19f71a12240",
+      "first_writer_identity": "unknown; not retroactively inferred",
+      "source_sha256": "43dbcec6af5c090c1d478858b82fff426ec42f5d46ea05c44997c19f71a12240"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_full_physics_interim_H1",
+      "relation": "adds_later_dated_progress_without_rewriting_immutable_H1",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L1-L5",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_rttov_qmin_admission",
+      "relation": "records_current_profile_admission_gate_and_pending_continuation",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L34-L48",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_rttov_qmin_admission",
+      "target": "native_rttov_qmin_saved_precheck",
+      "relation": "documents_saved_case_observation_and_zero_model_call_inventory",
+      "source_file": "docs/NATIVE_RTTOV_WATER_ADMISSION.md",
+      "source_location": "L22-L43",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_observation_batch_qmin_guard",
+      "target": "native_rttov_qmin_admission",
+      "relation": "implements_pre_call_value_only_profile_admission",
+      "source_file": "harness/native_observation_batch.py",
+      "source_location": "L97-L115; L238-L304",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_observation_batch_qmin_tests",
+      "target": "native_observation_batch_qmin_guard",
+      "relation": "tests_conversion_threshold_and_nonmutation_contract",
+      "source_file": "harness/tests/test_native_observation_batch.py",
+      "source_location": "L243-L315",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_observation_batch_qmin_tests",
+      "relation": "records_validation_scope_without_claiming_domain_execution",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L44-L48",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "oracle_ci_qmin_checkpoint_test",
+      "target": "native_observation_batch_qmin_tests",
+      "relation": "runs_checkpoint_observation_guard_tests_in_existing_Torch_job",
+      "source_file": ".github/workflows/oracle-ci.yml",
+      "source_location": "L81-L86",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_M0_baseline",
+      "target": "native_full_physics_M0_support_maps",
+      "relation": "defines_fixed_support_and_separate_source_profile_and_quality_masks",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/manifest.json",
+      "source_location": "/analysis/global_support_Z; /analysis/edge_interior",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_rttov_qmin_saved_precheck",
+      "target": "native_full_physics_M0_baseline",
+      "relation": "filters_only_zero_Q_profile_from_direct_RTTOV_and_retains_full_native_domain_row",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/manifest.json",
+      "source_location": "/analysis/q_min_gate; /request_ledger",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_M0_baseline",
+      "target": "native_full_physics_three_trial_admission",
+      "relation": "provides_fixed_baseline_M0_support_for_candidate_admission",
+      "source_file": "harness/evidence/native_full_physics_trials_2026-10-25/trial_summary.json",
+      "source_location": "/fixed_baseline_M0; /trials",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_full_physics_M0_baseline",
+      "relation": "summarizes_completed_control_observation_baseline_and_bounds_its_cost_claim",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L25-L47",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_full_physics_three_trial_admission",
+      "relation": "reports_all_tested_updates_inadmissible_without_candidate_cost_or_acceptance",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L7-L23; L49-L63",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_C4_conditional_component_campaign_status",
+      "relation": "records_conditional_component_gate_failure_without_derivative_certificate",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L52-L61",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_analysis_progress_20261025",
+      "target": "native_full_physics_H1_source_resolution",
+      "relation": "current_status_supplements_immutable_H1_snapshot_and_points_to_exact_source_resolver",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L1-L5",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_observation_frozen_reconstruction",
+      "target": "native_full_physics_M0_baseline",
+      "relation": "independently_reconstructs_all_baseline_arrays_and_container_from_saved_hash_pinned_chunks",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/reconstruction_receipt.json",
+      "source_location": "/status; /original_public_packet_sha256; /reconstructed_packet_sha256",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "source": "native_full_physics_observation_frozen_reconstruction",
+      "target": "native_full_physics_H1_source_resolution",
+      "relation": "later_independent_reconstruction_not_a_change_to_H1_execution_receipts",
+      "source_file": "harness/evidence/native_full_physics_observation_2026-10-25/reconstruction_receipt.json",
+      "source_location": "/status; /model_calls; /RTTOV_calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "native_rttov_qmin_admission_chain_20261025",
+      "label": "Saved zero-Q profile \u2192 source-derived strict Q-min check \u2192 row-level pre-call refusal with native input preserved",
+      "nodes": [
+        "native_rttov_qmin_saved_precheck",
+        "native_rttov_qmin_admission",
+        "native_observation_batch_qmin_guard",
+        "native_observation_batch_qmin_tests"
+      ],
+      "relation": "explains_admission_without_water_repair_or_new_model_calls",
+      "source_file": "docs/NATIVE_RTTOV_WATER_ADMISSION.md",
+      "source_location": "L8-L43",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "native_analysis_progress_handoff_20261025",
+      "label": "Current: full-domain control baseline passed; the frozen independent reconstruction is byte-identical; all three tested full-host T/Q trials are inadmissible on fixed support; C4/C5 remain incomplete.",
+      "nodes": [
+        "native_analysis_progress_20261025",
+        "native_full_physics_interim_H1",
+        "native_rttov_qmin_saved_precheck",
+        "native_full_physics_M0_baseline",
+        "native_full_physics_three_trial_admission",
+        "native_C4_conditional_component_campaign_status",
+        "native_full_physics_observation_frozen_reconstruction",
+        "native_full_physics_H1_source_resolution"
+      ],
+      "relation": "dated_progress_supplements_immutable_host_snapshot_and_bounds_open_work",
+      "source_file": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "source_location": "L25-L63",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "native_full_physics_baseline_to_trial_admission",
+      "label": "Complete direct baseline defines immutable M0 support; three value-only full-host trials each lose support before candidate RTTOV and none is accepted",
+      "nodes": [
+        "native_full_physics_M0_baseline",
+        "native_full_physics_M0_support_maps",
+        "native_full_physics_three_trial_admission",
+        "native_analysis_progress_20261025"
+      ],
+      "relation": "records_baseline_and_trial_admission_without_claiming_candidate_cost_or_cloud_efficacy",
+      "source_file": "harness/evidence/native_full_physics_trials_2026-10-25/trial_summary.json",
+      "source_location": "/fixed_baseline_M0; /trials; /outcome",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    },
+    {
+      "id": "native_full_physics_final_baseline_reconstruction_and_trials",
+      "label": "A frozen independent reconstruction validates the completed baseline observation packet; the same baseline M0 gate shows fixed-support loss for each of three full-host trials, none accepted",
+      "nodes": [
+        "native_full_physics_M0_baseline",
+        "native_full_physics_observation_frozen_reconstruction",
+        "native_full_physics_M0_support_maps",
+        "native_full_physics_three_trial_admission",
+        "native_analysis_progress_20261025"
+      ],
+      "relation": "connects_hash_reconstructed_control_baseline_to_candidate_admission_without_claiming_candidate_cost_or_cloud_efficacy",
+      "source_file": "harness/evidence/native_full_physics_trials_2026-10-25/trial_summary.json",
+      "source_location": "/fixed_baseline_M0; /trials; /outcome",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_origin": "semantic"
+    }
+  ],
+  "source_pins": {
+    "progress": {
+      "path": "docs/NATIVE_ANALYSIS_PROGRESS_20261025.md",
+      "bytes": 4057,
+      "sha256": "e7ac86adc6a6ab1e0919e4e1953e2f14760067bfd9c475cd17c7349d2b070596"
+    },
+    "qmin_doc": {
+      "path": "docs/NATIVE_RTTOV_WATER_ADMISSION.md",
+      "bytes": 3357,
+      "sha256": "8713d388b646ccf2290987818dca7e5ee94b8648c8ebbd0c2f6eacb7920fcd99"
+    },
+    "qmin_precheck": {
+      "path": "harness/evidence/native_rttov_water_admission_2026-10-25/qmin_precheck.json",
+      "bytes": 35769,
+      "sha256": "37297b04bd525a3a0d1026e7377f75917a7f12626a52f7c048dbbb1a3ccbfa29"
+    },
+    "adapter": {
+      "path": "harness/native_observation_batch.py",
+      "bytes": 33109,
+      "sha256": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb"
+    },
+    "tests": {
+      "path": "harness/tests/test_native_observation_batch.py",
+      "bytes": 18040,
+      "sha256": "7ce56f4bdffab06ba29d2ce2ebc79d6cd8e802959d5345dcafd4298971378252"
+    },
+    "ci_workflow": {
+      "path": ".github/workflows/oracle-ci.yml",
+      "bytes": 4276,
+      "sha256": "96f2eef029d70e77aff35a06ee7aaf3c40ef85eb0a45e48913ce919dbc35d728"
+    },
+    "H1_report": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/REPORT.md",
+      "bytes": 8461,
+      "sha256": "24d7777be2530c495ade4931e3d9a0caa454a3876f2d8bd201aca93305ebe01b"
+    },
+    "H1_manifest": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/interim_snapshot_manifest.json",
+      "bytes": 20785,
+      "sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343"
+    },
+    "H1_resolution": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/historical_source_resolution.json",
+      "bytes": 1192,
+      "sha256": "db489c26304980ee3d5b48bca3fcb653e6b09c75acfb40045b87714a9fc3391b"
+    },
+    "H1_full_doc_snapshot": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt",
+      "bytes": 21341,
+      "sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938"
+    },
+    "H1_checklist_snapshot": {
+      "path": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt",
+      "bytes": 15118,
+      "sha256": "6c9717d59b7d368f0f5a2079a4edea89188d43e4fdcd05b417414c09188a4e72"
+    },
+    "current_full_doc": {
+      "path": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "bytes": 21821,
+      "sha256": "7e512a43b732820f757920443eccd31bb5f1597942cdbe91c29ad454cbd942bc"
+    },
+    "current_checklist": {
+      "path": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "bytes": 15598,
+      "sha256": "076891e4f22a7f5c24901873543c64c53bf347de995a3015b7d3fb56b900c88b"
+    },
+    "baseline_readme": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/README.md",
+      "bytes": 3451,
+      "sha256": "40bfbb667611664df6391de5f6c18850a7c475259618caee434d247ad2e89926"
+    },
+    "baseline_manifest": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/manifest.json",
+      "bytes": 101538,
+      "sha256": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663"
+    },
+    "baseline_npz": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_baseline.npz",
+      "bytes": 5998267,
+      "sha256": "c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144"
+    },
+    "support_map_npz": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_support_maps.npz",
+      "bytes": 6732,
+      "sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4"
+    },
+    "support_map_png": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_support_maps.png",
+      "bytes": 112789,
+      "sha256": "a88b1802e961b6b27ced5729e824416f1823908af3bfadcc33d20cf1b4f0e8b1"
+    },
+    "baseline_reconstruction_source": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/reconstruction_source.py.txt",
+      "bytes": 5778,
+      "sha256": "5d3a4ca387bdd905f6a4bdd2d7961a79f93080ac74b70413cc7d981b4088d946"
+    },
+    "baseline_reconstruction_receipt": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/reconstruction_receipt.json",
+      "bytes": 31129,
+      "sha256": "43dbcec6af5c090c1d478858b82fff426ec42f5d46ea05c44997c19f71a12240"
+    },
+    "baseline_replay": {
+      "path": "harness/evidence/native_full_physics_observation_2026-10-25/replay.py",
+      "bytes": 13000,
+      "sha256": "d162c057578c17af86e9e39e97ebe23565a21e2896b70344ec183a3cc7ffe652"
+    },
+    "trial_readme": {
+      "path": "harness/evidence/native_full_physics_trials_2026-10-25/README.md",
+      "bytes": 1646,
+      "sha256": "babfff13b2746c314b03d1734d9ef512608510ad4748c19389969729fd274dcf"
+    },
+    "trial_summary": {
+      "path": "harness/evidence/native_full_physics_trials_2026-10-25/trial_summary.json",
+      "bytes": 20918,
+      "sha256": "2c71828bbc739fb3e49a363fb198c68846d9636e7f3bc222ff7d3cf8512ba07c"
+    }
+  }
+}

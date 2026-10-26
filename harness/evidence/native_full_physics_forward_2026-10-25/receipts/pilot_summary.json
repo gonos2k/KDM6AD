@@ -1,0 +1,49 @@
+{
+  "K_calls": 0,
+  "RTTOV_K_calls": 0,
+  "all_zero_mask": false,
+  "checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "cleanup_calls": 0,
+  "direct_calls_completed": 4,
+  "direct_calls_expected": 4,
+  "extra_KDM_calls": 0,
+  "finish_calls": 0,
+  "fresh_M_host0_support_count": 8218,
+  "host_steps": 0,
+  "pilot_attempts_sha256": "d52305196f9a016180175596943d775e8343da99249eb39db4a6dfb2e20fd098",
+  "prepared_receipt_sha256": "590ce005e02de301b921901aa91fe324411c34bb4215c1f7c7186cce67098033",
+  "result_receipts": [
+    {
+      "bytes": 894761,
+      "path": "actual_checkpoint_direct_result.npz",
+      "sha256": "3b635fc1a36b5a4065347a0870fc3c6622f463d9eb17e31c0409c8853acf5927"
+    },
+    {
+      "bytes": 1208403,
+      "path": "actual_checkpoint_direct_result.npz",
+      "sha256": "49cb57e20344504e53b03911e7bef9d897daf40dbf5d3c72cd46ad477a21ca8c"
+    },
+    {
+      "bytes": 1220926,
+      "path": "actual_checkpoint_direct_result.npz",
+      "sha256": "94b2903f3cac6357efdf1e98fb59a54365b53b01ea3cfc74cec3b48e115562ee"
+    },
+    {
+      "bytes": 820633,
+      "path": "actual_checkpoint_direct_result.npz",
+      "sha256": "8d484056ca110e9bc493eefd825dc331a1a45566d8659801d80d86cfbc30aaf1"
+    }
+  ],
+  "schema": "kdm6.native_checkpoint_direct_observation_pilot_summary.v1",
+  "status": "PILOT_COMPLETE_WITH_SUPPORT",
+  "time_policy": {
+    "ko_pixel_utc_verified": false,
+    "model_checkpoint_itimestep": 3,
+    "model_checkpoint_time": "2025-07-19_00:01:00",
+    "observation_nominal_filename_slot": "202507190000",
+    "policy": "Use actual checkpoint at 00:01:00 with the original 00:00 nominal KO observation bundle. The 00:00:33 value is a same-slot FD header cross-check only; no per-pixel KO UTC or temporal resampling is claimed.",
+    "same_slot_fd_scene_acquisition_time": "20250719_000033",
+    "source_observation_preflight_sha256": "b3f2bc237c580209b986a3486562dd1757f381b6ef3604a8731185e11d13ff1a",
+    "source_time_audit_sha256": "350f2f0d9519ffa3cc5cf75d1be458b8d3275581abe41d1506d351980cd81faf"
+  }
+}

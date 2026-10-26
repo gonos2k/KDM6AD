@@ -171,13 +171,24 @@ def test_within_variant_trace_products_match_bitwise():
 
 def test_source_and_evidence_inventory():
     manifest = json.loads((EVIDENCE / "manifest.json").read_text())
+    resolution = json.loads((EVIDENCE / "historical_source_resolution.json").read_text())
+    assert resolution["historical_manifest_sha256"] == hashlib.sha256(
+        (EVIDENCE / "manifest.json").read_bytes()
+    ).hexdigest()
+    assert set(resolution["sources"]) == {
+        "libtorch/bridge/kdm6_c_api.cpp", "libtorch/bridge/kdm6_c_api.h",
+        "harness/tests/test_localized_ice_evidence.py",
+    }
     root = EVIDENCE.parents[2]
     for group in ("source_sha256", "artifact_sha256"):
         assert manifest[group]
         for path, digest in manifest[group].items():
-            assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, (
-                path
-            )
+            source = root / path
+            if group == "source_sha256" and path in resolution["sources"]:
+                historical = resolution["sources"][path]
+                assert historical["sha256"] == digest
+                source = EVIDENCE / historical["snapshot"]
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == digest, path
     # The failed v1 tests retain their original executed source, not current helper bytes.
     snapshot = EVIDENCE / "execution_sources/ad_verifier_v1.py.txt"
     assert (

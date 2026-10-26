@@ -1,0 +1,28 @@
+{
+  "changed_line": {
+    "from": "bind(C, name=\"kdm6_step_c\")",
+    "occurrences": 1,
+    "to": "bind(C, name=\"kdm6_native_fp64_value_c\")"
+  },
+  "created_at_utc": "2026-10-25T09:49:53.695324+00:00",
+  "execution": {
+    "RTTOV_calls": 0,
+    "compile_calls": 0,
+    "model_calls": 0
+  },
+  "overlay_path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/fortran_precision_overlay_v1/kdm6_iso_c.f90",
+  "overlay_sha256": "be86f08bc9344f9a426014eea7e9202daede8a93fa2ec144c9568fd5b4a0c66b",
+  "schema": "kdm6.native_fp64_iso_binding_overlay.v1",
+  "source_copy": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/build/fortran_precision_overlay_v1/kdm6_iso_c.source.f90",
+  "source_copy_sha256": "2220ff4ec589b0b6ae77d41e8d131c2a6c06aa7fb4a9c9d5452d0305218fe441",
+  "source_path": "PRIVATE_HOST_EVIDENCE/mp137_two_step_20261020/build/phys/kdm6_iso_c.f90",
+  "source_sha256": "2220ff4ec589b0b6ae77d41e8d131c2a6c06aa7fb4a9c9d5452d0305218fe441",
+  "status": "PREPARED_NOT_COMPILED",
+  "unchanged_contract": {
+    "C_entry": "distinct opt-in value-only f32-storage/f64-compute bridge",
+    "all_other_source_bytes_identical": true,
+    "no_C_API_or_Fortran_physics_source_edit": true,
+    "operational_kdm6_step_c_binding_untouched": true,
+    "storage_dtype": "float32 arrays at the Fortran/C boundary"
+  }
+}

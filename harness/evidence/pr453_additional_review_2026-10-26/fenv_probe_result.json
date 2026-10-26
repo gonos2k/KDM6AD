@@ -1,0 +1,25 @@
+{
+  "schema": "kdm6.pr453.fp_control_status_scope_review.v1",
+  "reviewed_head": "a0e4c622e435b4ad816c20110c88cf62f0a538b0",
+  "library_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+  "source_sha256": "943815fce5a82c782be9f71a7b174f0abe2224e36df4ceeb678b3a9f63dcf6fe",
+  "probe_binary_sha256": "f2a63d803f268a0ba4718bf6e0edf3d118e29943b24111f89a8cc69c18e4bc63",
+  "platform": "macOS arm64",
+  "method": "Load the executed isolated library, clear flags, seed FE_DIVBYZERO, call value entry with dt=20 and ncmin_land=-1; scalar refusal occurs before tensor/kernel work.",
+  "result": {
+    "rc": -6,
+    "exception_status_before": 2,
+    "exception_status_after": 18,
+    "FE_INEXACT": 16,
+    "rounding_preserved": true,
+    "handle_null": true,
+    "output_unchanged": true
+  },
+  "calls": {
+    "ABI_refusals": 1,
+    "KDM_kernel_forwards": 0,
+    "host_steps": 0,
+    "RTTOV": 0
+  },
+  "scope": "Rounding/FPCR control and exception status are distinct. Scalar validation may add FE_INEXACT before the guard; full caller exception-status preservation is not claimed. No numerical kernel or operational-default change."
+}

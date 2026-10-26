@@ -1,0 +1,646 @@
+{
+  "build_identity": {
+    "CAPI_source_sha256": "9f1780de844474de588cbe5bb174488676f69f5bf3a9db6ab864255809a1da2c",
+    "fp64_boundary_gate_receipt_sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+    "fp64_boundary_gate_status": "ARITHMETIC_AND_ABI_CHECKS_PASS; BLOCK34_FP_ENV_CAPTURE_UNAVAILABLE",
+    "loaded_experimental_dso_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+    "mode_flags": {
+      "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+      "KDM6_QR_TRANSPORT": "actual_departure"
+    },
+    "private_fortran_iso_overlay_sha256": "be86f08bc9344f9a426014eea7e9202daede8a93fa2ec144c9568fd5b4a0c66b",
+    "private_wrf_executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0"
+  },
+  "created_at_utc": "2026-10-25T15:10:22.109210+00:00",
+  "fixed_baseline_M0": {
+    "M0_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "native_columns": 65988,
+    "per_channel_supported_cells": [
+      53906,
+      53906,
+      53906,
+      53906,
+      53906,
+      53906,
+      53906
+    ],
+    "status": "FULL_DOMAIN_DIRECT_ONLY_AGGREGATE_PASS",
+    "summary_sha256": "0f1fb5ecf954c8d71df1d3b7e6de2dae0f0e93cd5b9ecfeed7ccb8f0388a033d",
+    "support_map_sha256": "0ea175aa9aef7e2486f9d09d5e369dc07ed1a09bfd8adb9cf49df505e6fedbd4",
+    "support_map_values": [
+      0,
+      7
+    ],
+    "supported_channel_cells_total": 377342
+  },
+  "outcome": "NO_ADMISSIBLE_TESTED_FULL_HOST_UPDATE (3 trials)",
+  "overall_limitations": [
+    "No candidate RTTOV/direct profile quality or candidate objective J/cost was evaluated; trial cost is undefined.",
+    "The result is a fixed-M0 moment/profile admission outcome, not optimization convergence, C5 completion, forecast benefit, or a full-host gradient.",
+    "No number floor, moment repair, or support/mask shrinking was applied.",
+    "The full-domain KO source uses the original 00:00 nominal slot; KO pixel UTC remains unverified.",
+    "Boundary-gate block34 FP-environment capture remains unavailable; the gate authorized only diagnostic forward steps, not deployment or f32 parity certification."
+  ],
+  "private_evidence_pins": {
+    "aggregate_path": "host/research_evidence/native_full_physics_forward_20261025/runs/full_host_three_trial_admission_v1/THREE_TRIAL_ADMISSION_AUDIT.json",
+    "aggregate_producer_receipt_sha256": "0637aefc2da0317f5af6940110c08f61fc6070dde30c2143aaf9b30b5abdb0f7",
+    "aggregate_sha256": "b28adc96f548eebef25f62abe709f2cb96151e8c71aad16517d408c718f3499b",
+    "note": "Private host checkpoints, RTTOV cases and complete per-row evidence are not included in this public summary."
+  },
+  "representative_predicate_proofs": [
+    {
+      "field_values_by_stage": {
+        "alpha0p25": {
+          "19": {
+            "QCLOUD": 0.0,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 91.71219635009766
+          }
+        },
+        "alpha0p50": {
+          "19": {
+            "QCLOUD": 0.0,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 91.71224975585938
+          }
+        },
+        "alpha1p0": {
+          "19": {
+            "QCLOUD": 7.614990522597509e-07,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 91.71258544921875
+          }
+        },
+        "control": {
+          "19": {
+            "QCLOUD": 0.0,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 91.71202087402344
+          }
+        },
+        "ready40": {
+          "19": {
+            "QCLOUD": 4.398778401082382e-06,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 91.60116577148438
+          }
+        }
+      },
+      "fixed_baseline_M0_channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "flat_index": 5770,
+      "i1": 155,
+      "j1": 25,
+      "trial_guards": {
+        "alpha1p0": {
+          "baseline_support_channels": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "baseline_support_count": 7,
+          "initial_negative_number_exclusion": false,
+          "levels": [
+            {
+              "QCLOUD": 7.614990522597509e-07,
+              "QICE": 0.0,
+              "QNCLOUD": 0.0,
+              "QNICE": 91.71258544921875,
+              "k1": 19
+            }
+          ],
+          "profile_guard_error": "post_microphysics_profile_invalid:active QC requires positive native NC",
+          "rules": [
+            "QC_positive_NC_nonpositive"
+          ]
+        }
+      }
+    },
+    {
+      "field_values_by_stage": {
+        "alpha0p25": {
+          "6": {
+            "QCLOUD": 6.385861343005672e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 0.0
+          }
+        },
+        "alpha0p50": {
+          "6": {
+            "QCLOUD": 6.388728797901422e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 9.248091697692871,
+            "QNICE": 0.0
+          }
+        },
+        "alpha1p0": {
+          "6": {
+            "QCLOUD": 6.102496263338253e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 275672.28125,
+            "QNICE": 0.0
+          }
+        },
+        "control": {
+          "6": {
+            "QCLOUD": 6.383410072885454e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 3.4425406455993652,
+            "QNICE": 0.0
+          }
+        },
+        "ready40": {
+          "6": {
+            "QCLOUD": 8.340936619788408e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 13605366.0,
+            "QNICE": 0.0
+          }
+        }
+      },
+      "fixed_baseline_M0_channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "flat_index": 14728,
+      "i1": 221,
+      "j1": 63,
+      "trial_guards": {
+        "alpha0p25": {
+          "baseline_support_channels": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "baseline_support_count": 7,
+          "initial_negative_number_exclusion": false,
+          "levels": [
+            {
+              "QCLOUD": 6.385861343005672e-05,
+              "QICE": 0.0,
+              "QNCLOUD": 0.0,
+              "QNICE": 0.0,
+              "k1": 6
+            }
+          ],
+          "profile_guard_error": "post_microphysics_profile_invalid:active QC requires positive native NC",
+          "rules": [
+            "QC_positive_NC_nonpositive"
+          ]
+        }
+      }
+    },
+    {
+      "field_values_by_stage": {
+        "alpha0p25": {
+          "4": {
+            "QCLOUD": 6.021899753250182e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 0.0
+          }
+        },
+        "alpha0p50": {
+          "4": {
+            "QCLOUD": 6.0209666116861627e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 0.0
+          }
+        },
+        "alpha1p0": {
+          "4": {
+            "QCLOUD": 6.0496560763567686e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 0.0
+          }
+        },
+        "control": {
+          "4": {
+            "QCLOUD": 6.021952867740765e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.022285040467977524,
+            "QNICE": 0.0
+          }
+        },
+        "ready40": {
+          "4": {
+            "QCLOUD": 6.022389425197616e-05,
+            "QICE": 0.0,
+            "QNCLOUD": 0.0,
+            "QNICE": 0.0
+          }
+        }
+      },
+      "fixed_baseline_M0_channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "flat_index": 21852,
+      "i1": 91,
+      "j1": 94,
+      "trial_guards": {
+        "alpha0p25": {
+          "baseline_support_channels": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "baseline_support_count": 7,
+          "initial_negative_number_exclusion": false,
+          "levels": [
+            {
+              "QCLOUD": 6.021899753250182e-05,
+              "QICE": 0.0,
+              "QNCLOUD": 0.0,
+              "QNICE": 0.0,
+              "k1": 4
+            }
+          ],
+          "profile_guard_error": "post_microphysics_profile_invalid:active QC requires positive native NC",
+          "rules": [
+            "QC_positive_NC_nonpositive"
+          ]
+        },
+        "alpha0p50": {
+          "baseline_support_channels": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "baseline_support_count": 7,
+          "initial_negative_number_exclusion": false,
+          "levels": [
+            {
+              "QCLOUD": 6.0209666116861627e-05,
+              "QICE": 0.0,
+              "QNCLOUD": 0.0,
+              "QNICE": 0.0,
+              "k1": 4
+            }
+          ],
+          "profile_guard_error": "post_microphysics_profile_invalid:active QC requires positive native NC",
+          "rules": [
+            "QC_positive_NC_nonpositive"
+          ]
+        },
+        "alpha1p0": {
+          "baseline_support_channels": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "baseline_support_count": 7,
+          "initial_negative_number_exclusion": false,
+          "levels": [
+            {
+              "QCLOUD": 6.0496560763567686e-05,
+              "QICE": 0.0,
+              "QNCLOUD": 0.0,
+              "QNICE": 0.0,
+              "k1": 4
+            }
+          ],
+          "profile_guard_error": "post_microphysics_profile_invalid:active QC requires positive native NC",
+          "rules": [
+            "QC_positive_NC_nonpositive"
+          ]
+        }
+      }
+    }
+  ],
+  "schema": "kdm6.native_full_physics_three_trial_public_summary.v1",
+  "scope": {
+    "domain": "native full grid 234x282x39 (65,988 columns)",
+    "full_physics": "Active configured MP137, radiation LW/SW, PBL, surface and cumulus physics; one MPI rank and one thread.",
+    "host_steps_per_trial": 1,
+    "integrated_kdm_calls": "Two internal MP137 wrapper entries per host step, observed in RSL; observation B512 blocks are not the native host KDM partition.",
+    "origin_restart_time": "2025-07-19_00:00:40",
+    "output_time": "2025-07-19_00:01:00",
+    "restart_policy": "Each trial independently started from the same original pinned 00:00:40 restart; each own READY40 was bitwise equal to the no-analysis control READY40 before its update.",
+    "tested_candidate_updates": 3
+  },
+  "shared_guard": {
+    "reason": "post_microphysics_profile_invalid:active QC requires positive native NC",
+    "scope": "row-level native profile admissibility; not RTTOV quality or candidate cost",
+    "sha256": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb",
+    "source": "harness/native_observation_batch.py"
+  },
+  "trials": [
+    {
+      "accepted_direction": "The source-pinned proposal was accepted by the historical PR448 KDM-only observation objective. It is scaled once by alpha here; all current full-host trials, including alpha=1, are rejected.",
+      "alpha": 1.0,
+      "candidate_direct_rttov_calls": 0,
+      "candidate_optimizer_calls": 0,
+      "candidate_result_sha256": "be8a06a312c42c63079c96919a6c5417c0024922fb9b8a1f45f9266ad5a48686",
+      "command_ack": {
+        "ack_bytes": 55017929,
+        "ack_rows": 561407,
+        "ack_sha256": "6adc74d59538393a856d85cd4734c0f5dd5cf3ab62009db165035598edc2e18b",
+        "command_bytes": 34807269,
+        "command_rows": 561407,
+        "command_sha256": "4b1b7ab13772231e3cc49a228ed3c89c95c5eafd62ad653ba8ef24f20698b217"
+      },
+      "effective_update_counts": {
+        "applied_components": 855443,
+        "applied_points": 561407,
+        "empty_points": 894114,
+        "noop_points": 1118011,
+        "requested_nonzero_components": 3358836,
+        "requested_points": 1679418,
+        "zero_effect_components": 2503393
+      },
+      "hard_moment_findings": {
+        "bad_rows_with_fixed_baseline_M0_support": 53,
+        "cell_counts_by_predicate": {
+          "QC_positive_NC_nonpositive": 8628,
+          "QI_positive_NI_nonpositive": 5095,
+          "negative_NC": 25,
+          "negative_NI": 14
+        },
+        "confirmed_lost_M0_channels": 371,
+        "confirmed_lost_M0_rows": 53,
+        "hard_bad_rows_on_M0_zero_columns": 1032,
+        "shared_profile_guard_rejections": 53,
+        "unique_bad_rows_full_domain": 1085
+      },
+      "label": "alpha1p0",
+      "model_time_window": [
+        "2025-07-19_00:00:40",
+        "2025-07-19_00:01:00"
+      ],
+      "output_checkpoint_sha256": "ff3c101e3b352594471ac5dfd0daab07c0daff3b6d406c88e2461283389978b5",
+      "output_itimestep": 3,
+      "physics": {
+        "loaded_dso_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+        "rsl_markers": {
+          "cumulus": 1,
+          "finish": 1,
+          "kdm_driver": 2,
+          "kdm_wrapper": 2,
+          "pbl": 1,
+          "radiation_driver": 1,
+          "rrtmg_lw": 2,
+          "rrtmg_sw": 2,
+          "surface": 1
+        },
+        "runtime_flags": {
+          "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+          "KDM6_QR_TRANSPORT": "actual_departure"
+        },
+        "verified_namelist": {
+          "bl_pbl_physics": "11",
+          "cu_physics": "37",
+          "mp_physics": "137",
+          "no_mp_heating": "0",
+          "ra_lw_physics": "4",
+          "ra_sw_physics": "4",
+          "radt": "0.33333333333333331",
+          "restart": ".true.",
+          "run_seconds": "20",
+          "sf_surface_physics": "2",
+          "time_step": "20",
+          "use_q_diabatic": "0",
+          "use_theta_m": "1"
+        }
+      },
+      "plan_sha256": "cde3f2ab128b4a9771de6dcf575ccf0f91222931f5c442607de8e30198116e5f",
+      "ready40_exact_against_control": true,
+      "ready_numeric_elements_compared": 322426586,
+      "step_completion": {
+        "active_input_identity_complete": true,
+        "exit_code": 0,
+        "model_completed": true,
+        "proc_grid": "1x1"
+      }
+    },
+    {
+      "accepted_direction": "The source-pinned proposal was accepted by the historical PR448 KDM-only observation objective. It is scaled once by alpha here; all current full-host trials, including alpha=1, are rejected.",
+      "alpha": 0.5,
+      "candidate_direct_rttov_calls": 0,
+      "candidate_optimizer_calls": 0,
+      "candidate_result_sha256": "d0aada7783cda54a4dda555da7566a8a082d04fb6fbc938df8f81a98668a5fc7",
+      "command_ack": {
+        "ack_bytes": 30522633,
+        "ack_rows": 311455,
+        "ack_sha256": "42cd357bd68efd82c5ce3ac2d9b3faaf211d8fe3ac0f34a2c7d820c8e0f9ebb2",
+        "command_bytes": 19310245,
+        "command_rows": 311455,
+        "command_sha256": "8ec07e72fce9f61c9fe7768292c7c1a5bd929dbfaed0ce22a2b506e53004eef3"
+      },
+      "effective_update_counts": {
+        "applied_components": 411023,
+        "applied_points": 311455,
+        "empty_points": 894114,
+        "noop_points": 1367963,
+        "requested_nonzero_components": 3358836,
+        "requested_points": 1679418,
+        "zero_effect_components": 2947813
+      },
+      "hard_moment_findings": {
+        "bad_rows_with_fixed_baseline_M0_support": 63,
+        "cell_counts_by_predicate": {
+          "QC_positive_NC_nonpositive": 8637,
+          "QI_positive_NI_nonpositive": 5087,
+          "negative_NC": 24,
+          "negative_NI": 15
+        },
+        "confirmed_lost_M0_channels": 441,
+        "confirmed_lost_M0_rows": 63,
+        "hard_bad_rows_on_M0_zero_columns": 1026,
+        "shared_profile_guard_rejections": 63,
+        "unique_bad_rows_full_domain": 1089
+      },
+      "label": "alpha0p50",
+      "model_time_window": [
+        "2025-07-19_00:00:40",
+        "2025-07-19_00:01:00"
+      ],
+      "output_checkpoint_sha256": "0ad82698b14e16c90995c23a5a8c3603d7567f2aa82f09a0ec9311c89dd31b05",
+      "output_itimestep": 3,
+      "physics": {
+        "loaded_dso_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+        "rsl_markers": {
+          "cumulus": 1,
+          "finish": 1,
+          "kdm_driver": 2,
+          "kdm_wrapper": 2,
+          "pbl": 1,
+          "radiation_driver": 1,
+          "rrtmg_lw": 2,
+          "rrtmg_sw": 2,
+          "surface": 1
+        },
+        "runtime_flags": {
+          "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+          "KDM6_QR_TRANSPORT": "actual_departure"
+        },
+        "verified_namelist": {
+          "bl_pbl_physics": "11",
+          "cu_physics": "37",
+          "mp_physics": "137",
+          "no_mp_heating": "0",
+          "ra_lw_physics": "4",
+          "ra_sw_physics": "4",
+          "radt": "0.33333333333333331",
+          "restart": ".true.",
+          "run_seconds": "20",
+          "sf_surface_physics": "2",
+          "time_step": "20",
+          "use_q_diabatic": "0",
+          "use_theta_m": "1"
+        }
+      },
+      "plan_sha256": "943b92a9bb432f0da2b259984d1eb90b7ed0597acb8869184788483f9dbf773a",
+      "ready40_exact_against_control": true,
+      "ready_numeric_elements_compared": 322426586,
+      "step_completion": {
+        "active_input_identity_complete": true,
+        "exit_code": 0,
+        "model_completed": true,
+        "proc_grid": "1x1"
+      }
+    },
+    {
+      "accepted_direction": "The source-pinned proposal was accepted by the historical PR448 KDM-only observation objective. It is scaled once by alpha here; all current full-host trials, including alpha=1, are rejected.",
+      "alpha": 0.25,
+      "candidate_direct_rttov_calls": 0,
+      "candidate_optimizer_calls": 0,
+      "candidate_result_sha256": "cc334f3cc0fbd82546e6ce8ee48c049f816f0a0d345e75ca7676c1663962f595",
+      "command_ack": {
+        "ack_bytes": 11482899,
+        "ack_rows": 117172,
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "command_bytes": 7264699,
+        "command_rows": 117172,
+        "command_sha256": "8f5d0a6d68774305468a5d70323e450d3b21627b364f90138007b36befc61b45"
+      },
+      "effective_update_counts": {
+        "applied_components": 170749,
+        "applied_points": 117172,
+        "empty_points": 894114,
+        "noop_points": 1562246,
+        "requested_nonzero_components": 3358836,
+        "requested_points": 1679418,
+        "zero_effect_components": 3188087
+      },
+      "hard_moment_findings": {
+        "bad_rows_with_fixed_baseline_M0_support": 55,
+        "cell_counts_by_predicate": {
+          "QC_positive_NC_nonpositive": 8618,
+          "QI_positive_NI_nonpositive": 5083,
+          "negative_NC": 18,
+          "negative_NI": 9
+        },
+        "confirmed_lost_M0_channels": 385,
+        "confirmed_lost_M0_rows": 55,
+        "hard_bad_rows_on_M0_zero_columns": 1021,
+        "shared_profile_guard_rejections": 55,
+        "unique_bad_rows_full_domain": 1076
+      },
+      "label": "alpha0p25",
+      "model_time_window": [
+        "2025-07-19_00:00:40",
+        "2025-07-19_00:01:00"
+      ],
+      "output_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+      "output_itimestep": 3,
+      "physics": {
+        "loaded_dso_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+        "rsl_markers": {
+          "cumulus": 1,
+          "finish": 1,
+          "kdm_driver": 2,
+          "kdm_wrapper": 2,
+          "pbl": 1,
+          "radiation_driver": 1,
+          "rrtmg_lw": 2,
+          "rrtmg_sw": 2,
+          "surface": 1
+        },
+        "runtime_flags": {
+          "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+          "KDM6_QR_TRANSPORT": "actual_departure"
+        },
+        "verified_namelist": {
+          "bl_pbl_physics": "11",
+          "cu_physics": "37",
+          "mp_physics": "137",
+          "no_mp_heating": "0",
+          "ra_lw_physics": "4",
+          "ra_sw_physics": "4",
+          "radt": "0.33333333333333331",
+          "restart": ".true.",
+          "run_seconds": "20",
+          "sf_surface_physics": "2",
+          "time_step": "20",
+          "use_q_diabatic": "0",
+          "use_theta_m": "1"
+        }
+      },
+      "plan_sha256": "8b7538577e22ac89d9090466999059909afd04021536e4cc94dc62e3138ecff7",
+      "ready40_exact_against_control": true,
+      "ready_numeric_elements_compared": 322426586,
+      "step_completion": {
+        "active_input_identity_complete": true,
+        "exit_code": 0,
+        "model_completed": true,
+        "proc_grid": "1x1"
+      }
+    }
+  ],
+  "curation_note": "Acceptance wording refers only to the historical KDM-only proposal. All three current full-host trials are inadmissible; numerical evidence is unchanged."
+}

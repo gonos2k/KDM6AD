@@ -1,0 +1,43 @@
+Traversal: BFS depth=2 | Start: ['checkpoint()', 'value'] | 35 nodes found
+
+NODE pytest [src= loc= community=931]
+NODE numpy [src= loc= community=443]
+NODE RuntimeError [src= loc= community=76]
+NODE RttovInputConfig [src=oracle/kdm6/obs/rttov_input_builder.py loc=L35 community=458]
+NODE make_parameters() [src=oracle/kdm6/runtime.py loc=L70 community=165]
+NODE native_live_stepper.py [src=harness/native_live_stepper.py loc=L1 community=4]
+NODE native_host_transition.py [src=harness/native_host_transition.py loc=L1 community=4]
+NODE copy [src= loc= community=530]
+NODE NativeCheckpoint [src=harness/native_host_transition.py loc=L90 community=113]
+NODE load_cal_table() [src=oracle/kdm6/obs/gk2a_l1b.py loc=L98 community=87]
+NODE test_state_forcing_abi.cpp [src=libtorch/tests/test_state_forcing_abi.cpp loc=L1 community=168]
+NODE _resolve_coef_path() [src=oracle/kdm6/obs/rttov_case_writer.py loc=L585 community=913]
+NODE native_satellite_objective.py [src=harness/native_satellite_objective.py loc=L1 community=70]
+NODE native_analysis_control.py [src=harness/native_analysis_control.py loc=L1 community=4]
+NODE native_analysis_increment.py [src=harness/native_analysis_increment.py loc=L1 community=149]
+NODE LONG_KMA_cost_source_2026-10-05.py [src=harness/evidence/LONG_KMA_cost_source_2026-10-05.py loc=L1 community=443]
+NODE test_bind_satellite_control.py [src=harness/tests/test_bind_satellite_control.py loc=L1 community=533]
+NODE prepare_representable_control() [src=harness/native_satellite_objective.py loc=L356 community=594]
+NODE _read_ami_bt() [src=oracle/kdm6/obs/gk2a_l1b.py loc=L199 community=18]
+NODE apply_pair() [src=harness/native_analysis_control.py loc=L81 community=4]
+NODE checkpoint_geometry_id() [src=harness/native_live_stepper.py loc=L96 community=533]
+NODE bind_satellite_control() [src=harness/native_analysis_increment.py loc=L85 community=533]
+NODE main() [src=harness/evidence/LONG_KMA_cost_source_2026-10-05.py loc=L49 community=87]
+NODE joint_handle() [src=libtorch/tests/test_state_forcing_abi.cpp loc=L115 community=168]
+NODE prepared() [src=harness/tests/test_bind_satellite_control.py loc=L40 community=533]
+NODE DerivativeHandle [src=libtorch/tests/test_state_forcing_abi.cpp loc=L96 community=168]
+NODE test_bound_increment_lands_at_independent_non_square_sentinels() [src=harness/tests/test_bind_satellite_control.py loc=L55 community=533]
+NODE test_identical_tq_and_geometry_cannot_rebind_to_changed_model_background() [src=harness/tests/test_bind_satellite_control.py loc=L90 community=533]
+NODE test_mismatched_preparation_is_rejected() [src=harness/tests/test_bind_satellite_control.py loc=L75 community=533]
+NODE checkpoint() [src=harness/tests/test_bind_satellite_control.py loc=L19 community=87]
+NODE sha() [src=harness/evidence/LONG_KMA_cost_source_2026-10-05.py loc=L41 community=87]
+NODE .DerivativeHandle() [src=libtorch/tests/test_state_forcing_abi.cpp loc=L98 community=168]
+NODE kdm6_handle_t [src=libtorch/tests/test_state_forcing_abi.cpp loc=L97 community=168]
+NODE Non-square actual NetCDF layout binding; no native model execution. [src=harness/tests/test_bind_satellite_control.py loc=L1 community=533]
+NODE value [src=libtorch/tests/test_state_forcing_abi.cpp loc=L97 community=168]
+EDGE value --defines [EXTRACTED context=field]--> DerivativeHandle
+EDGE checkpoint() --calls [INFERRED context=call]--> main()
+EDGE checkpoint() --contains [EXTRACTED]--> test_bind_satellite_control.py
+EDGE DerivativeHandle --contains [EXTRACTED]--> test_state_forcing_abi.cpp
+EDGE DerivativeHandle --references [EXTRACTED context=field]--> kdm6_handle_t
+... (truncated — 0 more nodes cut by ~1200-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

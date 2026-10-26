@@ -1,0 +1,332 @@
+{
+  "execution_context": {
+    "analysis_updates": 0,
+    "control_ack_row_count": [
+      0
+    ],
+    "direct_kdm6_call_scope": "two internal tiles during the one host step",
+    "direct_kdm6_capi_calls": 2,
+    "direct_mp_scope": {
+      "audit_includes_boundary_ring": true,
+      "interior_columns": 64960,
+      "one_cell_boundary_ring_columns": 1028
+    },
+    "end": "2025-07-19_00:01:00",
+    "host_step_seconds": 20,
+    "host_steps_completed": 1,
+    "mp_physics": 137,
+    "native_grid": [
+      234,
+      282,
+      39
+    ],
+    "no_mp_heating": 0,
+    "other_physics": "Full configured WRF step also advances dynamics and other enabled physics; endpoint rates are whole-model state responses, not KDM-only process rates.",
+    "physics_mode_flags": {
+      "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+      "KDM6_QR_TRANSPORT": "actual_departure"
+    },
+    "precision": "host arrays and checkpoint output are REAL4; KDM6 call used the separately gated native fp64 value-only bridge, widening REAL4 inputs to f64 map then casting outputs back to REAL4. Not operational-f32 parity.",
+    "previous_restart_history": "restart descended from prior saved, unaccepted T/Q diagnostic DA endpoint; not a cold/original no-DA initialization",
+    "serialized_columns": 65988,
+    "start": "2025-07-19_00:00:40",
+    "use_q_diabatic": 0,
+    "use_theta_m": 1
+  },
+  "fields": {
+    "H_DIABATIC": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -0.13098340528085828,
+        0.10502789140991808
+      ],
+      "max_absolute_endpoint_delta": 0.13098340528085828,
+      "max_absolute_endpoint_delta_over_20_per_second": 0.006549170264042914,
+      "mean_absolute_endpoint_delta_over_20_per_second": 8.429434752552625e-06,
+      "mean_endpoint_delta_over_20_per_second": -2.4407839545762382e-06,
+      "negative_delta_count": 348068,
+      "nonzero_delta_count": 636751,
+      "output_nonzero_count": 509129,
+      "output_range": [
+        -0.029996270313858986,
+        0.105027936398983
+      ],
+      "positive_delta_count": 288683,
+      "rate_range_per_second": [
+        -0.006549170264042914,
+        0.005251394570495904
+      ],
+      "ready_nonzero_count": 579804,
+      "ready_range": [
+        -0.018105875700712204,
+        0.13494302332401276
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "K s-1",
+      "zero_delta_count": 1936781
+    },
+    "QCLOUD": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -0.000807816453743726,
+        0.0010375207057222724
+      ],
+      "max_absolute_endpoint_delta": 0.0010375207057222724,
+      "max_absolute_endpoint_delta_over_20_per_second": 5.187603528611362e-05,
+      "mean_absolute_endpoint_delta_over_20_per_second": 5.248109966357511e-08,
+      "mean_endpoint_delta_over_20_per_second": 8.180660737955487e-09,
+      "negative_delta_count": 77069,
+      "nonzero_delta_count": 169901,
+      "output_nonzero_count": 163271,
+      "output_range": [
+        0.0,
+        0.001132026081904769
+      ],
+      "positive_delta_count": 92832,
+      "rate_range_per_second": [
+        -4.0390822687186303e-05,
+        5.187603528611362e-05
+      ],
+      "ready_nonzero_count": 160444,
+      "ready_range": [
+        0.0,
+        0.0013264836743474007
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "kg kg-1",
+      "zero_delta_count": 2403631
+    },
+    "QICE": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -0.0005422011599875987,
+        0.0008124023443087935
+      ],
+      "max_absolute_endpoint_delta": 0.0008124023443087935,
+      "max_absolute_endpoint_delta_over_20_per_second": 4.062011721543968e-05,
+      "mean_absolute_endpoint_delta_over_20_per_second": 1.85521342309233e-09,
+      "mean_endpoint_delta_over_20_per_second": 1.702468553663149e-09,
+      "negative_delta_count": 11734,
+      "nonzero_delta_count": 122845,
+      "output_nonzero_count": 122590,
+      "output_range": [
+        0.0,
+        0.0008124023443087935
+      ],
+      "positive_delta_count": 111111,
+      "rate_range_per_second": [
+        -2.7110057999379933e-05,
+        4.062011721543968e-05
+      ],
+      "ready_nonzero_count": 113313,
+      "ready_range": [
+        0.0,
+        0.0007972390740178525
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "kg kg-1",
+      "zero_delta_count": 2450687
+    },
+    "QSNOW": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -0.00027561234310269356,
+        0.0008500830736011267
+      ],
+      "max_absolute_endpoint_delta": 0.0008500830736011267,
+      "max_absolute_endpoint_delta_over_20_per_second": 4.2504153680056336e-05,
+      "mean_absolute_endpoint_delta_over_20_per_second": 8.638194601645777e-09,
+      "mean_endpoint_delta_over_20_per_second": -1.5022322659081072e-09,
+      "negative_delta_count": 54974,
+      "nonzero_delta_count": 154537,
+      "output_nonzero_count": 152613,
+      "output_range": [
+        0.0,
+        0.0043080528266727924
+      ],
+      "positive_delta_count": 99563,
+      "rate_range_per_second": [
+        -1.3780617155134679e-05,
+        4.2504153680056336e-05
+      ],
+      "ready_nonzero_count": 111540,
+      "ready_range": [
+        0.0,
+        0.004440776538103819
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "kg kg-1",
+      "zero_delta_count": 2418995
+    },
+    "QVAPOR": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -0.0010119527578353882,
+        0.00035159848630428314
+      ],
+      "max_absolute_endpoint_delta": 0.0010119527578353882,
+      "max_absolute_endpoint_delta_over_20_per_second": 5.059763789176941e-05,
+      "mean_absolute_endpoint_delta_over_20_per_second": 1.9457244706916218e-07,
+      "mean_endpoint_delta_over_20_per_second": 1.0127266958200947e-08,
+      "negative_delta_count": 1236654,
+      "nonzero_delta_count": 2570389,
+      "output_nonzero_count": 2573531,
+      "output_range": [
+        0.0,
+        0.023290622979402542
+      ],
+      "positive_delta_count": 1333735,
+      "rate_range_per_second": [
+        -5.059763789176941e-05,
+        1.7579924315214156e-05
+      ],
+      "ready_nonzero_count": 2573532,
+      "ready_range": [
+        1.8103659726875776e-07,
+        0.02328752912580967
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "kg kg-1",
+      "zero_delta_count": 3143
+    },
+    "THM_2": {
+      "dtype_on_disk": "float32",
+      "endpoint_delta_range": [
+        -2.48040771484375,
+        4.4918212890625
+      ],
+      "max_absolute_endpoint_delta": 4.4918212890625,
+      "max_absolute_endpoint_delta_over_20_per_second": 0.224591064453125,
+      "mean_absolute_endpoint_delta_over_20_per_second": 0.0008854172437208084,
+      "mean_endpoint_delta_over_20_per_second": -5.993844588652548e-05,
+      "negative_delta_count": 1325208,
+      "nonzero_delta_count": 2569487,
+      "output_nonzero_count": 2573532,
+      "output_range": [
+        -4.281132698059082,
+        190.58282470703125
+      ],
+      "positive_delta_count": 1244279,
+      "rate_range_per_second": [
+        -0.1240203857421875,
+        0.224591064453125
+      ],
+      "ready_nonzero_count": 2573532,
+      "ready_range": [
+        -4.293560028076172,
+        190.59487915039062
+      ],
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "units": "K",
+      "zero_delta_count": 4045
+    }
+  },
+  "input_hashes": {
+    "execution_result": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/control_result.json",
+      "sha256": "bb5a718a1e72373ba85bc65ff141057f560ccadfdf0d53056bdc1623d9c6ac86"
+    },
+    "existing_full_state_summary": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/full_state_summary.json",
+      "sha256": "eef293a2a5df513893f58b13fc04c373aaac5c79da23c62a7d9d46f51b8b4bb0"
+    },
+    "live_session_record_sha256": "9e46e4e64974540487a2b8ff9a8035e0e49df412fad5356c97eeac6f5c11bc33",
+    "native_trace_sha256": "1dd7d6a836ae1ef85da522e5dad1902d5c56cdfc1f37b7d546d71c97a1554127",
+    "output_checkpoint": {
+      "itimestep": 3,
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00",
+      "sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+      "time": "2025-07-19_00:01:00"
+    },
+    "plan": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/control_plan.json",
+      "sha256": "fcde0e70a35bd0498b4a2fe836dc86a5a6822fc352b3d116dff77acfcfc4b041"
+    },
+    "ready_checkpoint": {
+      "itimestep": 2,
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+      "sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+      "time": "2025-07-19_00:00:40"
+    },
+    "rsl_out_sha256": "f7ca099ab28f1e41408ed5df9d03d8c66d51a3ad87e734299af3d1cdff625051"
+  },
+  "interpretation": {
+    "H_DIABATIC": "saved memory/diagnostic field has units K s-1. Its endpoint delta is separately shown; delta/20 has units K s-2 and describes change in the stored field per second, NOT a standalone MP heating rate or the whole model thermal tendency.",
+    "QVAPOR_QCLOUD_QICE_QSNOW": "whole-step endpoint changes in saved mixing-ratio state fields (kg kg-1), divided by 20 s. They combine full-step processes and are not independently closed budgets.",
+    "THM_2": "whole-step endpoint change in saved moist potential temperature variable (K), divided by 20 s. Not a pure KDM or radiative tendency.",
+    "aggregation": "unweighted elementwise statistics only; no area weighting, column-mass integration, or conservation claim."
+  },
+  "limitations": [
+    "The endpoint difference spans the complete coupled host step and cannot isolate KDM6AD from other active physics, dynamics, boundary processing, or numerical splitting.",
+    "H_DIABATIC is a persisted diagnostic/memory field; its change does not identify the heating contribution of MP137 alone.",
+    "No physical mass/energy budget, forecast skill, RTTOV result, AD result, or operational REAL4 KDM parity claim is made.",
+    "The prior T/Q diagnostic DA affected the ready restart history; this is a no-new-analysis control, not a no-DA-from-original-input experiment.",
+    "All full-grid checkpoint cells are summarized; KDM direct microphysics loops exclude the source-defined 1-cell ring. Other model processing remains active there."
+  ],
+  "method": {
+    "counts": "strict sign/nonzero counts of the endpoint delta, not thresholded",
+    "endpoint_delta": "output checkpoint REAL4 value widened to binary64 minus ready checkpoint REAL4 value widened to binary64",
+    "fields": [
+      "THM_2",
+      "QVAPOR",
+      "QCLOUD",
+      "QICE",
+      "QSNOW",
+      "H_DIABATIC"
+    ],
+    "finite_and_shape_checks": "all six arrays finite; each endpoint shape (1,39,282,234) and saved variable dtype float32",
+    "mean_rate": "endpoint_delta / 20.0 seconds; unweighted arithmetic mean over every serialized mass-grid cell (one time, 39 levels, 282 rows, 234 columns)",
+    "temperature": "not calculated. No assertion that an inferred temperature is a stored host field; this audit does not reconstruct T."
+  },
+  "schema": "kdm6.native_full_physics_endpoint_tendency_audit.v1",
+  "source_hashes": {
+    "actual_qr_source_receipt_sha256": "69e5c08d1e3d8aa692ac27197be95d5a5cd21c6f2e694f5ff8f284dcfcfa290c",
+    "actual_qr_source_sha256": "5ef3b287cfff0a65e268f79d7f13f17540b5b477fcf647b3859ba61919ac0c99",
+    "control_runner_snapshot": "27014d50bb3646ff82175e72f985e160008309d13bb939edf30b0a633111efa7",
+    "executed_kdm_dso_sha256": "8e57e5e29112ff735e4bf2e3f5fe974b9728171fcaf5f149fda4d7f137da4e63",
+    "execution_controller_sha256": "27014d50bb3646ff82175e72f985e160008309d13bb939edf30b0a633111efa7",
+    "fp64_boundary_gate_sha256": "2fc0790ef09fb469802220456aa1c7d6553171d99fda9f895122c0b3f3db7917",
+    "native_fp64_capi_archive_sha256": "0c1b002f2a85bdcc5d82a53bf3d7b03471105df9f161ce8eb195e5ff4e64238a",
+    "native_prep.py": "b5386603f0cb7f021b7d4c46493bfc77599fd2dcea49d5a67e845904b9b95ed5",
+    "native_profile_builder.py": "480018c36078aaf6952ca5d2e2667f61b563a221a1dc1e3a42290f655680b58e",
+    "plan_pin:native_analysis_control.py": "aac9b8bcaf611aa2c24e3b11fa3ff785f4293d06a773371053fe44c05867e664",
+    "plan_pin:native_analysis_increment.py": "ec127ba89ef45958789ef57824154e740f6ef7d5ba213da7604a3ff1535fb519",
+    "plan_pin:native_host_transition.py": "9f1cce69cbbd506eb9facf60a673466bf5404d066691599004c84f1fcc812f69",
+    "plan_pin:native_live_stepper.py": "05d99842d1deae976136ff879813180a79befeebf9894454d9f64f8018e2e01b",
+    "plan_pin:native_step_control.py": "4cb5fbf483519fbf620b32684374447e2511559ee44aea7c8ec00754e8870520",
+    "plan_pin:prepare_full_physics_control.py": "2efc878be7815416599cef52da18d2c0a3c53e78e91aafced6c2ecb242157a2c",
+    "plan_pin:run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "wrf_executable_sha256": "faf7ec5f66c89acdea20ea0cef1ca38030071020ff5ebec6f2d4b4da37291ca0"
+  },
+  "status": "COMPLETED"
+}

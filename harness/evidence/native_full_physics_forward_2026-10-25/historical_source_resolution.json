@@ -1,0 +1,26 @@
+{
+  "schema": "kdm6.native_full_physics_H1_source_resolution.v1",
+  "historical_manifest": "interim_snapshot_manifest.json",
+  "historical_manifest_sha256": "6b09a290179bcd7340b5ba6293e2097f9c87cfefc58dc0ccc32cacc519c2b343",
+  "scope": "H1 source pins resolve to exact archived/committed document bytes. Current plan/checklist add historical-status banners; current FP64 bridge notes narrow FP-control versus exception-status coverage. Executed physics artifacts and the H1 manifest remain unchanged.",
+  "sources": [
+    {
+      "manifest_source_path": "docs/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md",
+      "source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "sha256": "6c9717d59b7d368f0f5a2079a4edea89188d43e4fdcd05b417414c09188a4e72",
+      "snapshot": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_ANALYSIS_RESOLUTION_CHECKLIST.md.H1.txt"
+    },
+    {
+      "manifest_source_path": "docs/NATIVE_FULL_PHYSICS_FORWARD.md",
+      "source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "sha256": "3ccef9b7ebded05488b4e89cf7ae1fed7d4a59f4a1b10e829857fb7fe20f0938",
+      "snapshot": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FULL_PHYSICS_FORWARD.md.H1.txt"
+    },
+    {
+      "manifest_source_path": "docs/NATIVE_FP64_VALUE_BRIDGE.md",
+      "source_commit": "7d4d2d85b9c444b7cae9e842bec9ff332a013814",
+      "sha256": "41040914bf5c8003c9ad45f5e3cf235f548d6bee42a4acd100b0c6f57ac445d7",
+      "snapshot": "harness/evidence/native_full_physics_forward_2026-10-25/source_snapshots/NATIVE_FP64_VALUE_BRIDGE.md.H1.txt"
+    }
+  ]
+}

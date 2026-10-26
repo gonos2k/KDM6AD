@@ -1,0 +1,37 @@
+#define KDM6_ENABLE_NATIVE_FP64_VALUE_BRIDGE
+#include "kdm6_c_api.h"
+#include <cfenv>
+#include <cstdio>
+#include <dlfcn.h>
+
+int main(int argc, char** argv) {
+    if (argc != 2) return 2;
+    void* library = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
+    if (!library) { std::fprintf(stderr, "%s\n", dlerror()); return 3; }
+    auto call = reinterpret_cast<decltype(&kdm6_native_fp64_value_c)>(
+        dlsym(library, "kdm6_native_fp64_value_c"));
+    if (!call) return 4;
+    float input = 1.0f, output = 123.0f;
+    kdm6_handle_t* handle = reinterpret_cast<kdm6_handle_t*>(1);
+    std::feclearexcept(FE_ALL_EXCEPT);
+    std::feraiseexcept(FE_DIVBYZERO);
+    int before = std::fetestexcept(FE_ALL_EXCEPT);
+    int rounding_before = std::fegetround();
+    // Negative ncmin refuses before tensor/kernel work, after dt validation.
+    int rc = call(&input, &input, &input, &input, &input, &input, &input,
+        &input, &input, &input, &input, &input, &input, &input, &input, &input,
+        1, 1, 1, 20.0, 0, 1,
+        &output, &output, &output, &output, &output, &output, &output,
+        &output, &output, &output, &output, &output, &handle,
+        nullptr, -1.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+    int after = std::fetestexcept(FE_ALL_EXCEPT);
+    int rounding_after = std::fegetround();
+    std::printf("{\"rc\":%d,\"before\":%d,\"after\":%d,\"FE_INEXACT\":%d,"
+                "\"rounding_preserved\":%s,\"handle_null\":%s,\"output_unchanged\":%s,"
+                "\"kernel_forwards\":0,\"ABI_refusals\":1}\n",
+        rc, before, after, FE_INEXACT,
+        rounding_before == rounding_after ? "true" : "false",
+        handle == nullptr ? "true" : "false", output == 123.0f ? "true" : "false");
+    std::feclearexcept(FE_ALL_EXCEPT);
+    return 0;
+}

@@ -1,0 +1,48 @@
+{
+  "field_metrics_match_v1": true,
+  "input_hashes": {
+    "control_plan.json": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/control_plan.json",
+      "sha256": "fcde0e70a35bd0498b4a2fe836dc86a5a6822fc352b3d116dff77acfcfc4b041"
+    },
+    "control_result.json": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/control_result.json",
+      "sha256": "bb5a718a1e72373ba85bc65ff141057f560ccadfdf0d53056bdc1623d9c6ac86"
+    },
+    "full_state_summary.json": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/full_state_summary.json",
+      "sha256": "eef293a2a5df513893f58b13fc04c373aaac5c79da23c62a7d9d46f51b8b4bb0"
+    },
+    "output_checkpoint": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00",
+      "sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070"
+    },
+    "ready_checkpoint": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+      "sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3"
+    },
+    "wrfrst_d01_2025-07-19_00:00:40": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:00:40",
+      "sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3"
+    },
+    "wrfrst_d01_2025-07-19_00:01:00": {
+      "path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00",
+      "sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070"
+    }
+  },
+  "model_calls": 0,
+  "outputs": {
+    "SUMMARY.md": {
+      "bytes": 445,
+      "sha256": "2eb01f33f26de5c8dbb395051d16ff1dd8c63453ca832c7b903c5e8cc666db6e"
+    },
+    "audit.json": {
+      "bytes": 11730,
+      "sha256": "68ffd56ce031efba2052bb23dbcfda2596a4ccd91b2205f2ba453a4afedd7ece"
+    }
+  },
+  "producer_path": "PRIVATE_HOST_EVIDENCE/native_full_physics_forward_20261025/runs/no_analysis_control_v3/endpoint_tendency_audit_v2/audit_endpoint_tendencies.py",
+  "producer_sha256": "063af5168c28a21e175ed7875bcb7dcda3c570bddd05ee2d62deef7e98aaed9b",
+  "rttov_calls": 0,
+  "schema": "kdm6.native_full_physics_endpoint_tendency_producer_receipt.v1"
+}

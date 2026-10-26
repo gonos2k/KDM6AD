@@ -1,0 +1,11 @@
+{
+  "semantic_nodes_added_or_updated": 17,
+  "semantic_edges": 23,
+  "old_semantic_edges_replaced": 2,
+  "hyperedges": 3,
+  "scope": "Current docs/evidence semantics merged while retaining AST relationships; source checks remain authoritative.",
+  "unchanged_prior_hyperedges_preserved": 38,
+  "final_hyperedges": 41,
+  "cluster_export_note": "CLI cluster-only drops hyperedge metadata; restored unchanged prior hyperedges from the pinned parent graph and merged the new fragment after clustering.",
+  "all_new_nodes_edges_present": true
+}
