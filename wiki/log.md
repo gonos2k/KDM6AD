@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC shared-face trace
+- Added [[sources/native-qnc-shared-face-2026-10-27]]: four control/alpha0.25 full-domain 20-second host steps form two exact trace-off/on pairs. The selected owner tile gives six target–neighbor correction+low face raw-bit joins and 21 source-compatible RK3 tendency replays per input.
+- The seven-cell star has 30 unclosed external face incidences. Raw NC units, domain conservation, an admissible update, RTTOV candidate cost and another assimilation remain unverified.
+
 ## [2026-10-27] Native trace guards and saved QNC budget
 - Added [[sources/native-trace-guards-and-qnc-budget-2026-10-27]]: the moment overlay now refuses report/source aliases and escaping source paths before mutation, retains source permissions, and the QNC replay requires canonical record types and integer run settings. The prior 28-file packet remains immutable and its original source pin remains historical.
 - Saved binary32 face/state operands give exact-rational local residuals `+25,776.334` (control) and `−165,989.840` (alpha0.25). This is a target-cell numerical comparison, not an executed FMA, physical NC unit, shared-face/domain conservation, or new model/RTTOV/assimilation result.

@@ -1,0 +1,1279 @@
+{
+  "between_input_face_differences_raw_coordinate": {
+    "x_east": {
+      "correction_alpha_minus_control": 536870912.0,
+      "low_order_alpha_minus_control": -2818572288.0
+    },
+    "x_west": {
+      "correction_alpha_minus_control": 276824064.0,
+      "low_order_alpha_minus_control": 12582912.0
+    },
+    "y_north": {
+      "correction_alpha_minus_control": -20971520.0,
+      "low_order_alpha_minus_control": 786432.0
+    },
+    "y_south": {
+      "correction_alpha_minus_control": 262144000.0,
+      "low_order_alpha_minus_control": 24117248.0
+    },
+    "z_bottom": {
+      "correction_alpha_minus_control": 10752.0,
+      "low_order_alpha_minus_control": 312.0
+    },
+    "z_top": {
+      "correction_alpha_minus_control": 111.5,
+      "low_order_alpha_minus_control": 24.0
+    }
+  },
+  "cases": {
+    "alpha025": {
+      "all_captured_checks_pass": true,
+      "call_headers": {
+        "1": {
+          "dt_bits_hex": "41A00000",
+          "meta": {
+            "IDE": 235,
+            "IDS": 1,
+            "IME": 240,
+            "IMS": -4,
+            "ITE": 235,
+            "ITS": 1,
+            "JDE": 283,
+            "JDS": 1,
+            "JME": 288,
+            "JMS": -4,
+            "JTE": 142,
+            "JTS": 1,
+            "KTE": 40,
+            "KTF": 39,
+            "KTS": 1
+          },
+          "owns_star": true,
+          "rk": 3,
+          "source_time_step_arg": 20,
+          "time_step_s": 20
+        },
+        "2": {
+          "dt_bits_hex": "41A00000",
+          "meta": {
+            "IDE": 235,
+            "IDS": 1,
+            "IME": 240,
+            "IMS": -4,
+            "ITE": 235,
+            "ITS": 1,
+            "JDE": 283,
+            "JDS": 1,
+            "JME": 288,
+            "JMS": -4,
+            "JTE": 283,
+            "JTS": 143,
+            "KTE": 40,
+            "KTF": 39,
+            "KTS": 1
+          },
+          "owns_star": false,
+          "rk": 3,
+          "source_time_step_arg": 20,
+          "time_step_s": 20
+        }
+      },
+      "limits": {
+        "domain_number_conservation_certified": false,
+        "executed_fma_instruction_certified": false,
+        "model_itimestep_source": "same-run upstream trace and final checkpoint; CALL model_step_arg is the Fortran time_step argument (20 seconds)",
+        "perimeter_faces_not_closed": 30,
+        "physical_number_units_certified": false
+      },
+      "native_target_ijk_1based": [
+        221,
+        63,
+        6
+      ],
+      "owner_call_id": 1,
+      "run_id": "alpha025_shared_v1_on",
+      "same_run_pr457_target_join": {
+        "FX_EAST": true,
+        "FX_LOW_EAST": true,
+        "FX_LOW_WEST": true,
+        "FX_WEST": true,
+        "FY_LOW_NORTH": true,
+        "FY_LOW_SOUTH": true,
+        "FY_NORTH": true,
+        "FY_SOUTH": true,
+        "FZ_BOTTOM": true,
+        "FZ_LOW_BOTTOM": true,
+        "FZ_LOW_TOP": true,
+        "FZ_TOP": true,
+        "MSFTX": true,
+        "RDX": true,
+        "RDY": true,
+        "RDZW": true,
+        "RK3_AFTER_X": true,
+        "RK3_AFTER_Y": true,
+        "RK3_AFTER_Z": true,
+        "dt_PR457_V2": true,
+        "dt_upstream": true,
+        "pre_divergence_TENDENCY": true,
+        "upstream_ADVECT_TEND": true
+      },
+      "schema": "kdm6.native_qnc_shared_face_replay.v1",
+      "seven_cell_directional_tendency": {
+        "i220_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1DADAB0",
+              "value": -117496479744.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1DADAB0",
+              "value": -117496479744.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1DADAB0",
+              "value": -117496479744.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D30CA374",
+              "value": -604037709824.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D30CA374",
+              "value": -604037709824.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D30CA374",
+              "value": -604037709824.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D32D3018",
+              "value": -743836221440.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D32D3018",
+              "value": -743836221440.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D32D3018",
+              "value": -743836221440.0
+            }
+          }
+        ],
+        "i221_k5_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1CF218E",
+              "value": -111202648064.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1CF218E",
+              "value": -111202648064.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1CF218E",
+              "value": -111202648064.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D2176D5A",
+              "value": -162593669120.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2176D5A",
+              "value": -162593669120.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2176D5A",
+              "value": -162593669120.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D2AD9DC0",
+              "value": -372837974016.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2AD9DC0",
+              "value": -372837974016.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2AD9DC0",
+              "value": -372837974016.0
+            }
+          }
+        ],
+        "i221_k6_j62": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1E8B9AB",
+              "value": -124943425536.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1E8B9AB",
+              "value": -124943425536.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1E8B9AB",
+              "value": -124943425536.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D2F5FC04",
+              "value": -528247554048.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2F5FC04",
+              "value": -528247554048.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2F5FC04",
+              "value": -528247554048.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D32E4BB4",
+              "value": -748594397184.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D32E4BB4",
+              "value": -748594397184.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D32E4BB4",
+              "value": -748594397184.0
+            }
+          }
+        ],
+        "i221_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D2295664",
+              "value": -181824716800.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2295664",
+              "value": -181824716800.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2295664",
+              "value": -181824716800.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D1AC399B",
+              "value": -92462604288.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1AC399B",
+              "value": -92462604288.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1AC399B",
+              "value": -92462604288.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D1C21A7A",
+              "value": -104208482304.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1C21A7A",
+              "value": -104208482304.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1C21A7A",
+              "value": -104208482304.0
+            }
+          }
+        ],
+        "i221_k6_j64": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "52D09003",
+              "value": 447884656640.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52D09003",
+              "value": 447884656640.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52D09003",
+              "value": 447884656640.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "52B540F5",
+              "value": 389239439360.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52B540F5",
+              "value": 389239439360.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52B540F5",
+              "value": 389239439360.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "52B7C5C0",
+              "value": 394648354816.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52B7C5C0",
+              "value": 394648354816.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52B7C5C0",
+              "value": 394648354816.0
+            }
+          }
+        ],
+        "i221_k7_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "CD6614BA",
+              "value": -241257376.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "CD6614BA",
+              "value": -241257376.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "CD6614BA",
+              "value": -241257376.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "5018E086",
+              "value": 10259404800.0
+            },
+            "outer_fma_match": true,
+            "separate_match": false,
+            "source_grouped_outer_fma": {
+              "bits_hex": "5018E086",
+              "value": 10259404800.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "5018E085",
+              "value": 10259403776.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "4D9E214D",
+              "value": 331622816.0
+            },
+            "outer_fma_match": true,
+            "separate_match": false,
+            "source_grouped_outer_fma": {
+              "bits_hex": "4D9E214D",
+              "value": 331622816.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "4D9E2140",
+              "value": 331622400.0
+            }
+          }
+        ],
+        "i222_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "5119DD63",
+              "value": 41302765568.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "5119DD63",
+              "value": 41302765568.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "5119DD63",
+              "value": 41302765568.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "51D73BF0",
+              "value": 115552944128.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "51D73BF0",
+              "value": 115552944128.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "51D73BF0",
+              "value": 115552944128.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "51717074",
+              "value": 64810860544.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "51717074",
+              "value": 64810860544.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "51717074",
+              "value": 64810860544.0
+            }
+          }
+        ]
+      },
+      "shared_trace_rows": 147,
+      "shared_trace_sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f",
+      "six_internal_faces": {
+        "x_east": {
+          "correction": {
+            "bits_hex": "579517DE",
+            "value": 327859482656768.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D8512A81",
+            "value": -919921932369920.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "579517DE",
+          "neighbor_ikj": [
+            222,
+            6,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "D8512A81",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "x_west": {
+          "correction": {
+            "bits_hex": "D6E75FFE",
+            "value": -127199734661120.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D51DC79D",
+            "value": -10842541129728.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "D6E75FFE",
+          "neighbor_ikj": [
+            220,
+            6,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "D51DC79D",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "y_north": {
+          "correction": {
+            "bits_hex": "55CB97A2",
+            "value": 27981514801152.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "5343FA1B",
+            "value": 841714696192.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "55CB97A2",
+          "neighbor_ikj": [
+            221,
+            6,
+            64
+          ],
+          "neighbor_low_order_bits_hex": "5343FA1B",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "y_south": {
+          "correction": {
+            "bits_hex": "D5CC3BEA",
+            "value": -28069712625664.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D4220DE8",
+            "value": -2784072040448.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "D5CC3BEA",
+          "neighbor_ikj": [
+            221,
+            6,
+            62
+          ],
+          "neighbor_low_order_bits_hex": "D4220DE8",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "z_bottom": {
+          "correction": {
+            "bits_hex": "4F49CB33",
+            "value": 3385537280.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "4C8401AB",
+            "value": 69209432.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "4F49CB33",
+          "neighbor_ikj": [
+            221,
+            5,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "4C8401AB",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "z_top": {
+          "correction": {
+            "bits_hex": "CAC85146",
+            "value": -6564003.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "4B3A8508",
+            "value": 12223752.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "CAC85146",
+          "neighbor_ikj": [
+            221,
+            7,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "4B3A8508",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        }
+      },
+      "target_final_rk3_qnc": {
+        "bits_hex": "C0741F1E",
+        "value": -3.814399242401123
+      }
+    },
+    "control": {
+      "all_captured_checks_pass": true,
+      "call_headers": {
+        "1": {
+          "dt_bits_hex": "41A00000",
+          "meta": {
+            "IDE": 235,
+            "IDS": 1,
+            "IME": 240,
+            "IMS": -4,
+            "ITE": 235,
+            "ITS": 1,
+            "JDE": 283,
+            "JDS": 1,
+            "JME": 288,
+            "JMS": -4,
+            "JTE": 142,
+            "JTS": 1,
+            "KTE": 40,
+            "KTF": 39,
+            "KTS": 1
+          },
+          "owns_star": true,
+          "rk": 3,
+          "source_time_step_arg": 20,
+          "time_step_s": 20
+        },
+        "2": {
+          "dt_bits_hex": "41A00000",
+          "meta": {
+            "IDE": 235,
+            "IDS": 1,
+            "IME": 240,
+            "IMS": -4,
+            "ITE": 235,
+            "ITS": 1,
+            "JDE": 283,
+            "JDS": 1,
+            "JME": 288,
+            "JMS": -4,
+            "JTE": 283,
+            "JTS": 143,
+            "KTE": 40,
+            "KTF": 39,
+            "KTS": 1
+          },
+          "owns_star": false,
+          "rk": 3,
+          "source_time_step_arg": 20,
+          "time_step_s": 20
+        }
+      },
+      "limits": {
+        "domain_number_conservation_certified": false,
+        "executed_fma_instruction_certified": false,
+        "model_itimestep_source": "same-run upstream trace and final checkpoint; CALL model_step_arg is the Fortran time_step argument (20 seconds)",
+        "perimeter_faces_not_closed": 30,
+        "physical_number_units_certified": false
+      },
+      "native_target_ijk_1based": [
+        221,
+        63,
+        6
+      ],
+      "owner_call_id": 1,
+      "run_id": "control_shared_v1_on",
+      "same_run_pr457_target_join": {
+        "FX_EAST": true,
+        "FX_LOW_EAST": true,
+        "FX_LOW_WEST": true,
+        "FX_WEST": true,
+        "FY_LOW_NORTH": true,
+        "FY_LOW_SOUTH": true,
+        "FY_NORTH": true,
+        "FY_SOUTH": true,
+        "FZ_BOTTOM": true,
+        "FZ_LOW_BOTTOM": true,
+        "FZ_LOW_TOP": true,
+        "FZ_TOP": true,
+        "MSFTX": true,
+        "RDX": true,
+        "RDY": true,
+        "RDZW": true,
+        "RK3_AFTER_X": true,
+        "RK3_AFTER_Y": true,
+        "RK3_AFTER_Z": true,
+        "dt_PR457_V2": true,
+        "dt_upstream": true,
+        "pre_divergence_TENDENCY": true,
+        "upstream_ADVECT_TEND": true
+      },
+      "schema": "kdm6.native_qnc_shared_face_replay.v1",
+      "seven_cell_directional_tendency": {
+        "i220_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1DADD0B",
+              "value": -117501419520.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1DADD0B",
+              "value": -117501419520.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1DADD0B",
+              "value": -117501419520.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D30CA3BF",
+              "value": -604042625024.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D30CA3BF",
+              "value": -604042625024.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D30CA3BF",
+              "value": -604042625024.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D32D3067",
+              "value": -743841398784.0
+            },
+            "outer_fma_match": true,
+            "separate_match": false,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D32D3067",
+              "value": -743841398784.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D32D3068",
+              "value": -743841464320.0
+            }
+          }
+        ],
+        "i221_k5_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1CF20D4",
+              "value": -111201124352.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1CF20D4",
+              "value": -111201124352.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1CF20D4",
+              "value": -111201124352.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D2176D21",
+              "value": -162592735232.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2176D21",
+              "value": -162592735232.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2176D21",
+              "value": -162592735232.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D2AD9D89",
+              "value": -372836171776.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2AD9D89",
+              "value": -372836171776.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2AD9D89",
+              "value": -372836171776.0
+            }
+          }
+        ],
+        "i221_k6_j62": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D1E8B7FD",
+              "value": -124939902976.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1E8B7FD",
+              "value": -124939902976.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1E8B7FD",
+              "value": -124939902976.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D2F5FB91",
+              "value": -528243785728.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2F5FB91",
+              "value": -528243785728.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2F5FB91",
+              "value": -528243785728.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D32E4B7B",
+              "value": -748590661632.0
+            },
+            "outer_fma_match": true,
+            "separate_match": false,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D32E4B7B",
+              "value": -748590661632.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D32E4B7A",
+              "value": -748590596096.0
+            }
+          }
+        ],
+        "i221_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "D2295640",
+              "value": -181824126976.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D2295640",
+              "value": -181824126976.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D2295640",
+              "value": -181824126976.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "D1AC3990",
+              "value": -92462514176.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1AC3990",
+              "value": -92462514176.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1AC3990",
+              "value": -92462514176.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "D1C21A76",
+              "value": -104208449536.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "D1C21A76",
+              "value": -104208449536.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "D1C21A76",
+              "value": -104208449536.0
+            }
+          }
+        ],
+        "i221_k6_j64": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "52D08F9D",
+              "value": 447881314304.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52D08F9D",
+              "value": 447881314304.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52D08F9D",
+              "value": 447881314304.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "52B5408E",
+              "value": 389236064256.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52B5408E",
+              "value": 389236064256.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52B5408E",
+              "value": 389236064256.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "52B7C566",
+              "value": 394645405696.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "52B7C566",
+              "value": 394645405696.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "52B7C566",
+              "value": 394645405696.0
+            }
+          }
+        ],
+        "i221_k7_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "CD66134B",
+              "value": -241251504.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "CD66134B",
+              "value": -241251504.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "CD66134B",
+              "value": -241251504.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "5018DFFC",
+              "value": 10259263488.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "5018DFFC",
+              "value": 10259263488.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "5018DFFC",
+              "value": 10259263488.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "4D9E15D5",
+              "value": 331528864.0
+            },
+            "outer_fma_match": true,
+            "separate_match": false,
+            "source_grouped_outer_fma": {
+              "bits_hex": "4D9E15D5",
+              "value": 331528864.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "4D9E15E0",
+              "value": 331529216.0
+            }
+          }
+        ],
+        "i222_k6_j63": [
+          {
+            "axis": "Z",
+            "observed": {
+              "bits_hex": "5119D9BB",
+              "value": 41298931712.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "5119D9BB",
+              "value": 41298931712.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "5119D9BB",
+              "value": 41298931712.0
+            }
+          },
+          {
+            "axis": "X",
+            "observed": {
+              "bits_hex": "51D73A40",
+              "value": 115549405184.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "51D73A40",
+              "value": 115549405184.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "51D73A40",
+              "value": 115549405184.0
+            }
+          },
+          {
+            "axis": "Y",
+            "observed": {
+              "bits_hex": "51716EFD",
+              "value": 64809324544.0
+            },
+            "outer_fma_match": true,
+            "separate_match": true,
+            "source_grouped_outer_fma": {
+              "bits_hex": "51716EFD",
+              "value": 64809324544.0
+            },
+            "source_grouped_separate": {
+              "bits_hex": "51716EFD",
+              "value": 64809324544.0
+            }
+          }
+        ]
+      },
+      "shared_trace_rows": 147,
+      "shared_trace_sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1",
+      "six_internal_faces": {
+        "x_east": {
+          "correction": {
+            "bits_hex": "579517CE",
+            "value": 327858945785856.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D8512A57",
+            "value": -919919113797632.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "579517CE",
+          "neighbor_ikj": [
+            222,
+            6,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "D8512A57",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "x_west": {
+          "correction": {
+            "bits_hex": "D6E7601F",
+            "value": -127200011485184.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D51DC7A9",
+            "value": -10842553712640.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "D6E7601F",
+          "neighbor_ikj": [
+            220,
+            6,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "D51DC7A9",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "y_north": {
+          "correction": {
+            "bits_hex": "55CB97AC",
+            "value": 27981535772672.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "5343FA0F",
+            "value": 841713909760.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "55CB97AC",
+          "neighbor_ikj": [
+            221,
+            6,
+            64
+          ],
+          "neighbor_low_order_bits_hex": "5343FA0F",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "y_south": {
+          "correction": {
+            "bits_hex": "D5CC3C67",
+            "value": -28069974769664.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "D4220E44",
+            "value": -2784096157696.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "D5CC3C67",
+          "neighbor_ikj": [
+            221,
+            6,
+            62
+          ],
+          "neighbor_low_order_bits_hex": "D4220E44",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "z_bottom": {
+          "correction": {
+            "bits_hex": "4F49CB09",
+            "value": 3385526528.0
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "4C840184",
+            "value": 69209120.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "4F49CB09",
+          "neighbor_ikj": [
+            221,
+            5,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "4C840184",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        },
+        "z_top": {
+          "correction": {
+            "bits_hex": "CAC85225",
+            "value": -6564114.5
+          },
+          "correction_bitwise_shared": true,
+          "low_order": {
+            "bits_hex": "4B3A84F0",
+            "value": 12223728.0
+          },
+          "low_order_bitwise_shared": true,
+          "neighbor_correction_bits_hex": "CAC85225",
+          "neighbor_ikj": [
+            221,
+            7,
+            63
+          ],
+          "neighbor_low_order_bits_hex": "4B3A84F0",
+          "target_ikj": [
+            221,
+            6,
+            63
+          ]
+        }
+      },
+      "target_final_rk3_qnc": {
+        "bits_hex": "405C5296",
+        "value": 3.4425406455993652
+      }
+    }
+  },
+  "directional_tendency_checks_per_case": 21,
+  "full_host_steps_from_receipts": 4,
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "same_input_off_on_checkpoint_variables": 652,
+  "same_input_off_on_numeric_elements": 322426586,
+  "schema": "kdm6.native_qnc_shared_face_public_analysis.v1",
+  "shared_correction_and_low_face_pairs_per_case": 6,
+  "status": "SHARED_FACE_REPLAY_PASSED_LOCAL_LEDGER_OPEN"
+}

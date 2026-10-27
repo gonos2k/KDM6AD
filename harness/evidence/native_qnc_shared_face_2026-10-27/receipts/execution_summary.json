@@ -1,0 +1,140 @@
+{
+  "KDM_wrapper_entries_expected": 8,
+  "RTTOV_calls": 0,
+  "accepted_analysis_updates": 0,
+  "base_main": "631b67e332f0e2b24f2b0b06e1df48dc8a1af060",
+  "case": "2025-07-19_KO_nominal_0000_READY_0040",
+  "cases": {
+    "alpha025": {
+      "off": {
+        "ack_matches_historical": true,
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "applied_control": {
+          "applied_components": 170749,
+          "applied_rows": 117172
+        },
+        "checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+        "native_host_steps_completed": 1,
+        "private_run_result_sha256": "54cbd63da02105dfb78a4283c094838851661d31595e34d40cc7f98297622ede",
+        "run_id": "alpha025_shared_v1_off",
+        "status": "PASS",
+        "trace_artifacts": {}
+      },
+      "on": {
+        "ack_matches_historical": true,
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "applied_control": {
+          "applied_components": 170749,
+          "applied_rows": 117172
+        },
+        "checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+        "native_host_steps_completed": 1,
+        "private_run_result_sha256": "0f496b4f2904a724472b6f15eb97954f24cf1b424591ec22f372cd6816fc8af9",
+        "run_id": "alpha025_shared_v1_on",
+        "status": "PASS",
+        "trace_artifacts": {
+          "flux": {
+            "bytes": 4490,
+            "sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3"
+          },
+          "host": {
+            "bytes": 71585,
+            "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+          },
+          "kernel": {
+            "bytes": 24041,
+            "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+          },
+          "shared": {
+            "bytes": 7441,
+            "sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f"
+          },
+          "upstream": {
+            "bytes": 11014,
+            "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+          }
+        }
+      },
+      "pair": {
+        "KDM_wrapper_entries_expected": 4,
+        "ack_byte_identical": true,
+        "host_steps_completed": 2,
+        "numeric_element_mismatches": 0,
+        "numeric_elements_compared": 322426586,
+        "raw_bitwise_equal": true,
+        "sha256": "fcd1090ddf1af722c23729d3e85ad11c497e88fad5eec36aa761bb1f85f0de45",
+        "variable_count": 652
+      }
+    },
+    "control": {
+      "off": {
+        "ack_matches_historical": true,
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "applied_control": {
+          "applied_components": 0,
+          "applied_rows": 0
+        },
+        "checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "native_host_steps_completed": 1,
+        "private_run_result_sha256": "f50656758e48c89e07933a0947901a103cc9ad36a8b7da193227ae209f74acc1",
+        "run_id": "control_shared_v1_off",
+        "status": "PASS",
+        "trace_artifacts": {}
+      },
+      "on": {
+        "ack_matches_historical": true,
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "applied_control": {
+          "applied_components": 0,
+          "applied_rows": 0
+        },
+        "checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+        "native_host_steps_completed": 1,
+        "private_run_result_sha256": "a91bb56775f5b4b4dd92bcc56155dee73aecb68555767f935c60ae8b6e4fa0aa",
+        "run_id": "control_shared_v1_on",
+        "status": "PASS",
+        "trace_artifacts": {
+          "flux": {
+            "bytes": 4490,
+            "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+          },
+          "host": {
+            "bytes": 71585,
+            "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+          },
+          "kernel": {
+            "bytes": 24041,
+            "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+          },
+          "shared": {
+            "bytes": 7441,
+            "sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1"
+          },
+          "upstream": {
+            "bytes": 11014,
+            "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+          }
+        }
+      },
+      "pair": {
+        "KDM_wrapper_entries_expected": 4,
+        "ack_byte_identical": true,
+        "host_steps_completed": 2,
+        "numeric_element_mismatches": 0,
+        "numeric_elements_compared": 322426586,
+        "raw_bitwise_equal": true,
+        "sha256": "4775d98ba8dbbfd352201ae672a9c3a56702afbeefe9c4b46510154c835f8de3",
+        "variable_count": 652
+      }
+    }
+  },
+  "domain_native_columns": 65988,
+  "full_host_steps_completed": 4,
+  "historical_pr457_packet_manifest_sha256": "bc6a31a3c5e454a652b01ae9c261fb846817949408bda5063685b0275d2477f9",
+  "mass_levels": 39,
+  "numtiles": 2,
+  "optimizer_calls": 0,
+  "ranks": 1,
+  "schema": "kdm6.native_qnc_shared_public_execution_summary.v1",
+  "threads": 1
+}
