@@ -1,0 +1,214 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Post-PR459 opt-in writer/MSFTY guards and exact-rational seven-cell numerical ledger from immutable saved f32 records; state and physical/domain budgets remain open.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md": {
+      "bytes": 5074,
+      "sha256": "445d36c5943827b0dd49d080e8490cefbb787caca29f1b8c6c61bf91e65fc05f"
+    },
+    "wiki/sources/native-qnc-weighted-ledger-2026-10-27.md": {
+      "bytes": 1271,
+      "sha256": "6cdb3181380a674c3efd9f393b46a49e9467e09e923f82fcdfc6193e6c95317a"
+    },
+    "harness/evidence/native_qnc_weighted_2026-10-27/README.md": {
+      "bytes": 2255,
+      "sha256": "7efe2ba848e993b14319e38c13daa5b4982ae49ec50838157577a7585074e956"
+    },
+    "harness/evidence/native_qnc_weighted_2026-10-27/analysis.json": {
+      "bytes": 15386,
+      "sha256": "d71f0b7dfee00d042790806061fae01cdb1958733d8d4ddc9beb71f870fc57f9"
+    },
+    "harness/evidence/native_qnc_weighted_2026-10-27/manifest.json": {
+      "bytes": 1593,
+      "sha256": "11096f19dff360c66b7acd0b2a82047ab2c2df59fef0d1fa9a68b8510b5e0d33"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/manifest.json": {
+      "bytes": 6431,
+      "sha256": "3bfe4111f89c77c475567b515789550606df3077dd5fcaaf4c6457d6be14a922"
+    },
+    "harness/native_qnc_shared_face_overlay.py": {
+      "bytes": 9457,
+      "sha256": "371ae08150584739fc337a66fb3bb41afe06ac9f7086b76c64508d0778e8f8ee"
+    },
+    "harness/analyze_qnc_shared_face_trace.py": {
+      "bytes": 12337,
+      "sha256": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c"
+    },
+    "harness/analyze_qnc_weighted_ledger.py": {
+      "bytes": 6429,
+      "sha256": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_weighted_20261027_report",
+      "label": "Seven-cell weighted QNC numerical ledger and two trace-tool corrections",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Two trace-tool corrections; Exact ledger; Provenance and remaining gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "445d36c5943827b0dd49d080e8490cefbb787caca29f1b8c6c61bf91e65fc05f"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_packet",
+      "label": "Versioned offline packet preserving the immutable PR459 source manifest",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_weighted_2026-10-27/README.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "7efe2ba848e993b14319e38c13daa5b4982ae49ec50838157577a7585074e956",
+      "model_calls": 0
+    },
+    {
+      "id": "native_qnc_weighted_20261027_ledger",
+      "label": "Saved f32 metrics and faces yield exact internal cancellation and 30-face perimeter",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_weighted_2026-10-27/analysis.json",
+      "source_location": "/cases/control; /cases/alpha025",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d71f0b7dfee00d042790806061fae01cdb1958733d8d4ddc9beb71f870fc57f9",
+      "physical_units_certified": false,
+      "domain_conservation_certified": false
+    },
+    {
+      "id": "native_qnc_weighted_20261027_owner_guard",
+      "label": "Opt-in writer clears stale owner and gates on current QNC/RK3 selection",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_shared_face_overlay.py",
+      "source_location": "_HELPERS qnc_shared_begin/qnc_shared_real/qnc_shared_capture/qnc_shared_tendency",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "371ae08150584739fc337a66fb3bb41afe06ac9f7086b76c64508d0778e8f8ee"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_msfty_join",
+      "label": "Target MSFTY now joins the prior V2 raw bit record",
+      "file_type": "code",
+      "source_file": "harness/analyze_qnc_shared_face_trace.py",
+      "source_location": "analyze_shared_trace same_run_pr457_target_join",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_fraction",
+      "label": "Exact Fraction ledger separates saved-face algebra from rounded stage stores",
+      "file_type": "code",
+      "source_file": "harness/analyze_qnc_weighted_ledger.py",
+      "source_location": "analyze_weighted_ledger",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_old_packet",
+      "label": "Historical PR459 packet and analyzer hashes remain unchanged",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/manifest.json",
+      "source_location": "external_source_pins; files",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "3bfe4111f89c77c475567b515789550606df3077dd5fcaaf4c6457d6be14a922"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_limit",
+      "label": "State/physical/domain number budgets and candidate RTTOV cost remain open",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Provenance and remaining gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "445d36c5943827b0dd49d080e8490cefbb787caca29f1b8c6c61bf91e65fc05f"
+    },
+    {
+      "id": "native_qnc_weighted_20261027_wiki",
+      "label": "Wiki synthesis of weighted ledger and bounded interpretation",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-weighted-ledger-2026-10-27.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "6cdb3181380a674c3efd9f393b46a49e9467e09e923f82fcdfc6193e6c95317a"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_weighted_20261027_report",
+      "target": "native_qnc_weighted_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "New versioned replay"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_packet",
+      "target": "native_qnc_weighted_20261027_old_packet",
+      "relation": "validates_without_rewriting",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_weighted_2026-10-27/README.md",
+      "source_location": "Full page"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_fraction",
+      "target": "native_qnc_weighted_20261027_ledger",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_qnc_weighted_ledger.py",
+      "source_location": "analyze_weighted_ledger"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_owner_guard",
+      "target": "native_qnc_weighted_20261027_report",
+      "relation": "documented_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Two trace-tool corrections"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_msfty_join",
+      "target": "native_qnc_weighted_20261027_report",
+      "relation": "documented_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Two trace-tool corrections"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_ledger",
+      "target": "native_qnc_weighted_20261027_limit",
+      "relation": "does_not_certify",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Provenance and remaining gate"
+    },
+    {
+      "source": "native_qnc_weighted_20261027_wiki",
+      "target": "native_qnc_weighted_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-weighted-ledger-2026-10-27.md",
+      "source_location": "Derivation"
+    },
+    {
+      "source": "native_qnc_shared_20261027_analysis",
+      "target": "native_qnc_weighted_20261027_ledger",
+      "relation": "input_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_WEIGHTED_LEDGER_20261027.md",
+      "source_location": "Exact ledger from existing trace"
+    }
+  ],
+  "hyperedges": []
+}
