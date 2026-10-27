@@ -1,0 +1,156 @@
+{
+  "actual_calls_from_receipts": {
+    "KDM_wrapper_entries_expected": 8,
+    "RTTOV_K_calls": 0,
+    "RTTOV_direct_calls": 2,
+    "host_steps": 4,
+    "optimizer_calls": 0
+  },
+  "base_commit": "cb26dd5df02e01538594d35f93d01ed9274ba25e",
+  "baseline_observation_manifest_sha256": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663",
+  "external_source_pins": {
+    "harness/analyze_native_qnc_state7_trace.py": "41f48ab17540edb689551572a7fa2830f514a6550240f8467c26148715461d6c",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_qnc_weighted_ledger.py": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218",
+    "harness/native_checkpoint_observation.py": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+    "harness/native_moment_trace_records.py": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944",
+    "harness/native_observation_batch.py": "602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb",
+    "harness/native_qnc_support_mask_producer.py": "24669b1c108f20bdc6fef9809709d434ae672415621b724e78b41996ec459ef8",
+    "harness/native_qnc_target_backoff_overlay.py": "6ba3137114e576299a5ca012717ef04d4aa0114294bdfbe170ccce1374406d79",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a",
+    "oracle/kdm6/cloud_dsd.py": "b62a79a620052f9d9b77a0f58b90a1e7eb41ff9415692bbcf30630885ee93310",
+    "oracle/kdm6/obs/native_cloud_profile.py": "2aeb687fed9f660818d76f98d1f8588e2cc21c9d20a7e471ff166a999a5d202c",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116"
+  },
+  "files": [
+    {
+      "bytes": 5805,
+      "path": "README.md",
+      "sha256": "e4b66b170ce0a6a4de8232c66216cec80a2f3f4ce1d00071ad2a050acc5f5e1d"
+    },
+    {
+      "bytes": 1964,
+      "path": "SOURCE_RESOLUTION.md",
+      "sha256": "2a6b837ad27fa138ddcfd27dc517517ddd5f7e40479a05c4298f1a8aae004057"
+    },
+    {
+      "bytes": 9396,
+      "path": "analysis.json",
+      "sha256": "9beff7c9654e7800dcd1de0c094740b61197bf1d196f7f5a091b0c02a04fdfc2"
+    },
+    {
+      "bytes": 51271,
+      "path": "data/alpha025/block28_direct.npz",
+      "sha256": "4708673bb29e2cbb37255620cb2aa1cad1c3d86b882a2c707588c648d85164a2"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/alpha025/host.hex",
+      "sha256": "0fffe902abc07b58aac94a844c1792d8b3c4c2d669bd933b6ae194171ce898aa"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/alpha025/kernel.hex",
+      "sha256": "bab140dfa79da7ab96146884f140e8254c6142ce006cbc27ed0db2808ff34fa6"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/alpha025/qnc_flux.tsv",
+      "sha256": "9ad5c371e6a37bfcf1bc9aef09f70c30accc1fbda158815743df2a5ab0024d1c"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/alpha025/qnc_shared.tsv",
+      "sha256": "d26dfd19ce768c12b35e5c1e5f6e6b2621877c003d54e03d4e6aff323d23f126"
+    },
+    {
+      "bytes": 39056,
+      "path": "data/alpha025/qnc_state7.tsv",
+      "sha256": "3b4ac4001f2cdf26895bf478e3669d9e27739d4e6b7376b2792bd0a366081202"
+    },
+    {
+      "bytes": 51277,
+      "path": "data/control/block28_direct.npz",
+      "sha256": "4be8141d90ce67857b2d23533125883a024c2aa16de6bc369a3ddffeea840510"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/control/host.hex",
+      "sha256": "b9d787d81efadbf0c56b0b50e32867fc69a508f41978fd923f55f6538b9ef91c"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/control/kernel.hex",
+      "sha256": "579ed69d074c03f2520c3db2657f7b76f32cb60b154f17bd61050f27952d5d39"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/control/qnc_flux.tsv",
+      "sha256": "6c7869ef61c9eb4bc9f8d88f605b00c583432bd00e2cec617dfcf0acbab27ed6"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/control/qnc_shared.tsv",
+      "sha256": "bc9c2e3852c070f5de5201b90a22b5214075df9199c10e61d25e617bf9d573f1"
+    },
+    {
+      "bytes": 39056,
+      "path": "data/control/qnc_state7.tsv",
+      "sha256": "be7b89757ee871441d41d4a501e4b2ecd6a4cdb3396070771c6b7c7b9afcfe3f"
+    },
+    {
+      "bytes": 11882,
+      "path": "execution_summary.json",
+      "sha256": "99c1108f4bb614902c35ff7956e65e416c15ab182478023cf7233322393f4a4f"
+    },
+    {
+      "bytes": 832,
+      "path": "receipts/plans/alpha025_off.json",
+      "sha256": "06a247f37c6212e61823cc2f5dd48bcf027950a4a55dc17f2588e6a7c4f6e9cc"
+    },
+    {
+      "bytes": 830,
+      "path": "receipts/plans/alpha025_on.json",
+      "sha256": "bdcc1ea3059b596081dfe13c38b5cb76045ffa3b7495b14997c175f1366d8a4a"
+    },
+    {
+      "bytes": 830,
+      "path": "receipts/plans/control_off.json",
+      "sha256": "36ac2f07b671f5cc17307180a153026f754e9586f2ce0fed4f73801be853463d"
+    },
+    {
+      "bytes": 828,
+      "path": "receipts/plans/control_on.json",
+      "sha256": "8c9986e7a96850aa9b9853d6eff2eabe5fe2592314cd05da494d9d6c07bace15"
+    },
+    {
+      "bytes": 24749,
+      "path": "replay.py",
+      "sha256": "c4b9ede7dbdb4099102c761205cd8083be24c2a0d6d75c3edd105a69b606da69"
+    },
+    {
+      "bytes": 919,
+      "path": "support_mask_producer_receipt.json",
+      "sha256": "d12a3f4b0366fedaf4549522d5e805e355c59a7b416e6437fa9f5e339e4ba090"
+    },
+    {
+      "bytes": 98920,
+      "path": "support_masks.npz",
+      "sha256": "c4154b4b735fcbfb5509b1f23ee53f4cfe17b46ccf0c6930f63aa244f2a0f9a9"
+    },
+    {
+      "bytes": 4048,
+      "path": "target_state.json",
+      "sha256": "c9a8f4f719811511e77f8039708461b61598d8d67de731b45104cd4a6e4b02a3"
+    }
+  ],
+  "historical_pr461_manifest_sha256": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02",
+  "historical_pr463_prediction_manifest_sha256": "c81e545cda01d815f53525364a003b3446ab1f9ecac82048975be9001e38985a",
+  "offline_replay_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_target_backoff_host_public_packet.v1"
+}

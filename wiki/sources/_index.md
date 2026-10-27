@@ -5,6 +5,7 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[native-qnc-target-host-backoff-2026-10-27]] — Four isolated full-host steps and two original-B512 direct RTTOV calls verify one target moment repair with remaining full-support invalidity.
 - [[native-qnc-coefficient-rounding-2026-10-27]] — PD/RK coefficient bit gate and saved exact-versus-rounded seven-cell QNC state ledger with physical-unit limits.
 - [[native-qnc-scale-backoff-2026-10-27]] — Saved one-ULP donor-scale counterfactual for the seven-cell QNC witness, with exact shared-face cancellation and host-validation limits.
 - [[native-qnc-saved-state-budget-2026-10-27]] — Offline exact-rational seven-cell PD/face/RK state decomposition and hardened RK3 old-buffer gate, with physical-budget limits.

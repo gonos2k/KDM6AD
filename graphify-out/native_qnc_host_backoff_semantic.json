@@ -1,0 +1,263 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Four actual full-domain target QNC one-ULP host steps, two exact trace-off/on pairs and two direct original-B512 RTTOV calls; one M0 profile recovered but 54 remain invalid, so no global cost or accepted analysis.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_TARGET_HOST_BACKOFF_20261027.md": {
+      "bytes": 3401,
+      "sha256": "521daf6078039965635e9395dc414f943c9a06eb9e55a7f30e60504179e12f20"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/README.md": {
+      "bytes": 5805,
+      "sha256": "e4b66b170ce0a6a4de8232c66216cec80a2f3f4ce1d00071ad2a050acc5f5e1d"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/SOURCE_RESOLUTION.md": {
+      "bytes": 1964,
+      "sha256": "2a6b837ad27fa138ddcfd27dc517517ddd5f7e40479a05c4298f1a8aae004057"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/analysis.json": {
+      "bytes": 9396,
+      "sha256": "9beff7c9654e7800dcd1de0c094740b61197bf1d196f7f5a091b0c02a04fdfc2"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/execution_summary.json": {
+      "bytes": 11882,
+      "sha256": "99c1108f4bb614902c35ff7956e65e416c15ab182478023cf7233322393f4a4f"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/manifest.json": {
+      "bytes": 5982,
+      "sha256": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833"
+    },
+    "harness/native_qnc_target_backoff_overlay.py": {
+      "bytes": 2758,
+      "sha256": "6ba3137114e576299a5ca012717ef04d4aa0114294bdfbe170ccce1374406d79"
+    },
+    "wiki/sources/native-qnc-target-host-backoff-2026-10-27.md": {
+      "bytes": 2150,
+      "sha256": "292dd56fdea6ac62859054fbd564b5119ae7c2d968ac78af1169a51359c3a717"
+    },
+    "harness/native_qnc_support_mask_producer.py": {
+      "bytes": 5317,
+      "sha256": "24669b1c108f20bdc6fef9809709d434ae672415621b724e78b41996ec459ef8"
+    },
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/support_mask_producer_receipt.json": {
+      "bytes": 919,
+      "sha256": "d12a3f4b0366fedaf4549522d5e805e355c59a7b416e6437fa9f5e339e4ba090"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_host_backoff_20261027_report",
+      "label": "Isolated full-host target-QNC backoff and local B512 response",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_TARGET_HOST_BACKOFF_20261027.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "521daf6078039965635e9395dc414f943c9a06eb9e55a7f30e60504179e12f20"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_packet",
+      "label": "Public 24-asset host/backoff observation replay",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "e4b66b170ce0a6a4de8232c66216cec80a2f3f4ce1d00071ad2a050acc5f5e1d"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_source",
+      "label": "Private build and executed path attribution with one changed advection object",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "2a6b837ad27fa138ddcfd27dc517517ddd5f7e40479a05c4298f1a8aae004057"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_analysis",
+      "label": "Four host steps, fixed-support failure and two block28 direct observations",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "9beff7c9654e7800dcd1de0c094740b61197bf1d196f7f5a091b0c02a04fdfc2"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_execution",
+      "label": "Two exact trace-off/on checkpoint pairs and two direct RTTOV calls",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/execution_summary.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "99c1108f4bb614902c35ff7956e65e416c15ab182478023cf7233322393f4a4f"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_manifest",
+      "label": "Public packet byte and current source pins",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_overlay",
+      "label": "QNC/RK3 target-only NEAREST donor-scale diagnostic source",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_target_backoff_overlay.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "6ba3137114e576299a5ca012717ef04d4aa0114294bdfbe170ccce1374406d79"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_wiki",
+      "label": "Wiki synthesis of target moment repair and remaining global invalidity",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-target-host-backoff-2026-10-27.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "292dd56fdea6ac62859054fbd564b5119ae7c2d968ac78af1169a51359c3a717"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_mask_producer",
+      "label": "Three-checkpoint hard moment mask producer",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_support_mask_producer.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "24669b1c108f20bdc6fef9809709d434ae672415621b724e78b41996ec459ef8"
+    },
+    {
+      "id": "native_qnc_host_backoff_20261027_mask_receipt",
+      "label": "Byte-reproducing support-mask source/input/output receipt",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/support_mask_producer_receipt.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d12a3f4b0366fedaf4549522d5e805e355c59a7b416e6437fa9f5e339e4ba090"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_host_backoff_20261027_report",
+      "target": "native_qnc_host_backoff_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_TARGET_HOST_BACKOFF_20261027.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_packet",
+      "target": "native_qnc_host_backoff_20261027_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_packet",
+      "target": "native_qnc_host_backoff_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_source",
+      "target": "native_qnc_host_backoff_20261027_execution",
+      "relation": "attributes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_overlay",
+      "target": "native_qnc_host_backoff_20261027_source",
+      "relation": "produces_variant_source",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/native_qnc_target_backoff_overlay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_execution",
+      "target": "native_qnc_host_backoff_20261027_analysis",
+      "relation": "supports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/execution_summary.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_analysis",
+      "target": "native_qnc_scale_backoff_20261027_analysis",
+      "relation": "tests_saved_prediction",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_analysis",
+      "target": "native_qnc_coeff_rounding_20261027_analysis",
+      "relation": "extends_numerical_ledger",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_wiki",
+      "target": "native_qnc_host_backoff_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-target-host-backoff-2026-10-27.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_mask_producer",
+      "target": "native_qnc_host_backoff_20261027_mask_receipt",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/native_qnc_support_mask_producer.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_backoff_20261027_mask_receipt",
+      "target": "native_qnc_host_backoff_20261027_analysis",
+      "relation": "binds_full_domain_support",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_2026-10-27/support_mask_producer_receipt.json",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

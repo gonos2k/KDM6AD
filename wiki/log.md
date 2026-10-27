@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC target backoff full-host result
+- Added [[sources/native-qnc-target-host-backoff-2026-10-27]]: four full-domain variant steps produce two exact trace-off/on pairs. A one-ULP target QNC/RK3 donor-scale decrement matches the saved RK prediction, while KDM strongly amplifies control NC and preserves the alpha positive NC. Only target QNCLOUD and RE_CLOUD differ from same-input historical checkpoints.
+- One fixed-support profile (7 channels) is recovered, but 54 profiles/378 cells remain invalid. Two direct-only RTTOV calls on original B512 block 28 improve local IR105 residual by 0.326 K; full candidate cost, raw NC unit certification, general limiter correction and another assimilation remain open.
+
 ## [2026-10-27] Native QNC coefficient gate and rounded-state ledger
 - Added [[sources/native-qnc-coefficient-rounding-2026-10-27]]: PD/RK C1H/C2H raw-bit equality is now an explicit validation gate, with RK mass factors taken from RK records. One-ULP skew regressions reject both saved cases while unchanged published results remain identical.
 - In the saved one-ULP face counterfactual, the selected seven-cell exact weighted state difference is zero; final binary32 state words instead give +12,836.142998/+10,268.913338 numerical-coordinate changes. Raw NC units, full-host physics and observation-cost acceptance remain open; no model call occurred.

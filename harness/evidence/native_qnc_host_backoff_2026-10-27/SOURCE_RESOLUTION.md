@@ -1,0 +1,9 @@
+# Source and execution boundary
+
+- Base private executable and archive: the source-bound PR #461 state7 build receipt, pinned in `execution_summary.json`. Its `solve_em.o`, KDM FP64 DSO and other archive members were retained.
+- Experimental producer: tracked `harness/native_qnc_target_backoff_overlay.py`, pinned to the executed private PR #459 shared-face `module_advect_em.f90` SHA. It writes a **new** source file; it never edits the canonical active host or `host_fortran` archive.
+- Variant compile: `module_advect_em.o` alone was rebuilt from that new source with the saved generic-dynamics compiler command. The resulting `module_advect_em.mod` matched the base module interface **byte for byte**. The isolated archive differed by exactly that one object; the executable was relinked with a private copy of the same KDM DSO.
+- Runtime: the four [path-free plans](receipts/plans) bind the same pinned READY40 hash, source plan, build and executable, and retain the old control/alpha actual-wire T/Q commands. The selected QNC context is supplied by the already compiled `module_em.o`; only the target QNC/RK3 limiter branch can execute the extra `NEAREST` operation. Same-input trace off/on ACKs and final checkpoints match bitwise.
+- Observation: two independent direct-only B512 block-28 RTTOV calls consume the completed control and alpha checkpoints. No KDM is reapplied to either checkpoint, no RTTOV K call occurs, and no global fixed-support candidate cost is computed.
+
+The private build receipt, full checkpoints and RTTOV case folders remain under the canonical host research evidence tree. The public packet contains path-free SHA attribution, selected raw trace values, hard-admission masks plus their byte-reproducing producer/receipt, and the two B512 direct result arrays. It verifies public arithmetic and source binding, while private executable reproduction and the complete 652-variable comparisons depend on the retained private files.

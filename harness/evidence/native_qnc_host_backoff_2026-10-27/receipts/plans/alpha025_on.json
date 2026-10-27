@@ -1,0 +1,16 @@
+{
+  "RTTOV_calls": 0,
+  "build_receipt_sha256": "9db07acd80cb7c04af27b540d397079c5551769060a9d135a917113053185b8b",
+  "dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+  "executable_sha256": "d31d830c7fae2b87a8148d1fa86937380a3ff38f80c7beef3a82e802c4c66441",
+  "expected_reference_checkpoint_sha256": "77be4282ef36a06ca59473fc69b21334eb719fdcdcea0d211d0238c40387657a",
+  "free_bytes_at_launch": 5852491776,
+  "host_steps_requested": 1,
+  "optimizer_calls": 0,
+  "origin_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "run_id": "alpha025_backoff_v1_on",
+  "schema": "kdm6.native_qnc_backoff_single_run_plan.v1",
+  "source_case": "alpha025",
+  "source_plan_sha256": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab",
+  "trace_mode": "on"
+}
