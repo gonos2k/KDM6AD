@@ -1,0 +1,18 @@
+{
+  "analysis_background_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+  "applied_TQ_components": 170749,
+  "applied_TQ_points": 117172,
+  "control_family": "ANALYSIS_TQ",
+  "directly_written_host_fields": [
+    "grid%t_2",
+    "grid%moist(...,P_QV)"
+  ],
+  "hydrometeor_QC_NC_QI_NI_direct_write": false,
+  "initial_input_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "output_checkpoint_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f",
+  "post_command_READY40_checkpoint_observed": false,
+  "pre_command_READY40_checkpoint_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+  "private_live_session_record_sha256": "aac7c2ff6533195f238f89c95001f60c474895a98fc77731b7578f71fc7e5bbc",
+  "schema": "kdm6.native_qnc_pre_command_ready_boundary.v1",
+  "step_control_overlay_source_sha256": "213123c66d65bf4a5c54404c831e96286a581a0fbe1b5db6bf6ccc2f0d79b9d0"
+}

@@ -1,0 +1,301 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Versioned PR465 source-pin closure; three original/variant B512 observation baselines and 54 residual M0 profile reasons from pre-command READY40 to final state; no new model/RTTOV calls or accepted analysis.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_HOST_BACKOFF_REVIEW_20261028.md": {
+      "bytes": 2302,
+      "sha256": "0da0e52f3c1547d25f54b4d41de0c3037b961906d8c566e04bd9c50b0a7dc034"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/README.md": {
+      "bytes": 3920,
+      "sha256": "9d749b9117f35c2389744277db3f5e37ba256846d6584e725f54a5137739d6f5"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/analysis.json": {
+      "bytes": 4473,
+      "sha256": "933fe64204932059316cf1e42f2561e4bb5657bf5bff3b235475eb29e187fc64"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/manifest.json": {
+      "bytes": 1720,
+      "sha256": "802988fae908ac96e1fb60ba86d24de6e64de4128a6b6f455f16e13a65538a77"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/replay.py": {
+      "bytes": 14890,
+      "sha256": "8f15a74a7caa5604076de3526aae11634811cf80855a6e4aea933c2a57e690a0"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/residual_reason_rows.json": {
+      "bytes": 48935,
+      "sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e"
+    },
+    "harness/evidence/native_qnc_host_backoff_review_2026-10-28/ready_boundary_receipt.json": {
+      "bytes": 992,
+      "sha256": "7744bafaa4dd8f2b2eba9c2a4fb86b82672b0f8976db5ef12727167db570e8b0"
+    },
+    "harness/native_qnc_residual_reason_producer.py": {
+      "bytes": 7268,
+      "sha256": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2"
+    },
+    "harness/analyze_saved_qnc_scale_backoff.py": {
+      "bytes": 15104,
+      "sha256": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5"
+    },
+    "harness/analyze_native_qnc_saved_state_budget.py": {
+      "bytes": 8214,
+      "sha256": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f"
+    },
+    "harness/native_step_control_overlay.py": {
+      "bytes": 20748,
+      "sha256": "213123c66d65bf4a5c54404c831e96286a581a0fbe1b5db6bf6ccc2f0d79b9d0"
+    },
+    "wiki/sources/native-qnc-host-backoff-review-2026-10-28.md": {
+      "bytes": 1533,
+      "sha256": "24e6d0173fb832bc3b97cb09a5306b0113392a21b386c7233f9daa56c0af73a1"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_host_review_20261028_report",
+      "label": "Current-source pin closure and original/variant B512 baseline comparison",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_HOST_BACKOFF_REVIEW_20261028.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "0da0e52f3c1547d25f54b4d41de0c3037b961906d8c566e04bd9c50b0a7dc034"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_packet",
+      "label": "Versioned PR465 companion with historical packet untouched",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "9d749b9117f35c2389744277db3f5e37ba256846d6584e725f54a5137739d6f5"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_analysis",
+      "label": "Three target BT baselines and 54 residual fixed-support reasons",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "933fe64204932059316cf1e42f2561e4bb5657bf5bff3b235475eb29e187fc64"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_manifest",
+      "label": "Current calculator and producer source pins",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "802988fae908ac96e1fb60ba86d24de6e64de4128a6b6f455f16e13a65538a77"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_replay",
+      "label": "Current-source guarded host-backoff offline replay",
+      "file_type": "code",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/replay.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "8f15a74a7caa5604076de3526aae11634811cf80855a6e4aea933c2a57e690a0"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_reason_rows",
+      "label": "54 raw-f32 residual QC/NC and QI/NI profile witnesses",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/residual_reason_rows.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_ready_boundary",
+      "label": "Pre-command READY40 T/Q background binding",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/ready_boundary_receipt.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "7744bafaa4dd8f2b2eba9c2a4fb86b82672b0f8976db5ef12727167db570e8b0"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_producer",
+      "label": "Ready-to-final residual moment reason producer",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_residual_reason_producer.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_backoff_calc",
+      "label": "Current saved one-ULP backoff calculator",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_qnc_scale_backoff.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_budget_calc",
+      "label": "Current PD/RK coefficient-gated state budget calculator",
+      "file_type": "code",
+      "source_file": "harness/analyze_native_qnc_saved_state_budget.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_step_control",
+      "label": "T/Q-only pre-solve analysis command source",
+      "file_type": "code",
+      "source_file": "harness/native_step_control_overlay.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "213123c66d65bf4a5c54404c831e96286a581a0fbe1b5db6bf6ccc2f0d79b9d0"
+    },
+    {
+      "id": "native_qnc_host_review_20261028_wiki",
+      "label": "Wiki synthesis of baseline contrast and remaining failures",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-host-backoff-review-2026-10-28.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "24e6d0173fb832bc3b97cb09a5306b0113392a21b386c7233f9daa56c0af73a1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_host_review_20261028_report",
+      "target": "native_qnc_host_review_20261028_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_HOST_BACKOFF_REVIEW_20261028.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_packet",
+      "target": "native_qnc_host_review_20261028_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_packet",
+      "target": "native_qnc_host_review_20261028_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_replay",
+      "target": "native_qnc_host_review_20261028_analysis",
+      "relation": "recomputes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/replay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_producer",
+      "target": "native_qnc_host_review_20261028_reason_rows",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/native_qnc_residual_reason_producer.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_reason_rows",
+      "target": "native_qnc_host_review_20261028_analysis",
+      "relation": "supports_failure_counts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/residual_reason_rows.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_ready_boundary",
+      "target": "native_qnc_host_review_20261028_reason_rows",
+      "relation": "binds_pre_command_state",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/ready_boundary_receipt.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_step_control",
+      "target": "native_qnc_host_review_20261028_ready_boundary",
+      "relation": "specifies_TQ_only_write",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/native_step_control_overlay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_backoff_calc",
+      "target": "native_qnc_host_review_20261028_replay",
+      "relation": "pinned_current_calculator",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/replay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_budget_calc",
+      "target": "native_qnc_host_review_20261028_replay",
+      "relation": "pinned_current_calculator",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/replay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_analysis",
+      "target": "native_qnc_host_backoff_20261027_analysis",
+      "relation": "compares_historical_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_host_backoff_review_2026-10-28/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_host_review_20261028_wiki",
+      "target": "native_qnc_host_review_20261028_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-host-backoff-review-2026-10-28.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-28] Native QNC host-backoff current-source and baseline review
+- Added [[sources/native-qnc-host-backoff-review-2026-10-28]]: the current backoff and PD/RK-budget helper sources are hash-pinned in a versioned companion while the PR465 packet remains immutable. The original control baseline is compared with both variant outputs on the same block28 M0 support; original→variant-alpha target IR105 response is approximately −0.00009 K, distinct from the −0.326 K within-variant contrast.
+- No new host/RTTOV call was made; 54 full-domain M0 profiles remain invalid, so accepted analysis and full candidate cost remain open.
+
 ## [2026-10-27] Native QNC target backoff full-host result
 - Added [[sources/native-qnc-target-host-backoff-2026-10-27]]: four full-domain variant steps produce two exact trace-off/on pairs. A one-ULP target QNC/RK3 donor-scale decrement matches the saved RK prediction, while KDM strongly amplifies control NC and preserves the alpha positive NC. Only target QNCLOUD and RE_CLOUD differ from same-input historical checkpoints.
 - One fixed-support profile (7 channels) is recovered, but 54 profiles/378 cells remain invalid. Two direct-only RTTOV calls on original B512 block 28 improve local IR105 residual by 0.326 K; full candidate cost, raw NC unit certification, general limiter correction and another assimilation remain open.
