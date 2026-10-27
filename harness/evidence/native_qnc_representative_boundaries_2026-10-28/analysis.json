@@ -1,0 +1,2577 @@
+{
+  "checkpoint_witness_sha256": {
+    "alpha025": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e",
+    "control": "e071fb31746c6139a5d6e5befc4bfa6f02a9f843b113cc56c4e1cd89f8ea86ec"
+  },
+  "limits": {
+    "RTTOV_or_optimizer_called_by_replay": false,
+    "exact_real_saved_operand_rk3_reproduces_executed_f32_order": false,
+    "first_measured_boundary_is_process_attribution": false,
+    "full_M0_candidate_admissible": false,
+    "raw_number_physical_units_certified": false
+  },
+  "schema": "kdm6.qnc_representative_boundaries.v1",
+  "stage_order": [
+    {
+      "rk_step": 1,
+      "stage": "RKSCALAR_BEFORE"
+    },
+    {
+      "rk_step": 1,
+      "stage": "RKSCALAR_AFTER"
+    },
+    {
+      "rk_step": 2,
+      "stage": "RKSCALAR_BEFORE"
+    },
+    {
+      "rk_step": 2,
+      "stage": "RKSCALAR_AFTER"
+    },
+    {
+      "rk_step": 3,
+      "stage": "RKSCALAR_PD_BEFORE"
+    },
+    {
+      "rk_step": 3,
+      "stage": "RKSCALAR_PD_AFTER"
+    },
+    {
+      "rk_step": 3,
+      "stage": "RKSCALAR_BEFORE"
+    },
+    {
+      "rk_step": 3,
+      "stage": "RKSCALAR_AFTER"
+    },
+    {
+      "rk_step": 3,
+      "stage": "POST_SCALAR_BDY"
+    },
+    {
+      "rk_step": 0,
+      "stage": "PRE_MICROPHYSICS"
+    },
+    {
+      "rk_step": 0,
+      "stage": "POST_MICROPHYSICS"
+    },
+    {
+      "rk_step": 0,
+      "stage": "POST_FINISH"
+    }
+  ],
+  "targets": [
+    {
+      "checkpoint_words_match_post_finish": true,
+      "first_recorded_bit_difference": {
+        "NI": null,
+        "QC": {
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "QI": null,
+        "QNC": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER"
+        }
+      },
+      "first_recorded_ice_validity_split": null,
+      "first_recorded_liquid_validity_split": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_positive_control_nonpositive_candidate_NC": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_rk_input_difference": {
+        "ADVECT_TEND": {
+          "rk_step": 1,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "SCALAR_OLD": null,
+        "SCALAR_TEND": null
+      },
+      "i_one_based": 153,
+      "j_one_based": 111,
+      "k_one_based": 4,
+      "saved_operand_exact_real_rk3_sign_check": {
+        "advect_tend_differs": true,
+        "alpha025": {
+          "new_mass_factor_approx": 91707.38081650838,
+          "numerator_approx": -32940.293368674684,
+          "observed_qnc": -0.3058522343635559,
+          "quotient_approx": -0.3591891195168127,
+          "saved_operand_sign_matches_output": true
+        },
+        "common_numerator_inputs_equal_bits": true,
+        "control": {
+          "new_mass_factor_approx": 91707.37614448887,
+          "numerator_approx": 47127.792568825316,
+          "observed_qnc": 0.5874238014221191,
+          "quotient_approx": 0.5138931517850154,
+          "saved_operand_sign_matches_output": true
+        }
+      },
+      "stages": [
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "373FD713",
+              "QI": "00000000",
+              "QNC": "482BE8F1"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "373FD713",
+              "QI": "00000000",
+              "QNC": "482BE8F1"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "D151E3AB",
+                "value": -56341737472.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4FFC091D",
+                "value": 8456911360.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "D151E3AC",
+                "value": -56341741568.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4FFC091D",
+                "value": 8456911360.0
+              }
+            }
+          },
+          "rk_step": 1,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1434563020884525e-05,
+              "QI": 0.0,
+              "QNC": 176035.765625
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1434563020884525e-05,
+              "QI": 0.0,
+              "QNC": 176035.765625
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "373FD713",
+              "QI": "00000000",
+              "QNC": "CA441663"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "373FD713",
+              "QI": "00000000",
+              "QNC": "CA441663"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 1,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1434563020884525e-05,
+              "QI": 0.0,
+              "QNC": -3212696.75
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1434563020884525e-05,
+              "QI": 0.0,
+              "QNC": -3212696.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA441663"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA441663"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "D1501296",
+                "value": -55854063616.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "482BE8F1",
+                "value": 176035.765625
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4FFC091D",
+                "value": 8456911360.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "D15012AB",
+                "value": -55854149632.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "482BE8F1",
+                "value": 176035.765625
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4FFC091D",
+                "value": 8456911360.0
+              }
+            }
+          },
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -3212696.75
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -3212696.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942951"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942964"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854952.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854962.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942951"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942964"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854952.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854962.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942951"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3740FD9D",
+              "QI": "00000000",
+              "QNC": "CA942964"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854952.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1503140740387607e-05,
+              "QI": 0.0,
+              "QNC": -4854962.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "37447791",
+              "QI": "00000000",
+              "QNC": "CA942951"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "37447792",
+              "QI": "00000000",
+              "QNC": "CA942964"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "D00D3CA0",
+                "value": -9478242304.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "49F6A973",
+                "value": 2020654.375
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "D00D3C9C",
+                "value": -9478238208.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "49F6A973",
+                "value": 2020654.375
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.171034909930313e-05,
+              "QI": 0.0,
+              "QNC": -4854952.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1710350008797832e-05,
+              "QI": 0.0,
+              "QNC": -4854962.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "37447791",
+              "QI": "00000000",
+              "QNC": "BE9C98AA"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "37447792",
+              "QI": "00000000",
+              "QNC": "3F166168"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.171034909930313e-05,
+              "QI": 0.0,
+              "QNC": -0.3058522343635559
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1710350008797832e-05,
+              "QI": 0.0,
+              "QNC": 0.5874238014221191
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "37447791",
+              "QI": "00000000",
+              "QNC": "BE9C98AA"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "37447792",
+              "QI": "00000000",
+              "QNC": "3F166168"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "POST_SCALAR_BDY",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.171034909930313e-05,
+              "QI": 0.0,
+              "QNC": -0.3058522343635559
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1710350008797832e-05,
+              "QI": 0.0,
+              "QNC": 0.5874238014221191
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "37447791",
+              "QI": "00000000",
+              "QNC": "BE9C98AA"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "37447792",
+              "QI": "00000000",
+              "QNC": "3F166168"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "PRE_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.171034909930313e-05,
+              "QI": 0.0,
+              "QNC": -0.3058522343635559
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1710350008797832e-05,
+              "QI": 0.0,
+              "QNC": 0.5874238014221191
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "34CE881D",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "34D0B54B",
+              "QI": "00000000",
+              "QNC": "3F166168"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 3.846952552066796e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 3.8874927099641354e-07,
+              "QI": 0.0,
+              "QNC": 0.5874238014221191
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "34CE881D",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "34D0B54B",
+              "QI": "00000000",
+              "QNC": "3F166168"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_FINISH",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 3.846952552066796e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 3.8874927099641354e-07,
+              "QI": 0.0,
+              "QNC": 0.5874238014221191
+            }
+          }
+        }
+      ]
+    },
+    {
+      "checkpoint_words_match_post_finish": true,
+      "first_recorded_bit_difference": {
+        "NI": null,
+        "QC": null,
+        "QI": null,
+        "QNC": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER"
+        }
+      },
+      "first_recorded_ice_validity_split": null,
+      "first_recorded_liquid_validity_split": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_positive_control_nonpositive_candidate_NC": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_rk_input_difference": {
+        "ADVECT_TEND": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "SCALAR_OLD": null,
+        "SCALAR_TEND": null
+      },
+      "i_one_based": 113,
+      "j_one_based": 70,
+      "k_one_based": 12,
+      "saved_operand_exact_real_rk3_sign_check": {
+        "advect_tend_differs": true,
+        "alpha025": {
+          "new_mass_factor_approx": 95256.94478509293,
+          "numerator_approx": -360.62065283589703,
+          "observed_qnc": -0.006369509734213352,
+          "quotient_approx": -0.0037857675747367844,
+          "saved_operand_sign_matches_output": true
+        },
+        "common_numerator_inputs_equal_bits": true,
+        "control": {
+          "new_mass_factor_approx": 95256.94581975605,
+          "numerator_approx": 268.24149926371234,
+          "observed_qnc": 0.0016928943805396557,
+          "quotient_approx": 0.0028159783725511776,
+          "saved_operand_sign_matches_output": true
+        }
+      },
+      "stages": [
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "399C221C",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "399C221C",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "D07ED9E4",
+                "value": -17102770176.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4D4861E2",
+                "value": 210116128.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "D07ED9E4",
+                "value": -17102770176.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4D4861E2",
+                "value": 210116128.0
+              }
+            }
+          },
+          "rk_step": 1,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002978005213662982,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002978005213662982,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "399C221C",
+              "QI": "00000000",
+              "QNC": "C98DBFFC"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "399C221C",
+              "QI": "00000000",
+              "QNC": "C98DBFFC"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 1,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002978005213662982,
+              "QI": 0.0,
+              "QNC": -1161215.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002978005213662982,
+              "QI": 0.0,
+              "QNC": -1161215.5
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C98DBFFC"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C98DBFFC"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "D079B984",
+                "value": -16758738944.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4D4861E2",
+                "value": 210116128.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "D079B982",
+                "value": -16758736896.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4D4861E2",
+                "value": 210116128.0
+              }
+            }
+          },
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1161215.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1161215.5
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEF"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEE"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEF"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEE"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEF"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "3999F178",
+              "QI": "97E433F3",
+              "QNC": "C9D04BEE"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.00029362342320382595,
+              "QI": -1.4747268487573973e-24,
+              "QNC": -1706365.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "C9D04BEF"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "C9D04BEE"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "CD4BEE6E",
+                "value": -213837536.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "472C4B32",
+                "value": 44107.1953125
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "CD4BEE6C",
+                "value": -213837504.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "472C4B32",
+                "value": 44107.1953125
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": -1706365.875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": -1706365.75
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "BBD0B752"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "3ADDE41C"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": -0.006369509734213352
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": 0.0016928943805396557
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "BBD0B752"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "3ADDE41C"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "POST_SCALAR_BDY",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": -0.006369509734213352
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": 0.0016928943805396557
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "BBD0B752"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "398F006F",
+              "QI": "00000000",
+              "QNC": "3ADDE41C"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "PRE_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": -0.006369509734213352
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002727540850173682,
+              "QI": 0.0,
+              "QNC": 0.0016928943805396557
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "39890A5D",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "39890A5D",
+              "QI": "00000000",
+              "QNC": "3ADDE3F7"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002613839751575142,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002613839751575142,
+              "QI": 0.0,
+              "QNC": 0.001692890073172748
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "39890A5D",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "39890A5D",
+              "QI": "00000000",
+              "QNC": "3ADDE3F7"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_FINISH",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0002613839751575142,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0002613839751575142,
+              "QI": 0.0,
+              "QNC": 0.001692890073172748
+            }
+          }
+        }
+      ]
+    },
+    {
+      "checkpoint_words_match_post_finish": true,
+      "first_recorded_bit_difference": {
+        "NI": null,
+        "QC": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "QI": null,
+        "QNC": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER"
+        }
+      },
+      "first_recorded_ice_validity_split": null,
+      "first_recorded_liquid_validity_split": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_positive_control_nonpositive_candidate_NC": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_AFTER"
+      },
+      "first_recorded_rk_input_difference": {
+        "ADVECT_TEND": {
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "SCALAR_OLD": null,
+        "SCALAR_TEND": null
+      },
+      "i_one_based": 155,
+      "j_one_based": 120,
+      "k_one_based": 15,
+      "saved_operand_exact_real_rk3_sign_check": {
+        "advect_tend_differs": true,
+        "alpha025": {
+          "new_mass_factor_approx": 91579.53251398458,
+          "numerator_approx": -327.0311737798134,
+          "observed_qnc": -0.0035622715950012207,
+          "quotient_approx": -0.0035710072414911523,
+          "saved_operand_sign_matches_output": true
+        },
+        "common_numerator_inputs_equal_bits": true,
+        "control": {
+          "new_mass_factor_approx": 91579.49717195136,
+          "numerator_approx": 932.4856352068505,
+          "observed_qnc": 0.010239941999316216,
+          "quotient_approx": 0.010182253277237352,
+          "saved_operand_sign_matches_output": true
+        }
+      },
+      "stages": [
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "354ECF22",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "354ECF22",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "CBBE56F9",
+                "value": -24948210.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4A9678D6",
+                "value": 4930667.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "CBBE56F9",
+                "value": -24948210.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4A9678D6",
+                "value": 4930667.0
+              }
+            }
+          },
+          "rk_step": 1,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 7.704239806116675e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 7.704239806116675e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "354ECF22",
+              "QI": "00000000",
+              "QNC": "C4B0C777"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "354ECF22",
+              "QI": "00000000",
+              "QNC": "C4B0C777"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 1,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 7.704239806116675e-07,
+              "QI": 0.0,
+              "QNC": -1414.2332763671875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 7.704239806116675e-07,
+              "QI": 0.0,
+              "QNC": -1414.2332763671875
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "359BF1D7",
+              "QI": "80000010",
+              "QNC": "C4B0C777"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "359BF1D6",
+              "QI": "80000010",
+              "QNC": "C4B0C777"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "CFA4F024",
+                "value": -5534402560.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4A9678D6",
+                "value": 4930667.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "CFA4F026",
+                "value": -5534403584.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "4A9678D6",
+                "value": 4930667.0
+              }
+            }
+          },
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1618784583333763e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -1414.2332763671875
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1618783446465386e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -1414.2332763671875
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "359BF1D7",
+              "QI": "80000010",
+              "QNC": "C90FEAD8"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "359BF1D6",
+              "QI": "80000010",
+              "QNC": "C90FEAD9"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1618784583333763e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1618783446465386e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5625
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "359BF1D7",
+              "QI": "80000010",
+              "QNC": "C90FEAD8"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "359BF1D6",
+              "QI": "80000010",
+              "QNC": "C90FEAD9"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1618784583333763e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1618783446465386e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5625
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "359BF1D7",
+              "QI": "80000010",
+              "QNC": "C90FEAD8"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "359BF1D6",
+              "QI": "80000010",
+              "QNC": "C90FEAD9"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 1.1618784583333763e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 1.1618783446465386e-06,
+              "QI": -2.2420775429197073e-44,
+              "QNC": -589485.5625
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "361C8E30",
+              "QI": "00000000",
+              "QNC": "C90FEAD8"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "361C8E33",
+              "QI": "00000000",
+              "QNC": "C90FEAD9"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": true
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "CA9A1D43",
+                "value": -5050017.5
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "448698B5",
+                "value": 1076.7720947265625
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "CA9A1CC2",
+                "value": -5049953.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "448698B5",
+                "value": 1076.7720947265625
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 2.332857548026368e-06,
+              "QI": 0.0,
+              "QNC": -589485.5
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 2.3328582301473944e-06,
+              "QI": 0.0,
+              "QNC": -589485.5625
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "361C8E30",
+              "QI": "00000000",
+              "QNC": "BB697500"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "361C8E33",
+              "QI": "00000000",
+              "QNC": "3C27C56E"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 2.332857548026368e-06,
+              "QI": 0.0,
+              "QNC": -0.0035622715950012207
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 2.3328582301473944e-06,
+              "QI": 0.0,
+              "QNC": 0.010239941999316216
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "361C8E30",
+              "QI": "00000000",
+              "QNC": "BB697500"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "361C8E33",
+              "QI": "00000000",
+              "QNC": "3C27C56E"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "POST_SCALAR_BDY",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 2.332857548026368e-06,
+              "QI": 0.0,
+              "QNC": -0.0035622715950012207
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 2.3328582301473944e-06,
+              "QI": 0.0,
+              "QNC": 0.010239941999316216
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "361C8E30",
+              "QI": "00000000",
+              "QNC": "BB697500"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "361C8E33",
+              "QI": "00000000",
+              "QNC": "3C27C56E"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "PRE_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 2.332857548026368e-06,
+              "QI": 0.0,
+              "QNC": -0.0035622715950012207
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 2.3328582301473944e-06,
+              "QI": 0.0,
+              "QNC": 0.010239941999316216
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "34BA1DD4",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "34B6ECA8",
+              "QI": "00000000",
+              "QNC": "3C27B05B"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 3.4666902593016857e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 3.407233180041658e-07,
+              "QI": 0.0,
+              "QNC": 0.010234917514026165
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "34BA1DD4",
+              "QI": "00000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "34B6ECA8",
+              "QI": "00000000",
+              "QNC": "3C27B05B"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_FINISH",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 3.4666902593016857e-07,
+              "QI": 0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 3.407233180041658e-07,
+              "QI": 0.0,
+              "QNC": 0.010234917514026165
+            }
+          }
+        }
+      ]
+    },
+    {
+      "checkpoint_words_match_post_finish": true,
+      "first_recorded_bit_difference": {
+        "NI": null,
+        "QC": null,
+        "QI": {
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE"
+        },
+        "QNC": null
+      },
+      "first_recorded_ice_validity_split": {
+        "rk_step": 3,
+        "stage": "RKSCALAR_BEFORE"
+      },
+      "first_recorded_liquid_validity_split": null,
+      "first_recorded_positive_control_nonpositive_candidate_NC": null,
+      "first_recorded_rk_input_difference": {
+        "ADVECT_TEND": null,
+        "SCALAR_OLD": null,
+        "SCALAR_TEND": null
+      },
+      "i_one_based": 1,
+      "j_one_based": 168,
+      "k_one_based": 33,
+      "saved_operand_exact_real_rk3_sign_check": null,
+      "stages": [
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 1,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 1,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 2,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 2,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "80000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_PD_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": -0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": {
+            "alpha025": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            },
+            "control": {
+              "ADVECT_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_OLD": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              },
+              "SCALAR_TEND": {
+                "f32_hex": "00000000",
+                "value": 0.0
+              }
+            }
+          },
+          "rk_step": 3,
+          "stage": "RKSCALAR_BEFORE",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "RKSCALAR_AFTER",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 3,
+          "stage": "POST_SCALAR_BDY",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "PRE_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_MICROPHYSICS",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        },
+        {
+          "f32_hex": {
+            "alpha025": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000002",
+              "QNC": "00000000"
+            },
+            "control": {
+              "NI": "00000000",
+              "QC": "00000000",
+              "QI": "00000000",
+              "QNC": "00000000"
+            }
+          },
+          "ice_pair_invalid": {
+            "alpha025": true,
+            "control": false
+          },
+          "liquid_pair_invalid": {
+            "alpha025": false,
+            "control": false
+          },
+          "rk_inputs": null,
+          "rk_step": 0,
+          "stage": "POST_FINISH",
+          "value": {
+            "alpha025": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 2.802596928649634e-45,
+              "QNC": 0.0
+            },
+            "control": {
+              "NI": 0.0,
+              "QC": 0.0,
+              "QI": 0.0,
+              "QNC": 0.0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "trace_sha256": {
+    "alpha025": "af57665b1c25844fdca308f9b3abf9b7ba1cc4d2e7111ae8ea5f1785ead60e9a",
+    "control": "b528f712fc496106047b3e2cd3dbb25551cc3cd415dc22be8badb733a3a37c3e"
+  }
+}
