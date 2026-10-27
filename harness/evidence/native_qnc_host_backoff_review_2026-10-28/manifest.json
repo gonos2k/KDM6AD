@@ -1,0 +1,45 @@
+{
+  "base_commit": "360ef1b32bcba4d107c247e1a3ae526a357cb054",
+  "baseline_manifest_sha256": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663",
+  "external_source_pins": {
+    "harness/analyze_native_qnc_saved_state_budget.py": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f",
+    "harness/analyze_saved_qnc_scale_backoff.py": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5",
+    "harness/native_qnc_residual_reason_producer.py": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2",
+    "harness/native_step_control_overlay.py": "213123c66d65bf4a5c54404c831e96286a581a0fbe1b5db6bf6ccc2f0d79b9d0"
+  },
+  "files": [
+    {
+      "bytes": 3920,
+      "path": "README.md",
+      "sha256": "9d749b9117f35c2389744277db3f5e37ba256846d6584e725f54a5137739d6f5"
+    },
+    {
+      "bytes": 4473,
+      "path": "analysis.json",
+      "sha256": "933fe64204932059316cf1e42f2561e4bb5657bf5bff3b235475eb29e187fc64"
+    },
+    {
+      "bytes": 992,
+      "path": "ready_boundary_receipt.json",
+      "sha256": "7744bafaa4dd8f2b2eba9c2a4fb86b82672b0f8976db5ef12727167db570e8b0"
+    },
+    {
+      "bytes": 14890,
+      "path": "replay.py",
+      "sha256": "8f15a74a7caa5604076de3526aae11634811cf80855a6e4aea933c2a57e690a0"
+    },
+    {
+      "bytes": 48935,
+      "path": "residual_reason_rows.json",
+      "sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e"
+    }
+  ],
+  "historical_pr465_manifest_sha256": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_host_backoff_current_source_packet.v1"
+}

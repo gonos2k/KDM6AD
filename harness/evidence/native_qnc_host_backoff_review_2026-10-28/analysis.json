@@ -1,0 +1,179 @@
+{
+  "baseline_observation_manifest_sha256": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663",
+  "block": {
+    "M0_channel_cells": 2009,
+    "M0_profiles": 287,
+    "channel_ids": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "index": 28,
+    "original_columns": 512,
+    "target_flat_index": 14728,
+    "target_full_row_zero_based": 392
+  },
+  "block_M0_RMSE_difference_K": {
+    "variant_alpha_minus_original": -0.0016126852088014232,
+    "variant_alpha_minus_variant_control": -0.0019213222549154807
+  },
+  "comparisons": {
+    "original_control": {
+      "M0_changed_profile_count_vs_original": 0,
+      "block_M0_RMSE_K": 24.475896309108897,
+      "target_BT_K": [
+        251.2494256089008,
+        283.519586215618,
+        264.4117847385521,
+        285.8225734260864,
+        283.7901576117214,
+        280.2333086107268,
+        267.06635000069093
+      ],
+      "target_sim_minus_obs_K": [
+        3.949483973994745,
+        10.153284946463884,
+        9.284695034638162,
+        11.119694463106327,
+        10.614433929443464,
+        10.240650771124251,
+        8.48538428946614
+      ]
+    },
+    "variant_alpha025": {
+      "M0_changed_profile_count_vs_original": 284,
+      "block_M0_RMSE_K": 24.474283623900096,
+      "target_BT_K": [
+        251.2494059591938,
+        283.51949583623195,
+        264.41172171669075,
+        285.8224834677661,
+        283.79008494941473,
+        280.23324279979147,
+        267.06629775174935
+      ],
+      "target_sim_minus_obs_K": [
+        3.94946432428776,
+        10.153194567077833,
+        9.284632012776797,
+        11.119604504786025,
+        10.614361267136815,
+        10.240584960188926,
+        8.485332040524554
+      ]
+    },
+    "variant_control": {
+      "M0_changed_profile_count_vs_original": 1,
+      "block_M0_RMSE_K": 24.47620494615501,
+      "target_BT_K": [
+        251.2494288210158,
+        284.07611477323735,
+        264.712103087185,
+        286.1484689544752,
+        283.9469420607264,
+        280.3235970289594,
+        267.09639240799896
+      ],
+      "target_sim_minus_obs_K": [
+        3.9494871861097636,
+        10.709813504083229,
+        9.585013383271075,
+        11.445589991495126,
+        10.77121837844851,
+        10.330939189356855,
+        8.51542669677417
+      ]
+    }
+  },
+  "full_fixed_support_candidate_cost_defined": false,
+  "historical_pr465_analysis_sha256": "9beff7c9654e7800dcd1de0c094740b61197bf1d196f7f5a091b0c02a04fdfc2",
+  "historical_pr465_manifest_sha256": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "remaining_full_M0_hard_failures": {
+    "already_invalid_at_pre_command_READY40": 25,
+    "channel_cell_count": 378,
+    "flat_indices_zero_based": [
+      16258,
+      21852,
+      21881,
+      22363,
+      22805,
+      23302,
+      25892,
+      25929,
+      25941,
+      26415,
+      26830,
+      28000,
+      28259,
+      28972,
+      29909,
+      30526,
+      30614,
+      30883,
+      31781,
+      34624,
+      35466,
+      35760,
+      36211,
+      36247,
+      37028,
+      38838,
+      39039,
+      39078,
+      41955,
+      42333,
+      43043,
+      43983,
+      44434,
+      45135,
+      45149,
+      45384,
+      46068,
+      46306,
+      46541,
+      47479,
+      47960,
+      48405,
+      50069,
+      50753,
+      53306,
+      53547,
+      54251,
+      54750,
+      56505,
+      58466,
+      58935,
+      58964,
+      62627,
+      62629
+    ],
+    "new_since_pre_command_READY40": 29,
+    "pre_command_READY40_receipt_sha256": "7744bafaa4dd8f2b2eba9c2a4fb86b82672b0f8976db5ef12727167db570e8b0",
+    "producer_sha256": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2",
+    "profile_count": 54,
+    "reason_profile_counts": {
+      "ice_QI_positive_NI_nonpositive": 1,
+      "liquid_QC_positive_NC_nonpositive": 53,
+      "negative_NC": 0,
+      "negative_NI": 0
+    },
+    "reason_rows_sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e"
+  },
+  "schema": "kdm6.native_qnc_host_backoff_current_source_review.v1",
+  "status": "CURRENT_CALCULATORS_PINNED_THREE_BASELINES_COMPARED_GLOBAL_GATE_OPEN",
+  "target_ir105_bt_difference_K": {
+    "variant_alpha_minus_original": -8.995832030223028e-05,
+    "variant_alpha_minus_variant_control": -0.32598548670910077,
+    "variant_control_minus_original": 0.32589552838879854
+  }
+}
