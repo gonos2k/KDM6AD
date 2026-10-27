@@ -1,0 +1,63 @@
+{
+  "base_main_commit": "69a87a507a3e1ea421131c176ad7498155fc4535",
+  "external_source_pins": {
+    "harness/analyze_qnc_advect_qi_trace.py": "8fd5a92ce8a93d64e6c6edc331eaa89f7b7f64fca892f78e4958bce18b9aa240",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_qnc_advect_qi_overlay.py": "7f48244423e97676c0b227387500b34053fcb057aece304ec179dd78c775b911",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_representative_trace_overlay.py": "862529b7f5161049f09e006b7716510e2e8ad1d4e64720df0a07ec4d9d128e05",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c"
+  },
+  "files": [
+    {
+      "bytes": 4852,
+      "path": "README.md",
+      "sha256": "6512b665cb71247806ad8fd98caac11a797716996b5f30439e811ed098dd5322"
+    },
+    {
+      "bytes": 51115,
+      "path": "analysis.json",
+      "sha256": "09af3f244bec3bbb65e93221b34a903dbc7c4f570958c7c5e2978c6d549d6d98"
+    },
+    {
+      "bytes": 7416,
+      "path": "execution_summary.json",
+      "sha256": "de16591b586d985164b1f8441110f3bd1711b08b376f62206d27c6bedf132ffe"
+    },
+    {
+      "bytes": 4571,
+      "path": "data/control/qnc_producer.tsv",
+      "sha256": "8bc210ac68a3fdd2c38b09d0e82da1b0b0cc73c90918b7e1dff26f05c2570394"
+    },
+    {
+      "bytes": 35885,
+      "path": "data/control/qi_writer_moments.tsv",
+      "sha256": "9230fc2af3a8c21199ea7c98d521a9a750c1ced3366c16abf20e3dc0be675fc9"
+    },
+    {
+      "bytes": 4571,
+      "path": "data/alpha025/qnc_producer.tsv",
+      "sha256": "43d2cf010b8b8ce606c97da82f2538178da863ed5129014c11a400c12db3b6ae"
+    },
+    {
+      "bytes": 35885,
+      "path": "data/alpha025/qi_writer_moments.tsv",
+      "sha256": "f65e42033d02c530a656013c09b701764e2b6d29fcc61c67a91e14d778bb4c54"
+    }
+  ],
+  "normalized_replay_sha256": "c8b56d0f41bc9009942d572c3e56ba5605ccf5c470499e50369449b15346087c",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "pr468_input_pins": {
+    "alpha025_trace": "af57665b1c25844fdca308f9b3abf9b7ba1cc4d2e7111ae8ea5f1785ead60e9a",
+    "control_trace": "b528f712fc496106047b3e2cd3dbb25551cc3cd415dc22be8badb733a3a37c3e",
+    "execution_summary": "7cd9b5275623621cfb50d7d6d18297e446e2cb6fbca856c6304de5f095cc13bf"
+  },
+  "pr468_manifest_sha256": "233651bee30976de97ca6ae8c069225dc03f2c10f222a2250e2e1789330d6dad",
+  "schema": "kdm6.native_qnc_advect_qi_public_packet.v1"
+}

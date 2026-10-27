@@ -1,0 +1,1914 @@
+{
+  "cases": {
+    "alpha025": {
+      "previous_representative_trace_sha256": "af57665b1c25844fdca308f9b3abf9b7ba1cc4d2e7111ae8ea5f1785ead60e9a",
+      "prior_stage_word_matches": 568,
+      "producer_trace_sha256": "43d2cf010b8b8ce606c97da82f2538178da863ed5129014c11a400c12db3b6ae",
+      "qc_writer": [
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_TEND_BEFORE"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_TEND_AFTER"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_RK_BEFORE"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "354ECF22",
+              "value": 7.704239806116675e-07
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_RK_AFTER"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "354ECF22",
+              "value": 7.704239806116675e-07
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_BDY_AFTER"
+        }
+      ],
+      "qi_writer": [
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_TEND_BEFORE"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_TEND_AFTER"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_RK_BEFORE"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_RK_AFTER"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000002",
+              "value": 2.802596928649634e-45
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_BDY_AFTER"
+        }
+      ],
+      "qnc_rk2": {
+        "fma_candidate_all_axes_match": true,
+        "separate_f32_all_axes_match": false,
+        "stages": [
+          {
+            "stage": "RK2_START",
+            "tendency": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "CFFAB1FE",
+            "separate_f32_matches": true,
+            "separate_f32_predicted": "CFFAB1FE",
+            "stage": "RK2_AFTER_Y",
+            "values": {
+              "F_Y_LOWER": {
+                "raw_hex": "D49F3FA5",
+                "value": -5471740624896.0
+              },
+              "F_Y_UPPER": {
+                "raw_hex": "5607D0F2",
+                "value": 37332870758400.0
+              },
+              "MRDY": {
+                "raw_hex": "394E10C8",
+                "value": 0.00019651942420750856
+              },
+              "TENDENCY": {
+                "raw_hex": "CFFAB1FE",
+                "value": -8411937792.0
+              }
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "D066CAEB",
+            "separate_f32_matches": false,
+            "separate_f32_predicted": "D066CAEA",
+            "stage": "RK2_AFTER_X",
+            "values": {
+              "F_X_LOWER": {
+                "raw_hex": "D47B3321",
+                "value": -4315578368000.0
+              },
+              "F_X_UPPER": {
+                "raw_hex": "55E697F3",
+                "value": 31692536414208.0
+              },
+              "MRDX": {
+                "raw_hex": "394E10C8",
+                "value": 0.00019651942420750856
+              },
+              "TENDENCY": {
+                "raw_hex": "D066CAEB",
+                "value": -15488232448.0
+              }
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "D079B984",
+            "separate_f32_matches": false,
+            "separate_f32_predicted": "D079B983",
+            "stage": "RK2_AFTER_Z",
+            "values": {
+              "F_Z_LOWER": {
+                "raw_hex": "48BAF689",
+                "value": 382900.28125
+              },
+              "F_Z_UPPER": {
+                "raw_hex": "CC50FF0B",
+                "value": -54787116.0
+              },
+              "RDZW": {
+                "raw_hex": "C1B83B3D",
+                "value": -23.0289249420166
+              },
+              "TENDENCY": {
+                "raw_hex": "D079B984",
+                "value": -16758738944.0
+              }
+            }
+          }
+        ]
+      },
+      "qnc_rk3": {
+        "directional_budget": [
+          {
+            "exact_real_cumulative_approx": -581892.8963866383,
+            "exact_real_face_contribution_approx": -581892.8963866383,
+            "recorded_minus_exact_real_approx": -0.5411133617162704,
+            "recorded_tendency": {
+              "raw_hex": "C90E1057",
+              "value": -581893.4375
+            },
+            "stage": "RK3_AFTER_Z"
+          },
+          {
+            "exact_real_cumulative_approx": -98714267.10074277,
+            "exact_real_face_contribution_approx": -98132374.20435613,
+            "recorded_minus_exact_real_approx": 3.1007427722215652,
+            "recorded_tendency": {
+              "raw_hex": "CCBC4853",
+              "value": -98714264.0
+            },
+            "stage": "RK3_AFTER_X"
+          },
+          {
+            "exact_real_cumulative_approx": -213837538.5015618,
+            "exact_real_face_contribution_approx": -115123271.40081902,
+            "recorded_minus_exact_real_approx": 2.501561790704727,
+            "recorded_tendency": {
+              "raw_hex": "CD4BEE6E",
+              "value": -213837536.0
+            },
+            "stage": "RK3_AFTER_Y"
+          }
+        ],
+        "limiter_cells": [
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "52981914",
+                "value": 326627885056.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4F7C8CFE",
+                "value": 4237098496.0
+              },
+              "SCALE": {
+                "raw_hex": "3C54898F",
+                "value": 0.012972249649465084
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "4D35B78C",
+                "value": 190544064.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4D287C39",
+                "value": 176669584.0
+              },
+              "SCALE": {
+                "raw_hex": "3F6D5BFE",
+                "value": 0.9271849393844604
+              }
+            },
+            "ikj_one_based": [
+              112,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "525C8035",
+                "value": 236760940544.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "54C0A809",
+                "value": 6619623063552.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              114,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "51ACCDD6",
+                "value": 92773466112.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4CA65C67",
+                "value": 87221048.0
+              },
+              "SCALE": {
+                "raw_hex": "3A767474",
+                "value": 0.0009401508141309023
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              69
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "527A8E2B",
+                "value": 269031751680.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "5509AE94",
+                "value": 9461431271424.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              71
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "522F7E5F",
+                "value": 188434857984.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "51689893",
+                "value": 62437011456.0
+              },
+              "SCALE": {
+                "raw_hex": "3EA9A619",
+                "value": 0.3313453495502472
+              }
+            },
+            "ikj_one_based": [
+              113,
+              11,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "527054C9",
+                "value": 258053652480.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "552769E5",
+                "value": 11504578461696.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              113,
+              13,
+              70
+            ]
+          }
+        ],
+        "post_limit_faces": {
+          "DT_STEP": {
+            "raw_hex": "41A00000",
+            "value": 20.0
+          },
+          "FX_EAST": {
+            "raw_hex": "52B92B72",
+            "value": 397648920576.0
+          },
+          "FX_LOW_EAST": {
+            "raw_hex": "51201A49",
+            "value": 42977234944.0
+          },
+          "FX_LOW_WEST": {
+            "raw_hex": "4C08DCCA",
+            "value": 35877672.0
+          },
+          "FX_WEST": {
+            "raw_hex": "D15AE798",
+            "value": -58761773056.0
+          },
+          "FY_LOW_NORTH": {
+            "raw_hex": "51177AF7",
+            "value": 40662691840.0
+          },
+          "FY_LOW_SOUTH": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          },
+          "FY_NORTH": {
+            "raw_hex": "52DBC84B",
+            "value": 471979098112.0
+          },
+          "FY_SOUTH": {
+            "raw_hex": "D18849E2",
+            "value": -73169387520.0
+          },
+          "FZ_BOTTOM": {
+            "raw_hex": "46B0E9BC",
+            "value": 22644.8671875
+          },
+          "FZ_LOW_BOTTOM": {
+            "raw_hex": "C9510AE4",
+            "value": -856238.25
+          },
+          "FZ_LOW_TOP": {
+            "raw_hex": "C780D0A6",
+            "value": -65953.296875
+          },
+          "FZ_TOP": {
+            "raw_hex": "C94194C0",
+            "value": -792908.0
+          },
+          "MSFTX": {
+            "raw_hex": "3F7B8B7C",
+            "value": 0.9825971126556396
+          },
+          "MSFTY": {
+            "raw_hex": "3F7B8B7C",
+            "value": 0.9825971126556396
+          },
+          "RDX": {
+            "raw_hex": "3951B717",
+            "value": 0.00019999999494757503
+          },
+          "RDY": {
+            "raw_hex": "3951B717",
+            "value": 0.00019999999494757503
+          },
+          "RDZW": {
+            "raw_hex": "C1B83B3D",
+            "value": -23.0289249420166
+          }
+        },
+        "pre_limit": {
+          "FLUX_OUT": {
+            "raw_hex": "52981914",
+            "value": 326627885056.0
+          },
+          "FX_EAST": {
+            "raw_hex": "55DF092D",
+            "value": 30653812834304.0
+          },
+          "FX_LOW_EAST": {
+            "raw_hex": "51201A49",
+            "value": 42977234944.0
+          },
+          "FX_LOW_WEST": {
+            "raw_hex": "4C08DCCA",
+            "value": 35877672.0
+          },
+          "FX_WEST": {
+            "raw_hex": "D483D5AF",
+            "value": -4529805852672.0
+          },
+          "FY_LOW_NORTH": {
+            "raw_hex": "51177AF7",
+            "value": 40662691840.0
+          },
+          "FY_LOW_SOUTH": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          },
+          "FY_NORTH": {
+            "raw_hex": "56045D02",
+            "value": 36383750094848.0
+          },
+          "FY_SOUTH": {
+            "raw_hex": "D4A428AA",
+            "value": -5640454930432.0
+          },
+          "FZ_BOTTOM": {
+            "raw_hex": "49D51739",
+            "value": 1745639.125
+          },
+          "FZ_LOW_BOTTOM": {
+            "raw_hex": "C9510AE4",
+            "value": -856238.25
+          },
+          "FZ_LOW_TOP": {
+            "raw_hex": "C780D0A6",
+            "value": -65953.296875
+          },
+          "FZ_TOP": {
+            "raw_hex": "CC692AD2",
+            "value": -61123400.0
+          },
+          "PH_LOW": {
+            "raw_hex": "4F7C8CFE",
+            "value": 4237098496.0
+          },
+          "TENDENCY": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          }
+        },
+        "target_limiter_hit": true,
+        "target_limiter_scale": {
+          "raw_hex": "3C54898F",
+          "value": 0.012972249649465084
+        }
+      },
+      "qnc_rk_input_joins": {
+        "rk2": true,
+        "rk3": true
+      },
+      "writer_trace_sha256": "f65e42033d02c530a656013c09b701764e2b6d29fcc61c67a91e14d778bb4c54"
+    },
+    "control": {
+      "previous_representative_trace_sha256": "b528f712fc496106047b3e2cd3dbb25551cc3cd415dc22be8badb733a3a37c3e",
+      "prior_stage_word_matches": 568,
+      "producer_trace_sha256": "8bc210ac68a3fdd2c38b09d0e82da1b0b0cc73c90918b7e1dff26f05c2570394",
+      "qc_writer": [
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_TEND_BEFORE"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_TEND_AFTER"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_RK_BEFORE"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "354ECF22",
+              "value": 7.704239806116675e-07
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_RK_AFTER"
+        },
+        {
+          "fields": {
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "354ECF22",
+              "value": 7.704239806116675e-07
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QC_BDY_AFTER"
+        }
+      ],
+      "qi_writer": [
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_TEND_BEFORE"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_TEND_AFTER"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_RK_BEFORE"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_RK_AFTER"
+        },
+        {
+          "fields": {
+            "ADVECT_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "C1H": {
+              "raw_hex": "80000000",
+              "value": -0.0
+            },
+            "C2H": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "DT_RK": {
+              "raw_hex": "41A00000",
+              "value": 20.0
+            },
+            "HAVE_BCS_MOIST": {
+              "raw_hex": "00",
+              "value": false
+            },
+            "H_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MOIST_OLD": {
+              "raw_hex": "00000007",
+              "value": 9.80908925027372e-45
+            },
+            "MOIST_TEND": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "MSFTY": {
+              "raw_hex": "3F78D799",
+              "value": 0.9720397591590881
+            },
+            "MU_BASE": {
+              "raw_hex": "47B98C00",
+              "value": 95000.0
+            },
+            "MU_NEW": {
+              "raw_hex": "431BF87D",
+              "value": 155.9706573486328
+            },
+            "MU_OLD": {
+              "raw_hex": "431C04FE",
+              "value": 156.01950073242188
+            },
+            "NI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QI": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "QNC": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            },
+            "SPECIFIED": {
+              "raw_hex": "01",
+              "value": true
+            },
+            "Z_TENDENCY": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          "stage": "QI_BDY_AFTER"
+        }
+      ],
+      "qnc_rk2": {
+        "fma_candidate_all_axes_match": true,
+        "separate_f32_all_axes_match": true,
+        "stages": [
+          {
+            "stage": "RK2_START",
+            "tendency": {
+              "raw_hex": "00000000",
+              "value": 0.0
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "CFFAB1FE",
+            "separate_f32_matches": true,
+            "separate_f32_predicted": "CFFAB1FE",
+            "stage": "RK2_AFTER_Y",
+            "values": {
+              "F_Y_LOWER": {
+                "raw_hex": "D49F3FA6",
+                "value": -5471741149184.0
+              },
+              "F_Y_UPPER": {
+                "raw_hex": "5607D0F2",
+                "value": 37332870758400.0
+              },
+              "MRDY": {
+                "raw_hex": "394E10C8",
+                "value": 0.00019651942420750856
+              },
+              "TENDENCY": {
+                "raw_hex": "CFFAB1FE",
+                "value": -8411937792.0
+              }
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "D066CAEA",
+            "separate_f32_matches": true,
+            "separate_f32_predicted": "D066CAEA",
+            "stage": "RK2_AFTER_X",
+            "values": {
+              "F_X_LOWER": {
+                "raw_hex": "D47B3321",
+                "value": -4315578368000.0
+              },
+              "F_X_UPPER": {
+                "raw_hex": "55E697F2",
+                "value": 31692534317056.0
+              },
+              "MRDX": {
+                "raw_hex": "394E10C8",
+                "value": 0.00019651942420750856
+              },
+              "TENDENCY": {
+                "raw_hex": "D066CAEA",
+                "value": -15488231424.0
+              }
+            }
+          },
+          {
+            "fma_candidate_matches": true,
+            "fma_candidate_predicted": "D079B982",
+            "separate_f32_matches": true,
+            "separate_f32_predicted": "D079B982",
+            "stage": "RK2_AFTER_Z",
+            "values": {
+              "F_Z_LOWER": {
+                "raw_hex": "48BAF67F",
+                "value": 382899.96875
+              },
+              "F_Z_UPPER": {
+                "raw_hex": "CC50FF01",
+                "value": -54787076.0
+              },
+              "RDZW": {
+                "raw_hex": "C1B83B3D",
+                "value": -23.0289249420166
+              },
+              "TENDENCY": {
+                "raw_hex": "D079B982",
+                "value": -16758736896.0
+              }
+            }
+          }
+        ]
+      },
+      "qnc_rk3": {
+        "directional_budget": [
+          {
+            "exact_real_cumulative_approx": -581896.6745696366,
+            "exact_real_face_contribution_approx": -581896.6745696366,
+            "recorded_minus_exact_real_approx": 0.36206963658332825,
+            "recorded_tendency": {
+              "raw_hex": "C90E1085",
+              "value": -581896.3125
+            },
+            "stage": "RK3_AFTER_Z"
+          },
+          {
+            "exact_real_cumulative_approx": -98714249.14545034,
+            "exact_real_face_contribution_approx": -98132352.4708807,
+            "recorded_minus_exact_real_approx": 1.1454503387212753,
+            "recorded_tendency": {
+              "raw_hex": "CCBC4851",
+              "value": -98714248.0
+            },
+            "stage": "RK3_AFTER_X"
+          },
+          {
+            "exact_real_cumulative_approx": -213837509.27705988,
+            "exact_real_face_contribution_approx": -115123260.13160953,
+            "recorded_minus_exact_real_approx": 5.277059882879257,
+            "recorded_tendency": {
+              "raw_hex": "CD4BEE6C",
+              "value": -213837504.0
+            },
+            "stage": "RK3_AFTER_Y"
+          }
+        ],
+        "limiter_cells": [
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "5298191C",
+                "value": 326628147200.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4F7C8D0B",
+                "value": 4237101824.0
+              },
+              "SCALE": {
+                "raw_hex": "3C54898F",
+                "value": 0.012972249649465084
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "4D35B5F4",
+                "value": 190537536.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4D287C2D",
+                "value": 176669392.0
+              },
+              "SCALE": {
+                "raw_hex": "3F6D5E02",
+                "value": 0.9272156953811646
+              }
+            },
+            "ikj_one_based": [
+              112,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "525C8040",
+                "value": 236761120768.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "54C0A808",
+                "value": 6619622539264.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              114,
+              12,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "51ACCDD2",
+                "value": 92773433344.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "4CA65C66",
+                "value": 87221040.0
+              },
+              "SCALE": {
+                "raw_hex": "3A767478",
+                "value": 0.0009401510469615459
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              69
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "527A8E2C",
+                "value": 269031768064.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "5509AE94",
+                "value": 9461431271424.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              113,
+              12,
+              71
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "522F7E5F",
+                "value": 188434857984.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "01",
+                "value": true
+              },
+              "PH_LOW": {
+                "raw_hex": "51689893",
+                "value": 62437011456.0
+              },
+              "SCALE": {
+                "raw_hex": "3EA9A619",
+                "value": 0.3313453495502472
+              }
+            },
+            "ikj_one_based": [
+              113,
+              11,
+              70
+            ]
+          },
+          {
+            "fields": {
+              "FLUX_OUT": {
+                "raw_hex": "527054C4",
+                "value": 258053570560.0
+              },
+              "LIMIT_HIT": {
+                "raw_hex": "00",
+                "value": false
+              },
+              "PH_LOW": {
+                "raw_hex": "552769E4",
+                "value": 11504577413120.0
+              },
+              "SCALE": {
+                "raw_hex": "3F800000",
+                "value": 1.0
+              }
+            },
+            "ikj_one_based": [
+              113,
+              13,
+              70
+            ]
+          }
+        ],
+        "post_limit_faces": {
+          "DT_STEP": {
+            "raw_hex": "41A00000",
+            "value": 20.0
+          },
+          "FX_EAST": {
+            "raw_hex": "52B92B6F",
+            "value": 397648822272.0
+          },
+          "FX_LOW_EAST": {
+            "raw_hex": "51201A46",
+            "value": 42977222656.0
+          },
+          "FX_LOW_WEST": {
+            "raw_hex": "4C08DCCA",
+            "value": 35877672.0
+          },
+          "FX_WEST": {
+            "raw_hex": "D15AE798",
+            "value": -58761773056.0
+          },
+          "FY_LOW_NORTH": {
+            "raw_hex": "51177AF5",
+            "value": 40662683648.0
+          },
+          "FY_LOW_SOUTH": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          },
+          "FY_NORTH": {
+            "raw_hex": "52DBC849",
+            "value": 471979032576.0
+          },
+          "FY_SOUTH": {
+            "raw_hex": "D18849E4",
+            "value": -73169403904.0
+          },
+          "FZ_BOTTOM": {
+            "raw_hex": "46B0EA2C",
+            "value": 22645.0859375
+          },
+          "FZ_LOW_BOTTOM": {
+            "raw_hex": "C9510B68",
+            "value": -856246.5
+          },
+          "FZ_LOW_TOP": {
+            "raw_hex": "C780D0F7",
+            "value": -65953.9296875
+          },
+          "FZ_TOP": {
+            "raw_hex": "C9419539",
+            "value": -792915.5625
+          },
+          "MSFTX": {
+            "raw_hex": "3F7B8B7C",
+            "value": 0.9825971126556396
+          },
+          "MSFTY": {
+            "raw_hex": "3F7B8B7C",
+            "value": 0.9825971126556396
+          },
+          "RDX": {
+            "raw_hex": "3951B717",
+            "value": 0.00019999999494757503
+          },
+          "RDY": {
+            "raw_hex": "3951B717",
+            "value": 0.00019999999494757503
+          },
+          "RDZW": {
+            "raw_hex": "C1B83B3D",
+            "value": -23.0289249420166
+          }
+        },
+        "pre_limit": {
+          "FLUX_OUT": {
+            "raw_hex": "5298191C",
+            "value": 326628147200.0
+          },
+          "FX_EAST": {
+            "raw_hex": "55DF092A",
+            "value": 30653806542848.0
+          },
+          "FX_LOW_EAST": {
+            "raw_hex": "51201A46",
+            "value": 42977222656.0
+          },
+          "FX_LOW_WEST": {
+            "raw_hex": "4C08DCCA",
+            "value": 35877672.0
+          },
+          "FX_WEST": {
+            "raw_hex": "D483D5AF",
+            "value": -4529805852672.0
+          },
+          "FY_LOW_NORTH": {
+            "raw_hex": "51177AF5",
+            "value": 40662683648.0
+          },
+          "FY_LOW_SOUTH": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          },
+          "FY_NORTH": {
+            "raw_hex": "56045D01",
+            "value": 36383745900544.0
+          },
+          "FY_SOUTH": {
+            "raw_hex": "D4A428AC",
+            "value": -5640455979008.0
+          },
+          "FZ_BOTTOM": {
+            "raw_hex": "49D517C0",
+            "value": 1745656.0
+          },
+          "FZ_LOW_BOTTOM": {
+            "raw_hex": "C9510B68",
+            "value": -856246.5
+          },
+          "FZ_LOW_TOP": {
+            "raw_hex": "C780D0F7",
+            "value": -65953.9296875
+          },
+          "FZ_TOP": {
+            "raw_hex": "CC692B64",
+            "value": -61123984.0
+          },
+          "PH_LOW": {
+            "raw_hex": "4F7C8D0B",
+            "value": 4237101824.0
+          },
+          "TENDENCY": {
+            "raw_hex": "00000000",
+            "value": 0.0
+          }
+        },
+        "target_limiter_hit": true,
+        "target_limiter_scale": {
+          "raw_hex": "3C54898F",
+          "value": 0.012972249649465084
+        }
+      },
+      "qnc_rk_input_joins": {
+        "rk2": true,
+        "rk3": true
+      },
+      "writer_trace_sha256": "9230fc2af3a8c21199ea7c98d521a9a750c1ced3366c16abf20e3dc0be675fc9"
+    }
+  },
+  "conclusions": {
+    "first_recorded_rk2_cumulative_tendency_split": "RK2_AFTER_X",
+    "qc_after_rk1_moist_update_both": "354ECF22",
+    "qi_after_flow_boundary": {
+      "alpha025": "00000002",
+      "control": "00000000"
+    },
+    "qi_after_rk3_update_both": "00000007"
+  },
+  "limits": {
+    "boundary_copy_donor_value_directly_recorded": false,
+    "executed_fma_instructions_identified": false,
+    "full_fixed_support_candidate_admissible": false,
+    "raw_nc_physical_units_certified": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_advect_qi_analysis.v1"
+}
