@@ -49,15 +49,21 @@ def analyze_saved_state_budget(state_trace, shared_trace: dict, *, run_id: str) 
             return face(upper) - face(lower) + face(low_upper) - face(low_lower)
 
         pd, rk = "RKSCALAR_PD_BEFORE", "RKSCALAR_BEFORE"
-        c1, c2 = state(pd, "C1H"), state(pd, "C2H")
+        for field in ("C1H", "C2H"):
+            pd_bits = state_trace.at(coord, 3, pd, field).bits
+            if any(state_trace.at(coord, 3, stage, field).bits != pd_bits for stage in
+                   ("RKSCALAR_PD_AFTER", rk, "RKSCALAR_AFTER")):
+                raise ValueError(f"PD/RK coefficient bits differ at {coord}: {field}")
+        c1_pd, c2_pd = state(pd, "C1H"), state(pd, "C2H")
+        c1_rk, c2_rk = state(rk, "C1H"), state(rk, "C2H")
         mu_base, mu_pd = state(pd, "MU_BASE"), state(pd, "MU_OLD_ARG")
         dt, source = state(pd, "DT_RK"), state(pd, "SCALAR_TEND")
         old_pre, old_saved = state(pd, "SCALAR_OLD"), state("RKSCALAR_PD_AFTER", "SCALAR_OLD")
         if state(pd, "MU_NEW_ARG") != mu_pd or state(rk, "SCALAR_TEND") != 0:
             raise ValueError(f"PD mass/source contract differs at {coord}")
-        a_pd = c1 * (mu_pd + mu_base) + c2
-        a_old = c1 * (state(rk, "MU_OLD") + state(rk, "MU_BASE")) + c2
-        a_new = c1 * (state(rk, "MU_NEW") + state(rk, "MU_BASE")) + c2
+        a_pd = c1_pd * (mu_pd + mu_base) + c2_pd
+        a_old = c1_rk * (state(rk, "MU_OLD") + state(rk, "MU_BASE")) + c2_rk
+        a_new = c1_rk * (state(rk, "MU_NEW") + state(rk, "MU_BASE")) + c2_rk
         if a_pd == 0 or a_new == 0 or a_pd != a_old:
             raise ValueError(f"PD and final RK old mass factor disagree at {coord}")
         if state("RKSCALAR_PD_AFTER", "SCALAR_OLD") != state(rk, "SCALAR_OLD"):

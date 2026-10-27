@@ -121,6 +121,14 @@ def _exact_stored_pd_qnc(budget: dict, coord: tuple[int, int, int]) -> Fraction:
             + Fraction(terms["pd_old_buffer_storage_effect"]["exact"]))
 
 
+def _amount(value: Fraction) -> dict[str, object]:
+    return {"exact": str(value), "approximately": float(value)}
+
+
+def _recorded_fraction(bits: int) -> Fraction:
+    return Fraction.from_float(float(_value(bits)))
+
+
 def analyze_one_ulp_backoff(state, shared: dict, flux_group, *, case: str) -> dict:
     """Evaluate one representable scale decrement while holding saved inputs fixed."""
     original_limiter = _limiter_replay(flux_group, state)
@@ -205,10 +213,34 @@ def analyze_one_ulp_backoff(state, shared: dict, flux_group, *, case: str) -> di
             "candidate_exact_stored_pd_qnc_raw": {"exact": str(exact), "approximately": float(exact)},
             "candidate_source_compatible_f32_qnc_raw": list(proposed),
             "candidate_all_replays_nonnegative": all(value >= 0 for value in proposed),
+            "candidate_f32_equals_original_for_all_modes": all(
+                _bits(np.float32(value)) == _bits(np.float32(actual)) for value in proposed),
             "original_matching_direction_mode_count": len(modes),
         }
     if not common_direction_modes or not common_rk_modes:
         raise ValueError("no arithmetic mode is compatible across all seven cells")
+    weighted_exact_change = Fraction(0)
+    weighted_f32_min = Fraction(0)
+    weighted_f32_max = Fraction(0)
+    for coord in STAR:
+        i, k, j = coord
+        cell = cells[f"i{i}_j{j}_k{k}"]
+        def face_fraction(field: str) -> Fraction:
+            return _recorded_fraction(shared["records"][(owner, "RK3_POST", *coord, field)])
+
+        msfty = _recorded_fraction(state.at((i, j, k), 3, "RKSCALAR_BEFORE", "MSFTY").bits)
+        beta = -1 / (face_fraction("MSFTX") * msfty * face_fraction("RDZW"))
+        a_new = Fraction(after["cells"][f"i{i}_j{j}_k{k}"]["rk_new_mass_factor_exact"]["exact"])
+        factor = beta * a_new
+        weighted_exact_change += factor * (_exact_stored_pd_qnc(after, coord)
+                                           - _exact_stored_pd_qnc(before, coord))
+        original = Fraction.from_float(cell["original_recorded_qnc_raw"])
+        possible = [factor * (Fraction.from_float(value) - original)
+                    for value in cell["candidate_source_compatible_f32_qnc_raw"]]
+        weighted_f32_min += min(possible)
+        weighted_f32_max += max(possible)
+    if weighted_exact_change != 0:
+        raise ValueError("exact weighted state changed despite unchanged outer face total")
     return {
         "schema": "kdm6.saved_qnc_one_ulp_backoff.v1", "case": case,
         "original_scale": {"hex": f"{old_bits:08X}", "value": float(old_scale)},
@@ -222,6 +254,13 @@ def analyze_one_ulp_backoff(state, shared: dict, flux_group, *, case: str) -> di
         "internal_component_pairs_canceled": len(new_ledger["internal_face_component_pairs"]),
         "perimeter_face_incidences": new_ledger["perimeter_face_incidences"],
         "perimeter_exact_unchanged": True,
+        "weighted_exact_stored_pd_state_change": _amount(weighted_exact_change),
+        "weighted_f32_state_change_individually_compatible_range": {
+            "minimum": _amount(weighted_f32_min), "maximum": _amount(weighted_f32_max),
+        },
+        "unchanged_neighbor_f32_cell_count": sum(
+            cells[f"i{i}_j{j}_k{k}"]["candidate_f32_equals_original_for_all_modes"]
+            for i, k, j in STAR if (i, k, j) != TARGET),
         "all_seven_exact_stored_pd_qnc_nonnegative": all(
             Fraction(cell["candidate_exact_stored_pd_qnc_raw"]["exact"]) >= 0
             for cell in cells.values()),

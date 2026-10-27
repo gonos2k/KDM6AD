@@ -1,0 +1,191 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Historical PD/RK C1H-C2H validation gap closed; saved seven-cell exact weighted state change zero while rounded f32 state change is nonzero. No new host run or physical number-unit certification.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_COEFFICIENT_ROUNDING_20261027.md": {
+      "bytes": 2683,
+      "sha256": "36b62d2201faf4c560383e4b647924e5dedc4b6943437a3bcb4923470669e81d"
+    },
+    "harness/evidence/native_qnc_coeff_rounding_2026-10-27/README.md": {
+      "bytes": 2971,
+      "sha256": "204e46d2a4d4f561f72b0448bdab18a6bc8f75ce562404e7dd401ba2ed35dc48"
+    },
+    "harness/evidence/native_qnc_coeff_rounding_2026-10-27/analysis.json": {
+      "bytes": 2410,
+      "sha256": "27408087c59bce3890caf04bbee3c34f86adedb258aa9ceeaec8894ad70d63a9"
+    },
+    "harness/evidence/native_qnc_coeff_rounding_2026-10-27/manifest.json": {
+      "bytes": 2121,
+      "sha256": "faea62a52d427375b93412656c66beb9118e24693525cad2a211e19398db27de"
+    },
+    "wiki/sources/native-qnc-coefficient-rounding-2026-10-27.md": {
+      "bytes": 1161,
+      "sha256": "26ee8da44da0ffba474e9590b1977964f895522dc276b6f6038879a43af516b3"
+    },
+    "harness/analyze_native_qnc_saved_state_budget.py": {
+      "bytes": 8214,
+      "sha256": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f"
+    },
+    "harness/analyze_saved_qnc_scale_backoff.py": {
+      "bytes": 15104,
+      "sha256": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_coeff_rounding_20261027_report",
+      "label": "PD/RK coefficient bit gate and exact-versus-rounded seven-cell QNC state sum",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_COEFFICIENT_ROUNDING_20261027.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "36b62d2201faf4c560383e4b647924e5dedc4b6943437a3bcb4923470669e81d"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_packet",
+      "label": "Hash-bound offline companion preserving PR461\u2013PR463 evidence",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "204e46d2a4d4f561f72b0448bdab18a6bc8f75ce562404e7dd401ba2ed35dc48"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_analysis",
+      "label": "Exact zero face/state expression and nonzero rounded QNC state sums",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "27408087c59bce3890caf04bbee3c34f86adedb258aa9ceeaec8894ad70d63a9"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_manifest",
+      "label": "Historical packet and current source hash lineage",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "faea62a52d427375b93412656c66beb9118e24693525cad2a211e19398db27de"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_wiki",
+      "label": "Wiki synthesis of QNC coefficient guard and rounded numerical budget",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-coefficient-rounding-2026-10-27.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "26ee8da44da0ffba474e9590b1977964f895522dc276b6f6038879a43af516b3"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_budget_analyzer",
+      "label": "PD/RK C1H/C2H raw-bit check and RK-record mass factors",
+      "file_type": "code",
+      "source_file": "harness/analyze_native_qnc_saved_state_budget.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f"
+    },
+    {
+      "id": "native_qnc_coeff_rounding_20261027_backoff_analyzer",
+      "label": "One-ULP paired-face probe with rounded-state weighted range",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_qnc_scale_backoff.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_coeff_rounding_20261027_report",
+      "target": "native_qnc_coeff_rounding_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_COEFFICIENT_ROUNDING_20261027.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_packet",
+      "target": "native_qnc_coeff_rounding_20261027_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_packet",
+      "target": "native_qnc_coeff_rounding_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_budget_analyzer",
+      "target": "native_qnc_coeff_rounding_20261027_analysis",
+      "relation": "supplies_coefficient_guard",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_native_qnc_saved_state_budget.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_backoff_analyzer",
+      "target": "native_qnc_coeff_rounding_20261027_analysis",
+      "relation": "supplies_rounded_state_sum",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_saved_qnc_scale_backoff.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_analysis",
+      "target": "native_qnc_saved_state_budget_20261027_analysis",
+      "relation": "preserves_historical_budget",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_analysis",
+      "target": "native_qnc_scale_backoff_20261027_analysis",
+      "relation": "extends_historical_probe",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_coeff_rounding_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_coeff_rounding_20261027_wiki",
+      "target": "native_qnc_coeff_rounding_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-coefficient-rounding-2026-10-27.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}
