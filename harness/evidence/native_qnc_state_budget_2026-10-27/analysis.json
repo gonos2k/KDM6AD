@@ -1,0 +1,1179 @@
+{
+  "cases": {
+    "alpha025": {
+      "cells": {
+        "i220_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2588942848.0,
+            "exact": "2588942848"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2748140147.136737,
+            "exact": "1086179554333969496020736/395241689353307"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2748140032.0,
+            "exact": "2748140032"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -743836221440.0,
+            "exact": "-743836221440"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -743836236142.3256,
+            "exact": "-26171410905587888180176073/35184372088832"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 92028.10832430329,
+            "exact": "98814428891407/1073741824"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 92024.37693097326,
+            "exact": "395241689353307/4294967296"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 3.144410652761411,
+              "exact": "42704089183667702172737985/13580951694768339213615104"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2588943235.972699,
+              "exact": "35160313028242454134983444582899263/13580951694768339213615104"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -275.9850412176299,
+              "exact": "-27271304230491520/98814428891407"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -115.1320683838214,
+              "exact": "-11376709584433728/98814428891407"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -291561985431.4604,
+            "exact": "-15255074214671610911882293018624/52321890290659078127"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 5667.917830169161,
+              "exact": "2586460466386089965/456333444465072"
+            },
+            "face_boundary": {
+              "approximately": -286757536873.79645,
+              "exact": "-130857054527939440900880365/456333444465072"
+            },
+            "pd_scalar_source": {
+              "approximately": -4803749222.360472,
+              "exact": "-2262071158165651067031991091200/470897012615931703143"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -207529.86021206906,
+              "exact": "-32575063734155074959572992/156965670871977234381"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -497473.36105850135,
+              "exact": "-234258719578455048810659840/470897012615931703143"
+            }
+          }
+        },
+        "i221_j62_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2541164544.0,
+            "exact": "2541164544"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2701906232.914218,
+            "exact": "427144904878340826514944/158090203011091"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2701906176.0,
+            "exact": "2701906176"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -748594397184.0,
+            "exact": "-748594397184"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -748594405946.8224,
+            "exact": "-205772063456649620433363/274877906944"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 92042.34671122686,
+            "exact": "790637737943625/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 92020.60930610809,
+            "exact": "790451015055455/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 1.8741259507461903,
+              "exact": "6629258319954266631069/3537253361928424652800"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2541164441.2830215,
+              "exact": "8988742463141335075508945605731/3537253361928424652800"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 157.74362901779605,
+              "exact": "8314537734776576/52709182529575"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -56.90077658396875,
+              "exact": "-2999193419038976/52709182529575"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -290088847943.34204,
+            "exact": "-3795700361894684900426115973120/13084613175602092127"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 3377.6356146904686,
+              "exact": "16058041951917780/4754225672561"
+            },
+            "face_boundary": {
+              "approximately": -288546200971.2924,
+              "exact": "-72200724019877059801180/250222403819"
+            },
+            "pd_scalar_source": {
+              "approximately": -1542832093.2920165,
+              "exact": "-20187361135630474145316208640/13084613175602092127"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -102549.18535066287,
+              "exact": "-4025449265359633021665280/39253839526806276381"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 284292.7921407269,
+              "exact": "11159583641319786183393280/39253839526806276381"
+            }
+          }
+        },
+        "i221_j63_k5": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 4196907008.0,
+            "exact": "4196907008"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 4278368238.3551517,
+            "exact": "1330901800876973915632640/311076963629631"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 4278368256.0,
+            "exact": "4278368256"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -372837974016.0,
+            "exact": "-372837974016"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -372838002195.07794,
+            "exact": "-51242464836282748609319/137438953472"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90544.06735793827,
+            "exact": "194441904074583/2147483648"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90535.31208472297,
+            "exact": "1555384818148155/17179869184"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 6.125550152688624,
+              "exact": "79930927509521290358335/13048775296442236403712"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 4196907246.801208,
+              "exact": "54764499603519006333749271597505/13048775296442236403712"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -262.56990070858495,
+              "exact": "-17018197148817152/64813968024861"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": 17.64314231121025,
+              "exact": "3430566184850560/194441904074583"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -122891537699.14056,
+            "exact": "-985917064487267320733942939648/8022660330778514271"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 8856.128816674216,
+              "exact": "154916119185030680/17492532278139"
+            },
+            "face_boundary": {
+              "approximately": -117175635914.81186,
+              "exact": "-2049698593451309944372760/17492532278139"
+            },
+            "pd_scalar_source": {
+              "approximately": -5715556533.011017,
+              "exact": "-412685717991385147366807961600/72203942977006628439"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": 25507.90331386187,
+              "exact": "1841771196337080730910720/72203942977006628439"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -379615.3498206106,
+              "exact": "-9136575023881264115482624/24067980992335542813"
+            }
+          }
+        },
+        "i221_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": -3.814399242401123,
+            "exact": "-7999375/2097152"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 22714293.7756798,
+            "exact": "17618591521028177043686/775660986646761"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 22714292.0,
+            "exact": "22714292"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -104208482304.0,
+            "exact": "-104208482304"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -104208467556.3546,
+            "exact": "-458313687163719744798337/4398046511104"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90308.04241981823,
+            "exact": "96967522189725/1073741824"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90298.82338908047,
+            "exact": "775660986646761/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -3.214212456632311,
+              "exact": "-267726114415012158833579/83294467315804636446720"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": -0.06254197193127561,
+              "exact": "-26047001184478035504553/416472336579023182233600"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 1.2378537187286334,
+              "exact": "83908175550447089519/67785211031742054400"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -1.7754985325661699,
+              "exact": "-688662773417737/387870088758900"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -24062847999.06805,
+            "exact": "-708210215093183089251442078464/29431687185183231623"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -5685.3288925148945,
+              "exact": "-324304151893526395/57042285156184"
+            },
+            "face_boundary": {
+              "approximately": -40173152768.05961,
+              "exact": "-2291568435818598723991685/57042285156184"
+            },
+            "pd_scalar_source": {
+              "approximately": 16110311405.311598,
+              "exact": "474153645737020625147647754240/29431687185183231623"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -3140.5183204325367,
+              "exact": "-92430752806307455041536/29431687185183231623"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 2189.5271724410377,
+              "exact": "64441478822743364750592/29431687185183231623"
+            }
+          }
+        },
+        "i221_j63_k7": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2799250.0,
+            "exact": "2799250"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2727055.381982765,
+            "exact": "16872234978485018296320/6186979219401731"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2727055.25,
+            "exact": "10908221/4"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 331622816.0,
+            "exact": "331622816"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 331621876.49445933,
+            "exact": "46671629981510988228125/140737488355328"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90042.1386097594,
+            "exact": "773456081181631/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90032.3971204013,
+            "exact": "6186979219401731/68719476736"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 0.20536757069664263,
+              "exact": "2728898463536534050113115/13287874294269704723759104"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2799249.945213758,
+              "exact": "37196081390241773042429117528485/13287874294269704723759104"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -0.01861284232770684,
+              "exact": "-460678914766071/24750594597812192"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -0.1319684862820811,
+              "exact": "-3266298503654729/24750594597812192"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 5968192331.778623,
+            "exact": "581188783097413608562229248000/97381041157601140149"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 437.8576978218119,
+              "exact": "661118250458677615/1509892948662336"
+            },
+            "face_boundary": {
+              "approximately": 154552778.1385393,
+              "exact": "233358149907554941140625/1509892948662336"
+            },
+            "pd_scalar_source": {
+              "approximately": 5813639436.832071,
+              "exact": "188712753757865669814208430080/32460347052533713383"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -281.3658329428057,
+              "exact": "-27399697758146088927232/97381041157601140149"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -39.68385205066519,
+              "exact": "-143127956660665974784/3606705228059301487"
+            }
+          }
+        },
+        "i221_j64_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 3167790080.0,
+            "exact": "3167790080"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 3081085413.6815147,
+            "exact": "1175758156996681085501440/381605181010479"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 3081085440.0,
+            "exact": "3081085440"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 394648354816.0,
+            "exact": "394648354816"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 394648322599.78925,
+            "exact": "13885453426584392377864111/35184372088832"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 88869.2216086915,
+            "exact": "763380800860613/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 88849.37991632125,
+            "exact": "381605181010479/4294967296"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 7.134073599620027,
+              "exact": "46780911072621862104776945/6557391148181242979024896"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 3167789848.8111362,
+              "exact": "20772437113892541366767107186179855/6557391148181242979024896"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 197.7421814187369,
+              "exact": "150952584815360000/763380800860613"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": 26.31260895611164,
+              "exact": "20086540497648640/763380800860613"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 128192071859.77953,
+            "exact": "15087201208585701574118578585600/117692155136462352983"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 12421.418142308443,
+              "exact": "5667535729145754005/456271229598304"
+            },
+            "face_boundary": {
+              "approximately": 152162272414.25006,
+              "exact": "3654066691206419046806345/24014275242016"
+            },
+            "pd_scalar_source": {
+              "approximately": -23970603086.559544,
+              "exact": "-2821151937177929049095651983360/117692155136462352983"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": 45813.925759936195,
+              "exact": "5391939657948779606179840/117692155136462352983"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 344296.7451170071,
+              "exact": "40521025939289837404160000/117692155136462352983"
+            }
+          }
+        },
+        "i222_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 3623439360.0,
+            "exact": "3623439360"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 3609164366.801953,
+            "exact": "554160547264959709093376/153542618441619"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 3609164288.0,
+            "exact": "3609164288"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 64810860544.0,
+            "exact": "64810860544"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 64810861320.238884,
+            "exact": "570082365022243618832255/8796093022208"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 89373.52652711561,
+            "exact": "191928186781075/2147483648"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 89373.56670015666,
+            "exact": "767713092208095/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -0.17095014632288041,
+              "exact": "-112734822526148500082043/659460228324237309378560"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 3623439206.3427477,
+              "exact": "2389514046333781526281634334723451/659460228324237309378560"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 232.63019101114566,
+              "exact": "8929658150260864/38385637356215"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -78.80198841762937,
+              "exact": "-3024864550347776/38385637356215"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 10050273097.031473,
+            "exact": "4732845375650062798963416760320/470917091501522785703"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -299.24275567991344,
+              "exact": "-34139347179355515/114085793327852"
+            },
+            "face_boundary": {
+              "approximately": 24984809606.572998,
+              "exact": "150021675005853583903225/6004515438308"
+            },
+            "pd_scalar_source": {
+              "approximately": -14934805481.640358,
+              "exact": "-7033055159555076537346225602560/470917091501522785703"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -137940.35673189655,
+              "exact": "-64958471592867216731668480/470917091501522785703"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 407211.6983219141,
+              "exact": "191762948599151323743518720/470917091501522785703"
+            }
+          }
+        }
+      },
+      "limits": {
+        "admissible_analysis_or_RTTOV_cost": false,
+        "emitted_fma_instruction_certified": false,
+        "full_timestep_or_domain_budget_certified": false,
+        "physical_number_units_certified": false,
+        "saved_binary32_inputs_only": true
+      },
+      "native_operator_weight": "beta=-1/(MSFTX*MSFTY*RDZW), not certified physical mass/volume",
+      "prior_face_internal_cancellation_pairs": 12,
+      "prior_face_perimeter_incidences": 30,
+      "run_id": "alpha025_state7_v1_on",
+      "schema": "kdm6.native_qnc_saved_state_budget.v1",
+      "seven_cell_closure_exact": "0",
+      "seven_cell_terms": {
+        "advection_tendency_arithmetic": {
+          "approximately": 24776.38645346929,
+          "exact": "57999874530154127836740907872489214693889427849841104595/2340933559422776377575978209557219016012343417541824"
+        },
+        "face_boundary": {
+          "approximately": -555350891728.9988,
+          "exact": "-68423133668619894951364425166632525932440272265109096672437825/123207029443304019872419905766169421895386495660096"
+        },
+        "pd_scalar_source": {
+          "approximately": -29043595574.719738,
+          "exact": "-25074441515847754257867768895698863023256474140491891382761971751199361877763168294068551680/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        },
+        "pd_storage_arithmetic": {
+          "approximately": -380119.45737420575,
+          "exact": "-328171595642984696858959021551848825914530710950181440697078073460766199008781085442048/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        },
+        "rk_state_arithmetic": {
+          "approximately": 160862.36802092654,
+          "exact": "46292868349863087574486957158207321441885097592192767059843475452029777187024724625152/287779353986886849111348275932427805367681838919863988867005262478855428834235893"
+        },
+        "state_change": {
+          "approximately": -584394681784.4214,
+          "exact": "-168176723997293105329290627586413467525236625898695685743373675472850122413590159757547337984/287779353986886849111348275932427805367681838919863988867005262478855428834235893"
+        }
+      },
+      "shared_face_trace_sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f",
+      "state_trace_sha256": "5c422beb7e3f9bae02af354c63e6d20e70d0bac37603122d0f20846cddfa99db",
+      "target_kdm_boundary": {
+        "fp64_input_nc_raw": -3.814399242401123,
+        "fp64_output_nc_raw": 0.0,
+        "fp64_output_qc_kg_per_kg_dry": 6.385861570895234e-05,
+        "host_moments_post_nc_raw": 0.0,
+        "host_moments_post_qc_kg_per_kg_dry": 6.385861343005672e-05,
+        "native_one_based_ijk": [
+          221,
+          63,
+          6
+        ],
+        "owner_call_id": 1
+      }
+    },
+    "control": {
+      "cells": {
+        "i220_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2588941824.0,
+            "exact": "2588941824"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2748140147.136737,
+            "exact": "1086179554333969496020736/395241689353307"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2748140032.0,
+            "exact": "2748140032"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -743841398784.0,
+            "exact": "-743841398784"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -743841394031.7332,
+            "exact": "-26171592382687996625716889/35184372088832"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 92028.11453975493,
+            "exact": "790515484521579/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 92024.37693097326,
+            "exact": "395241689353307/4294967296"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -1.0163750982833657,
+              "exact": "-20269224736872913130455/19942661691640387731456"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2588941957.9927993,
+              "exact": "35160298046737094702962988996232943/13580952612007104045121536"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -17.84436365354188,
+              "exact": "-14106245779558912/790515484521579"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -115.13206060796067,
+              "exact": "-30337892225156608/263505161507193"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -291563516049.67755,
+            "exact": "-137296388695590409231443137921024/470897012615931703143"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -1832.0542597427504,
+              "exact": "-44001454252385105/24017549708688"
+            },
+            "face_boundary": {
+              "approximately": -286759525300.2674,
+              "exact": "-130857961913439983128584445/456333444465072"
+            },
+            "pd_scalar_source": {
+              "approximately": -4803749222.360472,
+              "exact": "-2262071158165651067031991091200/470897012615931703143"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -207529.86021206906,
+              "exact": "-32575063734155074959572992/156965670871977234381"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -32165.135193774306,
+              "exact": "-15146466073135888086335488/470897012615931703143"
+            }
+          }
+        },
+        "i221_j62_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2541165568.0,
+            "exact": "2541165568"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2701906232.914218,
+            "exact": "427144904878340826514944/158090203011091"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2701906176.0,
+            "exact": "2701906176"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -748590661632.0,
+            "exact": "-748590661632"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -748590641148.1492,
+            "exact": "-411542057193340495561547/549755813888"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 92042.33670586569,
+            "exact": "790637651998227/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 92020.60930610809,
+            "exact": "790451015055455/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -4.380931007440755,
+              "exact": "-154964612499204826537415/35372529774152229322752"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2541165522.7041636,
+              "exact": "89887453112902143247790109957575/35372529774152229322752"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 106.57755008044238,
+              "exact": "28088074650441472/263545883999409"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -56.9007827693052,
+              "exact": "-14995967095194880/263545883999409"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -290087500286.264,
+            "exact": "-3795682728323125159953690525696/13084613175602092127"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -7895.513629609667,
+              "exact": "-112611160787836690/14262677017683"
+            },
+            "face_boundary": {
+              "approximately": -288544749827.1936,
+              "exact": "-216601082733337102927130/750667211457"
+            },
+            "pd_scalar_source": {
+              "approximately": -1542832093.2920165,
+              "exact": "-20187361135630474145316208640/13084613175602092127"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -102549.18535066287,
+              "exact": "-4025449265359633021665280/39253839526806276381"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 192078.92063155698,
+              "exact": "20885969880757055782912/108736397581180821"
+            }
+          }
+        },
+        "i221_j63_k5": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 4196907776.0,
+            "exact": "4196907776"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 4278368238.3551517,
+            "exact": "1330901800876973915632640/311076963629631"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 4278368256.0,
+            "exact": "4278368256"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -372836171776.0,
+            "exact": "-372836171776"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -372836152551.1197,
+            "exact": "-51242210623152833032537/137438953472"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90544.06318279606,
+            "exact": "1555535160868267/17179869184"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90535.31208472297,
+            "exact": "1555384818148155/17179869184"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -4.179092526527547,
+              "exact": "-54532036807133182666175/13048774694740831502336"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 4196907842.402261,
+              "exact": "54764504850097959162030264788415/13048774694740831502336"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -79.86631114722233,
+              "exact": "-124234855158349568/1555535160868267"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": 17.643143124765835,
+              "exact": "27444529478804480/1555535160868267"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -122890707143.48795,
+            "exact": "-8873193610992425031180602048512/72203942977006628439"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -6042.000983187185,
+              "exact": "-105689897222949400/17492532278139"
+            },
+            "face_boundary": {
+              "approximately": -117175054608.16998,
+              "exact": "-2049688424926113321301480/17492532278139"
+            },
+            "pd_scalar_source": {
+              "approximately": -5715556533.011017,
+              "exact": "-412685717991385147366807961600/72203942977006628439"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": 25507.90331386187,
+              "exact": "1841771196337080730910720/72203942977006628439"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -115468.20928514088,
+              "exact": "-8337259998881379623370752/72203942977006628439"
+            }
+          }
+        },
+        "i221_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 3.4425406455993652,
+            "exact": "7219531/2097152"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 22714293.7756798,
+            "exact": "17618591521028177043686/775660986646761"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 22714292.0,
+            "exact": "22714292"
+          },
+          "recorded_advect_tendency": {
+            "approximately": -104208449536.0,
+            "exact": "-104208449536"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": -104208457813.33263,
+            "exact": "-458313644313455907716493/4398046511104"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90308.03802352317,
+            "exact": "775740139753913/8589934592"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90298.82338908047,
+            "exact": "775660986646761/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 1.8040240461068937,
+              "exact": "751326073151498176580245/416472316304690727878656"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2.0609254196874636,
+              "exact": "858318383268454787298667/416472316304690727878656"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 1.353089798804408,
+              "exact": "2201267354204373979699/1626844985565198155776"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -1.7754986189994,
+              "exact": "-1377325546835474/775740139753913"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": -24062835162.925568,
+            "exact": "-708209837303852867518365284768/29431687185183231623"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 3190.9743587930357,
+              "exact": "182020469300343745/57042285156184"
+            },
+            "face_boundary": {
+              "approximately": -40173149012.05091,
+              "exact": "-2291568221567279538582465/57042285156184"
+            },
+            "pd_scalar_source": {
+              "approximately": 16110311405.311598,
+              "exact": "474153645737020625147647754240/29431687185183231623"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -3140.5183204325367,
+              "exact": "-92430752806307455041536/29431687185183231623"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 2393.3577063159937,
+              "exact": "3707397649186314071072/1549036167641222717"
+            }
+          }
+        },
+        "i221_j63_k7": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 2799229.5,
+            "exact": "5598459/2"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 2727055.381982765,
+            "exact": "16872234978485018296320/6186979219401731"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 2727055.25,
+            "exact": "10908221/4"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 331528864.0,
+            "exact": "331528864"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 331528396.08787555,
+            "exact": "5832309222984744649655/17592186044416"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 90042.1339643186,
+            "exact": "6187648330220787/68719476736"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 90032.3971204013,
+            "exact": "6186979219401731/68719476736"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": 0.10228144176883133,
+              "exact": "169887858842782258375345/1660984201090455539023872"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 2799229.6556442003,
+              "exact": "4649476233248892842916630287695/1660984201090455539023872"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": -0.1259571488819132,
+              "exact": "-346390463092685/2750065924542572"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -0.13196849309058023,
+              "exact": "-3266298503654729/24750593320883148"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 5968148316.469578,
+            "exact": "21525351734844144968861220864/3606705228059301487"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": 218.0710136481242,
+              "exact": "41157985726868845/188736618582792"
+            },
+            "face_boundary": {
+              "approximately": 154509211.48156312,
+              "exact": "29161546114923723248275/188736618582792"
+            },
+            "pd_scalar_source": {
+              "approximately": 5813639436.832071,
+              "exact": "188712753757865669814208430080/32460347052533713383"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -281.3658329428057,
+              "exact": "-27399697758146088927232/97381041157601140149"
+            },
+            "rk_state_arithmetic": {
+              "approximately": -268.5492368692521,
+              "exact": "-2905733809823002132480/10820115684177904461"
+            }
+          }
+        },
+        "i221_j64_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 3167789824.0,
+            "exact": "3167789824"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 3081085413.6815147,
+            "exact": "1175758156996681085501440/381605181010479"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 3081085440.0,
+            "exact": "3081085440"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 394645405696.0,
+            "exact": "394645405696"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 394645430545.268,
+            "exact": "13885351671462015462623421/35184372088832"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 88869.20720703527,
+            "exact": "23855646160979/268435456"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 88849.37991632125,
+            "exact": "381605181010479/4294967296"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -5.502712192806951,
+              "exact": "-36083430376618505008579805/6557390085526576405938176"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 3167789721.7387214,
+              "exact": "20772432914362482280828939007427805/6557390085526576405938176"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 81.45137783408651,
+              "exact": "1943075248934176/23855646160979"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": 26.312613220188705,
+              "exact": "627704390551520/23855646160979"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 128190732306.08134,
+            "exact": "15087043553624041238641499963392/117692155136462352983"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -9580.988622069874,
+              "exact": "-4371529459359181745/456271229598304"
+            },
+            "face_boundary": {
+              "approximately": 152161157341.5063,
+              "exact": "3654039913542635648058795/24014275242016"
+            },
+            "pd_scalar_source": {
+              "approximately": -23970603086.559544,
+              "exact": "-2821151937177929049095651983360/117692155136462352983"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": 45813.925759936195,
+              "exact": "5391939657948779606179840/117692155136462352983"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 141818.19745186792,
+              "exact": "16690889295678689553416192/117692155136462352983"
+            }
+          }
+        },
+        "i222_j63_k6": {
+          "closure_exact": "0",
+          "immediate_rk_qnc_recorded": {
+            "approximately": 3623439104.0,
+            "exact": "3623439104"
+          },
+          "pd_prepared_old_exact": {
+            "approximately": 3609164366.801953,
+            "exact": "554160547264959709093376/153542618441619"
+          },
+          "pd_prepared_old_recorded": {
+            "approximately": 3609164288.0,
+            "exact": "3609164288"
+          },
+          "recorded_advect_tendency": {
+            "approximately": 64809324544.0,
+            "exact": "64809324544"
+          },
+          "recorded_face_tendency_exact_algebra": {
+            "approximately": 64809330491.99411,
+            "exact": "1140137799429203075957459/17592186044416"
+          },
+          "rk_new_mass_factor_exact": {
+            "approximately": 89373.52197922417,
+            "exact": "383856354029105/4294967296"
+          },
+          "rk_old_mass_factor_exact": {
+            "approximately": 89373.56670015666,
+            "exact": "767713092208095/8589934592"
+          },
+          "target_style_four_terms": {
+            "advection_tendency_arithmetic_effect": {
+              "approximately": -1.3099195814903881,
+              "exact": "-1727679644676787452993055/1318920389533443045720064"
+            },
+            "exact_saved_face_and_pd_baseline": {
+              "approximately": 3623439053.5938463,
+              "exact": "4779027648016685777459722622819871/1318920389533443045720064"
+            },
+            "final_rk_arithmetic_and_storage_effect": {
+              "approximately": 130.51806585863585,
+              "exact": "10020037779085312/76771270805821"
+            },
+            "pd_old_buffer_storage_effect": {
+              "approximately": -78.80199242757416,
+              "exact": "-6049729100695552/76771270805821"
+            }
+          },
+          "weighted_state_change": {
+            "approximately": 10049502219.740582,
+            "exact": "4732482356358331582336445972480/470917091501522785703"
+          },
+          "weighted_terms": {
+            "advection_tendency_arithmetic": {
+              "approximately": -2292.9721545676803,
+              "exact": "-523191094665055775/228171586655704"
+            },
+            "face_boundary": {
+              "approximately": 24984219467.027603,
+              "exact": "15791382263562369473095/632054256664"
+            },
+            "pd_scalar_source": {
+              "approximately": -14934805481.640358,
+              "exact": "-7033055159555076537346225602560/470917091501522785703"
+            },
+            "pd_storage_arithmetic": {
+              "approximately": -137940.35673189655,
+              "exact": "-64958471592867216731668480/470917091501522785703"
+            },
+            "rk_state_arithmetic": {
+              "approximately": 228467.68222319195,
+              "exact": "107589336414639719584890880/470917091501522785703"
+            }
+          }
+        }
+      },
+      "limits": {
+        "admissible_analysis_or_RTTOV_cost": false,
+        "emitted_fma_instruction_certified": false,
+        "full_timestep_or_domain_budget_certified": false,
+        "physical_number_units_certified": false,
+        "saved_binary32_inputs_only": true
+      },
+      "native_operator_weight": "beta=-1/(MSFTX*MSFTY*RDZW), not certified physical mass/volume",
+      "prior_face_internal_cancellation_pairs": 12,
+      "prior_face_perimeter_incidences": 30,
+      "run_id": "control_state7_v1_on",
+      "schema": "kdm6.native_qnc_saved_state_budget.v1",
+      "seven_cell_closure_exact": "0",
+      "seven_cell_terms": {
+        "advection_tendency_arithmetic": {
+          "approximately": -24234.484276735995,
+          "exact": "-28365658769357452589383617155001324944334409360419231235/1170466779711388188787989104778609508006171708770912"
+        },
+        "face_boundary": {
+          "approximately": -555352592727.6664,
+          "exact": "-34211671621806412065048511405118631841835826416437811165188015/61603514721652009936209952883084710947693247830048"
+        },
+        "pd_scalar_source": {
+          "approximately": -29043595574.719738,
+          "exact": "-25074441515847754257867768895698863023256474140491891382761971751199361877763168294068551680/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        },
+        "pd_storage_arithmetic": {
+          "approximately": -380119.45737420575,
+          "exact": "-328171595642984696858959021551848825914530710950181440697078073460766199008781085442048/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        },
+        "rk_state_arithmetic": {
+          "approximately": 416856.26429714845,
+          "exact": "359887879334461013254031292995192348116661600541791240574434289592046270116396249492832/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        },
+        "state_change": {
+          "approximately": -584396175800.0635,
+          "exact": "-504531461832448315989917044379097919426453501491032861621946198715305417090143595839343448736/863338061960660547334044827797283416103045516759591966601015787436566286502707679"
+        }
+      },
+      "shared_face_trace_sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1",
+      "state_trace_sha256": "781be00ab5521e7183a452ad4381fe9f5e77c6a56011e8caafc675dcc7118872",
+      "target_kdm_boundary": {
+        "fp64_input_nc_raw": 3.4425406455993652,
+        "fp64_output_nc_raw": 3.4425406455993652,
+        "fp64_output_qc_kg_per_kg_dry": 6.383409982000002e-05,
+        "host_moments_post_nc_raw": 3.4425406455993652,
+        "host_moments_post_qc_kg_per_kg_dry": 6.383410072885454e-05,
+        "native_one_based_ijk": [
+          221,
+          63,
+          6
+        ],
+        "owner_call_id": 1
+      }
+    }
+  },
+  "historical_pr461_manifest_sha256": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_saved_state_budget_public_analysis.v1",
+  "status": "SEVEN_CELL_SAVED_STATE_LEDGER_PASSED_PHYSICAL_BUDGET_OPEN"
+}

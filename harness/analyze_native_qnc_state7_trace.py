@@ -175,9 +175,12 @@ def analyze_state7(trace: UpstreamNCTrace, *, run_id: str, checkpoint_context: d
         shared_bits = shared_face_trace["records"][
             (shared_face_trace["owner_call_id"], "RK3_AFTER_Y", i, k, j, "TENDENCY")]
         face_to_rk = shared_bits == _bits_row(trace, target, 3, "RKSCALAR_BEFORE", "ADVECT_TEND")
+        rk_match = any(
+            candidate["qnc_bitwise_match"] and candidate["scalar_old_bitwise_match"]
+            for candidate in (generic_separate, generic_fma)
+        )
         if not all((pd_unchanged_qnc, old_handoff, tendency_handoff, live_handoff,
-                    face_to_rk, pd["matching_candidates"],
-                    generic_separate["qnc_bitwise_match"] or generic_fma["qnc_bitwise_match"])):
+                    face_to_rk, pd["matching_candidates"], rk_match)):
             raise ValueError(f"state7 PD/RK transition failed at {label}")
         cells[label] = {
             "pd_prepared_old": pd,

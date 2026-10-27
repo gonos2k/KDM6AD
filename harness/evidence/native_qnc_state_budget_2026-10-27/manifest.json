@@ -1,0 +1,35 @@
+{
+  "actual_model_calls_during_packet_assembly": 0,
+  "base_commit": "45234aaa70281f7bbfdd8746ff10996b629525c4",
+  "external_source_pins": {
+    "harness/analyze_native_qnc_saved_state_budget.py": "50345b3d4614360956ed617a2e2cbb53bfe3645d5202ddec43165562037d61d3",
+    "harness/analyze_native_qnc_state7_trace.py": "41f48ab17540edb689551572a7fa2830f514a6550240f8467c26148715461d6c",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_qnc_weighted_ledger.py": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a"
+  },
+  "files": [
+    {
+      "bytes": 3359,
+      "path": "README.md",
+      "sha256": "a851722b87be420290f1d62f8a4c9bfd1e6700ab65ab7f926203e268fe6efb8b"
+    },
+    {
+      "bytes": 48040,
+      "path": "analysis.json",
+      "sha256": "6fac808f73e7521a71bedae0e3ae679f609dc48aa11430da42d50d594921877d"
+    },
+    {
+      "bytes": 9130,
+      "path": "replay.py",
+      "sha256": "d4076ef096a7aba33cc079dde77f58993cac91da35214ed46f5a3c3bfc3f5b5d"
+    },
+    {
+      "bytes": 10933,
+      "path": "source_snapshots/pr461_analyze_native_qnc_state7_trace.py.txt",
+      "sha256": "31485ee7664fef2f73328fe079a611515697732c2f798978db0d5d23ea69b78f"
+    }
+  ],
+  "historical_pr461_manifest_sha256": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02",
+  "schema": "kdm6.native_qnc_state_budget_public_packet.v1"
+}

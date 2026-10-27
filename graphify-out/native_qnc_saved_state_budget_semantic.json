@@ -1,0 +1,171 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Offline saved f32 seven-cell PD/face/RK numerical state decomposition, repaired RK3 old-buffer aggregate gate, and target KDM call boundary; physical NC units, domain conservation, admissible DA remain open.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_SAVED_STATE_BUDGET_20261027.md": {
+      "bytes": 3878,
+      "sha256": "3164d94e06a767543b3e57d2bebdd0fd4e6f8b41da9d6a7ca70b9256aedfb5ee"
+    },
+    "harness/evidence/native_qnc_state_budget_2026-10-27/README.md": {
+      "bytes": 3359,
+      "sha256": "a851722b87be420290f1d62f8a4c9bfd1e6700ab65ab7f926203e268fe6efb8b"
+    },
+    "harness/evidence/native_qnc_state_budget_2026-10-27/analysis.json": {
+      "bytes": 48040,
+      "sha256": "6fac808f73e7521a71bedae0e3ae679f609dc48aa11430da42d50d594921877d"
+    },
+    "harness/evidence/native_qnc_state_budget_2026-10-27/manifest.json": {
+      "bytes": 1548,
+      "sha256": "ae7c1209adf5083722b609ac1e486996ba1f69b3b09f0df47d8928e31632f1c0"
+    },
+    "wiki/sources/native-qnc-saved-state-budget-2026-10-27.md": {
+      "bytes": 1649,
+      "sha256": "d5fbbeb5950b21267b07d3c09f9465fded6f94e17817e87d5dc3268cb5a2d960"
+    },
+    "harness/analyze_native_qnc_saved_state_budget.py": {
+      "bytes": 7793,
+      "sha256": "50345b3d4614360956ed617a2e2cbb53bfe3645d5202ddec43165562037d61d3"
+    },
+    "harness/evidence/native_qnc_state_budget_2026-10-27/source_snapshots/pr461_analyze_native_qnc_state7_trace.py.txt": {
+      "bytes": 10933,
+      "sha256": "31485ee7664fef2f73328fe079a611515697732c2f798978db0d5d23ea69b78f"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_saved_state_budget_20261027_report",
+      "label": "Saved seven-cell QNC numerical state budget and validation scope",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_SAVED_STATE_BUDGET_20261027.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "3164d94e06a767543b3e57d2bebdd0fd4e6f8b41da9d6a7ca70b9256aedfb5ee"
+    },
+    {
+      "id": "native_qnc_saved_state_budget_20261027_packet",
+      "label": "Hash-bound offline PR461 companion with zero model calls",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "a851722b87be420290f1d62f8a4c9bfd1e6700ab65ab7f926203e268fe6efb8b"
+    },
+    {
+      "id": "native_qnc_saved_state_budget_20261027_analysis",
+      "label": "Exact rational PD/face/RK state decomposition of two saved runs",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "6fac808f73e7521a71bedae0e3ae679f609dc48aa11430da42d50d594921877d"
+    },
+    {
+      "id": "native_qnc_saved_state_budget_20261027_manifest",
+      "label": "Immutable historical packet and current source pins",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "ae7c1209adf5083722b609ac1e486996ba1f69b3b09f0df47d8928e31632f1c0"
+    },
+    {
+      "id": "native_qnc_saved_state_budget_20261027_wiki",
+      "label": "Wiki synthesis of saved-state budget and physical limits",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-saved-state-budget-2026-10-27.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d5fbbeb5950b21267b07d3c09f9465fded6f94e17817e87d5dc3268cb5a2d960"
+    },
+    {
+      "id": "native_qnc_saved_state_budget_20261027_analyzer",
+      "label": "Exact Fraction decomposition and weighted seven-cell closure",
+      "file_type": "code",
+      "source_file": "harness/analyze_native_qnc_saved_state_budget.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "50345b3d4614360956ed617a2e2cbb53bfe3645d5202ddec43165562037d61d3"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_saved_state_budget_20261027_report",
+      "target": "native_qnc_saved_state_budget_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SAVED_STATE_BUDGET_20261027.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_packet",
+      "target": "native_qnc_saved_state_budget_20261027_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_packet",
+      "target": "native_qnc_saved_state_budget_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_analyzer",
+      "target": "native_qnc_saved_state_budget_20261027_analysis",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_native_qnc_saved_state_budget.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_analysis",
+      "target": "native_qnc_state7_20261027_analysis",
+      "relation": "extends_saved_state",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_analysis",
+      "target": "native_qnc_weighted_20261027_ledger",
+      "relation": "extends_saved_face_ledger",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state_budget_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_saved_state_budget_20261027_wiki",
+      "target": "native_qnc_saved_state_budget_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-saved-state-budget-2026-10-27.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

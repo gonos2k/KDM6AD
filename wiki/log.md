@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC saved seven-cell state budget
+- Added [[sources/native-qnc-saved-state-budget-2026-10-27]]: hardened the ordinary RK3 aggregate gate to require preserved `SCALAR_OLD`, then decomposed the immutable seven-cell binary32 packet into exact saved-face, PD, advection-arithmetic and RK-store terms. The weighted state ledger closes exactly after its nonzero arithmetic differences are included.
+- The alpha target enters KDM with negative NC and leaves the FP64 value call at NC=0 with positive QC. This is a measured call boundary, without named-process attribution, physical NC units, whole-step/domain conservation, candidate RTTOV cost or accepted analysis. No new host or RTTOV run occurred.
+
 ## [2026-10-27] Native QNC seven-cell PD/RK3 state trace
 - Added [[sources/native-qnc-seven-state-2026-10-27]]: four full-domain 40→60-second control/alpha0.25 steps yield two exact trace-off/on pairs. Seven cells link PD prepared old state, consumed tendency, ordinary RK3 QNC and boundary/pre-microphysics states; a later checkpoint interval is kept separate.
 - The candidate still reaches KDM with negative target NC and saves zero NC with positive QC. No physical NC unit, named-process attribution, domain conservation, admissible update, RTTOV candidate cost or second assimilation is certified.

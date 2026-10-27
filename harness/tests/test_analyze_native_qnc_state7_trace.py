@@ -69,6 +69,22 @@ def test_state7_analyzer_detects_broken_pd_handoff(tmp_path):
         )
 
 
+@pytest.mark.parametrize("case", ("control", "alpha025"))
+def test_state7_analyzer_rejects_rk3_old_buffer_change(tmp_path, case):
+    source = DATA / case
+    raw = (source / "qnc_state7.tsv").read_text()
+    row = "VAL\t3\t3\tRKSCALAR_AFTER\t221\t6\t63\tSCALAR_OLD\tf32\t4BAD4BDA"
+    assert raw.count(row) == 1
+    path = tmp_path / "wrong_rk3_old.tsv"
+    path.write_text(raw.replace(row, row[:-8] + "4BAD4BDB", 1))
+    with pytest.raises(ValueError, match="state7 PD/RK transition failed"):
+        analyze_state7(
+            read_state7_trace(path), run_id=f"{case}_state7_v1_on",
+            checkpoint_context=json.loads((source / "checkpoint_context.json").read_text()),
+            shared_face_trace=read_shared_trace(source / "qnc_shared.tsv"),
+        )
+
+
 def test_state7_after_boundary_is_distinguished_from_immediate_rk(tmp_path):
     raw = (DATA / "control/qnc_state7.tsv").read_text()
     row = "VAL\t3\t3\tPOST_SCALAR_BDY\t221\t6\t63\tQNC\tf32\t405C5296"
