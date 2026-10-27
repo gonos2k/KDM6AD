@@ -5,6 +5,7 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[native-qnc-control-witnesses-2026-10-28]] — Existing control checkpoint at all 54 candidate-failed profiles and native layers, with raw-word repair mechanisms and stage-attribution limits.
 - [[native-qnc-host-backoff-review-2026-10-28]] — Versioned source-pin closure and three-way original/variant block28 BT comparison with full-M0 limits.
 - [[native-qnc-target-host-backoff-2026-10-27]] — Four isolated full-host steps and two original-B512 direct RTTOV calls verify one target moment repair with remaining full-support invalidity.
 - [[native-qnc-coefficient-rounding-2026-10-27]] — PD/RK coefficient bit gate and saved exact-versus-rounded seven-cell QNC state ledger with physical-unit limits.

@@ -1,0 +1,1155 @@
+{
+  "candidate_ice_failure_layer_count": 1,
+  "candidate_liquid_failure_layer_count": 54,
+  "control_repair_layer_counts": {
+    "QI_zero": 1,
+    "positive_NC_with_positive_QC": 54
+  },
+  "input_sha256": {
+    "candidate_residual_rows": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e",
+    "control_final": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9",
+    "published_support_masks": "c4154b4b735fcbfb5509b1f23ee53f4cfe17b46ccf0c6930f63aa244f2a0f9a9"
+  },
+  "limits": {
+    "named_process_attribution": false,
+    "raw_number_physical_units_certified": false
+  },
+  "liquid_final_layers_by_native_k": {
+    "10": 1,
+    "11": 6,
+    "12": 2,
+    "13": 3,
+    "14": 2,
+    "15": 4,
+    "17": 1,
+    "18": 2,
+    "19": 1,
+    "4": 21,
+    "5": 4,
+    "7": 1,
+    "8": 4,
+    "9": 2
+  },
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "new_liquid_failure_origin_counts": {
+    "ready_QC_NC_zero": 2,
+    "ready_positive_NC": 27
+  },
+  "new_liquid_final_layers_by_native_k": {
+    "11": 3,
+    "13": 1,
+    "15": 2,
+    "4": 15,
+    "5": 1,
+    "7": 1,
+    "8": 4,
+    "9": 2
+  },
+  "producer_sha256": "a41ad3c2a75d83a1e4c5834632d02309f5ff9b33e5f9ff9ae7ec6e592ca39575",
+  "profile_count": 54,
+  "ready_final_layer_overlap": {
+    "disjoint_ready_final_profiles": 5,
+    "final_only": 35,
+    "ready_only": 8,
+    "same_layer_both": 20
+  },
+  "rows": [
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "39890A5D",
+            "QICE": "00000000",
+            "QNCLOUD": "3ADDE3F7",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 12
+        }
+      ],
+      "flat_index_zero_based": 16258,
+      "i_one_based": 113,
+      "j_one_based": 70
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "387C943A",
+            "QICE": "00000000",
+            "QNCLOUD": "3CB68F1E",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 21852,
+      "i_one_based": 91,
+      "j_one_based": 94
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "392DE4FF",
+            "QICE": "00000000",
+            "QNCLOUD": "3B85E495",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 13
+        }
+      ],
+      "flat_index_zero_based": 21881,
+      "i_one_based": 120,
+      "j_one_based": 94
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "381A9CD5",
+            "QICE": "00000000",
+            "QNCLOUD": "3ABA015C",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 15
+        }
+      ],
+      "flat_index_zero_based": 22363,
+      "i_one_based": 134,
+      "j_one_based": 96
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "365FFFCA",
+            "QICE": "00000000",
+            "QNCLOUD": "3C733D32",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 8
+        }
+      ],
+      "flat_index_zero_based": 22805,
+      "i_one_based": 108,
+      "j_one_based": 98
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3974B7D3",
+            "QICE": "00000000",
+            "QNCLOUD": "3EA49EC5",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 15
+        }
+      ],
+      "flat_index_zero_based": 23302,
+      "i_one_based": 137,
+      "j_one_based": 100
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "34D0B54B",
+            "QICE": "00000000",
+            "QNCLOUD": "3F166168",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 25892,
+      "i_one_based": 153,
+      "j_one_based": 111
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3A14BF3A",
+            "QICE": "00000000",
+            "QNCLOUD": "3BF64834",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 14
+        }
+      ],
+      "flat_index_zero_based": 25929,
+      "i_one_based": 190,
+      "j_one_based": 111
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "393EBFA1",
+            "QICE": "00000000",
+            "QNCLOUD": "37B0764B",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 18
+        }
+      ],
+      "flat_index_zero_based": 25941,
+      "i_one_based": 202,
+      "j_one_based": 111
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "39003CAF",
+            "QICE": "00000000",
+            "QNCLOUD": "398E4B90",
+            "QNICE": "3E8B1A61"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 18
+        }
+      ],
+      "flat_index_zero_based": 26415,
+      "i_one_based": 208,
+      "j_one_based": 113
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "39CF9CD7",
+            "QICE": "00000000",
+            "QNCLOUD": "3E6FE7FB",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 13
+        }
+      ],
+      "flat_index_zero_based": 26830,
+      "i_one_based": 155,
+      "j_one_based": 115
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "34B6ECA8",
+            "QICE": "00000000",
+            "QNCLOUD": "3C27B05B",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 15
+        }
+      ],
+      "flat_index_zero_based": 28000,
+      "i_one_based": 155,
+      "j_one_based": 120
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "380FA052",
+            "QICE": "00000000",
+            "QNCLOUD": "3AC3E348",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 28259,
+      "i_one_based": 180,
+      "j_one_based": 121
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "36D0DC2A",
+            "QICE": "00000000",
+            "QNCLOUD": "3DB588D4",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 28972,
+      "i_one_based": 191,
+      "j_one_based": 124
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "395EFFEF",
+            "QICE": "00000000",
+            "QNCLOUD": "3942685D",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 10
+        }
+      ],
+      "flat_index_zero_based": 29909,
+      "i_one_based": 192,
+      "j_one_based": 128
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "391CE21E",
+            "QICE": "00000000",
+            "QNCLOUD": "3DE1A5AB",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 8
+        }
+      ],
+      "flat_index_zero_based": 30526,
+      "i_one_based": 107,
+      "j_one_based": 131
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "36B6B7A2",
+            "QICE": "00000000",
+            "QNCLOUD": "3CE6B71F",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 30614,
+      "i_one_based": 195,
+      "j_one_based": 131
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "378B886C",
+            "QICE": "00000000",
+            "QNCLOUD": "390458E4",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 13
+        }
+      ],
+      "flat_index_zero_based": 30883,
+      "i_one_based": 230,
+      "j_one_based": 132
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "382EDF10",
+            "QICE": "00000000",
+            "QNCLOUD": "3BB16DD5",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 31781,
+      "i_one_based": 192,
+      "j_one_based": 136
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "399EDB35",
+            "QICE": "00000000",
+            "QNCLOUD": "3D0B5B5A",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 12
+        }
+      ],
+      "flat_index_zero_based": 34624,
+      "i_one_based": 227,
+      "j_one_based": 148
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "388E36EF",
+            "QICE": "00000000",
+            "QNCLOUD": "359F2FC0",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 35466,
+      "i_one_based": 133,
+      "j_one_based": 152
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "39802372",
+            "QICE": "00000000",
+            "QNCLOUD": "3C88B71B",
+            "QNICE": "3ACEA38E"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 17
+        }
+      ],
+      "flat_index_zero_based": 35760,
+      "i_one_based": 193,
+      "j_one_based": 153
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38D20D76",
+            "QICE": "00000000",
+            "QNCLOUD": "3DCE0271",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 14
+        }
+      ],
+      "flat_index_zero_based": 36211,
+      "i_one_based": 176,
+      "j_one_based": 155
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38E7F17E",
+            "QICE": "00000000",
+            "QNCLOUD": "3AD50F41",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 36247,
+      "i_one_based": 212,
+      "j_one_based": 155
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "380F31F8",
+            "QICE": "00000000",
+            "QNCLOUD": "3A563092",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 37028,
+      "i_one_based": 57,
+      "j_one_based": 159
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "390A9AD2",
+            "QICE": "00000000",
+            "QNCLOUD": "3A742FE2",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 8
+        }
+      ],
+      "flat_index_zero_based": 38838,
+      "i_one_based": 229,
+      "j_one_based": 166
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38373715",
+            "QICE": "00000000",
+            "QNCLOUD": "3CA6BC21",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 9
+        }
+      ],
+      "flat_index_zero_based": 39039,
+      "i_one_based": 196,
+      "j_one_based": 167
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "00000000",
+            "QICE": "00000000",
+            "QNCLOUD": "00000000",
+            "QNICE": "00000000"
+          },
+          "control_repair": "QI_zero",
+          "final_reason": "ice",
+          "native_k_one_based": 33
+        }
+      ],
+      "flat_index_zero_based": 39078,
+      "i_one_based": 1,
+      "j_one_based": 168
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "37335788",
+            "QICE": "00000000",
+            "QNCLOUD": "3D05AE41",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 5
+        }
+      ],
+      "flat_index_zero_based": 41955,
+      "i_one_based": 70,
+      "j_one_based": 180
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "37306DB2",
+            "QICE": "00000000",
+            "QNCLOUD": "38820EB4",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 15
+        }
+      ],
+      "flat_index_zero_based": 42333,
+      "i_one_based": 214,
+      "j_one_based": 181
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38BE5D79",
+            "QICE": "00000000",
+            "QNCLOUD": "3AF183F6",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 8
+        }
+      ],
+      "flat_index_zero_based": 43043,
+      "i_one_based": 222,
+      "j_one_based": 184
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3847911B",
+            "QICE": "00000000",
+            "QNCLOUD": "3BD097E5",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        },
+        {
+          "control_f32_hex": {
+            "QCLOUD": "39C11708",
+            "QICE": "00000000",
+            "QNCLOUD": "3B21D28F",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 43983,
+      "i_one_based": 226,
+      "j_one_based": 188
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38CC0D2E",
+            "QICE": "00000000",
+            "QNCLOUD": "3B8D42FE",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 7
+        }
+      ],
+      "flat_index_zero_based": 44434,
+      "i_one_based": 209,
+      "j_one_based": 190
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "37DF8585",
+            "QICE": "00000000",
+            "QNCLOUD": "3C209A7A",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 45135,
+      "i_one_based": 208,
+      "j_one_based": 193
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "384AB810",
+            "QICE": "00000000",
+            "QNCLOUD": "3B2E243D",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 45149,
+      "i_one_based": 222,
+      "j_one_based": 193
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38275684",
+            "QICE": "00000000",
+            "QNCLOUD": "3CF719CC",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 45384,
+      "i_one_based": 223,
+      "j_one_based": 194
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "372CD625",
+            "QICE": "00000000",
+            "QNCLOUD": "3BB2E02B",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 46068,
+      "i_one_based": 205,
+      "j_one_based": 197
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "368A6268",
+            "QICE": "00000000",
+            "QNCLOUD": "3CD220F1",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 46306,
+      "i_one_based": 209,
+      "j_one_based": 198
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "36DECCE6",
+            "QICE": "00000000",
+            "QNCLOUD": "3CBD251D",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 46541,
+      "i_one_based": 210,
+      "j_one_based": 199
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "37562D23",
+            "QICE": "00000000",
+            "QNCLOUD": "3C52EED7",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 47479,
+      "i_one_based": 212,
+      "j_one_based": 203
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38D60003",
+            "QICE": "00000000",
+            "QNCLOUD": "3ABB7694",
+            "QNICE": "43011A26"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 19
+        }
+      ],
+      "flat_index_zero_based": 47960,
+      "i_one_based": 225,
+      "j_one_based": 205
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "366CE48F",
+            "QICE": "00000000",
+            "QNCLOUD": "3C17474D",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 48405,
+      "i_one_based": 202,
+      "j_one_based": 207
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "382CD914",
+            "QICE": "00000000",
+            "QNCLOUD": "3D198B5D",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 50069,
+      "i_one_based": 228,
+      "j_one_based": 214
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3677F90C",
+            "QICE": "00000000",
+            "QNCLOUD": "395E13F3",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 50753,
+      "i_one_based": 210,
+      "j_one_based": 217
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "37F8C032",
+            "QICE": "00000000",
+            "QNCLOUD": "3C000195",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 53306,
+      "i_one_based": 189,
+      "j_one_based": 228
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "36F4C9D2",
+            "QICE": "00000000",
+            "QNCLOUD": "3D8D448C",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 53547,
+      "i_one_based": 196,
+      "j_one_based": 229
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3771C46B",
+            "QICE": "00000000",
+            "QNCLOUD": "3AB01135",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 54251,
+      "i_one_based": 198,
+      "j_one_based": 232
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "36587D0A",
+            "QICE": "00000000",
+            "QNCLOUD": "38967006",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 5
+        }
+      ],
+      "flat_index_zero_based": 54750,
+      "i_one_based": 229,
+      "j_one_based": 234
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "3957AB6C",
+            "QICE": "00000000",
+            "QNCLOUD": "3D807AA6",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 56505,
+      "i_one_based": 112,
+      "j_one_based": 242
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "38F1D194",
+            "QICE": "00000000",
+            "QNCLOUD": "3F6677D5",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 5
+        }
+      ],
+      "flat_index_zero_based": 58466,
+      "i_one_based": 201,
+      "j_one_based": 250
+    },
+    {
+      "already_invalid_at_pre_command_READY40": true,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "390398B5",
+            "QICE": "00000000",
+            "QNCLOUD": "3EE06C80",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 5
+        }
+      ],
+      "flat_index_zero_based": 58935,
+      "i_one_based": 202,
+      "j_one_based": 252
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "350AB300",
+            "QICE": "00000000",
+            "QNCLOUD": "3C9BADC0",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 4
+        }
+      ],
+      "flat_index_zero_based": 58964,
+      "i_one_based": 231,
+      "j_one_based": 252
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "391CF955",
+            "QICE": "00000000",
+            "QNCLOUD": "3F23FF64",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 9
+        }
+      ],
+      "flat_index_zero_based": 62627,
+      "i_one_based": 150,
+      "j_one_based": 268
+    },
+    {
+      "already_invalid_at_pre_command_READY40": false,
+      "control_profile_hard_valid": true,
+      "final_failed_levels": [
+        {
+          "control_f32_hex": {
+            "QCLOUD": "35E80484",
+            "QICE": "00000000",
+            "QNCLOUD": "32506619",
+            "QNICE": "00000000"
+          },
+          "control_repair": "positive_NC_with_positive_QC",
+          "final_reason": "liquid",
+          "native_k_one_based": 11
+        }
+      ],
+      "flat_index_zero_based": 62629,
+      "i_one_based": 152,
+      "j_one_based": 268
+    }
+  ],
+  "schema": "kdm6.native_qnc_control_failure_witness.v1"
+}

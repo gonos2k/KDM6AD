@@ -1,0 +1,215 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Existing control checkpoint resolves 54 liquid candidate failure levels through positive NC and one subnormal ice failure through QI zero; newly failed profiles split 27 positive-NC loss and two zero-to-QC appearances. No new model call, physical-unit certification or process attribution.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_CONTROL_WITNESSES_20261028.md": {
+      "bytes": 2182,
+      "sha256": "43b2c153daad476d71a3e283c72605d5f47ce5c39b23a1231823429edd2ce7e1"
+    },
+    "harness/evidence/native_qnc_control_witness_2026-10-28/README.md": {
+      "bytes": 3199,
+      "sha256": "6bc67262d1b5966cc519b1cc35e4f5103179b75be6a96a32120cbf386b01c711"
+    },
+    "harness/evidence/native_qnc_control_witness_2026-10-28/analysis.json": {
+      "bytes": 2665,
+      "sha256": "eb1ec985bc069dd6fec0aa7ae338f92069174d2883edca5d908743c036211c03"
+    },
+    "harness/evidence/native_qnc_control_witness_2026-10-28/manifest.json": {
+      "bytes": 1328,
+      "sha256": "c28e02c82214e19076eef14dbe12c9894261f716f293345326f4e4978d37378d"
+    },
+    "harness/evidence/native_qnc_control_witness_2026-10-28/control_witness_rows.json": {
+      "bytes": 32353,
+      "sha256": "e071fb31746c6139a5d6e5befc4bfa6f02a9f843b113cc56c4e1cd89f8ea86ec"
+    },
+    "harness/evidence/native_qnc_control_witness_2026-10-28/replay.py": {
+      "bytes": 13508,
+      "sha256": "2996302396fc806b4be7384b5ab370b319545c09bee3f5b2c83018cad31245f2"
+    },
+    "harness/native_qnc_control_witness_producer.py": {
+      "bytes": 8893,
+      "sha256": "a41ad3c2a75d83a1e4c5834632d02309f5ff9b33e5f9ff9ae7ec6e592ca39575"
+    },
+    "wiki/sources/native-qnc-control-witnesses-2026-10-28.md": {
+      "bytes": 1145,
+      "sha256": "72b463be184aa111d4b81ff5a4128cadc8402943638710f172de01961932e967"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_control_witness_20261028_report",
+      "label": "Same-cell same-level control resolution of 54 candidate moment failures",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_CONTROL_WITNESSES_20261028.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "43b2c153daad476d71a3e283c72605d5f47ce5c39b23a1231823429edd2ce7e1"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_packet",
+      "label": "Versioned raw-f32 control witness packet preserving PR465/466",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "6bc67262d1b5966cc519b1cc35e4f5103179b75be6a96a32120cbf386b01c711"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_analysis",
+      "label": "54 liquid-level control NC repairs and one ice QI removal",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "eb1ec985bc069dd6fec0aa7ae338f92069174d2883edca5d908743c036211c03"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_manifest",
+      "label": "Historical packet and current source pins for control witnesses",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "c28e02c82214e19076eef14dbe12c9894261f716f293345326f4e4978d37378d"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_raw_rows",
+      "label": "55 selected native-level raw moment word groups",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/control_witness_rows.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "e071fb31746c6139a5d6e5befc4bfa6f02a9f843b113cc56c4e1cd89f8ea86ec"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_replay",
+      "label": "Offline replay of control repair classifications and overlap counts",
+      "file_type": "code",
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/replay.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "2996302396fc806b4be7384b5ab370b319545c09bee3f5b2c83018cad31245f2"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_producer",
+      "label": "Private control checkpoint moment witness producer",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_control_witness_producer.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "a41ad3c2a75d83a1e4c5834632d02309f5ff9b33e5f9ff9ae7ec6e592ca39575"
+    },
+    {
+      "id": "native_qnc_control_witness_20261028_wiki",
+      "label": "Wiki synthesis of control-final repairs and open process attribution",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-control-witnesses-2026-10-28.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "72b463be184aa111d4b81ff5a4128cadc8402943638710f172de01961932e967"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_control_witness_20261028_report",
+      "target": "native_qnc_control_witness_20261028_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_CONTROL_WITNESSES_20261028.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_packet",
+      "target": "native_qnc_control_witness_20261028_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_packet",
+      "target": "native_qnc_control_witness_20261028_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_producer",
+      "target": "native_qnc_control_witness_20261028_raw_rows",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/native_qnc_control_witness_producer.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_raw_rows",
+      "target": "native_qnc_control_witness_20261028_analysis",
+      "relation": "supports_same_level_comparison",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/control_witness_rows.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_replay",
+      "target": "native_qnc_control_witness_20261028_analysis",
+      "relation": "recomputes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/replay.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_analysis",
+      "target": "native_qnc_host_review_20261028_analysis",
+      "relation": "extends_ready_final_reasons",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_analysis",
+      "target": "native_qnc_host_backoff_20261027_analysis",
+      "relation": "compares_variant_control",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_control_witness_2026-10-28/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_control_witness_20261028_wiki",
+      "target": "native_qnc_control_witness_20261028_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-control-witnesses-2026-10-28.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

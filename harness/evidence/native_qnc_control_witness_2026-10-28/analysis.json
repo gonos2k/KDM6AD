@@ -1,0 +1,132 @@
+{
+  "control_witness_rows_sha256": "e071fb31746c6139a5d6e5befc4bfa6f02a9f843b113cc56c4e1cd89f8ea86ec",
+  "historical_pr465_manifest_sha256": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833",
+  "historical_pr466_analysis_sha256": "933fe64204932059316cf1e42f2561e4bb5657bf5bff3b235475eb29e187fc64",
+  "historical_pr466_manifest_sha256": "802988fae908ac96e1fb60ba86d24de6e64de4128a6b6f455f16e13a65538a77",
+  "ice_subnormal_witness": {
+    "NI_hex_all_boundaries": "00000000",
+    "control_QI_hex": "00000000",
+    "final_alpha_QI_hex": "00000002",
+    "flat_index_zero_based": 39078,
+    "native_ijk_one_based": [
+      1,
+      168,
+      33
+    ],
+    "ready_QI_hex": "00000007"
+  },
+  "limits": {
+    "full_fixed_support_cost_defined": false,
+    "named_process_cause_identified": false,
+    "physical_raw_NC_units_certified": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "remaining_flat_indices_zero_based": [
+    16258,
+    21852,
+    21881,
+    22363,
+    22805,
+    23302,
+    25892,
+    25929,
+    25941,
+    26415,
+    26830,
+    28000,
+    28259,
+    28972,
+    29909,
+    30526,
+    30614,
+    30883,
+    31781,
+    34624,
+    35466,
+    35760,
+    36211,
+    36247,
+    37028,
+    38838,
+    39039,
+    39078,
+    41955,
+    42333,
+    43043,
+    43983,
+    44434,
+    45135,
+    45149,
+    45384,
+    46068,
+    46306,
+    46541,
+    47479,
+    47960,
+    48405,
+    50069,
+    50753,
+    53306,
+    53547,
+    54251,
+    54750,
+    56505,
+    58466,
+    58935,
+    58964,
+    62627,
+    62629
+  ],
+  "schema": "kdm6.native_qnc_control_witness_public_analysis.v1",
+  "status": "CONTROL_SAME_LEVEL_MOMENT_REPAIR_CLASSIFIED_PROCESS_CAUSE_OPEN",
+  "summary": {
+    "candidate_ice_failure_layer_count": 1,
+    "candidate_liquid_failure_layer_count": 54,
+    "control_repair_layer_counts": {
+      "QI_zero": 1,
+      "positive_NC_with_positive_QC": 54
+    },
+    "liquid_final_layers_by_native_k": {
+      "10": 1,
+      "11": 6,
+      "12": 2,
+      "13": 3,
+      "14": 2,
+      "15": 4,
+      "17": 1,
+      "18": 2,
+      "19": 1,
+      "4": 21,
+      "5": 4,
+      "7": 1,
+      "8": 4,
+      "9": 2
+    },
+    "new_liquid_failure_origin_counts": {
+      "ready_QC_NC_zero": 2,
+      "ready_positive_NC": 27
+    },
+    "new_liquid_final_layers_by_native_k": {
+      "11": 3,
+      "13": 1,
+      "15": 2,
+      "4": 15,
+      "5": 1,
+      "7": 1,
+      "8": 4,
+      "9": 2
+    },
+    "profile_count": 54,
+    "ready_final_layer_overlap": {
+      "disjoint_ready_final_profiles": 5,
+      "final_only": 35,
+      "ready_only": 8,
+      "same_layer_both": 20
+    }
+  }
+}
