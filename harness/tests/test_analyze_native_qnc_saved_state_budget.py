@@ -62,6 +62,24 @@ def test_changed_pd_mass_argument_rejects_state_budget(tmp_path):
         )
 
 
+@pytest.mark.parametrize(("case", "changed"), (("control", "C6B384BC"),
+                                              ("alpha025", "C6B384BA")))
+def test_changed_rk_c2h_rejects_exact_state_budget(tmp_path, case, changed):
+    source = DATA / case
+    raw = (source / "qnc_state7.tsv").read_text()
+    for stage in ("RKSCALAR_BEFORE", "RKSCALAR_AFTER"):
+        original = f"VAL\t3\t3\t{stage}\t221\t6\t63\tC2H\tf32\tC6B384BB"
+        assert raw.count(original) == 1
+        raw = raw.replace(original, original[:-8] + changed, 1)
+    path = tmp_path / "changed_rk_coefficient.tsv"
+    path.write_text(raw)
+    with pytest.raises(ValueError, match="PD/RK coefficient bits differ"):
+        analyze_saved_state_budget(
+            read_state7_trace(path), read_shared_trace(source / "qnc_shared.tsv"),
+            run_id="mutated",
+        )
+
+
 def test_changed_shared_face_rejects_internal_budget(tmp_path):
     source = DATA / "control"
     raw = (source / "qnc_shared.tsv").read_text()

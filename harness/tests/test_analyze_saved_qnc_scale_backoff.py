@@ -23,12 +23,12 @@ def _inputs(case: str):
 
 
 @pytest.mark.parametrize(
-    ("case", "old_hex", "new_hex", "exact_target", "f32_target", "changed_words", "common_modes"),
-    (("control", "3F4C9A4E", "3F4C9A4D", 5.211649185969273, 10.699481010437012, 6, 4),
-     ("alpha025", "3F4C9A3C", "3F4C9A3B", 1.6487862901338577, 1.9911521673202515, 5, 2)),
+    ("case", "old_hex", "new_hex", "exact_target", "f32_target", "changed_words", "common_modes", "rounded_sum"),
+    (("control", "3F4C9A4E", "3F4C9A4D", 5.211649185969273, 10.699481010437012, 6, 4, 12836.142997904923),
+     ("alpha025", "3F4C9A3C", "3F4C9A3B", 1.6487862901338577, 1.9911521673202515, 5, 2, 10268.913337873133)),
 )
 def test_saved_one_ulp_backoff_is_shared_and_locally_nonnegative(
-    case, old_hex, new_hex, exact_target, f32_target, changed_words, common_modes,
+    case, old_hex, new_hex, exact_target, f32_target, changed_words, common_modes, rounded_sum,
 ):
     result = analyze_one_ulp_backoff(*_inputs(case), case=case)
     target = result["cells"]["i221_j63_k6"]
@@ -41,6 +41,11 @@ def test_saved_one_ulp_backoff_is_shared_and_locally_nonnegative(
     assert result["internal_component_pairs_canceled"] == 12
     assert result["perimeter_face_incidences"] == 30
     assert result["perimeter_exact_unchanged"] is True
+    assert result["weighted_exact_stored_pd_state_change"]["exact"] == "0"
+    rounded = result["weighted_f32_state_change_individually_compatible_range"]
+    assert rounded["minimum"]["approximately"] == pytest.approx(rounded_sum, abs=1e-8)
+    assert rounded["minimum"] == rounded["maximum"]
+    assert result["unchanged_neighbor_f32_cell_count"] == 6
     assert result["all_seven_exact_stored_pd_qnc_nonnegative"] is True
     assert result["all_seven_source_compatible_replays_nonnegative"] is True
     assert len(result["common_original_direction_modes"]) == common_modes
@@ -85,3 +90,19 @@ def test_backoff_rejects_tenddec_path():
         row, bits=True)
     with pytest.raises(ValueError, match="non-tenddec path"):
         analyze_one_ulp_backoff(replace(state, values=values), shared, flux, case="mutated")
+
+
+@pytest.mark.parametrize(("case", "changed"), (("control", "C6B384BC"),
+                                              ("alpha025", "C6B384BA")))
+def test_backoff_rejects_rk_coefficient_skew(tmp_path, case, changed):
+    source = DATA / case
+    raw = (source / "qnc_state7.tsv").read_text()
+    for stage in ("RKSCALAR_BEFORE", "RKSCALAR_AFTER"):
+        original = f"VAL\t3\t3\t{stage}\t221\t6\t63\tC2H\tf32\tC6B384BB"
+        assert raw.count(original) == 1
+        raw = raw.replace(original, original[:-8] + changed, 1)
+    path = tmp_path / "rk_coefficient_skew.tsv"
+    path.write_text(raw)
+    _, shared, flux = _inputs(case)
+    with pytest.raises(ValueError, match="PD/RK coefficient bits differ"):
+        analyze_one_ulp_backoff(read_state7_trace(path), shared, flux, case="mutated")

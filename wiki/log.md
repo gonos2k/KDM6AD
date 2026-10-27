@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC coefficient gate and rounded-state ledger
+- Added [[sources/native-qnc-coefficient-rounding-2026-10-27]]: PD/RK C1H/C2H raw-bit equality is now an explicit validation gate, with RK mass factors taken from RK records. One-ULP skew regressions reject both saved cases while unchanged published results remain identical.
+- In the saved one-ULP face counterfactual, the selected seven-cell exact weighted state difference is zero; final binary32 state words instead give +12,836.142998/+10,268.913338 numerical-coordinate changes. Raw NC units, full-host physics and observation-cost acceptance remain open; no model call occurred.
+
 ## [2026-10-27] Native QNC saved donor-scale backoff probe
 - Added [[sources/native-qnc-scale-backoff-2026-10-27]]: an offline one-ULP donor-scale counterfactual recomputes six paired target/neighbor correction faces. The alpha target becomes locally positive under exact saved-input and original-compatible binary32 RK3 arithmetic, while the seven-cell external face total is unchanged.
 - A general limiter correction and full-domain admissibility remain open. This probe made no host/KDM/RTTOV/optimizer call and does not establish physical raw NC units, conservation or accepted assimilation.

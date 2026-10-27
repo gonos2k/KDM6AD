@@ -1,0 +1,70 @@
+{
+  "cases": {
+    "alpha025": {
+      "historical_backoff_fields_unchanged": true,
+      "historical_budget_fields_unchanged": true,
+      "pd_rk_coefficient_bitwise_verified_cells": 7,
+      "target_candidate_f32_qnc_raw": [
+        1.9911521673202515
+      ],
+      "target_original_rk_qnc_raw": -3.814399242401123,
+      "unchanged_neighbor_f32_cell_count": 6,
+      "weighted_exact_stored_pd_state_change": {
+        "approximately": 0.0,
+        "exact": "0"
+      },
+      "weighted_f32_state_change_individually_compatible_range": {
+        "maximum": {
+          "approximately": 10268.913337873133,
+          "exact": "302231445092037850488000/29431687185183231623"
+        },
+        "minimum": {
+          "approximately": 10268.913337873133,
+          "exact": "302231445092037850488000/29431687185183231623"
+        }
+      }
+    },
+    "control": {
+      "historical_backoff_fields_unchanged": true,
+      "historical_budget_fields_unchanged": true,
+      "pd_rk_coefficient_bitwise_verified_cells": 7,
+      "target_candidate_f32_qnc_raw": [
+        10.699481010437012
+      ],
+      "target_original_rk_qnc_raw": 3.4425406455993652,
+      "unchanged_neighbor_f32_cell_count": 6,
+      "weighted_exact_stored_pd_state_change": {
+        "approximately": 0.0,
+        "exact": "0"
+      },
+      "weighted_f32_state_change_individually_compatible_range": {
+        "maximum": {
+          "approximately": 12836.142997904923,
+          "exact": "377789345378617754658912/29431687185183231623"
+        },
+        "minimum": {
+          "approximately": 12836.142997904923,
+          "exact": "377789345378617754658912/29431687185183231623"
+        }
+      }
+    }
+  },
+  "historical_manifest_sha256": {
+    "backoff": "c81e545cda01d815f53525364a003b3446ab1f9ecac82048975be9001e38985a",
+    "budget": "ae7c1209adf5083722b609ac1e486996ba1f69b3b09f0df47d8928e31632f1c0",
+    "state7": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02"
+  },
+  "limits": {
+    "candidate_RTTOV_cost_or_analysis_acceptance": false,
+    "full_host_variant_or_domain_budget_verified": false,
+    "physical_raw_number_units_certified": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_coefficient_and_rounding_public_analysis.v1",
+  "status": "PD_RK_COEFFICIENT_GUARD_AND_SAVED_ROUNDED_LEDGER_PASSED_HOST_GATE_OPEN"
+}

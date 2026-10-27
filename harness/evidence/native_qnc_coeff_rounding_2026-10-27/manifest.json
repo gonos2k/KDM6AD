@@ -1,0 +1,46 @@
+{
+  "actual_model_calls_during_packet_assembly": 0,
+  "base_commit": "77f4bf87f37b7951fa55978013cf3a7e589f3a4e",
+  "external_source_pins": {
+    "harness/analyze_native_qnc_saved_state_budget.py": "032a6019a6edad046d38bc3aede1a1b7cab8977045e5d53f116a8c3440ac3a6f",
+    "harness/analyze_native_qnc_state7_trace.py": "41f48ab17540edb689551572a7fa2830f514a6550240f8467c26148715461d6c",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_qnc_weighted_ledger.py": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218",
+    "harness/analyze_saved_qnc_scale_backoff.py": "f2bf4229860da7fc08ff3b09721c37e6772051b7274b10a0dab0646bdacd1ca5",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "files": [
+    {
+      "bytes": 2971,
+      "path": "README.md",
+      "sha256": "204e46d2a4d4f561f72b0448bdab18a6bc8f75ce562404e7dd401ba2ed35dc48"
+    },
+    {
+      "bytes": 8039,
+      "path": "replay.py",
+      "sha256": "561406a8fa6708d722cb7bc4fed00097dc5368a8ad6cd2ae018f93394aa84094"
+    },
+    {
+      "bytes": 2410,
+      "path": "analysis.json",
+      "sha256": "27408087c59bce3890caf04bbee3c34f86adedb258aa9ceeaec8894ad70d63a9"
+    },
+    {
+      "bytes": 7793,
+      "path": "source_snapshots/pr462_saved_state_budget.py.txt",
+      "sha256": "50345b3d4614360956ed617a2e2cbb53bfe3645d5202ddec43165562037d61d3"
+    },
+    {
+      "bytes": 13054,
+      "path": "source_snapshots/pr463_scale_backoff.py.txt",
+      "sha256": "78daed0e413b819b84193880eb8c9611ded4c3d62c7527b2d796daaa6efbdfee"
+    }
+  ],
+  "historical_manifests": {
+    "backoff": "c81e545cda01d815f53525364a003b3446ab1f9ecac82048975be9001e38985a",
+    "budget": "ae7c1209adf5083722b609ac1e486996ba1f69b3b09f0df47d8928e31632f1c0",
+    "state7": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02"
+  },
+  "schema": "kdm6.native_qnc_coeff_rounding_public_packet.v1"
+}
