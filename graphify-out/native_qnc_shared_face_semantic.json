@@ -1,0 +1,210 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Selected seven-cell QNC shared-face and RK3 tendency trace from four full-domain host runs; no closed domain number budget, particle units, accepted analysis or RTTOV candidate cost.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md": {
+      "bytes": 3964,
+      "sha256": "ad0bc36456760145f13651bef5fe5d2803a6cff67999f905bf0037f07f820f84"
+    },
+    "wiki/sources/native-qnc-shared-face-2026-10-27.md": {
+      "bytes": 1119,
+      "sha256": "af5cf7d1054cf88c2067adc13db109b62da3f58d574f3d237f5f7beeb8aab575"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/README.md": {
+      "bytes": 4176,
+      "sha256": "a230fcf6cec6bbd2eb2c2a1b6bfa88a9419a3ff0440438fdc81b96916451f9f2"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/analysis.json": {
+      "bytes": 36029,
+      "sha256": "8d340f4e8b72c10d3c16b3ef8dcdded021d5402893b82b3bad0bcf8d7a2954a1"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/manifest.json": {
+      "bytes": 6431,
+      "sha256": "3bfe4111f89c77c475567b515789550606df3077dd5fcaaf4c6457d6be14a922"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/receipts/execution_summary.json": {
+      "bytes": 5311,
+      "sha256": "338527605e4d1ee1f75033a91339ad0a4da990133f675bff39a725afd81783cf"
+    },
+    "harness/evidence/native_qnc_shared_face_2026-10-27/SOURCE_RESOLUTION.md": {
+      "bytes": 1972,
+      "sha256": "90cf6734a6e2d2d114bbe6e8b9866323d12abf36d355ad48d5f557ed32f3c66c"
+    },
+    "harness/native_qnc_shared_face_overlay.py": {
+      "bytes": 9242,
+      "sha256": "74c591eecaa7e47a06491b6a5dc80caffc19155500a354054465e3a1bf6f0e72"
+    },
+    "harness/analyze_qnc_shared_face_trace.py": {
+      "bytes": 12447,
+      "sha256": "4ccdfb5d6f903b23ca447b5e3b1c1cc273b69503d9b18f3330265a704ef62432"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_shared_20261027_report",
+      "label": "Four full-domain shared-face trace runs and bounded seven-cell conclusion",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "Question and executed scope; Local face and tendency evidence; Completion and next gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "ad0bc36456760145f13651bef5fe5d2803a6cff67999f905bf0037f07f820f84"
+    },
+    {
+      "id": "native_qnc_shared_20261027_packet",
+      "label": "19-file source-bound QNC seven-cell raw-bit packet",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/README.md",
+      "source_location": "Execution and noninterference; Measured shared faces; Offline reproduction",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "a230fcf6cec6bbd2eb2c2a1b6bfa88a9419a3ff0440438fdc81b96916451f9f2",
+      "actual_host_steps": 4,
+      "RTTOV_calls": 0
+    },
+    {
+      "id": "native_qnc_shared_20261027_execution",
+      "label": "Control/alpha025 off-on pairs have exact ACK and 652-variable checkpoint equality",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/receipts/execution_summary.json",
+      "source_location": "/cases",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "338527605e4d1ee1f75033a91339ad0a4da990133f675bff39a725afd81783cf",
+      "numeric_elements_per_pair": 322426586
+    },
+    {
+      "id": "native_qnc_shared_20261027_analysis",
+      "label": "Six correction and low-order face joins plus seven-cell RK3 directional tendency replay",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/analysis.json",
+      "source_location": "/cases/control; /cases/alpha025",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "8d340f4e8b72c10d3c16b3ef8dcdded021d5402893b82b3bad0bcf8d7a2954a1",
+      "shared_faces_per_case": 6,
+      "directional_updates_per_case": 21,
+      "perimeter_incidences_open": 30
+    },
+    {
+      "id": "native_qnc_shared_20261027_overlay",
+      "label": "Source-pinned opt-in private host shared-face trace insertion",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_shared_face_overlay.py",
+      "source_location": "render; qnc_shared_capture; qnc_shared_tendency",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "74c591eecaa7e47a06491b6a5dc80caffc19155500a354054465e3a1bf6f0e72"
+    },
+    {
+      "id": "native_qnc_shared_20261027_source",
+      "label": "One changed private module_advect object and unchanged KDM DSO, pinned by hashes",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "90cf6734a6e2d2d114bbe6e8b9866323d12abf36d355ad48d5f557ed32f3c66c",
+      "private_host_source_published": false
+    },
+    {
+      "id": "native_qnc_shared_20261027_limit",
+      "label": "Raw NC units, domain conservation, usable analysis, RTTOV candidate cost remain open",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "Completion and next gate",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "ad0bc36456760145f13651bef5fe5d2803a6cff67999f905bf0037f07f820f84",
+      "domain_budget_closed": false,
+      "candidate_admissible": false
+    },
+    {
+      "id": "native_qnc_shared_20261027_wiki",
+      "label": "Wiki synthesis of QNC shared-face application and limits",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-shared-face-2026-10-27.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "af5cf7d1054cf88c2067adc13db109b62da3f58d574f3d237f5f7beeb8aab575"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_shared_20261027_report",
+      "target": "native_qnc_shared_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "Public packet"
+    },
+    {
+      "source": "native_qnc_shared_20261027_packet",
+      "target": "native_qnc_shared_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/README.md",
+      "source_location": "Offline reproduction"
+    },
+    {
+      "source": "native_qnc_shared_20261027_execution",
+      "target": "native_qnc_shared_20261027_packet",
+      "relation": "supports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/receipts/execution_summary.json",
+      "source_location": "/cases"
+    },
+    {
+      "source": "native_qnc_shared_20261027_overlay",
+      "target": "native_qnc_shared_20261027_source",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_shared_face_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": "Full page"
+    },
+    {
+      "source": "native_qnc_shared_20261027_source",
+      "target": "native_qnc_shared_20261027_execution",
+      "relation": "attributed_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "Executed scope"
+    },
+    {
+      "source": "native_qnc_shared_20261027_analysis",
+      "target": "native_qnc_shared_20261027_limit",
+      "relation": "does_not_certify",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "Completion and next gate"
+    },
+    {
+      "source": "native_qnc_shared_20261027_wiki",
+      "target": "native_qnc_shared_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-shared-face-2026-10-27.md",
+      "source_location": "Detailed report"
+    },
+    {
+      "source": "native_qnc_flux_20261027_analysis",
+      "target": "native_qnc_shared_20261027_analysis",
+      "relation": "precedes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SHARED_FACE_TRACE_20261027.md",
+      "source_location": "PR457 background"
+    }
+  ],
+  "hyperedges": []
+}

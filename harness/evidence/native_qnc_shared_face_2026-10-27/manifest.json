@@ -1,0 +1,136 @@
+{
+  "actual_model_calls_during_packet_assembly": 0,
+  "base_commit": "631b67e332f0e2b24f2b0b06e1df48dc8a1af060",
+  "external_source_pins": {
+    "harness/analyze_qnc_shared_face_trace.py": "4ccdfb5d6f903b23ca447b5e3b1c1cc273b69503d9b18f3330265a704ef62432",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_qnc_shared_face_overlay.py": "74c591eecaa7e47a06491b6a5dc80caffc19155500a354054465e3a1bf6f0e72",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "files": [
+    {
+      "bytes": 4176,
+      "path": "README.md",
+      "sha256": "a230fcf6cec6bbd2eb2c2a1b6bfa88a9419a3ff0440438fdc81b96916451f9f2"
+    },
+    {
+      "bytes": 1972,
+      "path": "SOURCE_RESOLUTION.md",
+      "sha256": "90cf6734a6e2d2d114bbe6e8b9866323d12abf36d355ad48d5f557ed32f3c66c"
+    },
+    {
+      "bytes": 36029,
+      "path": "analysis.json",
+      "sha256": "8d340f4e8b72c10d3c16b3ef8dcdded021d5402893b82b3bad0bcf8d7a2954a1"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/alpha025/host.hex",
+      "private_source_relative_path": "runs/v1/alpha025_shared_v1_on/moment_trace/host.hex",
+      "private_source_sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a",
+      "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/alpha025/kernel.hex",
+      "private_source_relative_path": "runs/v1/alpha025_shared_v1_on/moment_trace/kernel.hex",
+      "private_source_sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf",
+      "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/alpha025/qnc_flux.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_shared_v1_on/qnc_flux_trace/qnc_flux.tsv",
+      "private_source_sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3",
+      "sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/alpha025/qnc_shared.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_shared_v1_on/qnc_shared_trace/qnc_shared.tsv",
+      "private_source_sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f",
+      "sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f"
+    },
+    {
+      "bytes": 11014,
+      "path": "data/alpha025/upstream_nc.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_shared_v1_on/upstream_nc_trace/upstream_nc.tsv",
+      "private_source_sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2",
+      "sha256": "0de3e3c760601ea5bb4204a60be1011ba603cabaf7ffdcd90bf2dd521b3d52c2"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/control/host.hex",
+      "private_source_relative_path": "runs/v1/control_shared_v1_on/moment_trace/host.hex",
+      "private_source_sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0",
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/control/kernel.hex",
+      "private_source_relative_path": "runs/v1/control_shared_v1_on/moment_trace/kernel.hex",
+      "private_source_sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2",
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/control/qnc_flux.tsv",
+      "private_source_relative_path": "runs/v1/control_shared_v1_on/qnc_flux_trace/qnc_flux.tsv",
+      "private_source_sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9",
+      "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/control/qnc_shared.tsv",
+      "private_source_relative_path": "runs/v1/control_shared_v1_on/qnc_shared_trace/qnc_shared.tsv",
+      "private_source_sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1",
+      "sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1"
+    },
+    {
+      "bytes": 11014,
+      "path": "data/control/upstream_nc.tsv",
+      "private_source_relative_path": "runs/v1/control_shared_v1_on/upstream_nc_trace/upstream_nc.tsv",
+      "private_source_sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7",
+      "sha256": "b8afa4a76c409a65120a6e3fac727ee85b21468023d69c6e9b24b87a705cf0c7"
+    },
+    {
+      "bytes": 530958,
+      "path": "receipts/alpha025_pair.json",
+      "private_source_relative_path": "runs/v1/alpha025_shared_pair_comparison.json",
+      "private_source_sha256": "fcd1090ddf1af722c23729d3e85ad11c497e88fad5eec36aa761bb1f85f0de45",
+      "sha256": "fcd1090ddf1af722c23729d3e85ad11c497e88fad5eec36aa761bb1f85f0de45"
+    },
+    {
+      "bytes": 1426,
+      "path": "receipts/build_summary.json",
+      "sha256": "cee8cdffdb47753edf272957f224592f0b4c1396580b73f8518c6f13cf8b487a"
+    },
+    {
+      "bytes": 530957,
+      "path": "receipts/control_pair.json",
+      "private_source_relative_path": "runs/v1/control_shared_pair_comparison.json",
+      "private_source_sha256": "4775d98ba8dbbfd352201ae672a9c3a56702afbeefe9c4b46510154c835f8de3",
+      "sha256": "4775d98ba8dbbfd352201ae672a9c3a56702afbeefe9c4b46510154c835f8de3"
+    },
+    {
+      "bytes": 5311,
+      "path": "receipts/execution_summary.json",
+      "sha256": "338527605e4d1ee1f75033a91339ad0a4da990133f675bff39a725afd81783cf"
+    },
+    {
+      "bytes": 1494,
+      "path": "receipts/runtime_flags.json",
+      "sha256": "cf2a6618fb233aee08b9028760071636a4bf528bdf48dd1afb08232c41a58a01"
+    },
+    {
+      "bytes": 7150,
+      "path": "replay.py",
+      "sha256": "96d429a1fbf90d4108ff2dffe3f469fb72e406d79b8d54bd3088c1b4c3de3876"
+    }
+  ],
+  "historical_pr457_packet_manifest_sha256": "bc6a31a3c5e454a652b01ae9c261fb846817949408bda5063685b0275d2477f9",
+  "offline_RTTOV_calls": 0,
+  "schema": "kdm6.native_qnc_shared_face_public_packet.v1",
+  "scope": "Two trace-on full-domain owner-cell records plus four-run noninterference receipts; no private host source or executable payload."
+}
