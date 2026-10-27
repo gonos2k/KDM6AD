@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-28] Native QNC same-level control witnesses
+- Added [[sources/native-qnc-control-witnesses-2026-10-28]]: raw f32 control-final words at all 54 candidate-failed M0 profiles. Control has positive NC with positive QC at 54 liquid failed layers; the single subnormal ice QI residue disappears. Newly failed profiles split into 27 positive-NC losses and two zero-QC/NC-to-QC appearances.
+- READY/final failed layers can shift within a profile; the source-bound two-endpoint comparison does not assign a named transport/KDM cause. No new model/RTTOV call or accepted full-support analysis.
+
 ## [2026-10-28] Native QNC host-backoff current-source and baseline review
 - Added [[sources/native-qnc-host-backoff-review-2026-10-28]]: the current backoff and PD/RK-budget helper sources are hash-pinned in a versioned companion while the PR465 packet remains immutable. The original control baseline is compared with both variant outputs on the same block28 M0 support; original→variant-alpha target IR105 response is approximately −0.00009 K, distinct from the −0.326 K within-variant contrast.
 - No new host/RTTOV call was made; 54 full-domain M0 profiles remain invalid, so accepted analysis and full candidate cost remain open.
