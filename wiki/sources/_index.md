@@ -5,6 +5,7 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[native-qnc-scale-backoff-2026-10-27]] — Saved one-ULP donor-scale counterfactual for the seven-cell QNC witness, with exact shared-face cancellation and host-validation limits.
 - [[native-qnc-saved-state-budget-2026-10-27]] — Offline exact-rational seven-cell PD/face/RK state decomposition and hardened RK3 old-buffer gate, with physical-budget limits.
 - [[native-block22-saved-response-2026-10-25]] — Saved full-B block22 K/profile-JVP and alpha-endpoint response decomposition with optical mapping, block ranks, and no-causality limits.
 - [[native-ko7-restricted-confirmation-2026-10-25]] — Actual restricted alpha=1 full-domain confirmation with unchanged support and explicit cost, state/rate delivery, provenance, and physical-scope limits.

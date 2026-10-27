@@ -1,0 +1,167 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Offline one-ULP-lower QNC donor scale on saved seven-cell f32 faces; exact internal cancellation and local RK3 positivity, without a host run, general limiter rule, physical number budget or RTTOV claim.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_SAVED_SCALE_BACKOFF_20261027.md": {
+      "bytes": 3415,
+      "sha256": "ed700fd8fdd4b4653f25582aaf2741914d96df0519d972fe5b3a2dd897c3d1ce"
+    },
+    "harness/evidence/native_qnc_scale_backoff_2026-10-27/README.md": {
+      "bytes": 3013,
+      "sha256": "5c63faa7f83f42e503e2b1b623e9d5bd4512348cfb412034b792dfc6e9e2c911"
+    },
+    "harness/evidence/native_qnc_scale_backoff_2026-10-27/analysis.json": {
+      "bytes": 13673,
+      "sha256": "34d6aa1724c508ab2432e107f0b2f3f8a6a2d589f3eaffbc40078a0762e78388"
+    },
+    "harness/evidence/native_qnc_scale_backoff_2026-10-27/manifest.json": {
+      "bytes": 1689,
+      "sha256": "c81e545cda01d815f53525364a003b3446ab1f9ecac82048975be9001e38985a"
+    },
+    "wiki/sources/native-qnc-scale-backoff-2026-10-27.md": {
+      "bytes": 1222,
+      "sha256": "e93bc630f115f2fb057205ca766158783d0a817a58eeb92f0172a743a2f0e2e1"
+    },
+    "harness/analyze_saved_qnc_scale_backoff.py": {
+      "bytes": 13054,
+      "sha256": "78daed0e413b819b84193880eb8c9611ded4c3d62c7527b2d796daaa6efbdfee"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_scale_backoff_20261027_report",
+      "label": "Saved one-ULP donor-scale QNC counterfactual and host gate",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_SAVED_SCALE_BACKOFF_20261027.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "ed700fd8fdd4b4653f25582aaf2741914d96df0519d972fe5b3a2dd897c3d1ce"
+    },
+    {
+      "id": "native_qnc_scale_backoff_20261027_packet",
+      "label": "Hash-bound zero-call scale-backoff probe on PR461 and PR462 evidence",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "5c63faa7f83f42e503e2b1b623e9d5bd4512348cfb412034b792dfc6e9e2c911"
+    },
+    {
+      "id": "native_qnc_scale_backoff_20261027_analysis",
+      "label": "One-ULP target/neighbor shared-face numerical candidate",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "34d6aa1724c508ab2432e107f0b2f3f8a6a2d589f3eaffbc40078a0762e78388"
+    },
+    {
+      "id": "native_qnc_scale_backoff_20261027_manifest",
+      "label": "Historical PR461 and PR462 packet lineage and current source pins",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/manifest.json",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "c81e545cda01d815f53525364a003b3446ab1f9ecac82048975be9001e38985a"
+    },
+    {
+      "id": "native_qnc_scale_backoff_20261027_wiki",
+      "label": "Wiki synthesis of local saved-input limiter backoff and limits",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-scale-backoff-2026-10-27.md",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "e93bc630f115f2fb057205ca766158783d0a817a58eeb92f0172a743a2f0e2e1"
+    },
+    {
+      "id": "native_qnc_scale_backoff_20261027_analyzer",
+      "label": "Source-compatible f32 and exact seven-cell QNC scale-backoff evaluation",
+      "file_type": "code",
+      "source_file": "harness/analyze_saved_qnc_scale_backoff.py",
+      "source_location": null,
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "78daed0e413b819b84193880eb8c9611ded4c3d62c7527b2d796daaa6efbdfee"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_scale_backoff_20261027_report",
+      "target": "native_qnc_scale_backoff_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_SAVED_SCALE_BACKOFF_20261027.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_packet",
+      "target": "native_qnc_scale_backoff_20261027_manifest",
+      "relation": "verifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_packet",
+      "target": "native_qnc_scale_backoff_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_analyzer",
+      "target": "native_qnc_scale_backoff_20261027_analysis",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/analyze_saved_qnc_scale_backoff.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_analysis",
+      "target": "native_qnc_saved_state_budget_20261027_analysis",
+      "relation": "uses_saved_state_budget",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_analysis",
+      "target": "native_qnc_state7_20261027_analysis",
+      "relation": "uses_historical_trace",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_scale_backoff_2026-10-27/analysis.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "native_qnc_scale_backoff_20261027_wiki",
+      "target": "native_qnc_scale_backoff_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-scale-backoff-2026-10-27.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

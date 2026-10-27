@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC saved donor-scale backoff probe
+- Added [[sources/native-qnc-scale-backoff-2026-10-27]]: an offline one-ULP donor-scale counterfactual recomputes six paired target/neighbor correction faces. The alpha target becomes locally positive under exact saved-input and original-compatible binary32 RK3 arithmetic, while the seven-cell external face total is unchanged.
+- A general limiter correction and full-domain admissibility remain open. This probe made no host/KDM/RTTOV/optimizer call and does not establish physical raw NC units, conservation or accepted assimilation.
+
 ## [2026-10-27] Native QNC saved seven-cell state budget
 - Added [[sources/native-qnc-saved-state-budget-2026-10-27]]: hardened the ordinary RK3 aggregate gate to require preserved `SCALAR_OLD`, then decomposed the immutable seven-cell binary32 packet into exact saved-face, PD, advection-arithmetic and RK-store terms. The weighted state ledger closes exactly after its nonzero arithmetic differences are included.
 - The alpha target enters KDM with negative NC and leaves the FP64 value call at NC=0 with positive QC. This is a measured call boundary, without named-process attribution, physical NC units, whole-step/domain conservation, candidate RTTOV cost or accepted analysis. No new host or RTTOV run occurred.

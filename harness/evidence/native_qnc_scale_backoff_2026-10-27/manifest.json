@@ -1,0 +1,33 @@
+{
+  "actual_model_calls_during_packet_assembly": 0,
+  "external_source_pins": {
+    "harness/analyze_native_qnc_saved_state_budget.py": "50345b3d4614360956ed617a2e2cbb53bfe3645d5202ddec43165562037d61d3",
+    "harness/analyze_native_qnc_state7_trace.py": "41f48ab17540edb689551572a7fa2830f514a6550240f8467c26148715461d6c",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_qnc_weighted_ledger.py": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218",
+    "harness/analyze_saved_qnc_scale_backoff.py": "78daed0e413b819b84193880eb8c9611ded4c3d62c7527b2d796daaa6efbdfee",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "files": [
+    {
+      "bytes": 3013,
+      "path": "README.md",
+      "sha256": "5c63faa7f83f42e503e2b1b623e9d5bd4512348cfb412034b792dfc6e9e2c911"
+    },
+    {
+      "bytes": 4987,
+      "path": "replay.py",
+      "sha256": "2c428349eee83fd8cfb9bbcec06d4e2c212aa866049fd943fb7317b125c29bf8"
+    },
+    {
+      "bytes": 13673,
+      "path": "analysis.json",
+      "sha256": "34d6aa1724c508ab2432e107f0b2f3f8a6a2d589f3eaffbc40078a0762e78388"
+    }
+  ],
+  "historical_pr461_manifest_sha256": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02",
+  "parent_commit": "5231b1589cef393bbf294ecec60efebfe5948952",
+  "parent_pr462_manifest_sha256": "ae7c1209adf5083722b609ac1e486996ba1f69b3b09f0df47d8928e31632f1c0",
+  "schema": "kdm6.saved_qnc_scale_backoff_public_packet.v1"
+}
