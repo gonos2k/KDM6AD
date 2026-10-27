@@ -1,0 +1,178 @@
+{
+  "actual_model_calls_during_packet_assembly": 0,
+  "base_commit": "55b68c3d90c1625d4a9038c9fb712abc540724a2",
+  "external_source_pins": {
+    "harness/analyze_native_qnc_state7_trace.py": "31485ee7664fef2f73328fe079a611515697732c2f798978db0d5d23ea69b78f",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_qnc_state7_overlay.py": "c90896238d63c74f5c7865174255d0b8b5f976d35e3004712d2a5e9871de17f3"
+  },
+  "files": [
+    {
+      "bytes": 4586,
+      "path": "README.md",
+      "sha256": "92c1ed2ba343aba77ee735084a9b77c304e82644b566519b7d6cc66811902e40"
+    },
+    {
+      "bytes": 1975,
+      "path": "SOURCE_RESOLUTION.md",
+      "sha256": "0b01d455ec53b74c297f2b613973913ca1bdbc9c2ce321e14aad5693447aa612"
+    },
+    {
+      "bytes": 201411,
+      "path": "analysis.json",
+      "sha256": "d92ec514de7872595d6c560e92746c6b3940e907a06969192ebc3003de9e3437"
+    },
+    {
+      "bytes": 1821,
+      "path": "data/alpha025/checkpoint_context.json",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/checkpoint_context.json",
+      "private_source_sha256": "fd8826425699c9cc02d9843b172e65fc7f5a2c51468a14dbee56df7ac30dfd9f",
+      "sha256": "fd8826425699c9cc02d9843b172e65fc7f5a2c51468a14dbee56df7ac30dfd9f"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/alpha025/host.hex",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/moment_trace/host.hex",
+      "private_source_sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a",
+      "sha256": "956258b04bd47a338ebfea0ed563a23e4484d98fb11cf0518f844b6c4958848a"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/alpha025/kernel.hex",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/moment_trace/kernel.hex",
+      "private_source_sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf",
+      "sha256": "2259a8dcb6ed205c8413e1121ded5bb24392931ca2bae5ea9fcdad01c9135bcf"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/alpha025/qnc_flux.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/qnc_flux_trace/qnc_flux.tsv",
+      "private_source_sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3",
+      "sha256": "72bd819129c2d774ecbc3ff3296f3a56757fda99ea6c40c0e7046ac25d63fee3"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/alpha025/qnc_shared.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/qnc_shared_trace/qnc_shared.tsv",
+      "private_source_sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f",
+      "sha256": "a39f8beeff08251a931c66bb990414651a7e17b7775963be800ce63770892e7f"
+    },
+    {
+      "bytes": 39056,
+      "path": "data/alpha025/qnc_state7.tsv",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/qnc_state7_trace/qnc_state7.tsv",
+      "private_source_sha256": "5c422beb7e3f9bae02af354c63e6d20e70d0bac37603122d0f20846cddfa99db",
+      "sha256": "5c422beb7e3f9bae02af354c63e6d20e70d0bac37603122d0f20846cddfa99db"
+    },
+    {
+      "bytes": 1834,
+      "path": "data/control/checkpoint_context.json",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/checkpoint_context.json",
+      "private_source_sha256": "68bc6cec0b9d73e0f26b27cbda57a4f4feb0277bbe34078b59ccf8532deb0b93",
+      "sha256": "68bc6cec0b9d73e0f26b27cbda57a4f4feb0277bbe34078b59ccf8532deb0b93"
+    },
+    {
+      "bytes": 71585,
+      "path": "data/control/host.hex",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/moment_trace/host.hex",
+      "private_source_sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0",
+      "sha256": "28847122b59e86d7b1bde6b6eb26896d7379e91dce2dd3734d165978a7d6e6c0"
+    },
+    {
+      "bytes": 24041,
+      "path": "data/control/kernel.hex",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/moment_trace/kernel.hex",
+      "private_source_sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2",
+      "sha256": "5b3f8847b94c357e9bf3a5797f5ec6b20fe790135c5ce0c73e89db6444caffd2"
+    },
+    {
+      "bytes": 4490,
+      "path": "data/control/qnc_flux.tsv",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/qnc_flux_trace/qnc_flux.tsv",
+      "private_source_sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9",
+      "sha256": "651e5a1193cc515dba3a9b94681fd0b538fd02f2712afa32cc22469aaa55d3f9"
+    },
+    {
+      "bytes": 7441,
+      "path": "data/control/qnc_shared.tsv",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/qnc_shared_trace/qnc_shared.tsv",
+      "private_source_sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1",
+      "sha256": "f1c2aa030cfea8c5ea8b37401abdcab0965c44b457645072d6543bc86b3f8be1"
+    },
+    {
+      "bytes": 39056,
+      "path": "data/control/qnc_state7.tsv",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/qnc_state7_trace/qnc_state7.tsv",
+      "private_source_sha256": "781be00ab5521e7183a452ad4381fe9f5e77c6a56011e8caafc675dcc7118872",
+      "sha256": "781be00ab5521e7183a452ad4381fe9f5e77c6a56011e8caafc675dcc7118872"
+    },
+    {
+      "bytes": 530950,
+      "path": "receipts/alpha025_pair.json",
+      "private_source_relative_path": "runs/v1/alpha025_state7_pair.json",
+      "private_source_sha256": "89a8e3dd343b115c364c6b93afcb47871f6afa7ba1e9b1e9f59568b19b4bc734",
+      "sha256": "89a8e3dd343b115c364c6b93afcb47871f6afa7ba1e9b1e9f59568b19b4bc734"
+    },
+    {
+      "bytes": 1416,
+      "path": "receipts/build_summary.json",
+      "sha256": "77976a33d44d8e09baf28f582a86f93be8528d036d39fe068892699f2b107a5e"
+    },
+    {
+      "bytes": 530949,
+      "path": "receipts/control_pair.json",
+      "private_source_relative_path": "runs/v1/control_state7_pair.json",
+      "private_source_sha256": "8b657a6d2c1418c13945722a73ab809b5bd5b8402a34ae44f0509ffd46588c9b",
+      "sha256": "8b657a6d2c1418c13945722a73ab809b5bd5b8402a34ae44f0509ffd46588c9b"
+    },
+    {
+      "bytes": 6266,
+      "path": "receipts/execution_summary.json",
+      "sha256": "7aedac65dc2afefdaad5444c24a9a2bf15c6082df5fb6db6562313f65c891a50"
+    },
+    {
+      "bytes": 830,
+      "path": "receipts/plans/alpha025_off.json",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_off/experiment_plan.json",
+      "private_source_sha256": "c1923860142b4dbc56fcd60dddce3000820929400afc077bdcb6d0faccdd65a6",
+      "sha256": "c1923860142b4dbc56fcd60dddce3000820929400afc077bdcb6d0faccdd65a6"
+    },
+    {
+      "bytes": 828,
+      "path": "receipts/plans/alpha025_on.json",
+      "private_source_relative_path": "runs/v1/alpha025_state7_v1_on/experiment_plan.json",
+      "private_source_sha256": "1ec47c7e48212c8276646f5d6be7141d3ff25b4f16d2ab86e0b15fec4e5d7cac",
+      "sha256": "1ec47c7e48212c8276646f5d6be7141d3ff25b4f16d2ab86e0b15fec4e5d7cac"
+    },
+    {
+      "bytes": 828,
+      "path": "receipts/plans/control_off.json",
+      "private_source_relative_path": "runs/v1/control_state7_v1_off/experiment_plan.json",
+      "private_source_sha256": "067915e3cc66e069af29df696857ed3ef8062cdbbb5fd1e04eabf4147ff94517",
+      "sha256": "067915e3cc66e069af29df696857ed3ef8062cdbbb5fd1e04eabf4147ff94517"
+    },
+    {
+      "bytes": 826,
+      "path": "receipts/plans/control_on.json",
+      "private_source_relative_path": "runs/v1/control_state7_v1_on/experiment_plan.json",
+      "private_source_sha256": "11ec9e4ca96ca5d5c7a9fc95cef3a50b038e9b554778bf2079eb65ce302a36a4",
+      "sha256": "11ec9e4ca96ca5d5c7a9fc95cef3a50b038e9b554778bf2079eb65ce302a36a4"
+    },
+    {
+      "bytes": 1491,
+      "path": "receipts/runtime_flags.json",
+      "sha256": "d05b3f83941e1f90718e568bf8a562a5278a9ec2d0130589562b4f9a594a4df6"
+    },
+    {
+      "bytes": 8241,
+      "path": "replay.py",
+      "sha256": "6245c7edc19934a283c242f0789856a9cf9add9b779fb4cab3b06ded4b2b535d"
+    }
+  ],
+  "historical_pr459_packet_manifest_sha256": "3bfe4111f89c77c475567b515789550606df3077dd5fcaaf4c6457d6be14a922",
+  "offline_RTTOV_calls": 0,
+  "schema": "kdm6.native_qnc_state7_public_packet.v1",
+  "scope": "Four full-domain host steps with trace off/on pairs; selected seven-cell PD/RK state evidence; no private host source/executable payload."
+}

@@ -1,0 +1,27 @@
+{
+  "RTTOV_calls_during_build": 0,
+  "archive_sha256": "995aa9e71e3fc477ef9d3137e3a82387a15b11f81952d89f22b891fa361e042b",
+  "base_module_advect_object_sha256": "f0be3cf5cdb1d09a631f5fa262b8b181420277e06538b41cf2dc520172cb801d",
+  "base_pr459_build_receipt_sha256": "d59c9bee9509f36bed27f88a35d328c3fe2feef090dd398c5a382b8355aaa596",
+  "base_source_sha256": "a10a2aae453f1d0fcaa96d288d235db0087df3c6a28a4d4035e39f53790c8f71",
+  "builder_sha256": "5a3c3be405b71566cfddd8b247267d896f7a61d36a76837141ee7a2f59373671",
+  "changed_archive_members": [
+    "solve_em.o"
+  ],
+  "compiled_source_sha256": "0842aafdd2ba4fb252fe8dc58f18043d691a818b9fc092ee533c693f4574f85d",
+  "dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+  "executable_sha256": "c623581aef8f7e0e560687cc658cc58d78038a8312118df8bf10e2f557e39a73",
+  "generic_dynamics_flags": [
+    "-O2",
+    "-ftree-vectorize",
+    "-funroll-loops",
+    "-ffree-form",
+    "-ffree-line-length-none"
+  ],
+  "host_steps_during_build": 0,
+  "new_solve_em_object_sha256": "7977811f1c1ff84b6835d50dc556cc87fac373bea608ca6caf66b66c6cbd04c2",
+  "overlay_script_sha256": "c90896238d63c74f5c7865174255d0b8b5f976d35e3004712d2a5e9871de17f3",
+  "private_build_receipt_sha256": "184ba4b4fb0483d60e920d55daa6ea4f0915fe7bc0b62104191e13b4eeccb8b4",
+  "private_fortran_source_published": false,
+  "schema": "kdm6.native_qnc_state7_public_build_summary.v1"
+}

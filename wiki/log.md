@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC seven-cell PD/RK3 state trace
+- Added [[sources/native-qnc-seven-state-2026-10-27]]: four full-domain 40→60-second control/alpha0.25 steps yield two exact trace-off/on pairs. Seven cells link PD prepared old state, consumed tendency, ordinary RK3 QNC and boundary/pre-microphysics states; a later checkpoint interval is kept separate.
+- The candidate still reaches KDM with negative target NC and saves zero NC with positive QC. No physical NC unit, named-process attribution, domain conservation, admissible update, RTTOV candidate cost or second assimilation is certified.
+
 ## [2026-10-27] Native QNC weighted seven-cell ledger
 - Added [[sources/native-qnc-weighted-ledger-2026-10-27]]: fixed stale opt-in shared-trace owner/writer state and the omitted same-run MSFTY join, preserving the immutable PR459 packet and its old source pins.
 - Exact rational analysis of saved f32 operands cancels 12 internal correction/low-order face incidences and isolates the 30-face perimeter plus the recorded-versus-face arithmetic residual. No physical NC unit, old/new state budget, domain conservation, model run, RTTOV cost or accepted analysis is claimed.

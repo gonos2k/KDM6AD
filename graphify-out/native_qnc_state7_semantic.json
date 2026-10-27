@@ -1,0 +1,228 @@
+{
+  "schema": "graphify.semantic.v1",
+  "scope": "Four full-domain host steps record seven-cell QNC PD old-buffer preparation, ordinary RK3 update and later checkpoint interval; no named process, physical NC units or candidate observation improvement certified.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "source_pins": {
+    "docs/NATIVE_QNC_STATE7_TRACE_20261027.md": {
+      "bytes": 4300,
+      "sha256": "b9cd64e621a6dc1ec7d713d335decc7e8823184222e6ee5b6dc71dee562fec79"
+    },
+    "wiki/sources/native-qnc-seven-state-2026-10-27.md": {
+      "bytes": 1482,
+      "sha256": "d1d8d3475f557de9cf1f8910d24ea6bfe1860278da6f3a9e8b8630edb71ed85e"
+    },
+    "harness/evidence/native_qnc_state7_2026-10-27/README.md": {
+      "bytes": 4586,
+      "sha256": "92c1ed2ba343aba77ee735084a9b77c304e82644b566519b7d6cc66811902e40"
+    },
+    "harness/evidence/native_qnc_state7_2026-10-27/SOURCE_RESOLUTION.md": {
+      "bytes": 1975,
+      "sha256": "0b01d455ec53b74c297f2b613973913ca1bdbc9c2ce321e14aad5693447aa612"
+    },
+    "harness/evidence/native_qnc_state7_2026-10-27/analysis.json": {
+      "bytes": 201411,
+      "sha256": "d92ec514de7872595d6c560e92746c6b3940e907a06969192ebc3003de9e3437"
+    },
+    "harness/evidence/native_qnc_state7_2026-10-27/manifest.json": {
+      "bytes": 8558,
+      "sha256": "6737fdabf1c023fe808c00c39b5d1007a43aa1323737f19a63ba1b7fb643ed02"
+    },
+    "harness/evidence/native_qnc_state7_2026-10-27/receipts/execution_summary.json": {
+      "bytes": 6266,
+      "sha256": "7aedac65dc2afefdaad5444c24a9a2bf15c6082df5fb6db6562313f65c891a50"
+    },
+    "harness/native_qnc_state7_overlay.py": {
+      "bytes": 3890,
+      "sha256": "c90896238d63c74f5c7865174255d0b8b5f976d35e3004712d2a5e9871de17f3"
+    },
+    "harness/analyze_native_qnc_state7_trace.py": {
+      "bytes": 10933,
+      "sha256": "31485ee7664fef2f73328fe079a611515697732c2f798978db0d5d23ea69b78f"
+    }
+  },
+  "nodes": [
+    {
+      "id": "native_qnc_state7_20261027_report",
+      "label": "Full-domain seven-cell QNC PD preparation and ordinary RK3 state trace",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Executed question; Two scalar updates; Later interval and limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "b9cd64e621a6dc1ec7d713d335decc7e8823184222e6ee5b6dc71dee562fec79"
+    },
+    {
+      "id": "native_qnc_state7_20261027_packet",
+      "label": "25-file source-bound seven-cell state-trace packet",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/README.md",
+      "source_location": "Executed comparison; Seven-cell state connection; Offline reproduction",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "92c1ed2ba343aba77ee735084a9b77c304e82644b566519b7d6cc66811902e40",
+      "host_steps": 4,
+      "RTTOV_calls": 0
+    },
+    {
+      "id": "native_qnc_state7_20261027_execution",
+      "label": "Two exact trace-off/on checkpoint and ACK comparisons",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/receipts/execution_summary.json",
+      "source_location": "/cases",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "7aedac65dc2afefdaad5444c24a9a2bf15c6082df5fb6db6562313f65c891a50",
+      "checkpoint_variables": 652,
+      "numeric_elements_per_pair": 322426586
+    },
+    {
+      "id": "native_qnc_state7_20261027_analysis",
+      "label": "Seven-cell PD old-buffer handoff and final RK3 QNC replay",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/analysis.json",
+      "source_location": "/cases/control; /cases/alpha025",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d92ec514de7872595d6c560e92746c6b3940e907a06969192ebc3003de9e3437",
+      "cells": 7,
+      "trace_rows_per_case": 728
+    },
+    {
+      "id": "native_qnc_state7_20261027_overlay",
+      "label": "Source-pinned opt-in seven-cell solve_em QNC trace",
+      "file_type": "code",
+      "source_file": "harness/native_qnc_state7_overlay.py",
+      "source_location": "render",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "c90896238d63c74f5c7865174255d0b8b5f976d35e3004712d2a5e9871de17f3"
+    },
+    {
+      "id": "native_qnc_state7_20261027_source",
+      "label": "One changed solve_em object with unchanged advect, module_em and KDM DSO",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "0b01d455ec53b74c297f2b613973913ca1bdbc9c2ce321e14aad5693447aa612",
+      "private_host_source_published": false
+    },
+    {
+      "id": "native_qnc_state7_20261027_checkpoint_interval",
+      "label": "Immediate RK3 and pre-MP QNC agree, while later checkpoint NC can change",
+      "file_type": "document",
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/analysis.json",
+      "source_location": "/cases/*/cells",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d92ec514de7872595d6c560e92746c6b3940e907a06969192ebc3003de9e3437",
+      "named_process_attribution": false
+    },
+    {
+      "id": "native_qnc_state7_20261027_limit",
+      "label": "Raw NC units, whole-domain state budget, candidate RTTOV cost and next assimilation open",
+      "file_type": "document",
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Later interval and limits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "b9cd64e621a6dc1ec7d713d335decc7e8823184222e6ee5b6dc71dee562fec79"
+    },
+    {
+      "id": "native_qnc_state7_20261027_wiki",
+      "label": "Wiki synthesis of PD old-buffer and ordinary RK3 state path",
+      "file_type": "document",
+      "source_file": "wiki/sources/native-qnc-seven-state-2026-10-27.md",
+      "source_location": "Full page",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_sha256": "d1d8d3475f557de9cf1f8910d24ea6bfe1860278da6f3a9e8b8630edb71ed85e"
+    }
+  ],
+  "edges": [
+    {
+      "source": "native_qnc_state7_20261027_report",
+      "target": "native_qnc_state7_20261027_packet",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Public packet"
+    },
+    {
+      "source": "native_qnc_state7_20261027_packet",
+      "target": "native_qnc_state7_20261027_analysis",
+      "relation": "contains_result",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/README.md",
+      "source_location": "Offline reproduction"
+    },
+    {
+      "source": "native_qnc_state7_20261027_execution",
+      "target": "native_qnc_state7_20261027_packet",
+      "relation": "supports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/receipts/execution_summary.json",
+      "source_location": "/cases"
+    },
+    {
+      "source": "native_qnc_state7_20261027_overlay",
+      "target": "native_qnc_state7_20261027_source",
+      "relation": "produces",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "harness/evidence/native_qnc_state7_2026-10-27/SOURCE_RESOLUTION.md",
+      "source_location": "Full page"
+    },
+    {
+      "source": "native_qnc_state7_20261027_source",
+      "target": "native_qnc_state7_20261027_execution",
+      "relation": "attributed_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Executed question"
+    },
+    {
+      "source": "native_qnc_state7_20261027_analysis",
+      "target": "native_qnc_state7_20261027_checkpoint_interval",
+      "relation": "distinguishes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Later state interval"
+    },
+    {
+      "source": "native_qnc_state7_20261027_analysis",
+      "target": "native_qnc_state7_20261027_limit",
+      "relation": "does_not_certify",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "Later interval and limits"
+    },
+    {
+      "source": "native_qnc_state7_20261027_wiki",
+      "target": "native_qnc_state7_20261027_report",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "wiki/sources/native-qnc-seven-state-2026-10-27.md",
+      "source_location": "Report"
+    },
+    {
+      "source": "native_qnc_shared_20261027_analysis",
+      "target": "native_qnc_state7_20261027_analysis",
+      "relation": "input_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/NATIVE_QNC_STATE7_TRACE_20261027.md",
+      "source_location": "PR459 shared-face background"
+    }
+  ],
+  "hyperedges": []
+}
