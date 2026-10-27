@@ -5,6 +5,10 @@ date_modified: 2026-10-26
 ---
 # Wiki Log
 
+## [2026-10-27] Native QNC weighted seven-cell ledger
+- Added [[sources/native-qnc-weighted-ledger-2026-10-27]]: fixed stale opt-in shared-trace owner/writer state and the omitted same-run MSFTY join, preserving the immutable PR459 packet and its old source pins.
+- Exact rational analysis of saved f32 operands cancels 12 internal correction/low-order face incidences and isolates the 30-face perimeter plus the recorded-versus-face arithmetic residual. No physical NC unit, old/new state budget, domain conservation, model run, RTTOV cost or accepted analysis is claimed.
+
 ## [2026-10-27] Native QNC shared-face trace
 - Added [[sources/native-qnc-shared-face-2026-10-27]]: four control/alpha0.25 full-domain 20-second host steps form two exact trace-off/on pairs. The selected owner tile gives six target–neighbor correction+low face raw-bit joins and 21 source-compatible RK3 tendency replays per input.
 - The seven-cell star has 30 unclosed external face incidences. Raw NC units, domain conservation, an admissible update, RTTOV candidate cost and another assimilation remain unverified.

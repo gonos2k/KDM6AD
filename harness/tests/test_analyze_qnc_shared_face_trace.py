@@ -73,3 +73,19 @@ def test_shared_analysis_detects_broken_neighbor_face(tmp_path):
     )
     assert not analysis["six_internal_faces"]["x_west"]["correction_bitwise_shared"]
     assert not analysis["all_captured_checks_pass"]
+
+
+@pytest.mark.parametrize("case", ("control", "alpha025"))
+def test_target_msfty_must_match_same_run_v2_trace(tmp_path, case):
+    source = DATA / case
+    raw = (source / "qnc_shared.tsv").read_text()
+    old = "VAL 1 RK3_POST 221 6 63 MSFTY f32 3F7BEF54"
+    assert raw.count(old) == 1
+    path = tmp_path / "wrong_msfty.tsv"
+    path.write_text(raw.replace(old, old[:-8] + "40000000", 1))
+    result = analyze_shared_trace(
+        read_shared_trace(path), flux_path=source / "qnc_flux.tsv",
+        upstream_path=source / "upstream_nc.tsv", run_id="mutated_msfty",
+    )
+    assert result["same_run_pr457_target_join"]["MSFTY"] is False
+    assert result["all_captured_checks_pass"] is False

@@ -1,0 +1,37 @@
+{
+  "base_commit": "1c28c241501d921dc4187637b5788066fd7796ac",
+  "external_source_pins": {
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_qnc_weighted_ledger.py": "c97b9f28c211b7fe77cf0e62cba704e10d19df801c1cac4c31a50ba46b466218",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_qnc_shared_face_overlay.py": "371ae08150584739fc337a66fb3bb41afe06ac9f7086b76c64508d0778e8f8ee",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "files": [
+    {
+      "bytes": 2255,
+      "path": "README.md",
+      "sha256": "7efe2ba848e993b14319e38c13daa5b4982ae49ec50838157577a7585074e956"
+    },
+    {
+      "bytes": 15386,
+      "path": "analysis.json",
+      "sha256": "d71f0b7dfee00d042790806061fae01cdb1958733d8d4ddc9beb71f870fc57f9"
+    },
+    {
+      "bytes": 5200,
+      "path": "replay.py",
+      "sha256": "f0608eecbc4c90789804d61fd116e2c28a83f64157fc5fd68b110483a3853b1a"
+    }
+  ],
+  "historical_pr459_manifest_sha256": "3bfe4111f89c77c475567b515789550606df3077dd5fcaaf4c6457d6be14a922",
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_weighted_public_packet.v1",
+  "scope": "Offline exact-rational ledger and P3 compatibility check on immutable PR459 packet; zero model calls."
+}

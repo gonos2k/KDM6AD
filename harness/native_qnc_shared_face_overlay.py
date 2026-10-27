@@ -57,6 +57,7 @@ _HELPERS = """
     INTEGER,INTENT(IN) :: ids,ide,jds,jde,ims,ime,jms,jme,time_step
     REAL,INTENT(IN) :: dt
     INTEGER(C_INT32_T) :: dt_bits
+    qnc_shared_owner=.FALSE.
     IF (.NOT.qnc_trace_selected .OR. qnc_trace_rk.NE.3) RETURN
     CALL qnc_shared_init()
     IF (.NOT.qnc_shared_active) RETURN
@@ -91,7 +92,8 @@ _HELPERS = """
     INTEGER,INTENT(IN) :: i,k,j
     REAL,INTENT(IN) :: value
     INTEGER(C_INT32_T) :: bits
-    IF (.NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
+    IF (.NOT.qnc_trace_selected .OR. qnc_trace_rk.NE.3 .OR. &
+        .NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
     bits=TRANSFER(value,0_C_INT32_T)
     WRITE(qnc_shared_unit,'(A,1X,I0,1X,A,1X,I0,1X,I0,1X,I0,1X,A,1X,A,1X,Z8.8)') &
          'VAL',qnc_shared_call,TRIM(stage),i,k,j,TRIM(field),'f32',bits
@@ -115,7 +117,8 @@ _HELPERS = """
     INTEGER,PARAMETER :: ck(7)=(/6,6,6,6,6,5,7/)
     INTEGER,PARAMETER :: cj(7)=(/63,63,63,62,64,63,63/)
     INTEGER :: n,i,k,j
-    IF (.NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
+    IF (.NOT.qnc_trace_selected .OR. qnc_trace_rk.NE.3 .OR. &
+        .NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
     DO n=1,7
       i=ci(n)
       k=ck(n)
@@ -145,7 +148,8 @@ _HELPERS = """
     CHARACTER(LEN=*),INTENT(IN) :: stage
     INTEGER,INTENT(IN) :: i,k,j
     REAL,INTENT(IN) :: value
-    IF (.NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
+    IF (.NOT.qnc_trace_selected .OR. qnc_trace_rk.NE.3 .OR. &
+        .NOT.qnc_shared_active .OR. .NOT.qnc_shared_owner) RETURN
     IF (.NOT.((i.EQ.221 .AND. j.EQ.63 .AND. ABS(k-6).LE.1) .OR. &
          (k.EQ.6 .AND. j.EQ.63 .AND. ABS(i-221).LE.1) .OR. &
          (i.EQ.221 .AND. k.EQ.6 .AND. ABS(j-63).LE.1))) RETURN

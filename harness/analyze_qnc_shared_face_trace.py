@@ -170,9 +170,7 @@ def analyze_shared_trace(shared: dict, *, flux_path: Path, upstream_path: Path, 
     flux = read_qnc_flux_trace(flux_path).select_qnc_scalar_group()
     upstream = read_upstream_nc_trace(upstream_path)
     joined_target = {}
-    for field in (*POST_FIELDS[:-1],):
-        if field == "MSFTY":
-            continue  # the PR457 V2 target trace did not record this metric
+    for field in POST_FIELDS[:-1]:
         prior = flux.at(3, "RK3_PD_POST_LIMIT_FACES", field)
         joined_target[field] = bits("RK3_POST", TARGET, field) == prior.bits
     for stage in AXES:
