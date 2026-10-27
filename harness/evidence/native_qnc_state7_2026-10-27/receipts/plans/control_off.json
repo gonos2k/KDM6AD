@@ -1,0 +1,16 @@
+{
+  "RTTOV_calls": 0,
+  "build_receipt_sha256": "184ba4b4fb0483d60e920d55daa6ea4f0915fe7bc0b62104191e13b4eeccb8b4",
+  "dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+  "executable_sha256": "c623581aef8f7e0e560687cc658cc58d78038a8312118df8bf10e2f557e39a73",
+  "expected_reference_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "free_bytes_at_launch": 4925063168,
+  "host_steps_requested": 1,
+  "optimizer_calls": 0,
+  "origin_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "run_id": "control_state7_v1_off",
+  "schema": "kdm6.native_qnc_state7_single_run_plan.v1",
+  "source_case": "control",
+  "source_plan_sha256": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7",
+  "trace_mode": "off"
+}

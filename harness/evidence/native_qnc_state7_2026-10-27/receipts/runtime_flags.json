@@ -1,0 +1,51 @@
+{
+  "actual_model_endpoint_itimestep": 3,
+  "cases": {
+    "alpha025": {
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "raw_values": {
+        "BL_PBL_PHYSICS": "11",
+        "CU_PHYSICS": "37",
+        "H_SCA_ADV_ORDER": "11*5",
+        "MP_PHYSICS": "137",
+        "NO_MP_HEATING": "0",
+        "NPROC_X": "1",
+        "NPROC_Y": "1",
+        "NUMTILES": "2",
+        "RA_LW_PHYSICS": "4",
+        "RA_SW_PHYSICS": "4",
+        "RK_ORD": "3",
+        "SCALAR_ADV_OPT": "11*1",
+        "USE_Q_DIABATIC": "0",
+        "USE_THETA_M": "1",
+        "V_SCA_ADV_ORDER": "11*3",
+        "ZADVECT_IMPLICIT": "0"
+      }
+    },
+    "control": {
+      "namelist_output_sha256": "38f1b2069afc16984c69ba88ed41a43aaab6e7e7c86e46102757f666c1ae60b3",
+      "raw_values": {
+        "BL_PBL_PHYSICS": "11",
+        "CU_PHYSICS": "37",
+        "H_SCA_ADV_ORDER": "11*5",
+        "MP_PHYSICS": "137",
+        "NO_MP_HEATING": "0",
+        "NPROC_X": "1",
+        "NPROC_Y": "1",
+        "NUMTILES": "2",
+        "RA_LW_PHYSICS": "4",
+        "RA_SW_PHYSICS": "4",
+        "RK_ORD": "3",
+        "SCALAR_ADV_OPT": "11*1",
+        "USE_Q_DIABATIC": "0",
+        "USE_THETA_M": "1",
+        "V_SCA_ADV_ORDER": "11*3",
+        "ZADVECT_IMPLICIT": "0"
+      }
+    }
+  },
+  "forward_nonadiabatic_active": true,
+  "nominal_full_host_step_seconds": 20,
+  "qv_diabatic_explicit_rk_addition": false,
+  "schema": "kdm6.native_qnc_state7_runtime_readback.v1"
+}

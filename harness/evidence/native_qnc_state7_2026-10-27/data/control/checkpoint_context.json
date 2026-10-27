@@ -1,0 +1,59 @@
+{
+  "case": "control",
+  "cells": {
+    "i220_j63_k6": {
+      "final_nc_bits_hex": "4F1A5011",
+      "final_nc_raw_value": 2588938496.0,
+      "final_qc_bits_hex": "38B06889",
+      "final_qc_kgkg_dry": 8.411805174546316e-05
+    },
+    "i221_j62_k6": {
+      "final_nc_bits_hex": "4F177716",
+      "final_nc_raw_value": 2541164032.0,
+      "final_qc_bits_hex": "3853822D",
+      "final_qc_kgkg_dry": 5.042755583417602e-05
+    },
+    "i221_j63_k5": {
+      "final_nc_bits_hex": "4F7A2792",
+      "final_nc_raw_value": 4196897280.0,
+      "final_qc_bits_hex": "391517D1",
+      "final_qc_kgkg_dry": 0.0001421861961716786
+    },
+    "i221_j63_k6": {
+      "final_nc_bits_hex": "405C5296",
+      "final_nc_raw_value": 3.4425406455993652,
+      "final_qc_bits_hex": "3885DEAC",
+      "final_qc_kgkg_dry": 6.383410072885454e-05
+    },
+    "i221_j63_k7": {
+      "final_nc_bits_hex": "00000000",
+      "final_nc_raw_value": 0.0,
+      "final_qc_bits_hex": "00000000",
+      "final_qc_kgkg_dry": 0.0
+    },
+    "i221_j64_k6": {
+      "final_nc_bits_hex": "4F70E5EF",
+      "final_nc_raw_value": 4041600768.0,
+      "final_qc_bits_hex": "3969C19C",
+      "final_qc_kgkg_dry": 0.00022292736684903502
+    },
+    "i222_j63_k6": {
+      "final_nc_bits_hex": "4F57F90F",
+      "final_nc_raw_value": 3623423744.0,
+      "final_qc_bits_hex": "39539CB1",
+      "final_qc_kgkg_dry": 0.00020180900173727423
+    }
+  },
+  "coordinate_i_j_k": "one_based",
+  "horizontal_shape_i_j": [
+    234,
+    282
+  ],
+  "mass_levels": 39,
+  "raw_nc_physical_units_certified": false,
+  "schema": "kdm6.native_qnc_state7_checkpoint_context.v1",
+  "source_checkpoint_itimestep": 3,
+  "source_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "source_checkpoint_time": "2025-07-19_00:01:00",
+  "source_variable_dtype": "float32"
+}
