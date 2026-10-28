@@ -1,0 +1,42 @@
+{
+  "base_main_commit": "f3d84bfa0697b943e89a57495897ddb757b65d30",
+  "external_source_pins": {
+    "harness/analyze_qnc_face_residual_probe.py": "e62dd48ae1fab89edd961bcec2a383ee7aee5c07bca3284c5baca780f2db6c97",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_representative_trace_overlay.py": "862529b7f5161049f09e006b7716510e2e8ad1d4e64720df0a07ec4d9d128e05",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c"
+  },
+  "files": [
+    {
+      "bytes": 4392,
+      "path": "README.md",
+      "sha256": "e159ec6e0b778847560782110c255bea361bf00afe57d3b82e2673c72860867d"
+    },
+    {
+      "bytes": 9260,
+      "path": "analysis.json",
+      "sha256": "94d65d693a3f939d23f00e66623823519ce38355d547037d147850c4578d6a43"
+    }
+  ],
+  "normalized_replay_sha256": "636cd0d75a7daec55ee17bc5330a8029f88fa5df123811759ffd4992e8d7ceeb",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "parent_input_pins": {
+    "alpha025_producer": "43d2cf010b8b8ce606c97da82f2538178da863ed5129014c11a400c12db3b6ae",
+    "alpha025_state": "af57665b1c25844fdca308f9b3abf9b7ba1cc4d2e7111ae8ea5f1785ead60e9a",
+    "control_producer": "8bc210ac68a3fdd2c38b09d0e82da1b0b0cc73c90918b7e1dff26f05c2570394",
+    "control_state": "b528f712fc496106047b3e2cd3dbb25551cc3cd415dc22be8badb733a3a37c3e"
+  },
+  "parent_manifest_pins": {
+    "pr468": "233651bee30976de97ca6ae8c069225dc03f2c10f222a2250e2e1789330d6dad",
+    "pr469": "6a13f766cb802ae7bdd26b5f6ee1b32d0e40168f7d43c1116e98e84bdfdfd4e2"
+  },
+  "schema": "kdm6.native_qnc_saved_face_probe_public_packet.v1"
+}
