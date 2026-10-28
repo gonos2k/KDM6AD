@@ -18,7 +18,9 @@ scale passing this seven-cell predicate: the target exact residual becomes
 +218.030351 and its compatible binary32 NC is +0.001692894381. Six receiver
 residuals and binary32 values remain positive. The exact numerical weighted
 internal-face change cancels, while the weighted rounded RK-state change is
-+33.4951201411. The weight is not a certified physical number inventory.
++33.4951201411. Five receiver NC words remain unchanged; the south receiver
+`(113,69,12)` decreases one binary32 ULP (`453A568C → 453A568B`). The weight
+is not a certified physical number inventory.
 
 The probe freezes the recorded inputs and does not run a changed host
 executable. It cannot certify tile/halo behavior, whole-domain moment

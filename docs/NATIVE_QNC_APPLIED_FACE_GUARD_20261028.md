@@ -53,9 +53,12 @@ At two ULP, all six receiver residuals and all seven compatible f32 values
 remain positive. Six distinct correction-face words change. The exact weighted
 change from the six internal faces is zero, while the weighted rounded RK-state
 change is **+33.4951201411** in the recorded numerical coordinate. This
-separation is expected: small receiver changes do not appear in their saved
-binary32 NC words. These are frozen-input predictions; the two-ULP proposal
-has not been applied to an executable or run through KDM/RTTOV.
+separation is expected: five receivers retain their original binary32 NC
+words, while the south receiver `(113,69,12)` decreases by one ULP
+(`453A568C → 453A568B`). Exact internal-face cancellation therefore does
+not imply zero weighted change in the rounded RK states. These are
+frozen-input predictions; the two-ULP proposal has not been applied to an
+executable or run through KDM/RTTOV.
 
 ## Next execution gate
 
