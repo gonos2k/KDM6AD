@@ -1,0 +1,57 @@
+{
+  "external_source_pins": {
+    "harness/analyze_qnc_domain_preflight.py": "df0d32c9ea6c79555192b8a3bf4891a08d1fb39992430f504de09544ad5ccd76",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_domain_preflight_advect_overlay.py": "058a57892bce18cefb86ffd479fb97914b0081db7dc98ba15efc355417287969",
+    "harness/native_qnc_domain_preflight_solve_overlay.py": "c51635515782ea18e1f5804c688fa06a869ecb864dc88585360468d36adf24ea",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c",
+    "harness/native_qnc_star_qi_records.py": "eae1604689bbe7f9417b9badf3f21dad8fc6bbe2c6bc496f74c6c89cc2bcbf67"
+  },
+  "failure_rows_sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e",
+  "files": [
+    {
+      "bytes": 125929,
+      "path": "analysis.json",
+      "sha256": "1ed1c5baf971117b1d707bd3384930d42eb2cac8d7092cf6ceca4eca1d38b1d4"
+    },
+    {
+      "bytes": 6898,
+      "path": "execution_summary.json",
+      "sha256": "d45212d72abb181e323e88a41441356998d2ab30583fa8badd0be4e841bc17be"
+    },
+    {
+      "bytes": 17319,
+      "path": "data/control/advect.tsv",
+      "sha256": "bb688ce0209af32721d06641d434ba4e5e8ded7e2f1ded9a2c87904ef725ff70"
+    },
+    {
+      "bytes": 470504,
+      "path": "data/control/rk_writer.tsv",
+      "sha256": "dff4b08e383503fbd5889cef8e5854d04463ecdbbfb6f9ab0adf136eca404e6d"
+    },
+    {
+      "bytes": 17319,
+      "path": "data/alpha025/advect.tsv",
+      "sha256": "0838fc4e5ede0bf376fc8adf28c64c329abe85812f140b804d99313927d83927"
+    },
+    {
+      "bytes": 470504,
+      "path": "data/alpha025/rk_writer.tsv",
+      "sha256": "b7205234ebf079811fc6d718d915725825a3e264b439c1e90e4e6448656bd43b"
+    }
+  ],
+  "normalized_replay_sha256": "7ab2fb35979c381621fbac9a08d1637ea22d8fc223a1d14c5ee5c1bc66c439e8",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "parent_manifest_sha256": {
+    "pr466": "802988fae908ac96e1fb60ba86d24de6e64de4128a6b6f455f16e13a65538a77",
+    "pr471": "2e1584cdf1ee3d48247ef2d923d4071de40f395644920e4157456f36a5e03a64"
+  },
+  "schema": "kdm6.native_qnc_domain_preflight_packet.v1"
+}

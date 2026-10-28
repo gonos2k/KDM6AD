@@ -1,0 +1,3623 @@
+{
+  "alpha025": {
+    "active_outgoing_limiter_count": 54,
+    "advect_trace_sha256": "0838fc4e5ede0bf376fc8adf28c64c329abe85812f140b804d99313927d83927",
+    "category_counts": {
+      "applied_correction_exceeds_available": 48,
+      "exact_positive_but_stored_nonpositive": 6
+    },
+    "cells": {
+      "i107_j131_k8": {
+        "applied_face_residual_exact": {
+          "approximately": -2836.044464979539,
+          "exact": "-837052582834209359724351/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 56401366019.904884,
+          "exact": "16646745030028859541532418118249/295147905179352825856"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          107,
+          8,
+          131
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95258.68909640936,
+          "exact": "204566477164455/2147483648"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51521C89",
+        "rk3_input_qnc_hex": "45EC92CA",
+        "rk3_qc_hex": "39205442",
+        "rk3_qnc_hex": "BC9A25C4",
+        "rk3_qnc_value": -0.018816836178302765,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F02A382",
+        "source_tendency_hex": "00000000"
+      },
+      "i108_j98_k8": {
+        "applied_face_residual_exact": {
+          "approximately": -4531.051629929832,
+          "exact": "-43821642443432996193676893265/9671406556917033397649408"
+        },
+        "available_exact": {
+          "approximately": 34092204492.24131,
+          "exact": "329719570066018931383658405314978735/9671406556917033397649408"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          108,
+          8,
+          98
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94935.2213007749,
+          "exact": "1630974682901403/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50FE01B9",
+        "rk3_input_qnc_hex": "C8B0977C",
+        "rk3_qc_hex": "38297E15",
+        "rk3_qnc_hex": "BCE7D377",
+        "rk3_qnc_value": -0.028299076482653618,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E938F49",
+        "source_tendency_hex": "00000000"
+      },
+      "i112_j242_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -3499.422641881595,
+          "exact": "-264408899094668644245519705/75557863725914323419136"
+        },
+        "available_exact": {
+          "approximately": 80724251704.99275,
+          "exact": "6099352009702249732922269250687655/75557863725914323419136"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          112,
+          11,
+          242
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 88806.57119664678,
+          "exact": "762842637918987/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51965C53",
+        "rk3_input_qnc_hex": "CB4C4C25",
+        "rk3_qc_hex": "3959ABFB",
+        "rk3_qnc_hex": "BCF1C216",
+        "rk3_qnc_value": -0.02951149269938469,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D03F946",
+        "source_tendency_hex": "00000000"
+      },
+      "i113_j70_k12": {
+        "applied_face_residual_exact": {
+          "approximately": -409.7812004469612,
+          "exact": "-15481096050406537080383457/37778931862957161709568"
+        },
+        "available_exact": {
+          "approximately": 4237098504.1700563,
+          "exact": "160073055685678265540047439163423/37778931862957161709568"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          113,
+          12,
+          70
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95256.94478509293,
+          "exact": "52368059208813039/549755813888"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F7C8CFE",
+        "rk3_input_qnc_hex": "C9D04BEF",
+        "rk3_qc_hex": "398F006F",
+        "rk3_qnc_hex": "BBD0B752",
+        "rk3_qnc_value": -0.006369509734213352,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3C54898F",
+        "source_tendency_hex": "00000000"
+      },
+      "i120_j94_k13": {
+        "applied_face_residual_exact": {
+          "approximately": -2457.4802749531686,
+          "exact": "-23210244965504248595856967/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 11620033278.120396,
+          "exact": "109748111364851300265139423479833/9444732965739290427392"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          120,
+          13,
+          94
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95455.90684182479,
+          "exact": "13119359939061125/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "502D26EA",
+        "rk3_input_qnc_hex": "C9343563",
+        "rk3_qc_hex": "393A1E8F",
+        "rk3_qnc_hex": "BCAEE978",
+        "rk3_qnc_value": -0.021351560950279236,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D9CAFBB",
+        "source_tendency_hex": "00000000"
+      },
+      "i133_j152_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -2.9678520422275163,
+          "exact": "-448489120330606398150657/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 100068764.33259808,
+          "exact": "15121964117326161546155223811743/151115727451828646838272"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          133,
+          11,
+          152
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 90608.27072031685,
+          "exact": "1556638237963501/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CBEDDB4",
+        "rk3_input_qnc_hex": "C78A8CF9",
+        "rk3_qc_hex": "3894D6A6",
+        "rk3_qnc_hex": "B7AF3682",
+        "rk3_qnc_value": -2.0887007849523798e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3BA7CD89",
+        "source_tendency_hex": "00000000"
+      },
+      "i134_j96_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 64.72404177586334,
+          "exact": "9780820656582135942659573/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 1229283964.0490434,
+          "exact": "185764140472138754900082412582773/151115727451828646838272"
+        },
+        "call_id": 1,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          134,
+          15,
+          96
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95295.12023608148,
+          "exact": "1637157699529431/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4E928AC5",
+        "rk3_input_qnc_hex": "C87C9724",
+        "rk3_qc_hex": "3842B166",
+        "rk3_qnc_hex": "B9894A92",
+        "rk3_qnc_value": -0.00026186235481873155,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3C8EAE71",
+        "source_tendency_hex": "00000000"
+      },
+      "i137_j100_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 3260.8944125663456,
+          "exact": "15038221170000206268005/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 161504319267.10748,
+          "exact": "744807211079752549137777544805/4611686018427387904"
+        },
+        "call_id": 1,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          137,
+          15,
+          100
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 93352.23324183398,
+          "exact": "12830233241031713/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "521669A1",
+        "rk3_input_qnc_hex": "CB53DCEB",
+        "rk3_qc_hex": "397EFF87",
+        "rk3_qnc_hex": "BCA58ECD",
+        "rk3_qnc_value": -0.020209694281220436,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D6ABE03",
+        "source_tendency_hex": "00000000"
+      },
+      "i150_j268_k9": {
+        "applied_face_residual_exact": {
+          "approximately": -183235.24255974093,
+          "exact": "-54081497996538132123316125/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 1923051536553.032,
+          "exact": "567584632565563003883445694264635/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          150,
+          9,
+          268
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 87083.68173122453,
+          "exact": "11968690081628225/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53DFDF67",
+        "rk3_input_qnc_hex": "CAF2E8C1",
+        "rk3_qc_hex": "3920F522",
+        "rk3_qnc_hex": "C047D229",
+        "rk3_qnc_value": -3.122202157974243,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F12BCAA",
+        "source_tendency_hex": "00000000"
+      },
+      "i152_j268_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -0.0053247449506644545,
+          "exact": "-102995546459534137374875/19342813113834066795298816"
+        },
+        "available_exact": {
+          "approximately": 75586.22793071659,
+          "exact": "182756285105439467891841109375/2417851639229258349412352"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          152,
+          11,
+          268
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 85945.52444596152,
+          "exact": "1476532866931893/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4793A11E",
+        "rk3_input_qnc_hex": "C5C97CE7",
+        "rk3_qc_hex": "360D3FD3",
+        "rk3_qnc_hex": "B3B1175E",
+        "rk3_qnc_value": -8.246455251992302e-08,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3894C11F",
+        "source_tendency_hex": "00000000"
+      },
+      "i153_j111_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -34985.26766314517,
+          "exact": "-20167633716633297745615/576460752303423488"
+        },
+        "available_exact": {
+          "approximately": 721574970864.2346,
+          "exact": "415959650547717542027177967185/576460752303423488"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          153,
+          4,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 91707.38081650838,
+          "exact": "1575520805634885/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53280138",
+        "rk3_input_qnc_hex": "CA942951",
+        "rk3_qc_hex": "37447791",
+        "rk3_qnc_hex": "BE9C98AA",
+        "rk3_qnc_value": -0.3058522343635559,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EE29902",
+        "source_tendency_hex": "00000000"
+      },
+      "i155_j115_k13": {
+        "applied_face_residual_exact": {
+          "approximately": -9990.521148808657,
+          "exact": "-46073146698764010490891/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 761453091985.975,
+          "exact": "109736955562500768214898465337/144115188075855872"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          155,
+          13,
+          115
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 87805.77673369058,
+          "exact": "1508491757884315/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53314A25",
+        "rk3_input_qnc_hex": "CB95EC22",
+        "rk3_qc_hex": "39D51C5D",
+        "rk3_qnc_hex": "BE0D43B6",
+        "rk3_qnc_value": -0.13795360922813416,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E39BF88",
+        "source_tendency_hex": "00000000"
+      },
+      "i155_j120_k15": {
+        "applied_face_residual_exact": {
+          "approximately": -436.15663891229485,
+          "exact": "-2059691492880499708994621/4722366482869645213696"
+        },
+        "available_exact": {
+          "approximately": 12257106145.917881,
+          "exact": "57882547240458135734176076413379/4722366482869645213696"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          155,
+          15,
+          120
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 91579.53251398458,
+          "exact": "6293297554088519/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5036A526",
+        "rk3_input_qnc_hex": "C90FEAD8",
+        "rk3_qc_hex": "361C8E30",
+        "rk3_qnc_hex": "BB697500",
+        "rk3_qnc_value": -0.0035622715950012207,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D95C806",
+        "source_tendency_hex": "00000000"
+      },
+      "i176_j155_k14": {
+        "applied_face_residual_exact": {
+          "approximately": -6024.144978492734,
+          "exact": "-113792881337526253131554241/18889465931478580854784"
+        },
+        "available_exact": {
+          "approximately": 100764583957.3746,
+          "exact": "1903389175762440860932823728144959/18889465931478580854784"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          176,
+          14,
+          155
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95334.46004360457,
+          "exact": "3275667104552803/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51BBB04C",
+        "rk3_input_qnc_hex": "C9F31EB2",
+        "rk3_qc_hex": "38D4F64C",
+        "rk3_qnc_hex": "BCE21076",
+        "rk3_qnc_value": -0.02759573981165886,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E4A7CEB",
+        "source_tendency_hex": "00000000"
+      },
+      "i180_j121_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -3179.507666922579,
+          "exact": "-240236807012836038528748949/75557863725914323419136"
+        },
+        "available_exact": {
+          "approximately": 26713025140.13008,
+          "exact": "2018379113244872010614522399972971/75557863725914323419136"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          180,
+          4,
+          121
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95515.24415376573,
+          "exact": "410234849909879/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50C7070E",
+        "rk3_input_qnc_hex": "C8B88B16",
+        "rk3_qc_hex": "382BD89B",
+        "rk3_qnc_hex": "BD80AB98",
+        "rk3_qnc_value": -0.06282728910446167,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E6E1460",
+        "source_tendency_hex": "00000000"
+      },
+      "i189_j228_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -928.53651563952,
+          "exact": "-8769779439153270417520919/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 35295102286.08509,
+          "exact": "333352816090528030823400817227241/9444732965739290427392"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          189,
+          4,
+          228
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95365.79768923085,
+          "exact": "3276743857857591/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51037C08",
+        "rk3_input_qnc_hex": "C8BFFBF0",
+        "rk3_qc_hex": "38832217",
+        "rk3_qnc_hex": "BB3FACC0",
+        "rk3_qnc_value": -0.0029247254133224487,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EA42B5C",
+        "source_tendency_hex": "00000000"
+      },
+      "i190_j111_k14": {
+        "applied_face_residual_exact": {
+          "approximately": -939.0995182022782,
+          "exact": "-4330832118005342699969/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 13292432243.800581,
+          "exact": "15325130982407132301768775789/1152921504606846976"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          190,
+          14,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95937.78025689386,
+          "exact": "3296397029233549/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5046129B",
+        "rk3_input_qnc_hex": "C881FB77",
+        "rk3_qc_hex": "3A1664E7",
+        "rk3_qnc_hex": "BC0A19A6",
+        "rk3_qnc_value": -0.008428966626524925,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E549F65",
+        "source_tendency_hex": "00000000"
+      },
+      "i191_j124_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -3612.655944112649,
+          "exact": "-4579585475972480355010113165959905/1267650600228229401496703205376"
+        },
+        "available_exact": {
+          "approximately": 55444153065.19713,
+          "exact": "70283813912242960064573293770474603568415/1267650600228229401496703205376"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          191,
+          4,
+          124
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95593.00139893801,
+          "exact": "410568814734921/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "514E8BAA",
+        "rk3_input_qnc_hex": "C8C1039D",
+        "rk3_qc_hex": "37CBF58D",
+        "rk3_qnc_hex": "BD23738A",
+        "rk3_qnc_value": -0.039905108511447906,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3ED96AFD",
+        "source_tendency_hex": "00000000"
+      },
+      "i192_j128_k10": {
+        "applied_face_residual_exact": {
+          "approximately": -9.423662603991499,
+          "exact": "-5696254518651076905414925/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 115267748.20240255,
+          "exact": "69675078485361098285294008504375/604462909807314587353088"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          192,
+          10,
+          128
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95757.74683351551,
+          "exact": "26321689023270187/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CDBDB15",
+        "rk3_input_qnc_hex": "C80EE497",
+        "rk3_qc_hex": "39674DA5",
+        "rk3_qnc_hex": "B888CC99",
+        "rk3_qnc_value": -6.523094634758309e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B866F34",
+        "source_tendency_hex": "00000000"
+      },
+      "i192_j136_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -307.92613334799887,
+          "exact": "-181767506415279860997975/590295810358705651712"
+        },
+        "available_exact": {
+          "approximately": 22176783322.845097,
+          "exact": "13090862282708275349483392332675/590295810358705651712"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          192,
+          4,
+          136
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95528.49503168749,
+          "exact": "1641167047988785/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50A53ADB",
+        "rk3_input_qnc_hex": "C9277FED",
+        "rk3_qc_hex": "38665724",
+        "rk3_qnc_hex": "BBADD24D",
+        "rk3_qnc_value": -0.005304610822349787,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E126345",
+        "source_tendency_hex": "00000000"
+      },
+      "i193_j153_k17": {
+        "applied_face_residual_exact": {
+          "approximately": -2642.2556477567,
+          "exact": "-48741013711481498290167/18446744073709551616"
+        },
+        "available_exact": {
+          "approximately": 34441802375.09941,
+          "exact": "635339113850740554108524475833/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          193,
+          17,
+          153
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95469.79252318345,
+          "exact": "13121268372575303/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51004E43",
+        "rk3_input_qnc_hex": "C92C0EA9",
+        "rk3_qc_hex": "3993EED3",
+        "rk3_qnc_hex": "BC9FD41B",
+        "rk3_qnc_value": -0.019510319456458092,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E539E7B",
+        "source_tendency_hex": "00000000"
+      },
+      "i195_j131_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -6059.474407542728,
+          "exact": "-28615058845986179911660939/4722366482869645213696"
+        },
+        "available_exact": {
+          "approximately": 36896676402.9483,
+          "exact": "174239627974570423581319808584821/4722366482869645213696"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          195,
+          11,
+          131
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95785.92811250268,
+          "exact": "205698714330103/2147483648"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5109736A",
+        "rk3_input_qnc_hex": "C9BEA2D3",
+        "rk3_qc_hex": "36D40B3C",
+        "rk3_qnc_hex": "BDA1432E",
+        "rk3_qnc_value": -0.0787414163351059,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DDB6D0E",
+        "source_tendency_hex": "00000000"
+      },
+      "i196_j167_k9": {
+        "applied_face_residual_exact": {
+          "approximately": 91.76155355287389,
+          "exact": "3466653479313117262609777/37778931862957161709568"
+        },
+        "available_exact": {
+          "approximately": 30798064324.768684,
+          "exact": "1163517973636407953236838759583997/37778931862957161709568"
+        },
+        "call_id": 2,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          196,
+          9,
+          167
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95587.2832032911,
+          "exact": "3284354042173003/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50E576A5",
+        "rk3_input_qnc_hex": "C99B5C89",
+        "rk3_qc_hex": "388B5D63",
+        "rk3_qnc_hex": "BA8C8477",
+        "rk3_qnc_value": -0.0010720629943534732,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DD45720",
+        "source_tendency_hex": "00000000"
+      },
+      "i196_j229_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -5602.4695916976125,
+          "exact": "-6614228655282297601351677/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 98162685956.34508,
+          "exact": "115890044507175707899374497658483/1180591620717411303424"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          196,
+          4,
+          229
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95368.83261249244,
+          "exact": "1638424068513413/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51B6D79F",
+        "rk3_input_qnc_hex": "C811E4B6",
+        "rk3_qc_hex": "38152253",
+        "rk3_qnc_hex": "BCE290D1",
+        "rk3_qnc_value": -0.02765694446861744,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F356702",
+        "source_tendency_hex": "00000000"
+      },
+      "i198_j232_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -83.7078181613022,
+          "exact": "-202393085357609216075762735/2417851639229258349412352"
+        },
+        "available_exact": {
+          "approximately": 6266523067.492789,
+          "exact": "15151523071005400487509865188580305/2417851639229258349412352"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          198,
+          4,
+          232
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95373.65207544126,
+          "exact": "1638506866256411/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FBAC1C7",
+        "rk3_input_qnc_hex": "C889B6D8",
+        "rk3_qc_hex": "3827F9AC",
+        "rk3_qnc_hex": "BB6F0CBB",
+        "rk3_qnc_value": -0.003647609381005168,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DD86C65",
+        "source_tendency_hex": "00000000"
+      },
+      "i201_j250_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 12649.165566198886,
+          "exact": "3733374719130403566582665/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 1207234497059.428,
+          "exact": "356312732867339737603993646658065/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          201,
+          5,
+          250
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94630.06628700871,
+          "exact": "6502928638736233/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "538C8A64",
+        "rk3_input_qnc_hex": "C9F2B236",
+        "rk3_qc_hex": "38F4EE7A",
+        "rk3_qnc_hex": "BE9F9692",
+        "rk3_qnc_value": -0.3116956353187561,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F4426CB",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j111_k18": {
+        "applied_face_residual_exact": {
+          "approximately": -11.970406926189137,
+          "exact": "-1808916750545479536032325/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 107555303.3641644,
+          "exact": "1015831119323613536248823422575/9444732965739290427392"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          202,
+          18,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95819.12318432557,
+          "exact": "6584640006529179/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CCD253E",
+        "rk3_input_qnc_hex": "C850339A",
+        "rk3_qc_hex": "394993FE",
+        "rk3_qnc_hex": "B90564CF",
+        "rk3_qnc_value": -0.0001272142253583297,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B36682B",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j207_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -229.35555166924217,
+          "exact": "-4332403879451625605953665/18889465931478580854784"
+        },
+        "available_exact": {
+          "approximately": 10723002949.530546,
+          "exact": "202551798898301602445342528695195/18889465931478580854784"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          202,
+          4,
+          207
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95343.07343292626,
+          "exact": "1637981529178179/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "501FC902",
+        "rk3_input_qnc_hex": "C936B691",
+        "rk3_qc_hex": "37E4A643",
+        "rk3_qnc_hex": "BAC58193",
+        "rk3_qnc_value": -0.0015068523352965713,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D8F86DE",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j252_k5": {
+        "applied_face_residual_exact": {
+          "approximately": -63921.009895549505,
+          "exact": "-9433076083810059544820115/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 410738822169.68524,
+          "exact": "60614351469608659156394468898285/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          202,
+          5,
+          252
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94414.78270935956,
+          "exact": "6488134463930329/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "52BF43E3",
+        "rk3_input_qnc_hex": "CAADC0CB",
+        "rk3_qc_hex": "390474A6",
+        "rk3_qnc_hex": "BEC59B38",
+        "rk3_qnc_value": -0.38594985008239746,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E8C2A3B",
+        "source_tendency_hex": "00000000"
+      },
+      "i205_j197_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -235.94441784091683,
+          "exact": "-2228432021264272640081755/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 28265533551.163776,
+          "exact": "266960416524886464364250816214245/9444732965739290427392"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          205,
+          4,
+          197
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95358.6368917991,
+          "exact": "1638248907365665/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50D2983A",
+        "rk3_input_qnc_hex": "C8E71789",
+        "rk3_qc_hex": "37E76647",
+        "rk3_qnc_hex": "BC83381B",
+        "rk3_qnc_value": -0.016017964109778404,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E77C2C3",
+        "source_tendency_hex": "00000000"
+      },
+      "i208_j113_k18": {
+        "applied_face_residual_exact": {
+          "approximately": -30.60220774575884,
+          "exact": "-606139172144065041934530731983/19807040628566084398385987584"
+        },
+        "available_exact": {
+          "approximately": 361062326.5063103,
+          "exact": "7151576170555081005305415023458951217/19807040628566084398385987584"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          208,
+          18,
+          113
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95786.06317128002,
+          "exact": "1645592034932951/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4DAC2AFE",
+        "rk3_input_qnc_hex": "C69FE998",
+        "rk3_qc_hex": "3906411A",
+        "rk3_qnc_hex": "BA13CB2D",
+        "rk3_qnc_value": -0.0005637880531139672,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D8E6CEC",
+        "source_tendency_hex": "00000000"
+      },
+      "i208_j193_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -2024.0684503947841,
+          "exact": "-4779196504589114872797695/2361183241434822606848"
+        },
+        "available_exact": {
+          "approximately": 40541816123.91029,
+          "exact": "95726656809109061765283330604465/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          208,
+          4,
+          193
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95285.27077813995,
+          "exact": "6547953948521849/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "511707B0",
+        "rk3_input_qnc_hex": "C81DACEC",
+        "rk3_qc_hex": "3818173C",
+        "rk3_qnc_hex": "BA7785AD",
+        "rk3_qnc_value": -0.0009442221489734948,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EF90504",
+        "source_tendency_hex": "00000000"
+      },
+      "i209_j190_k7": {
+        "applied_face_residual_exact": {
+          "approximately": -188.09473495014586,
+          "exact": "-29804800457415265811527546438689/158456325028528675187087900672"
+        },
+        "available_exact": {
+          "approximately": 4315624354.650074,
+          "exact": "683837975441466387755682019518311824351/158456325028528675187087900672"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          209,
+          7,
+          190
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95411.94015064128,
+          "exact": "26226634406074473/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F809D9A",
+        "rk3_input_qnc_hex": "C886B933",
+        "rk3_qc_hex": "38CFA366",
+        "rk3_qnc_hex": "BB1D137B",
+        "rk3_qnc_value": -0.002396791009232402,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D9B1F8F",
+        "source_tendency_hex": "00000000"
+      },
+      "i209_j198_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -3375.304168813027,
+          "exact": "-1992427909536603242350211/590295810358705651712"
+        },
+        "available_exact": {
+          "approximately": 28068355109.687252,
+          "exact": "16568632424908752611441352132989/590295810358705651712"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          209,
+          4,
+          198
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95337.60960916904,
+          "exact": "3275775322801571/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50D12024",
+        "rk3_input_qnc_hex": "C990DDB1",
+        "rk3_qc_hex": "36CEE390",
+        "rk3_qnc_hex": "BD1EE6A6",
+        "rk3_qnc_value": -0.03879418224096298,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DE4DB13",
+        "source_tendency_hex": "00000000"
+      },
+      "i210_j199_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -1336.0875500096902,
+          "exact": "-3154747532172590669054985/2361183241434822606848"
+        },
+        "available_exact": {
+          "approximately": 21958563473.536324,
+          "exact": "51848192079696792262875611385105/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          210,
+          4,
+          199
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95350.38318533296,
+          "exact": "3276214219536587/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50A39AA3",
+        "rk3_input_qnc_hex": "C9536833",
+        "rk3_qc_hex": "37106C9B",
+        "rk3_qnc_hex": "BCA2C2FC",
+        "rk3_qnc_value": -0.019868366420269012,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DEA80C4",
+        "source_tendency_hex": "00000000"
+      },
+      "i210_j217_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -4.703512489706242,
+          "exact": "-710774711460720459694315/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 3790572252.6949797,
+          "exact": "9165041334795499344014718337395815/2417851639229258349412352"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          210,
+          4,
+          217
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95388.92040696405,
+          "exact": "3277538348389261/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F61EF8A",
+        "rk3_input_qnc_hex": "C7807DD3",
+        "rk3_qc_hex": "37E7CC04",
+        "rk3_qnc_hex": "BB0944D8",
+        "rk3_qnc_value": -0.002094557508826256,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E75CEB9",
+        "source_tendency_hex": "00000000"
+      },
+      "i212_j155_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -108.07749984002213,
+          "exact": "-8768288482775706692936879011781329/81129638414606681695789005144064"
+        },
+        "available_exact": {
+          "approximately": 1386691054.4568305,
+          "exact": "112501743840852315372050168351646844986671/81129638414606681695789005144064"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          212,
+          11,
+          155
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95983.72596628126,
+          "exact": "103061740993351/1073741824"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4EA54E74",
+        "rk3_input_qnc_hex": "C87120B1",
+        "rk3_qc_hex": "390AF320",
+        "rk3_qnc_hex": "BADFEBCF",
+        "rk3_qnc_value": -0.0017083826242014766,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CEA41A9",
+        "source_tendency_hex": "00000000"
+      },
+      "i212_j203_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -1911.6541464707525,
+          "exact": "-282110358379133161469805/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 19731568399.03716,
+          "exact": "2911865539439467098345860586475/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          212,
+          4,
+          203
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95369.30946766018,
+          "exact": "3276864521645629/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "509302FB",
+        "rk3_input_qnc_hex": "C854ED37",
+        "rk3_qc_hex": "3810036E",
+        "rk3_qnc_hex": "BC9E693E",
+        "rk3_qnc_value": -0.01933729276061058,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E8C67AB",
+        "source_tendency_hex": "00000000"
+      },
+      "i214_j181_k15": {
+        "applied_face_residual_exact": {
+          "approximately": -12.764190718800597,
+          "exact": "-1928869965805431896512375/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 131716429.19032803,
+          "exact": "38875828153229878853499552425/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          214,
+          15,
+          181
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95705.43819681663,
+          "exact": "13153655267349653/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CFB3AAA",
+        "rk3_input_qnc_hex": "C8B03243",
+        "rk3_qc_hex": "3761285B",
+        "rk3_qnc_hex": "B9016957",
+        "rk3_qnc_value": -0.00012341640831436962,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B031329",
+        "source_tendency_hex": "00000000"
+      },
+      "i222_j184_k8": {
+        "applied_face_residual_exact": {
+          "approximately": -78.68943024883819,
+          "exact": "-5806255124425348032435/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 3967096061.23655,
+          "exact": "292720023029807310749344483765/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          222,
+          8,
+          184
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95620.2098982688,
+          "exact": "51335709293715/536870912"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F6C7515",
+        "rk3_input_qnc_hex": "C962EF38",
+        "rk3_qc_hex": "38C069A3",
+        "rk3_qnc_hex": "BA5ACBD7",
+        "rk3_qnc_value": -0.0008346414542756975,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CB64364",
+        "source_tendency_hex": "00000000"
+      },
+      "i222_j193_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -567.0267830751673,
+          "exact": "-342746659236296526940682447/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 7813062714.82735,
+          "exact": "4722706623111576685148027992220913/604462909807314587353088"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          222,
+          4,
+          193
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95409.02884763954,
+          "exact": "3278229269149859/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FE8D8F0",
+        "rk3_input_qnc_hex": "C851C103",
+        "rk3_qc_hex": "3893E1B7",
+        "rk3_qnc_hex": "BBFDA114",
+        "rk3_qnc_value": -0.007740149274468422,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E240313",
+        "source_tendency_hex": "00000000"
+      },
+      "i223_j194_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -7420.533403456988,
+          "exact": "-2190154889343743351589875/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 40387965015.68882,
+          "exact": "95363386150700346890579947883625/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          223,
+          4,
+          194
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95432.22064942593,
+          "exact": "1639513066695761/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "511674F8",
+        "rk3_input_qnc_hex": "C78C45EF",
+        "rk3_qc_hex": "389F3932",
+        "rk3_qnc_hex": "BD9DFA53",
+        "rk3_qnc_value": -0.07713761180639267,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F0145F6",
+        "source_tendency_hex": "00000000"
+      },
+      "i225_j205_k19": {
+        "applied_face_residual_exact": {
+          "approximately": -29.367247183868486,
+          "exact": "-34670725948812128116225/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 7676634752.386991,
+          "exact": "141608916624627503672165504225/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          225,
+          19,
+          205
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95381.12954262414,
+          "exact": "13109082625315525/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FE4C814",
+        "rk3_input_qnc_hex": "C93C2224",
+        "rk3_qc_hex": "38EDFFC0",
+        "rk3_qnc_hex": "BBC1A70D",
+        "rk3_qnc_value": -0.0059098065830767155,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D51C04B",
+        "source_tendency_hex": "00000000"
+      },
+      "i226_j188_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -389.0388058493453,
+          "exact": "-3674367634557159040177815/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 3380480981.42481,
+          "exact": "31927740165317613192381713861085/9444732965739290427392"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          226,
+          11,
+          188
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95686.81688104902,
+          "exact": "1643886996649785/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F497E0C",
+        "rk3_input_qnc_hex": "C8969445",
+        "rk3_qc_hex": "39C6FF58",
+        "rk3_qnc_hex": "BACA5BEA",
+        "rk3_qnc_value": -0.0015438769478350878,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D5FCA46",
+        "source_tendency_hex": "00000000"
+      },
+      "i226_j188_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -704.9322261306615,
+          "exact": "-832237079343530423457581/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 6881576509.219274,
+          "exact": "507770722756877982102737062249/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          226,
+          4,
+          188
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95481.32340270639,
+          "exact": "3280713291147387/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FCD1644",
+        "rk3_input_qnc_hex": "C93C8250",
+        "rk3_qc_hex": "38840098",
+        "rk3_qnc_hex": "BBE69F0C",
+        "rk3_qnc_value": -0.007038002833724022,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D35CA06",
+        "source_tendency_hex": "00000000"
+      },
+      "i227_j148_k12": {
+        "applied_face_residual_exact": {
+          "approximately": -489.6340096796615,
+          "exact": "-18064306532689883256207/36893488147419103232"
+        },
+        "available_exact": {
+          "approximately": 80794186960.61201,
+          "exact": "2980779379011702207595832793453/36893488147419103232"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          227,
+          12,
+          148
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95923.08888738029,
+          "exact": "13183568950483181/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51967DAC",
+        "rk3_input_qnc_hex": "C99AFEE9",
+        "rk3_qc_hex": "39A55544",
+        "rk3_qnc_hex": "BC0D3085",
+        "rk3_qnc_value": -0.008617524988949299,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E81B9EF",
+        "source_tendency_hex": "00000000"
+      },
+      "i228_j214_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -4255.217205545388,
+          "exact": "-313979611074965259494367/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 50237066069.42786,
+          "exact": "3706841203187094160752935574833/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          228,
+          4,
+          214
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95402.58331578286,
+          "exact": "3278007802361621/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "513B25CD",
+        "rk3_input_qnc_hex": "C7AE8ADC",
+        "rk3_qc_hex": "3875A392",
+        "rk3_qnc_hex": "BBB2804C",
+        "rk3_qnc_value": -0.005447423085570335,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F11CC97",
+        "source_tendency_hex": "00000000"
+      },
+      "i229_j166_k8": {
+        "applied_face_residual_exact": {
+          "approximately": -187.46131747806805,
+          "exact": "-13832203788953345639085/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 6637812644.244373,
+          "exact": "489784124230436883734246074715/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          229,
+          8,
+          166
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95736.57648854982,
+          "exact": "102796366262331/1073741824"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FC5D27E",
+        "rk3_input_qnc_hex": "C9914D6F",
+        "rk3_qc_hex": "390ABB43",
+        "rk3_qnc_hex": "BAE464BF",
+        "rk3_qnc_value": -0.0017425044206902385,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CE93A66",
+        "source_tendency_hex": "00000000"
+      },
+      "i229_j234_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 2.237447913529522,
+          "exact": "2704908552708719790497115/1208925819614629174706176"
+        },
+        "available_exact": {
+          "approximately": 67069297.32363522,
+          "exact": "158362900855376886595775462625/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          229,
+          5,
+          234
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95458.1586301297,
+          "exact": "1639958677811149/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4C7FD95C",
+        "rk3_input_qnc_hex": "C7DD06E8",
+        "rk3_qc_hex": "3741EF36",
+        "rk3_qnc_hex": "B8390DE8",
+        "rk3_qnc_value": -4.412038833834231e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B411F83",
+        "source_tendency_hex": "00000000"
+      },
+      "i230_j132_k13": {
+        "applied_face_residual_exact": {
+          "approximately": -13.414418411488299,
+          "exact": "-8108518386381032392262101/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 115599692.1608929,
+          "exact": "69875726296403138521333285991899/604462909807314587353088"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          230,
+          13,
+          132
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 96179.47113709227,
+          "exact": "1652350732321549/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CDC7D2A",
+        "rk3_input_qnc_hex": "C546D977",
+        "rk3_qc_hex": "37F4F00C",
+        "rk3_qnc_hex": "B7F97E7B",
+        "rk3_qnc_value": -2.9742010156041943e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E13E9FB",
+        "source_tendency_hex": "00000000"
+      },
+      "i231_j252_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 2.156935207485592,
+          "exact": "9947107939015081297/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 27827352527.865173,
+          "exact": "32082753145651461028688850483/1152921504606846976"
+        },
+        "call_id": 2,
+        "category": "exact_positive_but_stored_nonpositive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          231,
+          4,
+          252
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 90688.29724803887,
+          "exact": "1558013083241015/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50CF5477",
+        "rk3_input_qnc_hex": "CA732798",
+        "rk3_qc_hex": "363DCE76",
+        "rk3_qnc_hex": "BB6A8F56",
+        "rk3_qnc_value": -0.003579100128263235,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D163369",
+        "source_tendency_hex": "00000000"
+      },
+      "i57_j159_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -945.327204936087,
+          "exact": "-4571321864125461936029489321/4835703278458516698824704"
+        },
+        "available_exact": {
+          "approximately": 10076136141.85661,
+          "exact": "48725204575370351377582504945583959/4835703278458516698824704"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          57,
+          4,
+          159
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95213.60368216386,
+          "exact": "6543029023187183/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50162569",
+        "rk3_input_qnc_hex": "C9375492",
+        "rk3_qc_hex": "38221B04",
+        "rk3_qnc_hex": "BC937CA5",
+        "rk3_qnc_value": -0.01800377108156681,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D884B09",
+        "source_tendency_hex": "00000000"
+      },
+      "i70_j180_k5": {
+        "applied_face_residual_exact": {
+          "approximately": -854.7740345206826,
+          "exact": "-126142382845241646190407/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 133270706379.16644,
+          "exact": "19667284904791794197822820626393/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          70,
+          5,
+          180
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94858.72745221139,
+          "exact": "6518642114358805/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51F83C6D",
+        "rk3_input_qnc_hex": "CB911B21",
+        "rk3_qc_hex": "378E205E",
+        "rk3_qnc_hex": "BD5C0CC4",
+        "rk3_qnc_value": -0.053723111748695374,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D1352F5",
+        "source_tendency_hex": "00000000"
+      },
+      "i91_j94_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -16323.789173257815,
+          "exact": "-77086914865223107266831835/4722366482869645213696"
+        },
+        "available_exact": {
+          "approximately": 72610046597.49382,
+          "exact": "342891250371607949195286079622565/4722366482869645213696"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          91,
+          4,
+          94
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94949.94252092215,
+          "exact": "6524910366151047/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51873F2C",
+        "rk3_input_qnc_hex": "C60BD3BD",
+        "rk3_qc_hex": "388D976E",
+        "rk3_qnc_hex": "BE2FF662",
+        "rk3_qnc_value": -0.17183831334114075,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F69997B",
+        "source_tendency_hex": "00000000"
+      }
+    },
+    "nonzero_rk3_scalar_source_count": 0,
+    "rk3_qnc_sign_counts": {
+      "negative": 54
+    },
+    "target_count": 54,
+    "writer_trace_sha256": "b7205234ebf079811fc6d718d915725825a3e264b439c1e90e4e6448656bd43b"
+  },
+  "control": {
+    "active_outgoing_limiter_count": 54,
+    "advect_trace_sha256": "bb688ce0209af32721d06641d434ba4e5e8ded7e2f1ded9a2c87904ef725ff70",
+    "category_counts": {
+      "applied_correction_exceeds_available": 7,
+      "rk3_positive": 47
+    },
+    "cells": {
+      "i107_j131_k8": {
+        "applied_face_residual_exact": {
+          "approximately": 6432.982448134016,
+          "exact": "1898681293622299419013749/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 56401393806.352135,
+          "exact": "16646753231140557458304686935749/295147905179352825856"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          107,
+          8,
+          131
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95258.68983791792,
+          "exact": "409132957513665/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51521C90",
+        "rk3_input_qnc_hex": "45EC7ED7",
+        "rk3_qc_hex": "39205449",
+        "rk3_qnc_hex": "3DE1A5AB",
+        "rk3_qnc_value": 0.11017926782369614,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F02A273",
+        "source_tendency_hex": "00000000"
+      },
+      "i108_j98_k8": {
+        "applied_face_residual_exact": {
+          "approximately": -1637.3555702904202,
+          "exact": "-31671062797022795899899353905/19342813113834066795298816"
+        },
+        "available_exact": {
+          "approximately": 34092202859.479076,
+          "exact": "659439108549823162698557604942374095/19342813113834066795298816"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          108,
+          8,
+          98
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94935.22262489732,
+          "exact": "1630974705649653/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50FE01B8",
+        "rk3_input_qnc_hex": "C8B0977C",
+        "rk3_qc_hex": "38297E15",
+        "rk3_qnc_hex": "3C733D32",
+        "rk3_qnc_value": 0.014846133068203926,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E938F50",
+        "source_tendency_hex": "00000000"
+      },
+      "i112_j242_k11": {
+        "applied_face_residual_exact": {
+          "approximately": 3086.4353947298287,
+          "exact": "932817859815339941617009125/302231454903657293676544"
+        },
+        "available_exact": {
+          "approximately": 80724247980.51532,
+          "exact": "24397406913154763556225113091236325/302231454903657293676544"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          112,
+          11,
+          242
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 88806.56948095531,
+          "exact": "1525685246362619/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51965C52",
+        "rk3_input_qnc_hex": "CB4C4C32",
+        "rk3_qc_hex": "3959ABFA",
+        "rk3_qnc_hex": "3D807AA6",
+        "rk3_qnc_value": 0.06273393332958221,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D03F93B",
+        "source_tendency_hex": "00000000"
+      },
+      "i113_j70_k12": {
+        "applied_face_residual_exact": {
+          "approximately": 164.53702346768287,
+          "exact": "6216032998519375090396703/37778931862957161709568"
+        },
+        "available_exact": {
+          "approximately": 4237102030.5215874,
+          "exact": "160073188907472489651870896123423/37778931862957161709568"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          113,
+          12,
+          70
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95256.94581975605,
+          "exact": "3273003736101569/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F7C8D0B",
+        "rk3_input_qnc_hex": "C9D04BEE",
+        "rk3_qc_hex": "398F006F",
+        "rk3_qnc_hex": "3ADDE41C",
+        "rk3_qnc_value": 0.0016928943805396557,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3C54898F",
+        "source_tendency_hex": "00000000"
+      },
+      "i120_j94_k13": {
+        "applied_face_residual_exact": {
+          "approximately": -29.28315790075147,
+          "exact": "-276571606766176356119077/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 11620059315.79254,
+          "exact": "109748357283711747838863061067963/9444732965739290427392"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          120,
+          13,
+          94
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95455.90745617298,
+          "exact": "13119360023496497/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "502D2702",
+        "rk3_input_qnc_hex": "C9343567",
+        "rk3_qc_hex": "393A1E8F",
+        "rk3_qnc_hex": "3B8734D8",
+        "rk3_qnc_value": 0.004126172512769699,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D9CAFB3",
+        "source_tendency_hex": "00000000"
+      },
+      "i133_j152_k11": {
+        "applied_face_residual_exact": {
+          "approximately": -0.24887644020235833,
+          "exact": "-75218288613601821389619/302231454903657293676544"
+        },
+        "available_exact": {
+          "approximately": 100068736.34128186,
+          "exact": "30243919774796100899137074393741/302231454903657293676544"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          133,
+          11,
+          152
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 90608.26929874392,
+          "exact": "194579776692633/2147483648"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CBEDDB0",
+        "rk3_input_qnc_hex": "C78A8CF8",
+        "rk3_qc_hex": "3894D6A5",
+        "rk3_qnc_hex": "359F2FC0",
+        "rk3_qnc_value": 1.1860320228151977e-06,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3BA7CD8C",
+        "source_tendency_hex": "00000000"
+      },
+      "i134_j96_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 105.0312358784765,
+          "exact": "31743743229881160159172571/302231454903657293676544"
+        },
+        "available_exact": {
+          "approximately": 1229283712.870576,
+          "exact": "371528205030243857462982215095771/302231454903657293676544"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          134,
+          15,
+          96
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95295.11754050267,
+          "exact": "6548630612878959/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4E928AC2",
+        "rk3_input_qnc_hex": "C87C9722",
+        "rk3_qc_hex": "3842B167",
+        "rk3_qnc_hex": "3ABBCF3D",
+        "rk3_qnc_value": 0.0014328729594126344,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3C8EAE70",
+        "source_tendency_hex": "00000000"
+      },
+      "i137_j100_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 14632.333399954934,
+          "exact": "33739863678770125041115/2305843009213693952"
+        },
+        "available_exact": {
+          "approximately": 161504305352.19147,
+          "exact": "372403573454264492557614551515/2305843009213693952"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          137,
+          15,
+          100
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 93352.23688585719,
+          "exact": "801889608866403/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "521669A0",
+        "rk3_input_qnc_hex": "CB53DCEA",
+        "rk3_qc_hex": "397EFF83",
+        "rk3_qnc_hex": "3EA95F43",
+        "rk3_qnc_value": 0.3308049142360687,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D6ABDEC",
+        "source_tendency_hex": "00000000"
+      },
+      "i150_j268_k9": {
+        "applied_face_residual_exact": {
+          "approximately": 71004.51399895172,
+          "exact": "10478416782534316588927895/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 1923051039683.457,
+          "exact": "283792242957774406352041952972505/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          150,
+          9,
+          268
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 87083.67752401232,
+          "exact": "5984344751696691/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53DFDF63",
+        "rk3_input_qnc_hex": "CAF2E84D",
+        "rk3_qc_hex": "3920F522",
+        "rk3_qnc_hex": "3F23FF64",
+        "rk3_qnc_value": 0.640615701675415,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F12BCB3",
+        "source_tendency_hex": "00000000"
+      },
+      "i152_j268_k11": {
+        "applied_face_residual_exact": {
+          "approximately": 0.00034716270532311874,
+          "exact": "53720826633265062939125/154742504910672534362390528"
+        },
+        "available_exact": {
+          "approximately": 75584.48801613682,
+          "exact": "45688019562530159894459015625/604462909807314587353088"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          152,
+          11,
+          268
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 85945.57224022388,
+          "exact": "369133422007767/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4793A03E",
+        "rk3_input_qnc_hex": "C5C8B4B9",
+        "rk3_qc_hex": "360D4058",
+        "rk3_qnc_hex": "32506619",
+        "rk3_qnc_value": 1.2130407789356923e-08,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3894D22E",
+        "source_tendency_hex": "00000000"
+      },
+      "i153_j111_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 37067.243565563236,
+          "exact": "170942488892950518000805/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 721574832482.2406,
+          "exact": "3327676566207433689822939138725/4611686018427387904"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          153,
+          4,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 91707.37614448887,
+          "exact": "1575520725370201/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53280136",
+        "rk3_input_qnc_hex": "CA942964",
+        "rk3_qc_hex": "37447792",
+        "rk3_qnc_hex": "3F166168",
+        "rk3_qnc_value": 0.5874238014221191,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EE29900",
+        "source_tendency_hex": "00000000"
+      },
+      "i155_j115_k13": {
+        "applied_face_residual_exact": {
+          "approximately": 6231.279846151765,
+          "exact": "28736706143406457779189/4611686018427387904"
+        },
+        "available_exact": {
+          "approximately": 761453112476.671,
+          "exact": "109736958515521275142680107577/144115188075855872"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          155,
+          13,
+          115
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 87805.77673369058,
+          "exact": "1508491757884315/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "53314A25",
+        "rk3_input_qnc_hex": "CB95EC22",
+        "rk3_qc_hex": "39D51C5D",
+        "rk3_qnc_hex": "3E70E117",
+        "rk3_qnc_value": 0.23523364961147308,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E39BF88",
+        "source_tendency_hex": "00000000"
+      },
+      "i155_j120_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 1042.369906180048,
+          "exact": "1230613176924158966677551/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 12257102578.935987,
+          "exact": "14470632598965598777330374677551/1180591620717411303424"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          155,
+          15,
+          120
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 91579.49717195136,
+          "exact": "6293295125402489/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5036A522",
+        "rk3_input_qnc_hex": "C90FEAD9",
+        "rk3_qc_hex": "361C8E33",
+        "rk3_qnc_hex": "3C27C56E",
+        "rk3_qnc_value": 0.010239941999316216,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D95C7F8",
+        "source_tendency_hex": "00000000"
+      },
+      "i176_j155_k14": {
+        "applied_face_residual_exact": {
+          "approximately": 4476.001313133757,
+          "exact": "84549274313693493194128959/18889465931478580854784"
+        },
+        "available_exact": {
+          "approximately": 100764606599.33371,
+          "exact": "1903389603456955939423509654928959/18889465931478580854784"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          176,
+          14,
+          155
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95334.46009464805,
+          "exact": "6551334212613287/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51BBB04E",
+        "rk3_input_qnc_hex": "C9F31EB1",
+        "rk3_qc_hex": "38D4F64C",
+        "rk3_qnc_hex": "3DCF753D",
+        "rk3_qnc_value": 0.10129783302545547,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E4A7CED",
+        "source_tendency_hex": "00000000"
+      },
+      "i180_j121_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 342.92069507005414,
+          "exact": "51820710293797944131684787/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 26713025620.005135,
+          "exact": "4036758299006411717162957548020147/151115727451828646838272"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          180,
+          4,
+          121
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95515.24676460016,
+          "exact": "820469722246655/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50C7070E",
+        "rk3_input_qnc_hex": "C8B88B16",
+        "rk3_qc_hex": "382BD89C",
+        "rk3_qnc_hex": "3AC44892",
+        "rk3_qnc_value": 0.0014975240919739008,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E6E1471",
+        "source_tendency_hex": "00000000"
+      },
+      "i189_j228_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 457.12727382993415,
+          "exact": "4317445032680110803337441/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 35295007904.83469,
+          "exact": "333351924684821023307644764322081/9444732965739290427392"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          189,
+          4,
+          228
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95365.79885723573,
+          "exact": "3276743897989933/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51037BF1",
+        "rk3_input_qnc_hex": "C8BFFBF8",
+        "rk3_qc_hex": "38832217",
+        "rk3_qnc_hex": "3C000195",
+        "rk3_qnc_value": 0.00781287718564272,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EA42B49",
+        "source_tendency_hex": "00000000"
+      },
+      "i190_j111_k14": {
+        "applied_face_residual_exact": {
+          "approximately": -101.62199373734894,
+          "exact": "-937297455366495424813/9223372036854775808"
+        },
+        "available_exact": {
+          "approximately": 13292456939.720629,
+          "exact": "122601275638915454576877331187/9223372036854775808"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          190,
+          14,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95937.78852593707,
+          "exact": "1648198656677855/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "504612B3",
+        "rk3_input_qnc_hex": "C881FB79",
+        "rk3_qc_hex": "3A1664E6",
+        "rk3_qnc_hex": "3BF86D7B",
+        "rk3_qnc_value": 0.007581410463899374,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E549F76",
+        "source_tendency_hex": "00000000"
+      },
+      "i191_j124_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 3075.6803129795217,
+          "exact": "3898887994858639107083372885859615/1267650600228229401496703205376"
+        },
+        "available_exact": {
+          "approximately": 55444052285.71267,
+          "exact": "70283686159069001813699715128595137584415/1267650600228229401496703205376"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          191,
+          4,
+          124
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95592.99535279511,
+          "exact": "410568788766935/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "514E8B91",
+        "rk3_input_qnc_hex": "C8C10382",
+        "rk3_qc_hex": "37CBF58D",
+        "rk3_qnc_hex": "3DB588D4",
+        "rk3_qnc_value": 0.08863988518714905,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3ED96ACB",
+        "source_tendency_hex": "00000000"
+      },
+      "i192_j128_k10": {
+        "applied_face_residual_exact": {
+          "approximately": 1.2749764453823853,
+          "exact": "192668993027905834989875/151115727451828646838272"
+        },
+        "available_exact": {
+          "approximately": 115267958.65376763,
+          "exact": "8709400711925701144499611669675/75557863725914323419136"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          192,
+          10,
+          128
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95757.70421309929,
+          "exact": "26321677307859385/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CDBDB2F",
+        "rk3_input_qnc_hex": "C80EE49F",
+        "rk3_qc_hex": "39674DCC",
+        "rk3_qnc_hex": "3942685D",
+        "rk3_qnc_value": 0.00018540160090196878,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B86742D",
+        "source_tendency_hex": "00000000"
+      },
+      "i192_j136_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -1179.5178950870759,
+          "exact": "-696264471713020230405675/590295810358705651712"
+        },
+        "available_exact": {
+          "approximately": 22176789695.64122,
+          "exact": "13090866044543128360181797325775/590295810358705651712"
+        },
+        "call_id": 1,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          192,
+          4,
+          136
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95528.49578745535,
+          "exact": "820583530486389/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50A53ADE",
+        "rk3_input_qnc_hex": "C9277FEE",
+        "rk3_qc_hex": "38665724",
+        "rk3_qnc_hex": "3BB16DD5",
+        "rk3_qnc_value": 0.005414704326540232,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E126347",
+        "source_tendency_hex": "00000000"
+      },
+      "i193_j153_k17": {
+        "applied_face_residual_exact": {
+          "approximately": 2483.9081452055766,
+          "exact": "45820017857209853134513/18446744073709551616"
+        },
+        "available_exact": {
+          "approximately": 34441793018.08652,
+          "exact": "635338941244318460719399461233/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          193,
+          17,
+          153
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95469.79247867911,
+          "exact": "6560634183229337/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51004E40",
+        "rk3_input_qnc_hex": "C92C0EA9",
+        "rk3_qc_hex": "3993EED3",
+        "rk3_qnc_hex": "3C88B8A7",
+        "rk3_qnc_value": 0.016689611598849297,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E539E76",
+        "source_tendency_hex": "00000000"
+      },
+      "i195_j131_k11": {
+        "applied_face_residual_exact": {
+          "approximately": 1155.3173237145816,
+          "exact": "10911663613176799267524277/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 36896682544.22157,
+          "exact": "348479313951826903246711309175477/9444732965739290427392"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          195,
+          11,
+          131
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95785.93026937195,
+          "exact": "411397437923889/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5109736B",
+        "rk3_input_qnc_hex": "C9BEA2DE",
+        "rk3_qc_hex": "36D40B47",
+        "rk3_qnc_hex": "3CE6B76E",
+        "rk3_qnc_value": 0.028163637965917587,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DDB6D0E",
+        "source_tendency_hex": "00000000"
+      },
+      "i196_j167_k9": {
+        "applied_face_residual_exact": {
+          "approximately": 1965.8031221210467,
+          "exact": "594127537652795839986807691/302231454903657293676544"
+        },
+        "available_exact": {
+          "approximately": 30798064336.843746,
+          "exact": "9308143792740727026183329897975691/302231454903657293676544"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          196,
+          9,
+          167
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95587.28987217002,
+          "exact": "26274834170511505/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50E576A5",
+        "rk3_input_qnc_hex": "C99B5C8D",
+        "rk3_qc_hex": "388B5D61",
+        "rk3_qnc_hex": "3CA6BC21",
+        "rk3_qnc_value": 0.020353378728032112,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DD4571A",
+        "source_tendency_hex": "00000000"
+      },
+      "i196_j229_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 6529.146216186236,
+          "exact": "1927063828317065469221047/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 98162537122.96811,
+          "exact": "28972467198934492259005979968327/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          196,
+          4,
+          229
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95368.83570427005,
+          "exact": "409606030407437/4294967296"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51B6D78B",
+        "rk3_input_qnc_hex": "C811E4C1",
+        "rk3_qc_hex": "38152254",
+        "rk3_qnc_hex": "3D8D448C",
+        "rk3_qnc_value": 0.06897839903831482,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F35673D",
+        "source_tendency_hex": "00000000"
+      },
+      "i198_j232_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -64.178212912702,
+          "exact": "-155173397293780883737931435/2417851639229258349412352"
+        },
+        "available_exact": {
+          "approximately": 6261154897.653607,
+          "exact": "15138543632760073424892583539083605/2417851639229258349412352"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          198,
+          4,
+          232
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95373.68368027912,
+          "exact": "1638507409223391/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FBA98D2",
+        "rk3_input_qnc_hex": "C889B6CC",
+        "rk3_qc_hex": "3827F9B1",
+        "rk3_qnc_hex": "3AB01135",
+        "rk3_qnc_value": 0.0013432862469926476,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DD84304",
+        "source_tendency_hex": "00000000"
+      },
+      "i201_j250_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 49378.26752913544,
+          "exact": "7286946111304992035113495/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 1207234716049.9304,
+          "exact": "178156398750963883197214096574095/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          201,
+          5,
+          250
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94630.06707884603,
+          "exact": "6502928693150879/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "538C8A66",
+        "rk3_input_qnc_hex": "C9F2B189",
+        "rk3_qc_hex": "38F4EE7A",
+        "rk3_qnc_hex": "3F6677D5",
+        "rk3_qnc_value": 0.9002659916877747,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F4426C8",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j111_k18": {
+        "applied_face_residual_exact": {
+          "approximately": 2.9124005332415552,
+          "exact": "27506845325743204574975/9444732965739290427392"
+        },
+        "available_exact": {
+          "approximately": 107555399.27877535,
+          "exact": "507916012605750721944177973525/4722366482869645213696"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          202,
+          18,
+          111
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95819.12607636374,
+          "exact": "6584640205268529/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CCD2548",
+        "rk3_input_qnc_hex": "C850334C",
+        "rk3_qc_hex": "394993F7",
+        "rk3_qnc_hex": "37B0764B",
+        "rk3_qnc_value": 2.103591941704508e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B3666AF",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j207_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 178.3378473357084,
+          "exact": "3368706691541092007187545/18889465931478580854784"
+        },
+        "available_exact": {
+          "approximately": 10722947297.057884,
+          "exact": "202550747652815245425124848537445/18889465931478580854784"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          202,
+          4,
+          207
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95343.07078773875,
+          "exact": "3275962967468407/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "501FC8CC",
+        "rk3_input_qnc_hex": "C936B691",
+        "rk3_qc_hex": "37E4A643",
+        "rk3_qnc_hex": "3C17474D",
+        "rk3_qnc_value": 0.009233308024704456,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D8F86A9",
+        "source_tendency_hex": "00000000"
+      },
+      "i202_j252_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 26799.924637380114,
+          "exact": "3954970807843633758183135/147573952589676412928"
+        },
+        "available_exact": {
+          "approximately": 410849795194.5125,
+          "exact": "60630728197513257854775141173535/147573952589676412928"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          202,
+          5,
+          252
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94414.78792828732,
+          "exact": "3244067411286157/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "52BF511D",
+        "rk3_input_qnc_hex": "CAADBCC0",
+        "rk3_qc_hex": "390474A9",
+        "rk3_qnc_hex": "3EE06C80",
+        "rk3_qnc_value": 0.4383277893066406,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E8C3315",
+        "source_tendency_hex": "00000000"
+      },
+      "i205_j197_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 862.9228462068849,
+          "exact": "4075037926229870637200935/4722366482869645213696"
+        },
+        "available_exact": {
+          "approximately": 28265479125.0433,
+          "exact": "133479951242356100928889304936935/4722366482869645213696"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          205,
+          4,
+          197
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95358.63850639408,
+          "exact": "3276497870208391/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50D29820",
+        "rk3_input_qnc_hex": "C8E71775",
+        "rk3_qc_hex": "37E76647",
+        "rk3_qnc_hex": "3BB2E02B",
+        "rk3_qnc_value": 0.005458851810544729,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E77C2B9",
+        "source_tendency_hex": "00000000"
+      },
+      "i208_j113_k18": {
+        "applied_face_residual_exact": {
+          "approximately": 9.962283462028987,
+          "exact": "98661676642850072496490655171/9903520314283042199192993792"
+        },
+        "available_exact": {
+          "approximately": 361062336.0857383,
+          "exact": "3575788180147600206967784788379807171/9903520314283042199192993792"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          208,
+          18,
+          113
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95786.06421562715,
+          "exact": "13164736422997583/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4DAC2AFE",
+        "rk3_input_qnc_hex": "C69FE998",
+        "rk3_qc_hex": "3906411B",
+        "rk3_qnc_hex": "398E4B90",
+        "rk3_qnc_value": 0.00027140649035573006,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D8E6CEE",
+        "source_tendency_hex": "00000000"
+      },
+      "i208_j193_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 3287.836095004434,
+          "exact": "970397936013622384407655/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 40540795172.50913,
+          "exact": "747845673091955629666358147805/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          208,
+          4,
+          193
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95285.26674165251,
+          "exact": "204623552223017/2147483648"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "511706B7",
+        "rk3_input_qnc_hex": "C81DACA2",
+        "rk3_qc_hex": "3818173A",
+        "rk3_qnc_hex": "3C209A7A",
+        "rk3_qnc_value": 0.009802455082535744,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3EF9038C",
+        "source_tendency_hex": "00000000"
+      },
+      "i209_j190_k7": {
+        "applied_face_residual_exact": {
+          "approximately": 425.2032174391732,
+          "exact": "67376139225717786446653536950681/158456325028528675187087900672"
+        },
+        "available_exact": {
+          "approximately": 4315625752.242681,
+          "exact": "683838196898854706536073486798142134681/158456325028528675187087900672"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          209,
+          7,
+          190
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95411.94627781751,
+          "exact": "13113318045149925/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F809D9C",
+        "rk3_input_qnc_hex": "C886B926",
+        "rk3_qc_hex": "38CFA365",
+        "rk3_qnc_hex": "3B8D42FE",
+        "rk3_qnc_value": 0.004310964606702328,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D9B1F87",
+        "source_tendency_hex": "00000000"
+      },
+      "i209_j198_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 2090.6349628458343,
+          "exact": "617046529778662055499847/295147905179352825856"
+        },
+        "available_exact": {
+          "approximately": 28068937292.499313,
+          "exact": "8284488042491787374501625290127/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          209,
+          4,
+          198
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95337.60998705297,
+          "exact": "818943833946391/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50D12141",
+        "rk3_input_qnc_hex": "C990DDB6",
+        "rk3_qc_hex": "36CEE38E",
+        "rk3_qnc_hex": "3CD220F1",
+        "rk3_qnc_value": 0.025650473311543465,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DE4DC1D",
+        "source_tendency_hex": "00000000"
+      },
+      "i210_j199_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 1636.6933794784325,
+          "exact": "1932266489495899782193185/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 21959119890.18464,
+          "exact": "25924752940681026474206905507545/1180591620717411303424"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          210,
+          4,
+          199
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95350.37916602206,
+          "exact": "819053520358529/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50A39BB2",
+        "rk3_input_qnc_hex": "C9536830",
+        "rk3_qc_hex": "37106C9A",
+        "rk3_qnc_hex": "3CBD251D",
+        "rk3_qnc_value": 0.023088986054062843,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3DEA8217",
+        "source_tendency_hex": "00000000"
+      },
+      "i210_j217_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 64.0719894155592,
+          "exact": "154916564637089521853421995/2417851639229258349412352"
+        },
+        "available_exact": {
+          "approximately": 3790467745.7881565,
+          "exact": "9164788652599526171270003599999505/2417851639229258349412352"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          210,
+          4,
+          217
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95388.92026955172,
+          "exact": "3277538343667809/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F61EDF2",
+        "rk3_input_qnc_hex": "C7807DBF",
+        "rk3_qc_hex": "37E7CC04",
+        "rk3_qnc_hex": "395E13F3",
+        "rk3_qnc_value": 0.00021179001487325877,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E75CD5B",
+        "source_tendency_hex": "00000000"
+      },
+      "i212_j155_k11": {
+        "applied_face_residual_exact": {
+          "approximately": 116.66555101110006,
+          "exact": "18930067937942797376903709825038117/162259276829213363391578010288128"
+        },
+        "available_exact": {
+          "approximately": 1386691062.9479966,
+          "exact": "225003489059475099023282715729973057550117/162259276829213363391578010288128"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 6,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          212,
+          11,
+          155
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95983.73782906227,
+          "exact": "824494029847321/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4EA54E74",
+        "rk3_input_qnc_hex": "C87120B0",
+        "rk3_qc_hex": "390AF31C",
+        "rk3_qnc_hex": "3AD50F41",
+        "rk3_qnc_value": 0.0016255156369879842,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CEA41A3",
+        "source_tendency_hex": "00000000"
+      },
+      "i212_j203_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 2122.1845115376304,
+          "exact": "156589578246099943864565/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 19730769180.894306,
+          "exact": "1455873797829572520675918223045/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          212,
+          4,
+          203
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95369.31249073162,
+          "exact": "3276864625517573/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50930174",
+        "rk3_input_qnc_hex": "C854ED35",
+        "rk3_qc_hex": "3810036F",
+        "rk3_qnc_hex": "3C52EED7",
+        "rk3_qnc_value": 0.012874326668679714,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E8C66A0",
+        "source_tendency_hex": "00000000"
+      },
+      "i214_j181_k15": {
+        "applied_face_residual_exact": {
+          "approximately": 5.922527242407818,
+          "exact": "223746753147432531130675/37778931862957161709568"
+        },
+        "available_exact": {
+          "approximately": 131716429.19032803,
+          "exact": "38875828153229878853499552425/295147905179352825856"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          214,
+          15,
+          181
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95705.437547881,
+          "exact": "6576827589080309/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CFB3AAA",
+        "rk3_input_qnc_hex": "C8B03243",
+        "rk3_qc_hex": "3761285C",
+        "rk3_qnc_hex": "38820EB4",
+        "rk3_qnc_value": 6.201621727086604e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B031328",
+        "source_tendency_hex": "00000000"
+      },
+      "i222_j184_k8": {
+        "applied_face_residual_exact": {
+          "approximately": 352.9718111256263,
+          "exact": "13022361330136347800245/36893488147419103232"
+        },
+        "available_exact": {
+          "approximately": 3967094743.9273186,
+          "exact": "146359962914771154419026713245/36893488147419103232"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          222,
+          8,
+          184
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95620.20799153252,
+          "exact": "205342833080175/2147483648"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F6C7510",
+        "rk3_input_qnc_hex": "C962EF3D",
+        "rk3_qc_hex": "38C069A3",
+        "rk3_qnc_hex": "3AF183F6",
+        "rk3_qnc_value": 0.0018426168244332075,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CB64364",
+        "source_tendency_hex": "00000000"
+      },
+      "i222_j193_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 49.26979187638126,
+          "exact": "29781761763198209191091553/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 7815822512.110036,
+          "exact": "4724374818207547272372728208886113/604462909807314587353088"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          222,
+          4,
+          193
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95409.01187721573,
+          "exact": "3278228686050537/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FE8EDFE",
+        "rk3_input_qnc_hex": "C851C0EB",
+        "rk3_qc_hex": "3893E1B5",
+        "rk3_qnc_hex": "3B2E243D",
+        "rk3_qnc_value": 0.002657189266756177,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E240F7E",
+        "source_tendency_hex": "00000000"
+      },
+      "i223_j194_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 846.8690291265988,
+          "exact": "1999612959263903775092925/2361183241434822606848"
+        },
+        "available_exact": {
+          "approximately": 40387394189.15082,
+          "exact": "95362038324645055509469936780325/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          223,
+          4,
+          194
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95432.22738263052,
+          "exact": "1639513182371335/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5116746C",
+        "rk3_input_qnc_hex": "C78C45EA",
+        "rk3_qc_hex": "389F3934",
+        "rk3_qnc_hex": "3CF719CC",
+        "rk3_qnc_value": 0.03016366809606552,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F0145BD",
+        "source_tendency_hex": "00000000"
+      },
+      "i225_j205_k19": {
+        "applied_face_residual_exact": {
+          "approximately": 24.92020037159464,
+          "exact": "29420579745303549035775/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 7676689806.549851,
+          "exact": "141609932194679996385690752225/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 2,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          225,
+          19,
+          205
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95381.12975140646,
+          "exact": "3277270663502587/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FE4C87F",
+        "rk3_input_qnc_hex": "C93C2223",
+        "rk3_qc_hex": "38EDFFC1",
+        "rk3_qnc_hex": "3ABB7694",
+        "rk3_qnc_value": 0.0014302306808531284,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D51C0AD",
+        "source_tendency_hex": "00000000"
+      },
+      "i226_j188_k11": {
+        "applied_face_residual_exact": {
+          "approximately": 201.23926044269848,
+          "exact": "3801302154208298087861055/18889465931478580854784"
+        },
+        "available_exact": {
+          "approximately": 3380468588.599276,
+          "exact": "63855246236779503520502106109695/18889465931478580854784"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          226,
+          11,
+          188
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95686.81315554754,
+          "exact": "1643886932646157/17179869184"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4F497DDB",
+        "rk3_input_qnc_hex": "C896943A",
+        "rk3_qc_hex": "39C6FF59",
+        "rk3_qnc_hex": "3B21D28F",
+        "rk3_qnc_value": 0.0024692153092473745,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D5FCA3D",
+        "source_tendency_hex": "00000000"
+      },
+      "i226_j188_k4": {
+        "applied_face_residual_exact": {
+          "approximately": -65.80115674671325,
+          "exact": "-155368588577365246209937/2361183241434822606848"
+        },
+        "available_exact": {
+          "approximately": 6876262315.947917,
+          "exact": "16236115344126022581541605157793/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "applied_correction_exceeds_available",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          226,
+          4,
+          188
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95481.32079187196,
+          "exact": "3280713201439799/34359738368"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FCCEDB8",
+        "rk3_input_qnc_hex": "C93C8275",
+        "rk3_qc_hex": "38840095",
+        "rk3_qnc_hex": "3BD0A8A6",
+        "rk3_qnc_value": 0.006367760710418224,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D35A6A0",
+        "source_tendency_hex": "00000000"
+      },
+      "i227_j148_k12": {
+        "applied_face_residual_exact": {
+          "approximately": 4143.594290058948,
+          "exact": "152871646828003273894263/36893488147419103232"
+        },
+        "available_exact": {
+          "approximately": 80794949320.53796,
+          "exact": "2980807505128594318065867774423/36893488147419103232"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          227,
+          12,
+          148
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95923.08828172385,
+          "exact": "13183568867242391/137438953472"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51967E09",
+        "rk3_input_qnc_hex": "C99AFEE9",
+        "rk3_qc_hex": "39A55544",
+        "rk3_qnc_hex": "3D0B9AFC",
+        "rk3_qnc_value": 0.034083351492881775,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E81BA27",
+        "source_tendency_hex": "00000000"
+      },
+      "i228_j214_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 5547.0313063962885,
+          "exact": "409298667511788349570033/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 50226759695.33325,
+          "exact": "3706080727006089817002916903093/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          228,
+          4,
+          214
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95402.58431202231,
+          "exact": "819501959148037/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "513B1BF8",
+        "rk3_input_qnc_hex": "C7AE8991",
+        "rk3_qc_hex": "3875A38B",
+        "rk3_qnc_hex": "3D198B5D",
+        "rk3_qnc_value": 0.037486422806978226,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F11C60A",
+        "source_tendency_hex": "00000000"
+      },
+      "i229_j166_k8": {
+        "applied_face_residual_exact": {
+          "approximately": 2.382000849575608,
+          "exact": "175760640221919869765/73786976294838206464"
+        },
+        "available_exact": {
+          "approximately": 6637813740.743744,
+          "exact": "489784205137809956396678884565/73786976294838206464"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          229,
+          8,
+          166
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95736.57606483065,
+          "exact": "51398182903683/536870912"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4FC5D280",
+        "rk3_input_qnc_hex": "C9914D6E",
+        "rk3_qc_hex": "390ABB43",
+        "rk3_qnc_hex": "3A742FE2",
+        "rk3_qnc_value": 0.0009314996423199773,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3CE93A63",
+        "source_tendency_hex": "00000000"
+      },
+      "i229_j234_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 1.7704436884684285,
+          "exact": "1070167543581621054235725/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 67069312.661481835,
+          "exact": "158362937070843268328953501575/2361183241434822606848"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 2,
+        "ikj_one_based": [
+          229,
+          5,
+          234
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95458.15531881002,
+          "exact": "819979310461555/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4C7FD960",
+        "rk3_input_qnc_hex": "C7DD06E9",
+        "rk3_qc_hex": "3741EF26",
+        "rk3_qnc_hex": "38967006",
+        "rk3_qnc_value": 7.17342336429283e-05,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3B411D74",
+        "source_tendency_hex": "00000000"
+      },
+      "i230_j132_k13": {
+        "applied_face_residual_exact": {
+          "approximately": 15.229657855659578,
+          "exact": "9205763302801816290487539/604462909807314587353088"
+        },
+        "available_exact": {
+          "approximately": 115599352.63278002,
+          "exact": "69875521064252063185827044210139/604462909807314587353088"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          230,
+          13,
+          132
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 96179.47123948364,
+          "exact": "6609402936322477/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "4CDC7CFF",
+        "rk3_input_qnc_hex": "C546D977",
+        "rk3_qc_hex": "37F4F00C",
+        "rk3_qnc_hex": "390458F6",
+        "rk3_qnc_value": 0.00012621641508303583,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3E13E9E7",
+        "source_tendency_hex": "00000000"
+      },
+      "i231_j252_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 1307.6695814948264,
+          "exact": "24122246102809940116963/18446744073709551616"
+        },
+        "available_exact": {
+          "approximately": 27827350975.693787,
+          "exact": "513324021697915081500868114183/18446744073709551616"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          231,
+          4,
+          252
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 90688.29594262165,
+          "exact": "779006530407059/8589934592"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "50CF5476",
+        "rk3_input_qnc_hex": "CA7328B1",
+        "rk3_qc_hex": "363DCE9F",
+        "rk3_qnc_hex": "3C9BADC0",
+        "rk3_qnc_value": 0.019003748893737793,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D163374",
+        "source_tendency_hex": "00000000"
+      },
+      "i57_j159_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 144.50729022107095,
+          "exact": "1397588754166378249597560803/9671406556917033397649408"
+        },
+        "available_exact": {
+          "approximately": 10075547508.978565,
+          "exact": "97444716242864383345380147097495523/9671406556917033397649408"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          57,
+          4,
+          159
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 95213.60354475152,
+          "exact": "6543029013744279/68719476736"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "5016232A",
+        "rk3_input_qnc_hex": "C937549D",
+        "rk3_qc_hex": "38221AFF",
+        "rk3_qnc_hex": "3A563092",
+        "rk3_qnc_value": 0.000817068968899548,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D884905",
+        "source_tendency_hex": "00000000"
+      },
+      "i70_j180_k5": {
+        "applied_face_residual_exact": {
+          "approximately": 4337.479035452559,
+          "exact": "80012365692073919630741/18446744073709551616"
+        },
+        "available_exact": {
+          "approximately": 133270706424.2085,
+          "exact": "4916821227859707052889639834107/36893488147419103232"
+        },
+        "call_id": 2,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 8,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          70,
+          5,
+          180
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94858.72728124651,
+          "exact": "26074568410440753/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51F83C6D",
+        "rk3_input_qnc_hex": "CB911B21",
+        "rk3_qc_hex": "378E205E",
+        "rk3_qnc_hex": "3D05AE41",
+        "rk3_qnc_value": 0.03263688459992409,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3D1352F5",
+        "source_tendency_hex": "00000000"
+      },
+      "i91_j94_k4": {
+        "applied_face_residual_exact": {
+          "approximately": 3349.0720083387814,
+          "exact": "3953886350223997442107545/1180591620717411303424"
+        },
+        "available_exact": {
+          "approximately": 72613002881.67592,
+          "exact": "85726302757235829161510832568025/1180591620717411303424"
+        },
+        "call_id": 1,
+        "category": "rk3_positive",
+        "compatible_axis_mode_count": 4,
+        "compatible_rk_mode_count": 1,
+        "ikj_one_based": [
+          91,
+          4,
+          94
+        ],
+        "limit_hit": true,
+        "new_mass_factor_exact": {
+          "approximately": 94949.95197231456,
+          "exact": "26099644062583151/274877906944"
+        },
+        "pd_old_buffer_and_live_qnc_reach_rk": true,
+        "ph_low_hex": "51874094",
+        "rk3_input_qnc_hex": "C60BE5E3",
+        "rk3_qc_hex": "388D9770",
+        "rk3_qnc_hex": "3CB68F1E",
+        "rk3_qnc_value": 0.022285040467977524,
+        "scalar_boundary_preserves_rk3_moment_pair": true,
+        "scale_hex": "3F699B47",
+        "source_tendency_hex": "00000000"
+      }
+    },
+    "nonzero_rk3_scalar_source_count": 0,
+    "rk3_qnc_sign_counts": {
+      "positive": 54
+    },
+    "target_count": 54,
+    "writer_trace_sha256": "dff4b08e383503fbd5889cef8e5854d04463ecdbbfb6f9ab0adf136eca404e6d"
+  },
+  "execution_summary_sha256": "d45212d72abb181e323e88a41441356998d2ab30583fa8badd0be4e841bc17be",
+  "failure_rows_sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e",
+  "historical_pr471_writer_word_matches": {
+    "alpha025": 1550,
+    "control": 1550
+  },
+  "limits": {
+    "host_correction_variant_executed": false,
+    "physical_number_units_certified": false,
+    "selected_liquid_failure_layers_only": true,
+    "whole_domain_positive_candidate": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "paired_category_counts": {
+    "applied_correction_exceeds_available__to__applied_correction_exceeds_available": 7,
+    "rk3_positive__to__applied_correction_exceeds_available": 41,
+    "rk3_positive__to__exact_positive_but_stored_nonpositive": 6
+  },
+  "schema": "kdm6.native_qnc_domain_preflight_analysis.v1",
+  "target_coords_sha256": "af3c2f703b6d4ca54bd5dc22cb4aae04ea702070233bf02bdb92ed6648b99f53"
+}
