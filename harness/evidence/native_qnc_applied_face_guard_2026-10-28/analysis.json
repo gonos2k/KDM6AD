@@ -1,0 +1,294 @@
+{
+  "cases": {
+    "alpha025": {
+      "checked": [
+        {
+          "cells": {
+            "i112_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "481B6E83"
+              ],
+              "exact_residual": "2291493883937221139368498477753641/151115727451828646838272",
+              "exact_residual_positive": true
+            },
+            "i113_j69_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "453A568C"
+              ],
+              "exact_residual": "5366440569328371787687160019155/18889465931478580854784",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k11": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4639BAF3"
+              ],
+              "exact_residual": "2673347473366398836241063813231/2361183241434822606848",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k12": {
+              "all_compatible_f32_positive": false,
+              "compatible_f32_words": [
+                "BBD0B752"
+              ],
+              "exact_residual": "-15481096050406537080383457/37778931862957161709568",
+              "exact_residual_positive": false
+            },
+            "i113_j70_k13": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CE14663"
+              ],
+              "exact_residual": "1660374313385531492228222452613587/147573952589676412928",
+              "exact_residual_positive": true
+            },
+            "i113_j71_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CB8D253"
+              ],
+              "exact_residual": "2719602954267322941297840025915173/295147905179352825856",
+              "exact_residual_positive": true
+            },
+            "i114_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4C81573D"
+              ],
+              "exact_residual": "1905134812311183119207444741761991/295147905179352825856",
+              "exact_residual_positive": true
+            }
+          },
+          "changed_distinct_face_words": 0,
+          "decrements": 0,
+          "exact_weighted_internal_face_change": "0",
+          "passes_selected_star_predicate": false,
+          "rounded_weighted_state_change": "0",
+          "scale_hex": "3C54898F"
+        },
+        {
+          "cells": {
+            "i112_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "481B6E83"
+              ],
+              "exact_residual": "2291493881546763879015768168582441/151115727451828646838272",
+              "exact_residual_positive": true
+            },
+            "i113_j69_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "453A568C"
+              ],
+              "exact_residual": "5366440569328371787687160019155/18889465931478580854784",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k11": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4639BAF3"
+              ],
+              "exact_residual": "2673347471107954485018180526191/2361183241434822606848",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "3ADDE41C"
+              ],
+              "exact_residual": "-4219684876579377758724577/37778931862957161709568",
+              "exact_residual_positive": false
+            },
+            "i113_j70_k13": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CE14663"
+              ],
+              "exact_residual": "1660374313381571317101287253852627/147573952589676412928",
+              "exact_residual_positive": true
+            },
+            "i113_j71_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CB8D253"
+              ],
+              "exact_residual": "2719602954229982676586587081152973/295147905179352825856",
+              "exact_residual_positive": true
+            },
+            "i114_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4C81573D"
+              ],
+              "exact_residual": "1905134812273832287954446702878191/295147905179352825856",
+              "exact_residual_positive": true
+            }
+          },
+          "changed_distinct_face_words": 5,
+          "decrements": 1,
+          "exact_weighted_internal_face_change": "0",
+          "passes_selected_star_predicate": false,
+          "rounded_weighted_state_change": "69745718872487931422643/2019207616483226228864",
+          "scale_hex": "3C54898E"
+        },
+        {
+          "cells": {
+            "i112_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "481B6E83"
+              ],
+              "exact_residual": "2291493879156306618663037859411241/151115727451828646838272",
+              "exact_residual_positive": true
+            },
+            "i113_j69_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "453A568B"
+              ],
+              "exact_residual": "5366439971544750430936013418355/18889465931478580854784",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k11": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4639BAF3"
+              ],
+              "exact_residual": "2673347468849510133795297239151/2361183241434822606848",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "3ADDE41C"
+              ],
+              "exact_residual": "8236953767377976805404703/37778931862957161709568",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k13": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CE14663"
+              ],
+              "exact_residual": "1660374313377611141974352055091667/147573952589676412928",
+              "exact_residual_positive": true
+            },
+            "i113_j71_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CB8D253"
+              ],
+              "exact_residual": "2719602954192642411875334136390773/295147905179352825856",
+              "exact_residual_positive": true
+            },
+            "i114_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4C81573D"
+              ],
+              "exact_residual": "1905134812236481456701448663994391/295147905179352825856",
+              "exact_residual_positive": true
+            }
+          },
+          "changed_distinct_face_words": 6,
+          "decrements": 2,
+          "exact_weighted_internal_face_change": "0",
+          "passes_selected_star_predicate": true,
+          "rounded_weighted_state_change": "18385553800415019915950139447841265803/548902458715522825433563420091071616",
+          "scale_hex": "3C54898D"
+        }
+      ],
+      "first_passing_decrements": 2
+    },
+    "control": {
+      "checked": [
+        {
+          "cells": {
+            "i112_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "481B6E83"
+              ],
+              "exact_residual": "1145746818840955219251451648574523/75557863725914323419136",
+              "exact_residual_positive": true
+            },
+            "i113_j69_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "453A5690"
+              ],
+              "exact_residual": "1341610715788766224550623720455/4722366482869645213696",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k11": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4639BAF3"
+              ],
+              "exact_residual": "1336680956551863981299670938833/1180591620717411303424",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "3ADDE41C"
+              ],
+              "exact_residual": "6216032998519375090396703/37778931862957161709568",
+              "exact_residual_positive": true
+            },
+            "i113_j70_k13": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CE14662"
+              ],
+              "exact_residual": "1660374203014352634968137922369177/147573952589676412928",
+              "exact_residual_positive": true
+            },
+            "i113_j71_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4CB8D253"
+              ],
+              "exact_residual": "2719602963958516401993592154623263/295147905179352825856",
+              "exact_residual_positive": true
+            },
+            "i114_j70_k12": {
+              "all_compatible_f32_positive": true,
+              "compatible_f32_words": [
+                "4C81573C"
+              ],
+              "exact_residual": "476283663830917519476679128460609/73786976294838206464",
+              "exact_residual_positive": true
+            }
+          },
+          "changed_distinct_face_words": 0,
+          "decrements": 0,
+          "exact_weighted_internal_face_change": "0",
+          "passes_selected_star_predicate": true,
+          "rounded_weighted_state_change": "0",
+          "scale_hex": "3C54898F"
+        }
+      ],
+      "first_passing_decrements": 0
+    }
+  },
+  "limits": {
+    "changed_host_executable_run": false,
+    "compiled_fma_instruction_sequence_identified": false,
+    "physical_number_units_certified": false,
+    "selected_star_only": true,
+    "whole_domain_m0_admissible": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "parent_analysis_sha256": "e97ee8a75a82b5df24a39a731bbc0c80c3b9174b8d113f57e1ae803d27105136",
+  "predicate": "all seven exact saved-face residuals and compatible f32 states positive",
+  "schema": "kdm6.native_qnc_applied_face_guard_analysis.v1"
+}

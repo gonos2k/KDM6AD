@@ -1,0 +1,16 @@
+{
+  "analysis_bytes": 11021,
+  "analysis_sha256": "0988f3b39790ab980b5e1e05b9861daa82682fbf1c6b3a47afa5055983d975a0",
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "normalized_replay_sha256": "acd07af92df50d7c2f985fa35b48e162e38dafcb99f78355fc8c2dde1902398d",
+  "parent_manifest_sha256": "2e1584cdf1ee3d48247ef2d923d4071de40f395644920e4157456f36a5e03a64",
+  "schema": "kdm6.native_qnc_applied_face_guard_packet.v1",
+  "source_pins": {
+    "harness/analyze_qnc_applied_face_guard.py": "589211eb421a37db2cce8e11d66a54693d8e09d3cf790d9b11e210c3d2a89320"
+  }
+}
