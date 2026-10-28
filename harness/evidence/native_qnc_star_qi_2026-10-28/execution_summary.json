@@ -1,0 +1,206 @@
+{
+  "base_main_commit": "e13da888ea540b22146ab391c12a79d6e9aec023",
+  "build": {
+    "advect_object_sha256": "343b8962305f2433d1642ac28d99abd9d887d885294a0676eac0d64365e0459f",
+    "advect_source_sha256": "1da7a56d7099ad47095146f0404e74ab39ad406ef87557aea69309c271c2e988",
+    "archive_sha256": "01c5847718cbe9b78340d443ca370daf5a6a885eeb6bbfb9189250d8f114546e",
+    "base_archive_sha256": "3bc7704e3c157176396e99ad8ec8a868e5f7a3a64eda6a674362b52ee65e2cbf",
+    "base_dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+    "base_executable_sha256": "2ddbb10d80ed5d18d8a7b19fdbddaf53c2d514079024f55c007a9ddb781a96ce",
+    "base_receipt_sha256": "34fd7cbe03089edde37637703dcbb0ae1fe77e6208b97a0b945dfac95e32ce88",
+    "changed_archive_members": [
+      "module_advect_em.o",
+      "solve_em.o"
+    ],
+    "dso_sha256": "9e01047610e290db36505ad52919a9f99ad97b8fe2c2924eb8aca2cba88ad92e",
+    "executable_sha256": "c4060673a85a594cdd3602ea50d2e593dc59eb72b403a926915a9080b7e7411c",
+    "failed_preflight_solve_log_sha256": "aacb87be542a93f35d6080095695c9644cd05c6a0cac70fdb0df4a80372f5c2b",
+    "module_interface_byte_identical": true,
+    "public_overlay_sha256": "66dda8835031f5a651df6ae475d88c5b1ba3dd25feffcba7fe7c1e74dce39adf",
+    "solve_object_sha256": "34546a81ec21bac5bfffba4639fb97896fcc8c6d2837aba1b5b3d6e3873f9203",
+    "solve_source_sha256": "c8642c04976ba91d5ef7ebd5e9cb9c7c19d188978198fc513b756c57029129f9"
+  },
+  "limits": {
+    "full_fixed_support_candidate_admissible": false,
+    "one_ulp_host_counterfactual_executed": false,
+    "physical_number_units_certified": false,
+    "private_executable_or_full_original_checkpoint_published": false
+  },
+  "observed_accepted_model_calls": {
+    "KDM_wrapper_entries": 8,
+    "RTTOV": 0,
+    "host_steps": 4,
+    "optimizer": 0
+  },
+  "private_build_receipt_sha256": "9affff3dec82e3285f55ac76df60f8df6bfdf5cb9c0ae75cbfe3b0f61bede685",
+  "rejected_attempts": {
+    "alpha025_trace_off_enospc": {
+      "counted_as_accepted": false,
+      "experiment_plan_sha256": "7a8f578fe2faadd64da23969d0c0ff1b9a6449c70ec236cf6a5ff830d361f18b",
+      "failed_storage_recovery_sha256": "9e69a0fb845d68e3d31852ead842fb4431d9c185d28b5164cb76be44236a3720",
+      "reason": "restart_write_failed_no_space"
+    },
+    "control_trace_on_mpi_exit_one": {
+      "checkpoint_sha256": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9",
+      "counted_as_accepted": false,
+      "numerical_trace_same_as_accepted": true,
+      "private_run_result_sha256": "331325339c9516dc896b66f1e9770cfa97faa49f190910d08499fe85b5174440"
+    }
+  },
+  "runs": {
+    "alpha025": {
+      "off": {
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "applied_control": {
+          "applied_components": 170749,
+          "applied_rows": 117172
+        },
+        "checkpoint_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f",
+        "host_steps": 1,
+        "observed_kdm_wrapper_entries": 2,
+        "prior_pr469_run_result_sha256": "f26bc48dfdcd1dfd689c160e47730da14b247a7e63a3a514599bbd9eac1f25e9",
+        "private_run_result_sha256": "bcecc4ba1bf32bcee4647ec3516acad7857ed86401dde73895de2dbcde7190a0",
+        "run_id": "alpha025_star_qi_v3_off",
+        "run_plan_sha256": "2a330c9446b0f725cb2347bfe6667a5fad6a1dba3615a6aec5cae483e06dfaa0",
+        "storage": {
+          "experiment_valid_sha256": "e824ff6bdda31c666e5a5c5b161258dbfc94f46cd0fc8d65f2f2e04980ba205b",
+          "kind": "verified_ram_output_retained_as_identical_apfs_clone",
+          "relocation_receipt_sha256": "03d010f31bb0ecb39a6a4a9d5a47379277889f60c848a12b640ca4cf6f9b2df7",
+          "retained_checkpoint_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f"
+        },
+        "traces": {}
+      },
+      "on": {
+        "ack_sha256": "0e863b7bbcc7d5d1c197e41faf204c5429668f9bcf12a969e415c1ab83fb60eb",
+        "applied_control": {
+          "applied_components": 170749,
+          "applied_rows": 117172
+        },
+        "checkpoint_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f",
+        "host_steps": 1,
+        "observed_kdm_wrapper_entries": 2,
+        "prior_pr469_run_result_sha256": "35d0b8d512c516c2452ee2eca23a9dea6650ae858072f244cf6f914a0d237f71",
+        "private_run_result_sha256": "82cf3bd415b1311fc0307eb75fb114ae54ee5d9ea2b95530917cbb69e850bdfe",
+        "run_id": "alpha025_star_qi_v1_on",
+        "run_plan_sha256": "2e41e70eba0280ed249f054cb4f7b5e2b4040be43390324434f87b1ce267b021",
+        "storage": {
+          "kind": "retained_native_checkpoint",
+          "retained_checkpoint_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f"
+        },
+        "traces": {
+          "qnc_star": {
+            "bytes": 7586,
+            "path": "data/alpha025/qnc_star.tsv",
+            "sha256": "1aa645e65786642fe12e3d2750aa5959a28ea0bfd3dd8ee4648657a2c215cee7",
+            "typed_records": 147
+          },
+          "star_qi": {
+            "bytes": 82333,
+            "path": "data/alpha025/qnc_star_qi_moments.tsv",
+            "sha256": "1c1b62924d049507deb1bbd721bd9c5717953d45a503556ccfda4d8138ebe327",
+            "typed_records": 1550
+          }
+        }
+      }
+    },
+    "control": {
+      "off": {
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "applied_control": {
+          "applied_components": 0,
+          "applied_rows": 0
+        },
+        "checkpoint_sha256": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9",
+        "host_steps": 1,
+        "observed_kdm_wrapper_entries": 2,
+        "prior_pr469_run_result_sha256": "30a72ca0fe96d4da36963608509ea181a99ea00c5a619fe20df9fbc494093029",
+        "private_run_result_sha256": "45d8ad19a9b52faa4e9b254bb9a45fa2f07f9e2d6eb6ee45162807e3a641cd8d",
+        "run_id": "control_star_qi_v2_off",
+        "run_plan_sha256": "cca616ef02cf24a3eff5209254033eb9a008f214b66af117a0c49672369788fc",
+        "storage": {
+          "kind": "retained_native_checkpoint",
+          "retained_checkpoint_sha256": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9"
+        },
+        "traces": {}
+      },
+      "on": {
+        "ack_sha256": "ff78a29321462eeddeaf4ef11c860eb9c5b84a0d93b83772232c631a61af97cc",
+        "applied_control": {
+          "applied_components": 0,
+          "applied_rows": 0
+        },
+        "checkpoint_sha256": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9",
+        "host_steps": 1,
+        "observed_kdm_wrapper_entries": 2,
+        "prior_pr469_run_result_sha256": "cd3ea0b8fe1a917cc5a45043bb1c5434bbd026b6edd51b5c4f5cecc1fca2d484",
+        "private_run_result_sha256": "319825c23290b094ba005f4d2e29c42e945e8a3c7918cbceb7a3e4b4c37f6be7",
+        "run_id": "control_star_qi_v2_on",
+        "run_plan_sha256": "dd155f2d455d73a9df4b73bb69eaca8924aa2ba32f2e27de5cf79cd590b2bd1f",
+        "storage": {
+          "kind": "retained_native_checkpoint",
+          "retained_checkpoint_sha256": "2f66f2fb920bd808989eef70c983b4b9cff378a44c7169692f07c6bc70043ec9"
+        },
+        "traces": {
+          "qnc_star": {
+            "bytes": 7586,
+            "path": "data/control/qnc_star.tsv",
+            "sha256": "4913955442054a711c4e240afa2e80ab0ee6e927aa2c87b7740c223879cd585b",
+            "typed_records": 147
+          },
+          "star_qi": {
+            "bytes": 82333,
+            "path": "data/control/qnc_star_qi_moments.tsv",
+            "sha256": "c34a2fec85c1d59a1f79b4568c36d522123ca37275bd2e25a338b01a27fc7960",
+            "typed_records": 1550
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "checked_namelist_values": {
+      "diff_opt": "1",
+      "moist_adv_opt": "1",
+      "no_mp_heating": "0",
+      "scalar_adv_opt": "1",
+      "spec_zone": "1",
+      "specified": ".true.",
+      "use_q_diabatic": "0"
+    },
+    "dt_seconds": 20,
+    "end_time": "2025-07-19_00:01:00",
+    "historical_plan_sha256": {
+      "alpha025": "d31c18fc2a0e97c6fbdc6b2d4250b3bc561b9c2c808afa9835224f37eba499ab",
+      "control": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7"
+    },
+    "model_steps_per_run": 1,
+    "namelist_sha256": "80155530e4b1a39436e27c45a3ce0712d4e72d9b4d9258d02cca0ed3e0106b6e",
+    "native_runtime_parameters": {
+      "bl_pbl_physics": "11",
+      "cu_physics": "37",
+      "mp_physics": "137",
+      "no_mp_heating": "0",
+      "ra_lw_physics": "4",
+      "ra_sw_physics": "4",
+      "radt": "0.33333333333333331",
+      "restart": ".true.",
+      "run_seconds": "20",
+      "sf_surface_physics": "2",
+      "time_step": "20",
+      "use_q_diabatic": "0",
+      "use_theta_m": "1"
+    },
+    "native_shape_i_j_k": [
+      234,
+      282,
+      39
+    ],
+    "origin_checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "radiation_every_step": true,
+    "ranks": 1,
+    "start_time": "2025-07-19_00:00:40",
+    "threads": 1
+  },
+  "schema": "kdm6.native_qnc_star_qi_execution.v1",
+  "status": "FOUR_ACCEPTED_FULL_HOST_STEPS_TRACE_NONINTERFERING"
+}

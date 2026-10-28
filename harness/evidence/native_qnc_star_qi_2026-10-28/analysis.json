@@ -1,0 +1,1707 @@
+{
+  "alpha025": {
+    "case": "alpha025",
+    "cells": {
+      "i112_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          112,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -14987164937.369469,
+            "exact": "-552928791980255678957247701535/36893488147419103232"
+          },
+          "available": {
+            "approximately": 176669579.24418747,
+            "exact": "26697551986093878359611892266281/151115727451828646838272"
+          },
+          "new_mass_factor": {
+            "approximately": 95272.91241294213,
+            "exact": "52376837505057139/549755813888"
+          },
+          "qnc": {
+            "approximately": 159162.07589927482,
+            "exact": "2291493883937221139368498477753641/14397235465736105383444873216"
+          },
+          "residual": {
+            "approximately": 15163834516.613657,
+            "exact": "2291493883937221139368498477753641/151115727451828646838272"
+          }
+        },
+        "original_qnc_hex": "481B6E83",
+        "original_qnc_value": 159162.046875,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j69_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          69
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -196875947.8664355,
+            "exact": "-7437763019901173578189811853585/37778931862957161709568"
+          },
+          "available": {
+            "approximately": 87221050.365018,
+            "exact": "3295118118755569997184508184725/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95289.50081342696,
+            "exact": "26192978537333387/274877906944"
+          },
+          "qnc": {
+            "approximately": 2981.4092403286286,
+            "exact": "5366440569328371787687160019155/1799967779242828995422584832"
+          },
+          "residual": {
+            "approximately": 284096998.23145354,
+            "exact": "5366440569328371787687160019155/18889465931478580854784"
+          }
+        },
+        "original_qnc_hex": "453A568C",
+        "original_qnc_value": 2981.4091796875,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          false,
+          true
+        ]
+      },
+      "i113_j70_k11": {
+        "directional_fused_modes": [
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          11,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 61304805884.26572,
+            "exact": "2261748129270986027744483468975/36893488147419103232"
+          },
+          "available": {
+            "approximately": 62437012578.965904,
+            "exact": "147425227746709504611888005827631/2361183241434822606848"
+          },
+          "new_mass_factor": {
+            "approximately": 95249.54666005817,
+            "exact": "3272749502910207/34359738368"
+          },
+          "qnc": {
+            "approximately": 11886.741033434935,
+            "exact": "891115824455466278747021271077/74967211109331178077814784"
+          },
+          "residual": {
+            "approximately": 1132206694.7001889,
+            "exact": "2673347473366398836241063813231/2361183241434822606848"
+          }
+        },
+        "original_qnc_hex": "4639BAF3",
+        "original_qnc_value": 11886.7373046875,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 4237098913.9512568,
+            "exact": "78160679280651521458293222435/18446744073709551616"
+          },
+          "available": {
+            "approximately": 4237098504.1700563,
+            "exact": "160073055685678265540047439163423/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95256.94478509293,
+            "exact": "52368059208813039/549755813888"
+          },
+          "qnc": {
+            "approximately": -0.004301851181259901,
+            "exact": "-5160365350135512360127819/1199568542169832733244653568"
+          },
+          "residual": {
+            "approximately": -409.7812004469612,
+            "exact": "-15481096050406537080383457/37778931862957161709568"
+          }
+        },
+        "original_qnc_hex": "BBD0B752",
+        "original_qnc_value": -0.006369509734213352,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j70_k13": {
+        "directional_fused_modes": [
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          13,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 253444217948.34845,
+            "exact": "584402578181831113915632108815/2305843009213693952"
+          },
+          "available": {
+            "approximately": 11504578203646.605,
+            "exact": "1697776078389168683518822907577747/147573952589676412928"
+          },
+          "new_mass_factor": {
+            "approximately": 95260.63619353593,
+            "exact": "26185044291033007/274877906944"
+          },
+          "qnc": {
+            "approximately": 118108952.81908396,
+            "exact": "1660374313385531492228222452613587/14057988609287283890192384"
+          },
+          "residual": {
+            "approximately": 11251133985698.256,
+            "exact": "1660374313385531492228222452613587/147573952589676412928"
+          }
+        },
+        "original_qnc_hex": "4CE14663",
+        "original_qnc_value": 118108952.0,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          false,
+          true
+        ]
+      },
+      "i113_j71_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          71
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 247058405221.0964,
+            "exact": "9114846344744786274707971822215/36893488147419103232"
+          },
+          "available": {
+            "approximately": 9461431628079.307,
+            "exact": "2792521725025281231495503800492893/295147905179352825856"
+          },
+          "new_mass_factor": {
+            "approximately": 95091.82985669698,
+            "exact": "209109145267870651/2199023255552"
+          },
+          "qnc": {
+            "approximately": 96899736.14709315,
+            "exact": "2719602954267322941297840025915173/28066154381875550175100928"
+          },
+          "residual": {
+            "approximately": 9214373222858.21,
+            "exact": "2719602954267322941297840025915173/295147905179352825856"
+          }
+        },
+        "original_qnc_hex": "4CB8D253",
+        "original_qnc_value": 96899736.0,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i114_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          114,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 164775714533.2597,
+            "exact": "1519787717778832635987364768565/9223372036854775808"
+          },
+          "available": {
+            "approximately": 6619623534488.099,
+            "exact": "1953768019280105763559040414356071/295147905179352825856"
+          },
+          "new_mass_factor": {
+            "approximately": 95187.6648530253,
+            "exact": "52329972163373099/549755813888"
+          },
+          "qnc": {
+            "approximately": 67811809.75414681,
+            "exact": "1905134812311183119207444741761991/28094439880284728656396288"
+          },
+          "residual": {
+            "approximately": 6454847819954.839,
+            "exact": "1905134812311183119207444741761991/295147905179352825856"
+          }
+        },
+        "original_qnc_hex": "4C81573D",
+        "original_qnc_value": 67811816.0,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      }
+    },
+    "common_directional_fused_modes": [
+      [
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        false
+      ],
+      [
+        true,
+        true,
+        true
+      ]
+    ],
+    "common_pd_fused_modes": [
+      true
+    ],
+    "common_rk_fused_modes": [
+      true
+    ],
+    "prior_producer_trace_sha256": "43d2cf010b8b8ce606c97da82f2538178da863ed5129014c11a400c12db3b6ae",
+    "prior_writer_trace_sha256": "f65e42033d02c530a656013c09b701764e2b6d29fcc61c67a91e14d778bb4c54",
+    "prior_writer_word_matches": 678,
+    "qi_boundary": {
+      "copy_branch": true,
+      "donor_or_zero_prediction_matches": true,
+      "donor_qi_hex": "00000002",
+      "indices_one_based": {
+        "DONOR_I": 2,
+        "DONOR_J": 168,
+        "IDE": 235,
+        "IDS": 1,
+        "JDE": 283,
+        "JDS": 1,
+        "SPEC_ZONE": 1,
+        "TILE_ITE": 235,
+        "TILE_ITS": 1,
+        "TILE_JTE": 283,
+        "TILE_JTS": 143
+      },
+      "periodic_x": false,
+      "ru_m_input_hex": "C7B997A8",
+      "ru_m_input_value": -95023.3125,
+      "target_after_hex": "00000002",
+      "target_before_hex": "00000007",
+      "x_start_eligible": true
+    },
+    "shared_face_pairs": [
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "D15AE798",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "4C08DCCA",
+        "name": "x_west",
+        "neighbor_ikj_one_based": [
+          112,
+          12,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "52B92B72",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "51201A49",
+        "name": "x_east",
+        "neighbor_ikj_one_based": [
+          114,
+          12,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "D18849E2",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "00000000",
+        "name": "y_south",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          69
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "52DBC84B",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "51177AF7",
+        "name": "y_north",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          71
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "46B0E9BC",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "C9510AE4",
+        "name": "z_bottom",
+        "neighbor_ikj_one_based": [
+          113,
+          11,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "C94194C0",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "C780D0A6",
+        "name": "z_top",
+        "neighbor_ikj_one_based": [
+          113,
+          13,
+          70
+        ]
+      }
+    ],
+    "shared_owner_call_id": 1,
+    "shared_trace_sha256": "1aa645e65786642fe12e3d2750aa5959a28ea0bfd3dd8ee4648657a2c215cee7",
+    "writer_trace_sha256": "1c1b62924d049507deb1bbd721bd9c5717953d45a503556ccfda4d8138ebe327"
+  },
+  "alpha025_frozen_paired_one_ulp_probe": {
+    "all_seven_source_compatible_f32_qnc_positive": true,
+    "all_six_neighbor_exact_residuals_positive": true,
+    "cells": {
+      "i112_j70_k12": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -14987164921.55075,
+            "exact": "-1105857582793295898757888806795/73786976294838206464"
+          },
+          "available": {
+            "approximately": 176669579.24418747,
+            "exact": "26697551986093878359611892266281/151115727451828646838272"
+          },
+          "new_mass_factor": {
+            "approximately": 95272.91241294213,
+            "exact": "52376837505057139/549755813888"
+          },
+          "qnc": {
+            "approximately": 159162.07573323895,
+            "exact": "2291493881546763879015768168582441/14397235465736105383444873216"
+          },
+          "residual": {
+            "approximately": 15163834500.794937,
+            "exact": "2291493881546763879015768168582441/151115727451828646838272"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "481B6E83",
+            "value": 159162.046875
+          }
+        ],
+        "ikj_one_based": [
+          112,
+          12,
+          70
+        ],
+        "original_recorded_qnc_hex": "481B6E83"
+      },
+      "i113_j69_k12": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -196875947.8664355,
+            "exact": "-7437763019901173578189811853585/37778931862957161709568"
+          },
+          "available": {
+            "approximately": 87221050.365018,
+            "exact": "3295118118755569997184508184725/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95289.50081342696,
+            "exact": "26192978537333387/274877906944"
+          },
+          "qnc": {
+            "approximately": 2981.4092403286286,
+            "exact": "5366440569328371787687160019155/1799967779242828995422584832"
+          },
+          "residual": {
+            "approximately": 284096998.23145354,
+            "exact": "5366440569328371787687160019155/18889465931478580854784"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "453A568C",
+            "value": 2981.4091796875
+          }
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          69
+        ],
+        "original_recorded_qnc_hex": "453A568C"
+      },
+      "i113_j70_k11": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 61304805885.222206,
+            "exact": "2261748129306274220732341020335/36893488147419103232"
+          },
+          "available": {
+            "approximately": 62437012578.965904,
+            "exact": "147425227746709504611888005827631/2361183241434822606848"
+          },
+          "new_mass_factor": {
+            "approximately": 95249.54666005817,
+            "exact": "3272749502910207/34359738368"
+          },
+          "qnc": {
+            "approximately": 11886.741023393015,
+            "exact": "891115823702651495006060175397/74967211109331178077814784"
+          },
+          "residual": {
+            "approximately": 1132206693.7437005,
+            "exact": "2673347471107954485018180526191/2361183241434822606848"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "4639BAF3",
+            "value": 11886.7373046875
+          }
+        ],
+        "ikj_one_based": [
+          113,
+          11,
+          70
+        ],
+        "original_recorded_qnc_hex": "4639BAF3"
+      },
+      "i113_j70_k12": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 4237098615.864185,
+            "exact": "312642695127662386952002339625/73786976294838206464"
+          },
+          "available": {
+            "approximately": 4237098504.1700563,
+            "exact": "160073055685678265540047439163423/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95256.94478509293,
+            "exact": "52368059208813039/549755813888"
+          },
+          "qnc": {
+            "approximately": -0.001172556278428416,
+            "exact": "-4219684876579377758724577/3598705626509498199733960704"
+          },
+          "residual": {
+            "approximately": -111.69412867166966,
+            "exact": "-4219684876579377758724577/37778931862957161709568"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "3ADDE41C",
+            "value": 0.0016928943805396557
+          }
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          70
+        ],
+        "original_recorded_qnc_hex": "BBD0B752"
+      },
+      "i113_j70_k13": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 253444217975.18365,
+            "exact": "584402578243708850273994589455/2305843009213693952"
+          },
+          "available": {
+            "approximately": 11504578203646.605,
+            "exact": "1697776078389168683518822907577747/147573952589676412928"
+          },
+          "new_mass_factor": {
+            "approximately": 95260.63619353593,
+            "exact": "26185044291033007/274877906944"
+          },
+          "qnc": {
+            "approximately": 118108952.81880225,
+            "exact": "1660374313381571317101287253852627/14057988609287283890192384"
+          },
+          "residual": {
+            "approximately": 11251133985671.422,
+            "exact": "1660374313381571317101287253852627/147573952589676412928"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "4CE14663",
+            "value": 118108952.0
+          }
+        ],
+        "ikj_one_based": [
+          113,
+          13,
+          70
+        ],
+        "original_recorded_qnc_hex": "4CE14663"
+      },
+      "i113_j71_k12": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 247058405347.61014,
+            "exact": "4557423174706159681807294958745/18446744073709551616"
+          },
+          "available": {
+            "approximately": 9461431628079.307,
+            "exact": "2792521725025281231495503800492893/295147905179352825856"
+          },
+          "new_mass_factor": {
+            "approximately": 95091.82985669698,
+            "exact": "209109145267870651/2199023255552"
+          },
+          "qnc": {
+            "approximately": 96899736.14576271,
+            "exact": "2719602954229982676586587081152973/28066154381875550175100928"
+          },
+          "residual": {
+            "approximately": 9214373222731.697,
+            "exact": "2719602954229982676586587081152973/295147905179352825856"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "4CB8D253",
+            "value": 96899736.0
+          }
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          71
+        ],
+        "original_recorded_qnc_hex": "4CB8D253"
+      },
+      "i114_j70_k12": {
+        "all_candidate_f32_qnc_positive": true,
+        "candidate_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 164775714659.80923,
+            "exact": "6079150875784184450574213934735/36893488147419103232"
+          },
+          "available": {
+            "approximately": 6619623534488.099,
+            "exact": "1953768019280105763559040414356071/295147905179352825856"
+          },
+          "new_mass_factor": {
+            "approximately": 95187.6648530253,
+            "exact": "52329972163373099/549755813888"
+          },
+          "qnc": {
+            "approximately": 67811809.75281733,
+            "exact": "1905134812273832287954446702878191/28094439880284728656396288"
+          },
+          "residual": {
+            "approximately": 6454847819828.289,
+            "exact": "1905134812273832287954446702878191/295147905179352825856"
+          }
+        },
+        "candidate_source_compatible_f32_qnc": [
+          {
+            "hex": "4C81573D",
+            "value": 67811816.0
+          }
+        ],
+        "ikj_one_based": [
+          114,
+          12,
+          70
+        ],
+        "original_recorded_qnc_hex": "4C81573D"
+      }
+    },
+    "changed_distinct_face_word_count": 5,
+    "exact_weighted_internal_face_change": {
+      "approximately": 0.0,
+      "exact": "0"
+    },
+    "host_counterfactual_executed": false,
+    "one_ulp_lower_target_scale_hex": "3C54898E",
+    "original_target_scale_hex": "3C54898F",
+    "perimeter_face_incidences_unchanged": 30,
+    "six_mirrored_internal_correction_faces": [
+      {
+        "candidate_post_hex": "D15AE797",
+        "name": "x_west",
+        "neighbor_ikj_one_based": [
+          112,
+          12,
+          70
+        ],
+        "original_post_hex": "D15AE798",
+        "pre_hex": "D483D5AF",
+        "target_neighbor_candidate_bits_equal": true
+      },
+      {
+        "candidate_post_hex": "52B92B71",
+        "name": "x_east",
+        "neighbor_ikj_one_based": [
+          114,
+          12,
+          70
+        ],
+        "original_post_hex": "52B92B72",
+        "pre_hex": "55DF092D",
+        "target_neighbor_candidate_bits_equal": true
+      },
+      {
+        "candidate_post_hex": "D18849E2",
+        "name": "y_south",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          69
+        ],
+        "original_post_hex": "D18849E2",
+        "pre_hex": "D4A428AA",
+        "target_neighbor_candidate_bits_equal": true
+      },
+      {
+        "candidate_post_hex": "52DBC84A",
+        "name": "y_north",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          71
+        ],
+        "original_post_hex": "52DBC84B",
+        "pre_hex": "56045D02",
+        "target_neighbor_candidate_bits_equal": true
+      },
+      {
+        "candidate_post_hex": "46B0E9BB",
+        "name": "z_bottom",
+        "neighbor_ikj_one_based": [
+          113,
+          11,
+          70
+        ],
+        "original_post_hex": "46B0E9BC",
+        "pre_hex": "49D51739",
+        "target_neighbor_candidate_bits_equal": true
+      },
+      {
+        "candidate_post_hex": "C94194BF",
+        "name": "z_top",
+        "neighbor_ikj_one_based": [
+          113,
+          13,
+          70
+        ],
+        "original_post_hex": "C94194C0",
+        "pre_hex": "CC692AD2",
+        "target_neighbor_candidate_bits_equal": true
+      }
+    ],
+    "target_exact_residual_still_negative": true
+  },
+  "conclusions": {
+    "qi_same_copy_branch_different_donor": true,
+    "seven_cell_face_tendency_rk_input_join": true,
+    "six_internal_correction_and_low_pairs_bitwise_shared": true
+  },
+  "control": {
+    "case": "control",
+    "cells": {
+      "i112_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          112,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -14987163506.037844,
+            "exact": "-1105857478346878700080754331705/73786976294838206464"
+          },
+          "available": {
+            "approximately": 176669380.99486214,
+            "exact": "13348761013751430368759212908603/75557863725914323419136"
+          },
+          "new_mass_factor": {
+            "approximately": 95272.91110068647,
+            "exact": "52376836783636959/549755813888"
+          },
+          "qnc": {
+            "approximately": 159162.06098717023,
+            "exact": "381915606280318406417150549524841/2399539211238939379646857216"
+          },
+          "residual": {
+            "approximately": 15163832887.032707,
+            "exact": "1145746818840955219251451648574523/75557863725914323419136"
+          }
+        },
+        "original_qnc_hex": "481B6E83",
+        "original_qnc_value": 159162.046875,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          false,
+          true
+        ]
+      },
+      "i113_j69_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          69
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": -196876079.10730714,
+            "exact": "-7437767978041120741005172791255/37778931862957161709568"
+          },
+          "available": {
+            "approximately": 87221040.55832039,
+            "exact": "3295117748269009055399816972385/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95289.50800559741,
+            "exact": "52385961028604299/549755813888"
+          },
+          "qnc": {
+            "approximately": 2981.4102896715485,
+            "exact": "1341610715788766224550623720455/449991978774771969460011008"
+          },
+          "residual": {
+            "approximately": 284097119.66562754,
+            "exact": "1341610715788766224550623720455/4722366482869645213696"
+          }
+        },
+        "original_qnc_hex": "453A5690",
+        "original_qnc_value": 2981.41015625,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          false,
+          true
+        ]
+      },
+      "i113_j70_k11": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          11,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 61304798162.39292,
+            "exact": "2261747844384163764392871258035/36893488147419103232"
+          },
+          "available": {
+            "approximately": 62437010972.559746,
+            "exact": "73712611976845104441871551195953/1180591620717411303424"
+          },
+          "new_mass_factor": {
+            "approximately": 95249.54766496317,
+            "exact": "204546846089905/2147483648"
+          },
+          "qnc": {
+            "approximately": 11886.805112706048,
+            "exact": "1336680956551863981299670938833/112450817850379193695600640"
+          },
+          "residual": {
+            "approximately": 1132212810.1668227,
+            "exact": "1336680956551863981299670938833/1180591620717411303424"
+          }
+        },
+        "original_qnc_hex": "4639BAF3",
+        "original_qnc_value": 11886.7373046875,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 4237101865.984564,
+            "exact": "9770091717006804878692370955/2305843009213693952"
+          },
+          "available": {
+            "approximately": 4237102030.5215874,
+            "exact": "160073188907472489651870896123423/37778931862957161709568"
+          },
+          "new_mass_factor": {
+            "approximately": 95256.94581975605,
+            "exact": "3273003736101569/34359738368"
+          },
+          "qnc": {
+            "approximately": 0.0017272968606301708,
+            "exact": "6216032998519375090396703/3598705665597965667657580544"
+          },
+          "residual": {
+            "approximately": 164.53702346768287,
+            "exact": "6216032998519375090396703/37778931862957161709568"
+          }
+        },
+        "original_qnc_hex": "3ADDE41C",
+        "original_qnc_value": 0.0016928943805396557,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j70_k13": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          13,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 253444142775.81525,
+            "exact": "1168804809691541798149578872475/4611686018427387904"
+          },
+          "available": {
+            "approximately": 11504577380569.873,
+            "exact": "1697775956924481972508924446288377/147573952589676412928"
+          },
+          "new_mass_factor": {
+            "approximately": 95260.63724304741,
+            "exact": "1636565286220033/17179869184"
+          },
+          "qnc": {
+            "approximately": 118108943.66671076,
+            "exact": "1660374203014352634968137922369177/14057988764167842390081536"
+          },
+          "residual": {
+            "approximately": 11251133237794.057,
+            "exact": "1660374203014352634968137922369177/147573952589676412928"
+          }
+        },
+        "original_qnc_hex": "4CE14662",
+        "original_qnc_value": 118108944.0,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i113_j71_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          113,
+          12,
+          71
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 247058432932.254,
+            "exact": "9114847367106050028452233240605/36893488147419103232"
+          },
+          "available": {
+            "approximately": 9461431688625.506,
+            "exact": "2792521742895364802221210020548103/295147905179352825856"
+          },
+          "new_mass_factor": {
+            "approximately": 95091.8296295758,
+            "exact": "209109144768425911/2199023255552"
+          },
+          "qnc": {
+            "approximately": 96899736.72383063,
+            "exact": "2719602963958516401993592154623263/28066154314841211910750208"
+          },
+          "residual": {
+            "approximately": 9214373255693.252,
+            "exact": "2719602963958516401993592154623263/295147905179352825856"
+          }
+        },
+        "original_qnc_hex": "4CB8D253",
+        "original_qnc_value": 96899736.0,
+        "pd_fused_modes": [
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      },
+      "i114_j70_k12": {
+        "directional_fused_modes": [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            true,
+            false
+          ],
+          [
+            false,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "ikj_one_based": [
+          114,
+          12,
+          70
+        ],
+        "last_face_tendency_matches_rk_input": true,
+        "original_exact_saved_face": {
+          "applied_outflow": {
+            "approximately": 164775901386.99954,
+            "exact": "6079157764801566991973564215925/36893488147419103232"
+          },
+          "available": {
+            "approximately": 6619623189447.455,
+            "exact": "488441979360520653460626256892459/73786976294838206464"
+          },
+          "new_mass_factor": {
+            "approximately": 95187.66714947272,
+            "exact": "26164986712929207/274877906944"
+          },
+          "qnc": {
+            "approximately": 67811802.53030512,
+            "exact": "476283663830917519476679128460609/7023610139519092776763392"
+          },
+          "residual": {
+            "approximately": 6454847288060.456,
+            "exact": "476283663830917519476679128460609/73786976294838206464"
+          }
+        },
+        "original_qnc_hex": "4C81573C",
+        "original_qnc_value": 67811808.0,
+        "pd_fused_modes": [
+          false,
+          true
+        ],
+        "pd_old_buffer_reaches_rk": true,
+        "rk_fused_modes": [
+          true
+        ]
+      }
+    },
+    "common_directional_fused_modes": [
+      [
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        false
+      ],
+      [
+        true,
+        true,
+        true
+      ]
+    ],
+    "common_pd_fused_modes": [
+      true
+    ],
+    "common_rk_fused_modes": [
+      true
+    ],
+    "prior_producer_trace_sha256": "8bc210ac68a3fdd2c38b09d0e82da1b0b0cc73c90918b7e1dff26f05c2570394",
+    "prior_writer_trace_sha256": "9230fc2af3a8c21199ea7c98d521a9a750c1ced3366c16abf20e3dc0be675fc9",
+    "prior_writer_word_matches": 678,
+    "qi_boundary": {
+      "copy_branch": true,
+      "donor_or_zero_prediction_matches": true,
+      "donor_qi_hex": "00000000",
+      "indices_one_based": {
+        "DONOR_I": 2,
+        "DONOR_J": 168,
+        "IDE": 235,
+        "IDS": 1,
+        "JDE": 283,
+        "JDS": 1,
+        "SPEC_ZONE": 1,
+        "TILE_ITE": 235,
+        "TILE_ITS": 1,
+        "TILE_JTE": 283,
+        "TILE_JTS": 143
+      },
+      "periodic_x": false,
+      "ru_m_input_hex": "C7B997A8",
+      "ru_m_input_value": -95023.3125,
+      "target_after_hex": "00000000",
+      "target_before_hex": "00000007",
+      "x_start_eligible": true
+    },
+    "shared_face_pairs": [
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "D15AE798",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "4C08DCCA",
+        "name": "x_west",
+        "neighbor_ikj_one_based": [
+          112,
+          12,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "52B92B6F",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "51201A46",
+        "name": "x_east",
+        "neighbor_ikj_one_based": [
+          114,
+          12,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "D18849E4",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "00000000",
+        "name": "y_south",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          69
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "52DBC849",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "51177AF5",
+        "name": "y_north",
+        "neighbor_ikj_one_based": [
+          113,
+          12,
+          71
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "46B0EA2C",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "C9510B68",
+        "name": "z_bottom",
+        "neighbor_ikj_one_based": [
+          113,
+          11,
+          70
+        ]
+      },
+      {
+        "correction_bitwise_shared": true,
+        "correction_hex": "C9419539",
+        "low_order_bitwise_shared": true,
+        "low_order_hex": "C780D0F7",
+        "name": "z_top",
+        "neighbor_ikj_one_based": [
+          113,
+          13,
+          70
+        ]
+      }
+    ],
+    "shared_owner_call_id": 1,
+    "shared_trace_sha256": "4913955442054a711c4e240afa2e80ab0ee6e927aa2c87b7740c223879cd585b",
+    "writer_trace_sha256": "c34a2fec85c1d59a1f79b4568c36d522123ca37275bd2e25a338b01a27fc7960"
+  },
+  "limits": {
+    "full_fixed_support_candidate_admissible": false,
+    "host_one_ulp_counterfactual_executed": false,
+    "physical_number_units_certified": false,
+    "whole_domain_conservation_certified": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_star_qi_analysis.v1"
+}
