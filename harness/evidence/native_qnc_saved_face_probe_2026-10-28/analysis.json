@@ -1,0 +1,361 @@
+{
+  "alpha025": {
+    "all_compatible_f32_qnc_positive": true,
+    "case": "alpha025",
+    "faces": [
+      {
+        "counterfactual_post_hex": "D15AE797",
+        "field": "FX_WEST",
+        "post_hex": "D15AE798",
+        "pre_hex": "D483D5AF"
+      },
+      {
+        "counterfactual_post_hex": "52B92B71",
+        "field": "FX_EAST",
+        "post_hex": "52B92B72",
+        "pre_hex": "55DF092D"
+      },
+      {
+        "counterfactual_post_hex": "D18849E2",
+        "field": "FY_SOUTH",
+        "post_hex": "D18849E2",
+        "pre_hex": "D4A428AA"
+      },
+      {
+        "counterfactual_post_hex": "52DBC84A",
+        "field": "FY_NORTH",
+        "post_hex": "52DBC84B",
+        "pre_hex": "56045D02"
+      },
+      {
+        "counterfactual_post_hex": "46B0E9BB",
+        "field": "FZ_BOTTOM",
+        "post_hex": "46B0E9BC",
+        "pre_hex": "49D51739"
+      },
+      {
+        "counterfactual_post_hex": "C94194BF",
+        "field": "FZ_TOP",
+        "post_hex": "C94194C0",
+        "pre_hex": "CC692AD2"
+      }
+    ],
+    "limiter_threshold_inputs": {
+      "exact_ph_low_minus_flux_out_times_lower_scale": {
+        "approximately": 332.772705078125,
+        "exact": "1363037/4096"
+      },
+      "exact_ph_low_minus_flux_out_times_scale": {
+        "approximately": 28.5767822265625,
+        "exact": "234101/8192"
+      },
+      "flux_out": {
+        "hex": "52981914",
+        "value": 326627885056.0
+      },
+      "ph_low": {
+        "hex": "4F7C8CFE",
+        "value": 4237098496.0
+      }
+    },
+    "low_order_faces_unchanged": true,
+    "one_ulp_compatible_f32_qnc": [
+      {
+        "hex": "3ADDE41C",
+        "value": 0.0016928943805396557
+      }
+    ],
+    "one_ulp_exact_saved_face": {
+      "applied_outflow": {
+        "approximately": 4237098615.864185,
+        "exact": "312642695127662386952002339625/73786976294838206464"
+      },
+      "available": {
+        "approximately": 4237098504.1700563,
+        "exact": "160073055685678265540047439163423/37778931862957161709568"
+      },
+      "exact_real_qnc": {
+        "approximately": -0.001172556278428416,
+        "exact": "-4219684876579377758724577/3598705626509498199733960704"
+      },
+      "new_mass_factor": {
+        "approximately": 95256.94478509293,
+        "exact": "52368059208813039/549755813888"
+      },
+      "residual": {
+        "approximately": -111.69412867166966,
+        "exact": "-4219684876579377758724577/37778931862957161709568"
+      }
+    },
+    "one_ulp_lower_scale": {
+      "hex": "3C54898E",
+      "value": 0.01297224871814251
+    },
+    "original_compatible_direction_modes": [
+      [
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        false
+      ],
+      [
+        true,
+        true,
+        true
+      ]
+    ],
+    "original_compatible_rk_fused_modes": [
+      true
+    ],
+    "original_exact_saved_face": {
+      "applied_outflow": {
+        "approximately": 4237098913.9512568,
+        "exact": "78160679280651521458293222435/18446744073709551616"
+      },
+      "available": {
+        "approximately": 4237098504.1700563,
+        "exact": "160073055685678265540047439163423/37778931862957161709568"
+      },
+      "exact_real_qnc": {
+        "approximately": -0.004301851181259901,
+        "exact": "-5160365350135512360127819/1199568542169832733244653568"
+      },
+      "new_mass_factor": {
+        "approximately": 95256.94478509293,
+        "exact": "52368059208813039/549755813888"
+      },
+      "residual": {
+        "approximately": -409.7812004469612,
+        "exact": "-15481096050406537080383457/37778931862957161709568"
+      }
+    },
+    "producer_trace_sha256": "43d2cf010b8b8ce606c97da82f2538178da863ed5129014c11a400c12db3b6ae",
+    "rk3_state_trace_sha256": "af57665b1c25844fdca308f9b3abf9b7ba1cc4d2e7111ae8ea5f1785ead60e9a",
+    "six_outgoing_correction_faces_replayed": true,
+    "target_limiter_hit": true,
+    "target_scale": {
+      "hex": "3C54898F",
+      "value": 0.012972249649465084
+    },
+    "target_scale_source_compatible": true
+  },
+  "common_original_direction_modes": [
+    [
+      false,
+      true,
+      false
+    ],
+    [
+      false,
+      true,
+      true
+    ],
+    [
+      true,
+      true,
+      false
+    ],
+    [
+      true,
+      true,
+      true
+    ]
+  ],
+  "conclusion": "ONE_ULP_F32_POSITIVE_EXACT_SAVED_FACE_RESIDUAL_NEGATIVE",
+  "control": {
+    "all_compatible_f32_qnc_positive": true,
+    "case": "control",
+    "faces": [
+      {
+        "counterfactual_post_hex": "D15AE797",
+        "field": "FX_WEST",
+        "post_hex": "D15AE798",
+        "pre_hex": "D483D5AF"
+      },
+      {
+        "counterfactual_post_hex": "52B92B6E",
+        "field": "FX_EAST",
+        "post_hex": "52B92B6F",
+        "pre_hex": "55DF092A"
+      },
+      {
+        "counterfactual_post_hex": "D18849E3",
+        "field": "FY_SOUTH",
+        "post_hex": "D18849E4",
+        "pre_hex": "D4A428AC"
+      },
+      {
+        "counterfactual_post_hex": "52DBC848",
+        "field": "FY_NORTH",
+        "post_hex": "52DBC849",
+        "pre_hex": "56045D01"
+      },
+      {
+        "counterfactual_post_hex": "46B0EA2B",
+        "field": "FZ_BOTTOM",
+        "post_hex": "46B0EA2C",
+        "pre_hex": "49D517C0"
+      },
+      {
+        "counterfactual_post_hex": "C9419538",
+        "field": "FZ_TOP",
+        "post_hex": "C9419539",
+        "pre_hex": "CC692B64"
+      }
+    ],
+    "limiter_threshold_inputs": {
+      "exact_ph_low_minus_flux_out_times_lower_scale": {
+        "approximately": 260.175537109375,
+        "exact": "1065679/4096"
+      },
+      "exact_ph_low_minus_flux_out_times_scale": {
+        "approximately": -44.0206298828125,
+        "exact": "-360617/8192"
+      },
+      "flux_out": {
+        "hex": "5298191C",
+        "value": 326628147200.0
+      },
+      "ph_low": {
+        "hex": "4F7C8D0B",
+        "value": 4237101824.0
+      }
+    },
+    "low_order_faces_unchanged": true,
+    "one_ulp_compatible_f32_qnc": [
+      {
+        "hex": "3ADDE41C",
+        "value": 0.0016928943805396557
+      },
+      {
+        "hex": "3B8F8925",
+        "value": 0.004380362574011087
+      }
+    ],
+    "one_ulp_exact_saved_face": {
+      "applied_outflow": {
+        "approximately": 4237101536.2600846,
+        "exact": "312642910614845404638947737495/73786976294838206464"
+      },
+      "available": {
+        "approximately": 4237102030.5215874,
+        "exact": "160073188907472489651870896123423/37778931862957161709568"
+      },
+      "exact_real_qnc": {
+        "approximately": 0.005188718772134996,
+        "exact": "18672671642476729654525983/3598705665597965667657580544"
+      },
+      "new_mass_factor": {
+        "approximately": 95256.94581975605,
+        "exact": "3273003736101569/34359738368"
+      },
+      "residual": {
+        "approximately": 494.2615029512144,
+        "exact": "18672671642476729654525983/37778931862957161709568"
+      }
+    },
+    "one_ulp_lower_scale": {
+      "hex": "3C54898E",
+      "value": 0.01297224871814251
+    },
+    "original_compatible_direction_modes": [
+      [
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        true
+      ],
+      [
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true
+      ],
+      [
+        true,
+        false,
+        false
+      ],
+      [
+        true,
+        false,
+        true
+      ],
+      [
+        true,
+        true,
+        false
+      ],
+      [
+        true,
+        true,
+        true
+      ]
+    ],
+    "original_compatible_rk_fused_modes": [
+      true
+    ],
+    "original_exact_saved_face": {
+      "applied_outflow": {
+        "approximately": 4237101865.984564,
+        "exact": "9770091717006804878692370955/2305843009213693952"
+      },
+      "available": {
+        "approximately": 4237102030.5215874,
+        "exact": "160073188907472489651870896123423/37778931862957161709568"
+      },
+      "exact_real_qnc": {
+        "approximately": 0.0017272968606301708,
+        "exact": "6216032998519375090396703/3598705665597965667657580544"
+      },
+      "new_mass_factor": {
+        "approximately": 95256.94581975605,
+        "exact": "3273003736101569/34359738368"
+      },
+      "residual": {
+        "approximately": 164.53702346768287,
+        "exact": "6216032998519375090396703/37778931862957161709568"
+      }
+    },
+    "producer_trace_sha256": "8bc210ac68a3fdd2c38b09d0e82da1b0b0cc73c90918b7e1dff26f05c2570394",
+    "rk3_state_trace_sha256": "b528f712fc496106047b3e2cd3dbb25551cc3cd415dc22be8badb733a3a37c3e",
+    "six_outgoing_correction_faces_replayed": true,
+    "target_limiter_hit": true,
+    "target_scale": {
+      "hex": "3C54898F",
+      "value": 0.012972249649465084
+    },
+    "target_scale_source_compatible": true
+  },
+  "limits": {
+    "compiler_instruction_sequence_identified": false,
+    "full_fixed_support_candidate_admissible": false,
+    "host_variant_executed_for_one_ulp_probe": false,
+    "neighbor_shared_face_state_evaluated": false,
+    "physical_number_units_certified": false
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "schema": "kdm6.native_qnc_saved_face_residual_probe.v1"
+}
