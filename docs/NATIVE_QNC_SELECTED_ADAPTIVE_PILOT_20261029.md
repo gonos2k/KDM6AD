@@ -47,8 +47,12 @@ number budget.
 The four remaining receiver cells are `(i,k,j)=(152,12,268)`,
 `(214,14,181)`, `(214,15,182)` and `(225,20,205)`. They have exact
 residual 0 and QNC `00000000` in both original and candidate calculations.
-They are not newly invalidated by the selected face changes. This packet
-does not establish their later KDM/checkpoint status.
+They are not newly invalidated by the selected face changes. In the
+**unchanged host executions** recorded by PR #475, their QC remains positive
+and NC zero at `PRE_MICROPHYSICS`; all four reach QC=NC=`00000000` at
+`POST_MICROPHYSICS` and retain those words at `POST_FINISH`. The changed-scale
+candidate has not run through KDM or a final checkpoint, so its later state
+is unknown.
 
 For a separate **same fixed coordinate table** comparison, take at each
 donor the maximum of its control and α ULP counts. This table equals α's
