@@ -1,0 +1,39 @@
+{
+  "analysis_sha256": "f9b888a4a65aeea4efe2e1fb16aedfff33bb12f38366e050024201b20941e82a",
+  "external_source_pins": {
+    "harness/analyze_qi_donor_transient.py": "9e311db1d6096951657d0231eb2fd9ed421f0fb39c776e1d42cbe34654dc81cc",
+    "harness/analyze_qnc_candidate_inputs.py": "8917416b2bac9b5ac5daa7fa275c6c83b562d006e33325daa44926f937a7b9a7",
+    "harness/analyze_qnc_domain_preflight.py": "df0d32c9ea6c79555192b8a3bf4891a08d1fb39992430f504de09544ad5ccd76",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/evidence/native_qnc_live_guard_2026-10-30/replay.py": "eecd600aa9087f2f2bfd132d060d6dce6f56d47a4691392390a09edc243e219d",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_moment_trace_records.py": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944",
+    "harness/native_qi_donor_transient_overlay.py": "34e6df8c735a09c07c58464f9665fe22aa6d272c73edcadd4e57cb8d10f43a1a",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_candidate_face_overlay.py": "216ed63e3d8631ede9bfa69a4d43ce1eeb1f5c2b2fce5d15f4a24d229914196b",
+    "harness/native_qnc_domain_preflight_advect_overlay.py": "058a57892bce18cefb86ffd479fb97914b0081db7dc98ba15efc355417287969",
+    "harness/native_qnc_representative_trace_overlay.py": "862529b7f5161049f09e006b7716510e2e8ad1d4e64720df0a07ec4d9d128e05",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c",
+    "harness/native_qnc_star_qi_records.py": "eae1604689bbe7f9417b9badf3f21dad8fc6bbe2c6bc496f74c6c89cc2bcbf67",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "d860af8bb5d7117eee80cb443bc0d9e5f6ace0ea383cc9318cb6b52ad8067589",
+    "analysis.json": "f9b888a4a65aeea4efe2e1fb16aedfff33bb12f38366e050024201b20941e82a",
+    "data/alpha025/qi_donor.tsv": "fb57286ae6ca591041ce415b25e78c6cda598f024216bb86b9843f64374fc1a4",
+    "data/control/qi_donor.tsv": "d2eff88c0bc9740a2064e2b3ecf5eae827d1f3a4191553659cad9575a62e44f4",
+    "execution_summary.json": "752afc562c46984feebeba270ab5bdd562c7266bf413271c30740dc347b58f2d",
+    "replay.py": "c7fb00c568d19b4503ac898290ae42a3abd1e0cc67e0da511d5e5c7e61d66d42"
+  },
+  "schema": "kdm6.native_qi_donor_transient_manifest.v1",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_qnc_live_guard_2026-10-30/manifest.json": "7a74def7eb3b9f5a36610f35270b34b3e8d486c7ac6bdee219cff9832746cf23"
+  }
+}
