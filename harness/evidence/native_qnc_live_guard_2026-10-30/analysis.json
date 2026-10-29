@@ -1,0 +1,85 @@
+{
+  "cases": {
+    "alpha025": {
+      "M0_lost_channel_cells": 7,
+      "M0_lost_profiles": 1,
+      "M0_reason_profile_counts": {
+        "ice_QI_positive_NI_nonpositive": 1,
+        "liquid_QC_positive_NC_nonpositive": 0,
+        "negative_NC": 0,
+        "negative_NI": 0
+      },
+      "baseline_joint_failures_in_capture": 58,
+      "between_variant_changed_variables": {
+        "QNCLOUD": 58,
+        "RE_CLOUD": 54
+      },
+      "between_variant_numeric_element_mismatches": 112,
+      "candidate_joint_failures_in_capture": 4,
+      "captured_cells": 382,
+      "changed_unique_shared_faces": 310,
+      "checkpoint_sha256": "96575cc4557e4d4b0a6f5b606d4fe446c1db1fbc47570deadc5ab982694878ba",
+      "face_to_tendency_matches": 382,
+      "preexisting_zero_receivers_valid_at_finish": 4,
+      "qi_target_finish_word": "00000002",
+      "selected_donors": 54,
+      "selected_donors_valid_at_finish": 54,
+      "selected_ulp_histogram": {
+        "1": 25,
+        "2": 21,
+        "3": 6,
+        "4": 1,
+        "5": 1
+      },
+      "source_compatible_rk_output_matches": 382
+    },
+    "control": {
+      "M0_lost_channel_cells": 0,
+      "M0_lost_profiles": 0,
+      "M0_reason_profile_counts": {
+        "ice_QI_positive_NI_nonpositive": 0,
+        "liquid_QC_positive_NC_nonpositive": 0,
+        "negative_NC": 0,
+        "negative_NI": 0
+      },
+      "baseline_joint_failures_in_capture": 20,
+      "between_variant_changed_variables": {
+        "QNCLOUD": 14
+      },
+      "between_variant_numeric_element_mismatches": 14,
+      "candidate_joint_failures_in_capture": 4,
+      "captured_cells": 382,
+      "changed_unique_shared_faces": 87,
+      "checkpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+      "face_to_tendency_matches": 382,
+      "preexisting_zero_receivers_valid_at_finish": 4,
+      "qi_target_finish_word": "00000000",
+      "selected_donors": 54,
+      "selected_donors_valid_at_finish": 54,
+      "selected_ulp_histogram": {
+        "0": 38,
+        "1": 14,
+        "2": 2
+      },
+      "source_compatible_rk_output_matches": 382
+    }
+  },
+  "execution": {
+    "KDM_wrapper_entries_expected": 8,
+    "RTTOV_calls": 0,
+    "applied_ack_trace_off_on_equal": true,
+    "checkpoint_trace_off_on_equal": true,
+    "host_steps_completed": 4,
+    "optimizer_calls": 0
+  },
+  "limits": {
+    "accepted_analysis": false,
+    "emitted_FMA_instruction_sequence_identified": false,
+    "fixed_selected_54_donors": true,
+    "full_original_M0_supported_for_alpha": false,
+    "raw_NC_physical_units_certified": false,
+    "second_assimilation_run": false,
+    "whole_M0_RTTOV_cost_defined": false
+  },
+  "schema": "kdm6.native_qnc_live_guard_host.v1"
+}
