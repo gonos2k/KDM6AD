@@ -20,6 +20,10 @@ baseline and candidate, with no new receiver failures. A fixed common
 max-step table would change 297 control face words and overstep control's
 own first passing choice at 50 donors.
 
+In the unchanged PR #475 host records, those four receiver cells have
+QC>0, NC=0 before microphysics, then QC=NC=0 after microphysics and finish.
+The offline changed-scale proposal has no KDM/checkpoint result for them.
+
 This is a selected-neighborhood numerical counterfactual, not an executed
 host correction or a coordinate-independent runtime rule. Full fixed-M0
 support, physical number units, changed tile/MPI seams, optical cost and
