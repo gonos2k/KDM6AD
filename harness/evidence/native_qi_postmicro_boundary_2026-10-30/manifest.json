@@ -1,0 +1,45 @@
+{
+  "analysis_sha256": "2be31f625872e1d70af7326060a9fa13b60adc7b584fb1c26b84d4f18e2b19a7",
+  "external_source_pins": {
+    "harness/analyze_qi_donor_transient.py": "9e311db1d6096951657d0231eb2fd9ed421f0fb39c776e1d42cbe34654dc81cc",
+    "harness/analyze_qi_postmicro_boundary_pilot.py": "4728a9b7f043f1079fa47b0fb8b9cd9144b7b70afdb829845ef9ce2ffcbd0b97",
+    "harness/native_qi_postmicro_boundary_pilot_overlay.py": "222ca46f5ac57a0cbc40fafecae92539c0fd7ea4f7fe8a0c61b57b918ff0727c",
+    "harness/native_qnc_residual_reason_producer.py": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2",
+    "harness/native_replay_compare.py": "828611dfd411cdc350e18b344be16dfd837920723fda84182f382f28b0647183"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "b4d8b6bc2ccb040c697fded2af9728730625e7977c43c046ff4e8198b48e9e1a",
+    "SOURCE_RESOLUTION.md": "7d08305bf5f5721e98bf5acceeae6bafe4eb98f7d1232b79bf0538329fc896e0",
+    "analysis.json": "2be31f625872e1d70af7326060a9fa13b60adc7b584fb1c26b84d4f18e2b19a7",
+    "data/alpha025/checkpoint_comparison.json": "7727bc586e641039d755c23c60aa3bc7b698cc0aefb3afe269238e648f722ec1",
+    "data/alpha025/invalid_profiles.json": "69aca423bfef7178ea6da15973f39b8898018ef95dd162147a0119e0ca95afd9",
+    "data/alpha025/pilot_off.tsv": "1895c917a57c24485cfce0324d4ffe6297fdd0e3da01c2ea031927152184532e",
+    "data/alpha025/pilot_on.tsv": "667c99c90a238ac4eeb52202a7b7e4d5a681aae33b5feca67c2364f36c4bf53c",
+    "data/alpha025/qi_donor_pilot_on.tsv": "bec8580b6be5b9be0e3ef1fd970bed95930d87d3f0a0e38863b3f2243e1c47d1",
+    "data/alpha025/rk_writer_delta.json": "82baa3a60c51e97f219c762e6bdb49d32f03ae7c9b4687fd922eb987a8221290",
+    "data/alpha025/support_analysis.json": "23082959255774c6805b5cbbd5a7fb665531771f3841ccdbe8195042fe9fcb9c",
+    "data/alpha025/target_checkpoint_words.json": "d4f2dadf93f3d56fa3e93e2dfc0bff3cc1411e182438808a35c17e440851b342",
+    "data/control/checkpoint_comparison.json": "27c1a22f9f4afd73256839de9c39722a3ec79df7ecf760dbdfe92a169f13df61",
+    "data/control/invalid_profiles.json": "9c733e68ec933f26370542b724761935b545993ec90676a839ecf02ebb660d6c",
+    "data/control/pilot_off.tsv": "e9c6832815059e40521d4436b33d83b5d481858d7a9a51b62e1d03a2aef5c28f",
+    "data/control/pilot_on.tsv": "90d8b45297768f268e712d02231f69953f1da24d2075f93a78bc504f435467d7",
+    "data/control/qi_donor_pilot_on.tsv": "d2eff88c0bc9740a2064e2b3ecf5eae827d1f3a4191553659cad9575a62e44f4",
+    "data/control/support_analysis.json": "7fb9c4ff3bfdbdea55a78ddb0bbafaa90a735275559b44bcf50aa0c966f190a4",
+    "data/control/target_checkpoint_words.json": "1ffe211bb1924bd03ba4908c541b0d4de7b74a5436adca34b1642415953c3b74",
+    "execution_summary.json": "15053274c48c1dcd01cf092051c8a217912b251dd5cb446581b1b76a1ed2802c",
+    "replay.py": "9b7f357a32434b3d64cd112bc65c05589a1822835a776be84faeb3925e796b50",
+    "sample_analysis.json": "1cc23216280e3ce017ed43009c3f5f42362df7d3cda360b13a6ca43fcb4c8255"
+  },
+  "schema": "kdm6.native_qi_postmicro_boundary_manifest.v1",
+  "support_masks_sha256": "c4154b4b735fcbfb5509b1f23ee53f4cfe17b46ccf0c6930f63aa244f2a0f9a9",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_qi_outflow_terms_2026-10-30/manifest.json": "32c687ca397a13f3a1fed97f715a4326943157e545fed50c7e58fe68027c3e05",
+    "harness/evidence/native_qnc_host_backoff_2026-10-27/manifest.json": "b2655e61ce31d358499e95c11fb93b76747135a81ca180dbbed05b3b31cbe833"
+  }
+}
