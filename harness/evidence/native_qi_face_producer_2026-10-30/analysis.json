@@ -1,0 +1,59 @@
+{
+  "alpha025_exact_Z_increment_in_subnormal_ULP": "17635905/2048",
+  "alpha025_exact_Z_increment_in_subnormal_ULP_approximately": 8611.28173828125,
+  "changed_applied_face": {
+    "LOW_word_both": "80000000",
+    "POST_alpha025_word": "80000060",
+    "POST_control_word": "80000000",
+    "PRE_word_both": "80000060",
+    "face": "FZ_BOTTOM at donor (i,k,j)=(2,33,168)"
+  },
+  "directional_tendency": {
+    "alpha025": {
+      "AFTER_X": "000021A3",
+      "AFTER_Y": "000021A3",
+      "AFTER_Z": "000021A3",
+      "TEND_START": "00000000"
+    },
+    "control": {
+      "AFTER_X": "00000000",
+      "AFTER_Y": "00000000",
+      "AFTER_Z": "00000000",
+      "TEND_START": "00000000"
+    }
+  },
+  "host_steps_completed": 4,
+  "limits": {
+    "accepted_analysis": false,
+    "lower_owner_FLUX_OUT_six_face_decomposition_captured": false,
+    "physical_QI_NI_budget_certified": false,
+    "upstream_high_order_vertical_flux_stencil_captured": false,
+    "whole_M0_RTTOV_cost_defined": false,
+    "whole_M0_supported": false
+  },
+  "lower_owner_limiter": {
+    "PH_LOW_word_both": "01821C4D",
+    "alpha025_FLUX_OUT_word": "004C147C",
+    "alpha025_HIT": false,
+    "alpha025_SCALE_word": "3F800000",
+    "control_FLUX_OUT_word": "0707A41E",
+    "control_HIT": true,
+    "control_SCALE_word": "22B0552B",
+    "coord_ikj": [
+      2,
+      32,
+      168
+    ],
+    "west_boundary_owner_executed": false
+  },
+  "replay_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "same_PRE_LOW_and_donor_inputs": true,
+  "schema": "kdm6.native_qi_face_producer.v1",
+  "trace_off_on_and_parent_checkpoints_equal": true,
+  "trace_records_per_case": 85
+}
