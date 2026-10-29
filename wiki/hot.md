@@ -1,11 +1,12 @@
 ---
 title: Hot Cache
 type: meta
-date_modified: 2026-10-25
+date_modified: 2026-10-30
 ---
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-qnc-live-guard-host-2026-10-30]] — Selected-54 live QNC guard completed four native host steps and recovered all 53 liquid-failure M0 profiles; one QI/NI profile and seven channels still fail, so whole-M0 RTTOV cost and analysis acceptance remain open.
 - [[sources/native-block22-saved-response-2026-10-25]] — Saved block22 endpoints show a large, nonlinear target IR105 response and liquid Deff/QC/NC mapping; fixed-probe JVP and finite-profile K projection are kept distinct, with no named-process cause.
 - [[sources/native-ko7-restricted-confirmation-2026-10-25]] — One actual 129-block restricted T/Q confirmation preserves fixed support and lowers the declared objective by 0.076%; post-hoc same-scene result, with no forecast/host-cycle or physical-closure claim.
 - [[sources/native-domain-ko7-bounded-case-2026-10-25]] — Completed fixed 65,988-column KO7 case; baseline derivatives pass, all three full-domain proposals lose fixed support and are rejected. No host-cycle or fit-improvement claim.

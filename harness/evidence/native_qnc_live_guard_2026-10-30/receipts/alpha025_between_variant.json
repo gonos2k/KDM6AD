@@ -1,0 +1,14 @@
+{
+  "baseline_sha256": "e2b069e68c3a844d92ce17b1ef30a3ba21645882cb4ad2f7d57797458a3ae78f",
+  "candidate_sha256": "96575cc4557e4d4b0a6f5b606d4fe446c1db1fbc47570deadc5ab982694878ba",
+  "case": "alpha025",
+  "changed_variables": {
+    "QNCLOUD": 58,
+    "RE_CLOUD": 54
+  },
+  "errors": [],
+  "finite": true,
+  "numeric_element_mismatches": 112,
+  "numeric_elements_compared": 322426586,
+  "variable_count": 652
+}
