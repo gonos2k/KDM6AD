@@ -1,0 +1,340 @@
+{
+  "cases": {
+    "alpha025": {
+      "exact_term_float": {
+        "FX_EAST": 0.0,
+        "FX_WEST": 1.2546921186074791e-41,
+        "FY_NORTH": 6.763354966596736e-39,
+        "FY_SOUTH": 0.0,
+        "FZ_BOTTOM": 0.0,
+        "FZ_TOP": 2.1095819155515937e-40
+      },
+      "exact_total_float": 6.98686007933797e-39,
+      "low_faces": {
+        "FX_EAST": "00000000",
+        "FX_WEST": "00000000",
+        "FY_NORTH": "82690666",
+        "FY_SOUTH": "828BCD70",
+        "FZ_BOTTOM": "80000000",
+        "FZ_TOP": "80000000"
+      },
+      "pre_faces": {
+        "FX_EAST": "80F21276",
+        "FX_WEST": "80242657",
+        "FY_NORTH": "04183CB3",
+        "FY_SOUTH": "04107676",
+        "FZ_BOTTOM": "8036BE12",
+        "FZ_TOP": "80000060"
+      },
+      "pre_visit_same_bits": true,
+      "recorded_FLUX_OUT_float": 6.986846117154251e-39,
+      "recorded_FLUX_OUT_word": "004C147C",
+      "saved_exact_minus_recorded_float": 1.3962183718700947e-44,
+      "separate_f32_available_word": "01821C4D",
+      "separate_f32_candidate_word": "004C147C",
+      "vertical_producer_inputs": {
+        "32": {
+          "C1": "80000000",
+          "C2": "47B98C00",
+          "FIELD_M1": "814D0044",
+          "FIELD_M2": "92092E29",
+          "FIELD_P0": "80000BA2",
+          "FIELD_P1": "80000000",
+          "MUT": "47B9D9D8",
+          "OLD_M1": "01BE7B25",
+          "OLD_P0": "00000168",
+          "RDZW": "C2A1545E",
+          "RDZW_PREV": "C291141A",
+          "ROM": "3D8F1CD8"
+        },
+        "33": {
+          "C1": "80000000",
+          "C2": "47B98C00",
+          "FIELD_M1": "80000BA2",
+          "FIELD_M2": "814D0044",
+          "FIELD_P0": "80000000",
+          "FIELD_P1": "00000000",
+          "MUT": "47B9D9D8",
+          "OLD_M1": "00000168",
+          "OLD_P0": "00000000",
+          "RDZW": "C2B366D6",
+          "RDZW_PREV": "C2A1545E",
+          "ROM": "3DC59A35"
+        }
+      },
+      "vertical_source_compatible": {
+        "32": {
+          "low_order_word": "80000000",
+          "matching_mode_count": 4,
+          "matching_modes": [
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            }
+          ]
+        },
+        "33": {
+          "low_order_word": "80000000",
+          "matching_mode_count": 8,
+          "matching_modes": [
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            }
+          ]
+        }
+      },
+      "visit_faces": {
+        "FX_EAST": "80F21276",
+        "FX_WEST": "80242657",
+        "FY_NORTH": "04183CB3",
+        "FY_SOUTH": "04107676",
+        "FZ_BOTTOM": "8036BE12",
+        "FZ_TOP": "80000060"
+      }
+    },
+    "control": {
+      "exact_term_float": {
+        "FX_EAST": 0.0,
+        "FX_WEST": 1.254693177816709e-41,
+        "FY_NORTH": 6.763354966596736e-39,
+        "FY_SOUTH": 0.0,
+        "FZ_BOTTOM": 1.0203802486625376e-34,
+        "FZ_TOP": 2.1095819155515937e-40
+      },
+      "exact_total_float": 1.020450117263437e-34,
+      "low_faces": {
+        "FX_EAST": "00000000",
+        "FX_WEST": "00000000",
+        "FY_NORTH": "82690666",
+        "FY_SOUTH": "828BCD70",
+        "FZ_BOTTOM": "80000000",
+        "FZ_TOP": "80000000"
+      },
+      "pre_faces": {
+        "FX_EAST": "80F2126D",
+        "FX_WEST": "80242659",
+        "FY_NORTH": "04183CB3",
+        "FY_SOUTH": "04107675",
+        "FZ_BOTTOM": "01B121C9",
+        "FZ_TOP": "80000060"
+      },
+      "pre_visit_same_bits": true,
+      "recorded_FLUX_OUT_float": 1.0204500897799337e-34,
+      "recorded_FLUX_OUT_word": "0707A41E",
+      "saved_exact_minus_recorded_float": 2.748350318781523e-42,
+      "separate_f32_available_word": "01821C4D",
+      "separate_f32_candidate_word": "0707A41E",
+      "vertical_producer_inputs": {
+        "32": {
+          "C1": "80000000",
+          "C2": "47B98C00",
+          "FIELD_M1": "814D00CB",
+          "FIELD_M2": "92092E22",
+          "FIELD_P0": "80000BA2",
+          "FIELD_P1": "80000000",
+          "MUT": "47B9D9DB",
+          "OLD_M1": "01BE7B25",
+          "OLD_P0": "00000168",
+          "RDZW": "C2A1545E",
+          "RDZW_PREV": "C291141A",
+          "ROM": "3D8F1CF4"
+        },
+        "33": {
+          "C1": "80000000",
+          "C2": "47B98C00",
+          "FIELD_M1": "80000BA2",
+          "FIELD_M2": "814D00CB",
+          "FIELD_P0": "80000000",
+          "FIELD_P1": "00000000",
+          "MUT": "47B9D9DB",
+          "OLD_M1": "00000168",
+          "OLD_P0": "00000000",
+          "RDZW": "C2B366D6",
+          "RDZW_PREV": "C2A1545E",
+          "ROM": "3DC59A4B"
+        }
+      },
+      "vertical_source_compatible": {
+        "32": {
+          "low_order_word": "80000000",
+          "matching_mode_count": 4,
+          "matching_modes": [
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            }
+          ]
+        },
+        "33": {
+          "low_order_word": "80000000",
+          "matching_mode_count": 8,
+          "matching_modes": [
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": false,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": false,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": false,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            },
+            {
+              "flux3_combine_fma": true,
+              "flux4_fma": true,
+              "slope_fma": true,
+              "time_step_sign": 1
+            }
+          ]
+        }
+      },
+      "visit_faces": {
+        "FX_EAST": "80F2126D",
+        "FX_WEST": "80242659",
+        "FY_NORTH": "04183CB3",
+        "FY_SOUTH": "04107675",
+        "FZ_BOTTOM": "01B121C9",
+        "FZ_TOP": "80000060"
+      }
+    }
+  },
+  "changed_pre_faces": [
+    "FX_WEST",
+    "FX_EAST",
+    "FY_SOUTH",
+    "FZ_BOTTOM"
+  ],
+  "exact_term_delta_alpha_minus_control_float": {
+    "FX_EAST": 0.0,
+    "FX_WEST": -1.0592092296287335e-47,
+    "FY_NORTH": 0.0,
+    "FY_SOUTH": 0.0,
+    "FZ_BOTTOM": -1.0203802486625376e-34,
+    "FZ_TOP": 0.0
+  },
+  "exact_total_delta_alpha_minus_control_float": -1.0203802486626436e-34,
+  "owner_ikj": [
+    2,
+    32,
+    168
+  ],
+  "record_count_per_case": 63,
+  "schema": "kdm6.native_qi_outflow_terms.v1"
+}

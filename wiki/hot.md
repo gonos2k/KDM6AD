@@ -6,7 +6,8 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
-- [[sources/native-qi-face-producer-2026-10-30]] — Remaining QI donor tendency now traces to one lower vertical correction face whose applied word differs because the lower neighbor's limiter branch flips; the lower owner's six-face outflow decomposition and a physical correction remain open.
+- [[sources/native-qi-outflow-terms-2026-10-30]] — The remaining ice case's lower limiter-owner outflow splits at one vertical bottom face; saved six-face and f32 aggregate replays identify the term, while QI/NI correction and whole-M0 cost remain open.
+- [[sources/native-qi-face-producer-2026-10-30]] — The earlier QI donor trace linked the changed applied face to the lower neighbor's limiter branch; the lower owner's outflow terms are now decomposed above, while a physical correction remains open.
 - [[sources/native-qi-donor-transient-2026-10-30]] — The earlier donor trace located the RK3 positive QI advection tendency and following X-start copy; the face result is linked above, while a physical correction remains unresolved.
 - [[sources/native-qnc-live-guard-host-2026-10-30]] — Selected-54 live QNC guard completed four native host steps and recovered all 53 liquid-failure M0 profiles; one QI/NI profile and seven channels still fail, so whole-M0 RTTOV cost and analysis acceptance remain open.
 - [[sources/native-block22-saved-response-2026-10-25]] — Saved block22 endpoints show a large, nonlinear target IR105 response and liquid Deff/QC/NC mapping; fixed-probe JVP and finite-profile K projection are kept distinct, with no named-process cause.
