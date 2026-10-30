@@ -95,6 +95,14 @@ class WitnessTest(unittest.TestCase):
                 ):
                     guard.check(target / "absent-archive.tar.gz")
 
+    def test_official_replay_requires_guard_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "chunk_artifacts.tar.gz"
+            archive.write_bytes(b"changed guard archive")
+            with patch.object(r, "QNC_ARCHIVE", archive):
+                with self.assertRaisesRegex(ValueError, "guard archive SHA differs"):
+                    r.verify(self.data)
+
     def test_optimized_python_rejects_mutation(self):
         script = """
 import importlib.util

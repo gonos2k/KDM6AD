@@ -12,6 +12,9 @@ MOM = (
     HERE.parent
     / "native_qi_m0_cost_decomposition_2026-10-31/data/east_cost_moment_witness.json"
 )
+QNC_ARCHIVE = (
+    HERE.parent / "native_qnc_guard_control_direct_m0_2026-10-31/chunk_artifacts.tar.gz"
+)
 
 
 def check_source_manifest():
@@ -158,6 +161,12 @@ def verify(x):
     pilot = module_from_spec(spec)
     spec.loader.exec_module(pilot)
     pilot.check(x)
+    spec = spec_from_file_location("east_qnc", HERE / "crosscheck_qnc.py")
+    qnc = module_from_spec(spec)
+    spec.loader.exec_module(qnc)
+    qnc_result = qnc.check(QNC_ARCHIVE)
+    if qnc_result["profiles"] != 10 or qnc_result["channels"] != 7:
+        raise ValueError("QNC direct archive join differs")
     return {
         "profiles": 10,
         "global_denominator": 377342,

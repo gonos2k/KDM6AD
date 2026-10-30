@@ -24,13 +24,13 @@ The packet's source reference is repository commit `3816ba82`. The guard and pil
 
 For the 82 changed native levels, the saved guard-to-pilot diameter categories differ on 29; none changes side of the threshold as computed from serialized liquid and ice values. This records output categories, not proof of internal clamp activation or an exact pre-serialization branch crossing. `analysis.json` gives each level's values and flags. At `(234,52)`, channel 10–16 Huber numerator changes are `+1.54215326, −1.07883603, −2.24164119, −1.13041158, +4.34900745, +5.34192646, +4.12197263`; summed over all ten they are `+10.73247167, +12.60376608, +6.73707901, +14.64147075, +25.98225973, +29.17382713, +24.04930616`. Divide these numerators by 377342 for their fixed-support cost contributions.
 
-The separate QNC-guard-only packet supplies the third state's direct captures. Once both packets are present, verify that join using its pinned archive:
+The separate QNC-guard-only packet supplies the third state's direct captures. The official replay now checks that archive join as part of its fixed evidence path; the join can also be run separately:
 
 ```sh
 python3 harness/evidence/east_optical_witness_2026-10-31/crosscheck_qnc.py harness/evidence/native_qnc_guard_control_direct_m0_2026-10-31/chunk_artifacts.tar.gz
 ```
 
-This required stacked-packet check verifies the archive SHA, binding, chunk receipt and capture hashes, direct/K metadata, selected flat rows and case ordinals, validity, quality and exact BTs at all ten profiles. The main replay likewise verifies the pilot control archive and case ordinals. The original ordinal is anchored only to the private result receipt at extraction time. The QNC packet's own complete replay remains necessary for its broader receipt and source checks.
+This stacked-packet check verifies the archive SHA, binding, chunk receipt and capture hashes, direct/K metadata, selected flat rows and case ordinals, validity, quality and exact BTs at all ten profiles. The main replay also verifies the pilot control archive and case ordinals. The original ordinal is anchored only to the private result receipt at extraction time. The QNC packet's own complete replay remains necessary for its broader receipt and source checks.
 
 The strengthened exporter used for the regenerated witness has SHA-256 `f4671bbc8836efdc2e934990329948ed1452d96b48ce050ff802d53ea52d9695`; the resulting `witness.json` SHA-256 is `a7748163ccf75252ec6fa8d0b38b26973dbceb8c5d24fef537ee3db356fc0136`. These are recorded export-time identities, not independent proof of execution.
 
