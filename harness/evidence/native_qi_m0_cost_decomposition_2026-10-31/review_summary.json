@@ -1,0 +1,22 @@
+{
+  "checkpoint_witness_east_state_equal_before_boundary_pilot": true,
+  "costs": {
+    "alpha025": 11.007331464977474,
+    "baseline": 11.007963317242059,
+    "control": 11.008295588872157
+  },
+  "direct_receipts_semantically_verified": 258,
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "pilot_alpha_profile_loss_decrease_count_vs_original": 33453,
+  "pilot_alpha_profile_loss_increase_count_vs_original": 14804,
+  "pilot_control_changed_profiles": 11,
+  "pilot_control_east_profiles": 10,
+  "pilot_control_minus_original_east_share": 0.9883565126914912,
+  "schema": "kdm6.qi_m0_cost_decomposition_review.v1",
+  "scope": "saved direct observation arrays and private-checkpoint producer receipts; no new model calls or physical/derivative acceptance"
+}
