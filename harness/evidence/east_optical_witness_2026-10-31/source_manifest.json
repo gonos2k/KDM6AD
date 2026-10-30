@@ -1,0 +1,11 @@
+{
+  "schema": "east-optical-source-manifest-v1",
+  "sha256": {
+    "analyze.py": "2309c26fb300637e6784496268678b1d2bf3a5bc5c23c101b79c37071d2194cf",
+    "crosscheck_pilot.py": "8765b50ba7bc9417590c921759ad29405cb2346010204dc96740303f098be927",
+    "crosscheck_qnc.py": "a1f8517c5d4e4341d7ea4f968ee0eba76de3f1091acc635bd12d7ce2f714986f",
+    "extract.py": "f4671bbc8836efdc2e934990329948ed1452d96b48ce050ff802d53ea52d9695",
+    "replay.py": "02523e1f89db34ec55bc0b0583bd47473c91ee48c91101670a250e0b6121fa5b",
+    "test_witness.py": "7fc4a28fc0f9b99d39d91def54a4d99a0c08a4e16a9d7fb5f3d7c7fa6a1e4fa8"
+  }
+}

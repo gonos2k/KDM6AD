@@ -1,0 +1,3230 @@
+{
+  "cases": [
+    "original_control",
+    "qnc_guard_control",
+    "pilot_control"
+  ],
+  "channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "east10_channel_huber_deltas": [
+    10.732471670643971,
+    12.603766076411091,
+    6.737079011749005,
+    14.641470748881545,
+    25.982259728618708,
+    29.173827131856296,
+    24.04930615524419
+  ],
+  "east10_fixed_m0_cost_delta": 0.0003284028295906759,
+  "profiles": [
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.4673829343358442e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.4673829343358442e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.686323522875543e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485772268435947,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485772268435947,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014388640774987025,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010469584581083882,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010469584581083882,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012276450365857972,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.00045368468747598384,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.00045368468747598384,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.000725690232615127,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.0395322046043675e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.0395322046043675e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.0727618557663448,
+        -1.5682515190333106,
+        -1.0787856744174746,
+        -1.8146107550529678,
+        -2.499546669791698,
+        -2.76197612947027,
+        -2.3185462328576705
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.0727618557663448,
+        1.5682515190333106,
+        1.0596169385160505,
+        1.8146107550529678,
+        2.499546669791698,
+        2.76197612947027,
+        2.3185462328576705
+      ],
+      "i": 234,
+      "j": 3,
+      "seven_channel_huber_delta": 13.095310100488312
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1067871542794948e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1067871542794948e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.4759002414485025e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.4759002414485025e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.659399768165386e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485011356497359,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485011356497359,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014349068617530096,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010472221513107055,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010472221513107055,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001237729258091091,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0005467951081836605,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0005467951081836605,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0008818271453327572,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.782690120484176e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.782690120484176e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 1.0505654552020013e-13,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 1.0505654552020013e-13,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.1597458614839695,
+        -1.6968730991292773,
+        -1.1669173100448234,
+        -1.9621993956716892,
+        -2.6994993255101463,
+        -2.9814429381862624,
+        -2.504008423338803
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.1597458614839695,
+        1.6968730991292773,
+        1.1569915412454255,
+        1.9621993956716892,
+        2.6994993255101463,
+        2.9814429381862624,
+        2.504008423338803
+      ],
+      "i": 234,
+      "j": 4,
+      "seven_channel_huber_delta": 14.160760584565573
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.5446001065361992e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.5446001065361992e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.93543254481183e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.93543254481183e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.5661739391793532e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.5661739391793532e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.71756694773789e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485540989942275,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485540989942275,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014289355016644158,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010475335862850793,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010475335862850793,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012423605272794437,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0005857240049221991,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0005857240049221991,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0009444086064933229,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.760436702695473e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.760436702695473e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 6.504390830774274e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 6.504390830774274e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.185519358212332,
+        -1.7379853038490864,
+        -1.194971754592359,
+        -2.0092902685676677,
+        -2.763002533451413,
+        -3.050975343997038,
+        -2.5628081447847535
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.185519358212332,
+        1.7379853038490864,
+        1.1931084116302921,
+        2.0092902685676677,
+        2.763002533451413,
+        3.050975343997038,
+        2.5628081447847535
+      ],
+      "i": 234,
+      "j": 5,
+      "seven_channel_huber_delta": 14.502689364492582
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.821815027877223e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.821815027877223e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.655683358225495e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.655683358225495e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.578998694293395e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.578998694293395e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.720838793676688e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485506143143638,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485506143143638,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014270934741994349,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010480862890700877,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010480862890700877,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012502788657009337,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0006533162243005787,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0006533162243005787,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010445557825541942,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.459241008710165e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.459241008710165e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 6.473387700019692e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 6.473387700019692e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.231108973550846,
+        -1.8087287049207248,
+        -1.243022751823048,
+        -2.089807077616115,
+        -2.871101613629037,
+        -3.168950524550951,
+        -2.661758978417822
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.231108973550846,
+        1.8087287049207248,
+        1.2415837569010924,
+        2.089807077616115,
+        2.871101613629037,
+        3.168950524550951,
+        2.661758978417822
+      ],
+      "i": 234,
+      "j": 6,
+      "seven_channel_huber_delta": 15.073039629586589
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.3140946085072e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.3140946085072e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 3.40825946690887e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 3.40825946690887e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.6372836623771683e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.6372836623771683e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.783140077943538e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485734554207843,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010485734554207843,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001428380849183747,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010486814886081202,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010486814886081202,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012601430208596257,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0007593082115114181,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0007593082115114181,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010468933422043186,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 9.448377381674348e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 9.448377381674348e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 7.035308950530324e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 7.035308950530324e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.1015165884438716,
+        -1.633508897580441,
+        -1.1210504081956287,
+        -1.8840102058828165,
+        -2.584582724093991,
+        -2.8487326355273126,
+        -2.386046555755115
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.1015165884438716,
+        1.633508897580441,
+        1.1210504081956287,
+        1.8840102058828165,
+        2.584582724093991,
+        2.8487326355273126,
+        2.386046555755115
+      ],
+      "i": 234,
+      "j": 7,
+      "seven_channel_huber_delta": 13.559448015479177
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 5.911056650802884e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 5.911056650802884e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.14700704814896e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.14700704814896e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.70266894823009e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.70266894823009e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.857815288338942e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010486003324469153,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010486003324469153,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001430952026936687,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001049293364336624,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001049293364336624,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012711163196795238,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0008687610687964234,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0008687610687964234,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010500919940987655,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.3359780713886564e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.3359780713886564e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 7.991461650555219e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 7.991461650555219e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -0.9723240386085479,
+        -1.458254931417116,
+        -0.9990541266724335,
+        -1.6782469912176339,
+        -2.298298867387018,
+        -2.5288632125682966,
+        -2.1106016720074763
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        0.9723240386085479,
+        1.458254931417116,
+        0.6998137315254038,
+        1.6782469912176339,
+        2.298298867387018,
+        2.5288632125682966,
+        2.1106016720074763
+      ],
+      "i": 234,
+      "j": 8,
+      "seven_channel_huber_delta": 11.746403444731493
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.641641204604753e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.641641204604753e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.8798840003516534e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 4.8798840003516534e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.763032606486533e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.763032606486533e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.9285115484768e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001048616141617972,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001048616141617972,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014345753731802259,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010499515574807967,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010499515574807967,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001283667673067612,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0009875616760245411,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0009875616760245411,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010549725650429525,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8029779960347382e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8029779960347382e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.122912261997023e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.122912261997023e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -0.8366046288761311,
+        -1.2731520248820516,
+        -0.8704332715250871,
+        -1.4611939047834426,
+        -1.9966630217483612,
+        -2.192007688488843,
+        -1.8206748721039503
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        0.8366046288761311,
+        1.2731520248820516,
+        0.794994864095721,
+        1.4611939047834426,
+        1.9966630217483612,
+        2.192007688488843,
+        1.8206748721039503
+      ],
+      "i": 234,
+      "j": 9,
+      "seven_channel_huber_delta": 10.3752910049785
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 9.367610281139377e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 9.367610281139377e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 5.549256151686991e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 5.549256151686991e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8061840306593258e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8061840306593258e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 7.98128892193857e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001048638963809835,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001048638963809835,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001439432551251325,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010505037835265448,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010505037835265448,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001297318539748843,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010392852839196376,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010392852839196376,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010632470403845002,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.1286816065537373e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.1286816065537373e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.572253329083685e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.572253329083685e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -0.798306485991759,
+        -1.225502493784063,
+        -0.8369808578477205,
+        -1.4046659454057817,
+        -1.917208515872744,
+        -2.1022757945782473,
+        -1.7419956596931456
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        0.798306485991759,
+        1.225502493784063,
+        0.8369808578477205,
+        1.4046659454057817,
+        1.917208515872744,
+        2.1022757945782473,
+        1.7419956596931456
+      ],
+      "i": 234,
+      "j": 10,
+      "seven_channel_huber_delta": 10.026935753173461
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1209583879749814e-11,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1209583879749814e-11,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.2178690555409225e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.2178690555409225e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8537213478432962e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.8537213478432962e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 8.029786052391335e-06,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010489105575691988,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010489105575691988,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001443811005519258,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010507143348231708,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010507143348231708,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0013104382809418932,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001036928828623689,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001036928828623689,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010729543843381731,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.316970413126045e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.316970413126045e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.826609563670367e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 9.826609563670367e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -0.8324306218173945,
+        -1.280345130553087,
+        -0.8745796912657511,
+        -1.4678577857453092,
+        -2.003349002681091,
+        -2.196676408375936,
+        -1.820892989279173
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        0.8324306218173945,
+        1.280345130553087,
+        0.8745796912657511,
+        1.4678577857453092,
+        2.003349002681091,
+        2.196676408375936,
+        1.820892989279173
+      ],
+      "i": 234,
+      "j": 11,
+      "seven_channel_huber_delta": 10.476131629717742
+    },
+    {
+      "changed_native_layers": [
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 18,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 5.377913628135e-17,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 5.377913628135e-17,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 49
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 19,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 1.563448911705826e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 1.563448911705826e-14,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 48
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 20,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.2725748220980897e-11,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.2725748220980897e-11,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 47
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 21,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.031108133988242e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.031108133988242e-10,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 46
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 22,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.9437063698085652e-05,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.9437063698085652e-05,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 3.082289266228004e-05,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 45
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 23,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.00011492359617589231,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.00011492359617589231,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.00026385524841889295,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 44
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 24,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.000666377090148627,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.000666377090148627,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0012681710003564143,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 43
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 25,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001047233887096558,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001047233887096558,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000007,
+              "ice_g_m3": 0.0016766211610274966,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 42
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 26,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010528915818593695,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010528915818593695,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0014401072851898057,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 41
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 27,
+          "optics": [
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010260486520481155,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.0010260486520481155,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            },
+            {
+              "cloud_fraction": 0.999999,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 0.001141437107956704,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": true
+            }
+          ],
+          "rttov_layer_1based": 40
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 28,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.152427939463355e-07,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 6.152427939463355e-07,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 39
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 29,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.7379170768514518e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 2.7379170768514518e-09,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 38
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": true,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 30,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1643286065418546e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "interior",
+              "diameter_um": 20.020000000000003,
+              "ice_g_m3": 1.1643286065418546e-12,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 37
+        },
+        {
+          "guard_to_pilot": {
+            "cloud_fraction_changed": false,
+            "ice_content_changed": true,
+            "observed_diameter_bound_category_changed": false,
+            "serialized_content_threshold_side_changed": false
+          },
+          "native_k_1based": 31,
+          "optics": [
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 4.465712518349469e-16,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 4.465712518349469e-16,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            },
+            {
+              "cloud_fraction": 0.0,
+              "diameter_bound_observed": "minimum_10",
+              "diameter_um": 10.0,
+              "ice_g_m3": 0.0,
+              "liquid_g_m3": 0.0,
+              "total_content_above_1e-6_g_m3": false
+            }
+          ],
+          "rttov_layer_1based": 36
+        }
+      ],
+      "channel_bt_delta_pilot_minus_qnc": [
+        -1.7950303257548512,
+        -3.353696881200051,
+        -2.2416411894740804,
+        -3.767093454326016,
+        -5.010606344749817,
+        -5.370063623403723,
+        -4.329785618171513
+      ],
+      "channel_huber_delta_pilot_minus_qnc": [
+        1.5421532578927744,
+        -1.078836028738067,
+        -2.2416411894740804,
+        -1.1304115810618782,
+        4.349007454453207,
+        5.34192645611314,
+        4.121972627006281
+      ],
+      "i": 234,
+      "j": 52,
+      "seven_channel_huber_delta": 10.904170996191377
+    }
+  ]
+}

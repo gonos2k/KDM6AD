@@ -23,6 +23,7 @@ date_modified: 2026-10-26
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/east-optical-witness-2026-10-31|East-edge optical witness]] — Ten three-state saved RTTOV profiles connect changed ice moments, optical inputs and fixed-M0 channel losses with retained-input provenance limits.
 - [[sources/native-qc-nc-boundary-2026-10-26|Native QC-NC boundary trace V2]] — Corrected control/alpha1/alpha0.25 off/on boundary traces, exact checkpoint noninterference and raw-unit/cause/cost limits.
 - [[sources/native-upstream-nc-rk-2026-10-26|Native upstream QNC RK trace]] — Four actual control/alpha0.25 full-domain steps locate the RK sign change before KDM; source-order replay and cause/unit/admissibility limits remain explicit.
 - [[sources/native-qnc-flux-limiter-2026-10-27|Native QNC flux and limiter trace]] — Same-run QNC face and tendency words show an active RK3 limiter and a negative candidate NC; complete number-budget and repair remain open.
