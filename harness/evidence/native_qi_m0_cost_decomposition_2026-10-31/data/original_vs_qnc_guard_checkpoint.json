@@ -1,0 +1,212 @@
+{
+  "changed_rows": {
+    "QNCLOUD": [
+      {
+        "ijk_1based": [
+          180,
+          121,
+          4
+        ],
+        "original_word": "3AC3E348",
+        "qnc_guard_word": "3CBB89DE"
+      },
+      {
+        "ijk_1based": [
+          192,
+          136,
+          4
+        ],
+        "original_word": "3BB16DD5",
+        "qnc_guard_word": "3CDBFB86"
+      },
+      {
+        "ijk_1based": [
+          57,
+          159,
+          4
+        ],
+        "original_word": "3A563092",
+        "qnc_guard_word": "3C118A9B"
+      },
+      {
+        "ijk_1based": [
+          208,
+          193,
+          4
+        ],
+        "original_word": "3C209A7A",
+        "qnc_guard_word": "3CA856A7"
+      },
+      {
+        "ijk_1based": [
+          189,
+          227,
+          4
+        ],
+        "original_word": "488528E3",
+        "qnc_guard_word": "488528E2"
+      },
+      {
+        "ijk_1based": [
+          189,
+          228,
+          4
+        ],
+        "original_word": "3C000195",
+        "qnc_guard_word": "3D4FED29"
+      },
+      {
+        "ijk_1based": [
+          198,
+          232,
+          4
+        ],
+        "original_word": "3AB01135",
+        "qnc_guard_word": "3BF9D172"
+      },
+      {
+        "ijk_1based": [
+          70,
+          180,
+          5
+        ],
+        "original_word": "3D05AE41",
+        "qnc_guard_word": "3E524913"
+      },
+      {
+        "ijk_1based": [
+          221,
+          63,
+          6
+        ],
+        "original_word": "405C5296",
+        "qnc_guard_word": "488770A7"
+      },
+      {
+        "ijk_1based": [
+          229,
+          166,
+          8
+        ],
+        "original_word": "3A742FE2",
+        "qnc_guard_word": "3BCDC454"
+      },
+      {
+        "ijk_1based": [
+          133,
+          152,
+          11
+        ],
+        "original_word": "359F2FC0",
+        "qnc_guard_word": "386C6D5B"
+      },
+      {
+        "ijk_1based": [
+          152,
+          268,
+          11
+        ],
+        "original_word": "32506619",
+        "qnc_guard_word": "341F5E96"
+      },
+      {
+        "ijk_1based": [
+          227,
+          148,
+          12
+        ],
+        "original_word": "3D0B5B5A",
+        "qnc_guard_word": "3E25C862"
+      },
+      {
+        "ijk_1based": [
+          120,
+          94,
+          13
+        ],
+        "original_word": "3B85E495",
+        "qnc_guard_word": "3BDCEB27"
+      },
+      {
+        "ijk_1based": [
+          190,
+          111,
+          14
+        ],
+        "original_word": "3BF64834",
+        "qnc_guard_word": "3C9440D9"
+      }
+    ],
+    "RE_CLOUD": [
+      {
+        "ijk_1based": [
+          221,
+          63,
+          6
+        ],
+        "original_word": "3851B717",
+        "qnc_guard_word": "38339AD2"
+      }
+    ]
+  },
+  "changed_variables": {
+    "QNCLOUD": 15,
+    "RE_CLOUD": 1
+  },
+  "comparison_source_sha256": "828611dfd411cdc350e18b344be16dfd837920723fda84182f382f28b0647183",
+  "east_pilot_control_cost_profiles_ij_1based": [
+    [
+      234,
+      3
+    ],
+    [
+      234,
+      4
+    ],
+    [
+      234,
+      5
+    ],
+    [
+      234,
+      6
+    ],
+    [
+      234,
+      7
+    ],
+    [
+      234,
+      8
+    ],
+    [
+      234,
+      9
+    ],
+    [
+      234,
+      10
+    ],
+    [
+      234,
+      11
+    ],
+    [
+      234,
+      52
+    ]
+  ],
+  "east_profiles_bitwise_equal_before_boundary_pilot": true,
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "numeric_elements_compared": 322426586,
+  "original_checkpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "qnc_guard_checkpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+  "schema": "kdm6.original_vs_qnc_guard_control_checkpoint.v1",
+  "scope": "checkpoint state identity at specified profiles; per-profile cost attribution is an inference from the observation operator",
+  "variable_count": 652
+}

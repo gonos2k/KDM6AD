@@ -1,0 +1,34 @@
+{
+  "analysis_sha256": "196fd4382f140ad8f3dffe7a9b862d3aae407f02d9cddfa533b1b848ef3ea025",
+  "external_source_pins": {
+    "harness/analyze_qi_m0_cost_decomposition.py": "3e9087d1b367aef646e860c3e6a374febc654284086608f5e634d846b79bf4bd",
+    "harness/analyze_qi_m0_direct_semantics.py": "d19042e055159b6aaf5a1ef3b9a374923fabb2246efd5e5bb7f3477bf2f79ac0",
+    "harness/native_qnc_residual_reason_producer.py": "2ea081137e622de965b6826be676afb8b5785c75e4055a23172e7e6185c153d2",
+    "harness/native_replay_compare.py": "828611dfd411cdc350e18b344be16dfd837920723fda84182f382f28b0647183"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "12a1cccefff4666f2f935597100096a48d7632f6394ac14ef086f7e1bd59344f",
+    "analysis.json": "196fd4382f140ad8f3dffe7a9b862d3aae407f02d9cddfa533b1b848ef3ea025",
+    "data/compare_original_checkpoint.py.txt": "36869869af1fdba2692b945a5e758e2764a8ffce014724235a703bf369980cb3",
+    "data/east_cost_moment_witness.json": "7f4830239f7e9b116f20db6cc1acd95e9be91749346dc23dcc3168596850021f",
+    "data/export_east_cost_witness.py.txt": "a9a5a8f7072c7c51c511db29b67edfe3b49ee6ab2de352c72dae3245374e2857",
+    "data/original_vs_qnc_guard_checkpoint.json": "5a66c86f0283d286aad4e84adc7042fe03ae82119315e1be18d5dcda89ed4aae",
+    "replay.py": "3304c12586026999636b82bbad3b14ef4271e38c54cf65e9857a4005aa0d2914",
+    "review_summary.json": "14628c6b18a8e2183345d80c9aea86957a5323820c967145352f76ac88c16d31",
+    "semantic_analysis.json": "00e9a77585f2952e8f2c5f7c7a401320daf06bb25f59d3e45d33ee8f42cedbc4"
+  },
+  "review_summary_sha256": "14628c6b18a8e2183345d80c9aea86957a5323820c967145352f76ac88c16d31",
+  "schema": "kdm6.qi_m0_cost_decomposition_manifest.v1",
+  "semantic_analysis_sha256": "00e9a77585f2952e8f2c5f7c7a401320daf06bb25f59d3e45d33ee8f42cedbc4",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_full_physics_observation_2026-10-25/manifest.json": "84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663",
+    "harness/evidence/native_qi_postmicro_boundary_2026-10-30/manifest.json": "1b596067fa3de9aa41eb063bf48adb458d6f2e3bf3700e0bbec5417563d3d302",
+    "harness/evidence/native_qi_postmicro_direct_m0_2026-10-30/manifest.json": "ace7257c06ff044ba8275bd036aa315d512b81a1386c70b2a81199d48ff8b091"
+  }
+}

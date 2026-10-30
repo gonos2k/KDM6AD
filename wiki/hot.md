@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-qi-m0-cost-decomposition-2026-10-31]] — Ten east-edge profiles explain about 98.84% of the pilot-control cost increase over original control; alpha has mixed profile/channel losses despite lower aggregate cost. Boundary physics and derivative admission remain open.
 - [[sources/native-qi-postmicro-direct-m0-2026-10-30]] — Both pilot checkpoints retain all 377,342 original-M0 cells in 129 direct RTTOV blocks each; alpha-minus-control Huber cost is −0.0009641239. Physical boundary and derivative admission remain open.
 - [[sources/native-qi-postmicro-boundary-pilot-2026-10-30]] — An opt-in late QI/NI boundary reapplication restores the last frozen-M0 hard-moment profile in actual host checkpoints but changes thousands of boundary moments; the direct cost is recorded above, while physics and derivative admission remain open.
 - [[sources/native-qi-outflow-terms-2026-10-30]] — The remaining ice case's lower limiter-owner outflow splits at one vertical bottom face; saved six-face and f32 aggregate replays identify the term, while QI/NI correction and whole-M0 cost remain open.
