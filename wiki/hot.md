@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-qi-postmicro-boundary-pilot-2026-10-30]] — An opt-in late QI/NI boundary reapplication restores the last frozen-M0 profile in actual host checkpoints but changes thousands of boundary moments; direct full-M0 RTTOV cost and physics/derivative admission remain open.
 - [[sources/native-qi-outflow-terms-2026-10-30]] — The remaining ice case's lower limiter-owner outflow splits at one vertical bottom face; saved six-face and f32 aggregate replays identify the term, while QI/NI correction and whole-M0 cost remain open.
 - [[sources/native-qi-face-producer-2026-10-30]] — The earlier QI donor trace linked the changed applied face to the lower neighbor's limiter branch; the lower owner's outflow terms are now decomposed above, while a physical correction remains open.
 - [[sources/native-qi-donor-transient-2026-10-30]] — The earlier donor trace located the RK3 positive QI advection tendency and following X-start copy; the face result is linked above, while a physical correction remains unresolved.
