@@ -97,7 +97,8 @@ def verify(folder):
         historical = json.load(tar.extractfile('control/binding.json'))
     require(binding['runtime'] == historical['runtime'], 'historical runtime differs')
     assets, old_assets = copy.deepcopy(binding['rt_assets']), copy.deepcopy(historical['rt_assets'])
-    assets['kma_calibration'].pop('path'); old_assets['kma_calibration'].pop('path')
+    assets['kma_calibration'].pop('path')
+    old_assets['kma_calibration'].pop('path')
     require(assets == old_assets, 'historical RTTOV assets differ')
     require(binding['source_tree_sha256'] == historical['source_tree_sha256'] and binding['source_tree_files'] == historical['source_tree_files'], 'historical code tree differs')
     for k, v in {'status':'DIRECT_FIXED_M0_COMPLETE', 'binding_sha256':bh, 'support_cells':Z,

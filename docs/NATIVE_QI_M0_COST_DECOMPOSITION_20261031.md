@@ -24,7 +24,7 @@ M0의 위치별 지원 범위를 함께 보면 동쪽 변 10곳을 전체 변의
 
 동쪽에서 pilot Control 손실이 증가한 10곳은 **M0 지원 동쪽 11곳 중 10곳(90.91%)**이고, 전체 동쪽 변 격자 280곳을 분모로 하면 **10곳(3.57%)**이다. M0 밖의 269곳에 대해서는 이 고정 지원 비용으로 손실 변화의 방향을 판정하지 않는다.
 
-원래 Control과 QNC guard만 적용한 Control의 전체 체크포인트를 비공개 실물에서 비교한 결과, 652변수·322,426,586개 수치 원소 중 변경은 내부 `QNCLOUD` 15개와 `RE_CLOUD` 1개뿐이었다. 동쪽 10곳에는 변경이 없다. 같은 위치에서 늦은 경계 pilot은 **QICE와 QNICE를 각 5–14개 수직층에서 변경**했다. 내부 `(221,63)`의 경계 pilot 전후 모멘트는 같고, 원래 Control→QNC guard에서 k=6 `QNCLOUD`가 달라진다. 따라서 동쪽 악화의 경계 연산 연결은 해당 체크포인트의 위치별 동일성과 프로파일별 관측 연산에서 나온 **추론**이다. QNC guard Control의 새 전체 direct 비용은 별도로 평가 중이며, 세 상태의 비용만으로 모든 과정 효과를 인과적으로 분리했다고 말하지 않는다. [원시 모멘트 witness](../harness/evidence/native_qi_m0_cost_decomposition_2026-10-31/data/east_cost_moment_witness.json)
+원래 Control과 QNC guard만 적용한 Control의 전체 체크포인트를 비공개 실물에서 비교한 결과, 652변수·322,426,586개 수치 원소 중 변경은 내부 `QNCLOUD` 15개와 `RE_CLOUD` 1개뿐이었다. 동쪽 10곳에는 변경이 없다. 같은 위치에서 늦은 경계 pilot은 **QICE와 QNICE를 각 5–14개 수직층에서 변경**했다. 내부 `(221,63)`의 경계 pilot 전후 모멘트는 같고, 원래 Control→QNC guard에서 k=6 `QNCLOUD`가 달라진다. 따라서 동쪽 악화의 경계 연산 연결은 해당 체크포인트의 위치별 동일성과 프로파일별 관측 연산에서 나온 **추론**이다. 후속 [QNC guard 단독 Control direct 비용](NATIVE_QNC_GUARD_CONTROL_DIRECT_M0_20261031.md)은 **11.007967186042567**로 확인됐고, pilot Control은 이보다 **0.00032840282958979117** 높다. 이 비용 차이는 경계 pilot 추가와 함께 나타난 전체 응답을 직접 비교하지만, 개별 물리 과정의 기여까지 분리하지는 않는다. [원시 모멘트 witness](../harness/evidence/native_qi_m0_cost_decomposition_2026-10-31/data/east_cost_moment_witness.json)
 
 ## α의 평균과 개별 응답은 다릅니다
 
