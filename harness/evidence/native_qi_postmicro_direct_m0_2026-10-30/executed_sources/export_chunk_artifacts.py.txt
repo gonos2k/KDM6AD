@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""Export hash-verified saved chunk captures; no RTTOV/model call or raw case files."""
+import gzip, hashlib, io, json, os, tarfile
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent / 'direct_full_m0_v1'
+DATA = Path('/private/tmp/KDM6AD-qnc-host-backoff-20261027/harness/evidence/native_qi_postmicro_direct_m0_2026-10-30/data')
+
+def main():
+    provenance = json.loads((DATA/'producer_receipts.json').read_bytes())
+    files = {}
+    for case in ('control','alpha025'):
+        case_info = provenance['cases'][case]
+        for name, key in [('binding.json','binding_sha256'),('summary.json','summary_sha256')]:
+            files[f'{case}/{name}'] = (ROOT/case/name, case_info[key])
+        rows = case_info['chunks']
+        if len(rows) != 129 or [r['chunk'] for r in rows] != list(range(129)):
+            raise ValueError('invalid chunk inventory')
+        for row in rows:
+            for name,key in [('attempt.json','attempt_sha256'),('result.json','result_sha256'),('result.npz','capture_sha256')]:
+                rel=f'{case}/chunks/chunk_{row["chunk"]:03d}/{name}'
+                files[rel]=(ROOT/rel,row[key])
+    payload = {}
+    for name,(path,expected) in files.items():
+        raw=path.read_bytes()
+        if hashlib.sha256(raw).hexdigest()!=expected:
+            raise ValueError(f'hash mismatch: {name}')
+        payload[name]=raw
+    if len(payload)!=778 or sum(map(len,payload.values())) > 100_000_000:
+        raise ValueError('unexpected inventory or size')
+    target=DATA/'chunk_artifacts.tar.gz'
+    with target.open('xb') as out:
+        with gzip.GzipFile(fileobj=out, mode='wb', filename='', mtime=0, compresslevel=9) as gz:
+            with tarfile.open(fileobj=gz,mode='w',format=tarfile.USTAR_FORMAT) as tar:
+                for name,raw in sorted(payload.items()):
+                    info=tarfile.TarInfo(name); info.size=len(raw); info.mode=0o644
+                    info.uid=info.gid=0; info.uname=info.gname=''; info.mtime=0
+                    tar.addfile(info,io.BytesIO(raw))
+        out.flush(); os.fsync(out.fileno())
+    print(json.dumps({'entries':len(payload),'uncompressed_payload_bytes':sum(map(len,payload.values())),
+                      'sha256':hashlib.sha256(target.read_bytes()).hexdigest()}))
+if __name__=='__main__': main()

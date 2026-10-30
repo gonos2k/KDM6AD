@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""Private fixed-M0 direct RTTOV diagnostic; no host, KDM, K, or optimizer calls.
+
+Requires completed matched pilot-on trace-off/on runs. Explicit --execute is
+required. Each chunk has a fresh, immutable attempt directory; a partial chunk
+is never silently retried. Resume validates every completed chunk and its pins.
+Costs are undefined unless every original M0 cell remains valid.
+After --execute, binding.json is written before support preflight; that stage
+is not filesystem read-only. Completed receipt counts do not include failed
+attempts which may have called RTTOV. Raw number units remain uncertified.
+"""
+from __future__ import annotations
+import argparse, hashlib, importlib.util, json, math, os, sys, traceback
+from pathlib import Path
+import numpy as np
+
+ROOT = Path(__file__).resolve().parent
+REPO = Path('/private/tmp/KDM6AD-qnc-host-backoff-20261027')
+MANIFEST = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_satellite_case_20261024/RUN_v4/CASE_MANIFEST.json')
+HELPER = ROOT.parent/'native_full_physics_forward_20261025/runs/native_checkpoint_observation_pilot_v2/run_checkpoint_observation_pilot.py'
+PREPARED = HELPER.parent/'PREPARED.json'
+HOST_CONTROLLER = ROOT/'run_qi_postmicro_case.py'
+HOST_CONTROLLER_V2 = ROOT/'run_qi_postmicro_case_v2.py'
+PUBLIC = REPO/'harness/evidence/native_full_physics_observation_2026-10-25'
+M0 = PUBLIC/'native_full_physics_observation_baseline.npz'
+PINS = {
+ MANIFEST:'58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d',
+ HELPER:'2c337fc2b484efd9565334e2731cde8b3a4e40322cf2e534b904712382dece7b',
+ PREPARED:'590ce005e02de301b921901aa91fe324411c34bb4215c1f7c7186cce67098033',
+ HOST_CONTROLLER:'86f71c794a61db9eb1e010fac594fcd070ad081f27e8490e17c3cf20e16d6588',
+ HOST_CONTROLLER_V2:'87bda9dba9902ac18870116ad633fed1337f2d352028ba5e9f471a7f96d183d9',
+ PUBLIC/'manifest.json':'84a20ae7d337c0c10aec6dd872ae75af75400822f809888a0b35656d3cd12663',
+ M0:'c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144',
+ REPO/'harness/native_checkpoint_observation.py':'115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14',
+ REPO/'harness/native_observation_batch.py':'602ca5c676014d6f14b94682053b5ba249af3a6f0ce34e3af92e01199c51e0cb',
+ REPO/'harness/run_native_candidate_observation.py':'74b2ce806988761d1e162cd432e271faa4ce4bfac10817a4810e5a70ecb16fa5',
+}
+CODE_TREE_SHA = '1ef3cc94d90465cea370c0974445f1d54b8de3192d33d2f5438464de41c0609f'
+CODE_TREE_COUNT = 517
+
+def sha(p):
+ h=hashlib.sha256()
+ with Path(p).open('rb') as f:
+  for b in iter(lambda:f.read(8<<20),b''): h.update(b)
+ return h.hexdigest()
+
+def source_tree_pin():
+ """Pin operational harness/oracle code and bundled observation data."""
+ files=sorted([*REPO.glob('harness/*.py'),*REPO.glob('oracle/**/*.py'),
+               *REPO.glob('oracle/kdm6/obs/data/**/*')])
+ files=[p for p in files if p.is_file() and '__pycache__' not in p.parts]
+ h=hashlib.sha256()
+ for p in files:
+  h.update(p.relative_to(REPO).as_posix().encode()+b'\0'+sha(p).encode()+b'\n')
+ return len(files),h.hexdigest()
+
+def new_json(p, x):
+ with Path(p).open('x') as f:
+  json.dump(x,f,sort_keys=True,indent=2,allow_nan=False); f.write('\n'); f.flush(); os.fsync(f.fileno())
+
+def main():
+ ap=argparse.ArgumentParser(description=__doc__)
+ ap.add_argument('--case',required=True,choices=('control','alpha025'))
+ ap.add_argument('--output-root',type=Path,default=ROOT/'direct_full_m0_v1',help='isolated output root; choose a fresh root after an incomplete attempt')
+ ap.add_argument('--execute',action='store_true',help='authorize direct RTTOV calls')
+ ap.add_argument('--preflight-only',action='store_true',help='validate full fixed M0 before any RTTOV call')
+ a=ap.parse_args()
+ if a.execute == a.preflight_only:
+  raise SystemExit('Choose exactly one of --preflight-only or --execute.')
+ for p,s in PINS.items():
+  if sha(p)!=s: raise ValueError(f'pinned input differs: {p}')
+ if source_tree_pin()!=(CODE_TREE_COUNT,CODE_TREE_SHA):
+  raise ValueError('local observation dependency tree differs from source pin')
+ sys.path.insert(0,str(REPO))
+ from harness.native_host_transition import NativeCheckpoint
+ from harness.native_checkpoint_observation import iter_native_checkpoint_batches, evaluate_checkpoint_observation_batch
+ from harness.native_observation_batch import _block_arrays, _validate_selected_inputs
+ from harness.run_native_candidate_observation import _runtime_environment
+ import torch
+ import netCDF4
+ torch.set_num_threads(1)
+ case=a.case
+ runs=ROOT/'runs/v1'
+ on=runs/f'{case}_qi_postmicro_v1_piloton_traceon'/'run_result.json'
+ off=runs/f'{case}_qi_postmicro_v1_piloton_traceoff'/'run_result.json'
+ x,y=json.loads(on.read_text()),json.loads(off.read_text())
+ for label,r in [('on',x),('off',y)]:
+  if r.get('status')!='PASS' or r.get('pilot_mode')!='on' or r.get('trace_mode')!=label or r.get('native_host_steps_completed')!=1 or not r.get('ack',{}).get('byte_identical'):
+   raise ValueError(f'host pilot trace-{label} receipt is not a completed matched run')
+  plan=(on if label=='on' else off).parent/'experiment_plan.json'
+  expected_controller = PINS[HOST_CONTROLLER] if case=='alpha025' and label=='on' else PINS[HOST_CONTROLLER_V2]
+  if sha(plan)!=r.get('plan_sha256') or r.get('controller_sha256')!=expected_controller:
+   raise ValueError(f'host pilot trace-{label} controller/plan provenance differs')
+  plan_data=json.loads(plan.read_text())
+  if plan_data.get('source_case')!=case or plan_data.get('pilot_mode')!='on' or plan_data.get('trace_mode')!=label:
+   raise ValueError(f'host pilot trace-{label} plan labels differ')
+  build=ROOT/'build/host_qi_postmicro_v2/private_build_receipt.json'
+  if sha(build)!=plan_data.get('build_receipt_sha256'):
+   raise ValueError('host build receipt differs from run plan')
+ if x['checkpoint_sha256']!=y['checkpoint_sha256']: raise ValueError('pilot trace on/off endpoint mismatch')
+ path=Path(x['retained_checkpoint_path'])
+ checkpoint=NativeCheckpoint.capture(path,expected_time='2025-07-19_00:01:00',expected_itimestep=3)
+ if checkpoint.file.sha256!=x['checkpoint_sha256']: raise ValueError('retained checkpoint hash mismatch')
+ manifest=json.loads(MANIFEST.read_text()); pub=json.loads((PUBLIC/'manifest.json').read_text())
+ if pub['packet']['sha256']!=PINS[M0] or pub['packet']['file']!=M0.name: raise ValueError('M0 packet binding differs')
+ with np.load(M0,allow_pickle=False) as z:
+  m0=np.array(z['m0_mask'],copy=True); obs0=np.array(z['obs_bt_k'],copy=True)
+  indices=np.array(z['flat_index'],copy=True); channels=np.array(z['channel_id'],copy=True)
+ if m0.dtype!=np.bool_ or m0.shape!=(65988,7) or int(m0.sum())!=377342 or not np.array_equal(indices,np.arange(65988,dtype=np.int32)) or not np.array_equal(channels,np.arange(10,17)):
+  raise ValueError('original fixed support, indexing or channels differ')
+ spec=importlib.util.spec_from_file_location('pinned_checkpoint_obs_helper',HELPER)
+ helper=importlib.util.module_from_spec(spec);sys.modules[spec.name]=helper;spec.loader.exec_module(helper)
+ # Helper's historical REPO insertion is not the code used by this pilot.
+ sys.path[:]=[str(REPO)]+[s for s in sys.path if s!=str(REPO)]
+ obs=Path(manifest['case_preparation']['paths']['observations'])
+ config=helper.source_case_config(manifest,obs.parent/'PREFLIGHT.json')
+ assets=helper.verify_rt_assets(manifest,config)
+ binding={'schema':'kdm6.qi_postmicro_full_m0_direct.v1','case':case,'checkpoint_sha256':checkpoint.file.sha256,
+          'host_trace_on_result_sha256':sha(on),'host_trace_off_result_sha256':sha(off),'runner_sha256':sha(__file__),
+          'source_pins':{str(p):s for p,s in PINS.items()},'rt_assets':assets,
+          'source_tree_sha256':CODE_TREE_SHA,'source_tree_files':CODE_TREE_COUNT,
+          'runtime':{'python_version':sys.version,'python_executable_sha256':sha(sys.executable),
+                     'numpy_version':np.__version__,'torch_version':str(torch.__version__),
+                     'torch_extension_sha256':sha(torch._C.__file__),
+                     'netcdf4_version':netCDF4.__version__,'netcdf4_extension_sha256':sha(netCDF4._netCDF4.__file__)},
+          'support_cells':377342,'chunks':129,'with_k':False,'host_steps':0,'KDM_calls':0,
+          'raw_number_physical_unit_certification':False}
+ out=a.output_root/case
+ out.mkdir(parents=True,exist_ok=True)
+ binding_file=out/'binding.json'
+ if binding_file.exists():
+  if json.loads(binding_file.read_text())!=binding: raise ValueError('resume binding differs')
+ else: new_json(binding_file,binding)
+ # Gate every original M0 profile against the current native input BEFORE any RTTOV call.
+ for batch in iter_native_checkpoint_batches(checkpoint,config):
+  b=batch.block; start,stop=b['start_flat'],b['stop_flat_exclusive']; mask=m0[start:stop]
+  if not np.array_equal(b['obs_bt'],obs0[start:stop],equal_nan=True): raise ValueError('source BT differs from fixed M0 observations')
+  arrays=_block_arrays(b); eligible=arrays[6]; source_good=arrays[5]
+  invalid=_validate_selected_inputs(b,batch.output,config,np.flatnonzero(eligible).astype(np.int64))
+  ok=eligible.copy(); ok[list(invalid)]=False
+  if np.any(mask & ~(ok[:,None] & source_good)):
+   raise ValueError(f'fixed M0 profile/source invalid in block {b["chunk_index"]}; no new RTTOV calls')
+ if source_tree_pin()!=(CODE_TREE_COUNT,CODE_TREE_SHA): raise ValueError('source tree changed during preflight')
+ if a.preflight_only:
+  print(json.dumps({'status':'FULL_M0_PREFLIGHT_PASSED','case':case,
+                    'support_cells':377342,'RTTOV_calls':0},sort_keys=True))
+  return
+ chunks=out/'chunks'; chunks.mkdir(exist_ok=True)
+ env={'factorial_mode':config['experiment']['factorial_mode'],'qr_transport':config['experiment']['qr_transport']}
+ for batch in iter_native_checkpoint_batches(checkpoint,config):
+  b=batch.block; idx=int(b['chunk_index']); start,stop=b['start_flat'],b['stop_flat_exclusive']
+  if idx>=129 or start!=idx*512 or stop!=min(start+512,65988): raise ValueError('original block partition differs')
+  d=chunks/f'chunk_{idx:03d}'
+  if d.exists():
+   receipt=d/'result.json'; capture=d/'result.npz'
+   if not receipt.is_file() or not capture.is_file(): raise RuntimeError(f'incomplete attempt {d}; preserve it and choose a fresh output root')
+   rr=json.loads(receipt.read_text())
+   if rr['binding_sha256']!=sha(binding_file) or rr['capture_sha256']!=sha(capture) or rr['chunk']!=idx or rr['direct_calls']!=1 or rr['K_calls']!=0:
+    raise ValueError(f'completed attempt provenance mismatch: {d}')
+   continue
+  d.mkdir(exist_ok=False)
+  new_json(d/'attempt.json',{'binding_sha256':sha(binding_file),'chunk':idx,'flat_range':[start,stop],'with_k':False})
+  try:
+   if source_tree_pin()!=(CODE_TREE_COUNT,CODE_TREE_SHA): raise ValueError('source tree changed before direct call')
+   if helper.verify_rt_assets(manifest,config)!=assets: raise ValueError('RTTOV assets changed before direct call')
+   with _runtime_environment(env): result=evaluate_checkpoint_observation_batch(batch,config,d/'call',with_k=False)
+   if source_tree_pin()!=(CODE_TREE_COUNT,CODE_TREE_SHA): raise ValueError('source tree changed during direct call')
+   if helper.verify_rt_assets(manifest,config)!=assets: raise ValueError('RTTOV assets changed during direct call')
+   bt=np.array(result['bt'].detach().cpu().numpy(),copy=True); quality=np.asarray(result['quality'],dtype=np.int32)
+   valid=np.asarray(result['baseline_valid_mask'],dtype=np.bool_); profile=np.asarray(result['profile_valid'],dtype=np.bool_)
+   shape=(stop-start,7); mask=m0[start:stop]
+   if bt.shape!=shape or quality.shape!=shape or valid.shape!=shape or profile.shape!=(stop-start,): raise ValueError('result shape differs')
+   if np.any(mask & ~valid) or not np.isfinite(bt[mask]).all(): raise ValueError('direct model quality/support loss on fixed M0')
+   rr=result['receipt']
+   if rr['direct_calls']!=1 or rr['K_calls']!=0: raise ValueError('expected exactly one direct and no K call')
+   with (d/'result.npz').open('xb') as f:
+    np.savez_compressed(f,flat_indices=b['flat_indices'],bt=bt,quality=quality,valid=valid,profile_valid=profile);f.flush();os.fsync(f.fileno())
+   new_json(d/'result.json',{'binding_sha256':sha(binding_file),'chunk':idx,'capture_sha256':sha(d/'result.npz'),
+     'direct_calls':rr['direct_calls'],'K_calls':rr['K_calls'],'rttov_receipt':rr})
+  except BaseException as e:
+   new_json(d/'failure.json',{'error':str(e),'traceback':traceback.format_exc(),'direct_call_may_have_run':True})
+   raise
+ # Match historical scalar Huber grouping: channel within chunk, then chunks.
+ chunk_sums=[]
+ for idx in range(129):
+  d=chunks/f'chunk_{idx:03d}'; start=idx*512; stop=min(start+512,65988)
+  with np.load(d/'result.npz',allow_pickle=False) as z:
+   bt=z['bt']; valid=z['valid']; flat=z['flat_indices']
+   if not np.array_equal(flat,np.arange(start,stop,dtype=np.int32)) or np.any(m0[start:stop] & ~valid): raise ValueError('saved chunk support mismatch')
+   channel_terms=[]
+   for c in range(7):
+    selected=m0[start:stop,c]; residual=bt[selected,c]-obs0[start:stop,c][selected]
+    if not np.isfinite(residual).all(): raise ValueError('nonfinite supported residual')
+    channel_terms.append(math.fsum(0.5*float(v)*float(v) if abs(float(v))<=1.0 else abs(float(v))-0.5 for v in residual))
+   chunk_sums.append(math.fsum(channel_terms))
+ numerator=math.fsum(chunk_sums)
+ summary={'status':'DIRECT_FIXED_M0_COMPLETE','binding_sha256':sha(binding_file),'support_cells':377342,
+          'huber_delta_K':1.0,'sigma_K':1.0,'bias_K':0.0,'numerator':numerator,'cost':numerator/377342,
+          'completed_chunk_receipts':129,'direct_calls_recorded_in_completed_receipts':129,'K_calls':0,'chunk_numerators':chunk_sums,
+          'interpretation':'fixed-support observation diagnostic only; no analysis acceptance or forecast claim'}
+ target=out/'summary.json'
+ if target.exists():
+  if json.loads(target.read_text())!=summary: raise ValueError('existing summary differs')
+ else: new_json(target,summary)
+ print(json.dumps({'case':case,'cost':summary['cost'],'support_cells':377342}))
+
+if __name__=='__main__': main()
