@@ -1,0 +1,16 @@
+{
+  "schema": "east-optical-factorial-source-v1",
+  "sha256": {
+    "README.md": "030c8b916fe265d0f8ab62297205495053d7bef5c2afe8e82f38cceedf67d5c5",
+    "analysis.json": "15cc2404cff2e118e84edb137a16a290559c9062067994b1f934f86d187213bd",
+    "excluded_attempts.json": "46357fe4a56bf558d2168b6506504aaeb8ed04e9d43f5778747217910a7c1d2f",
+    "export.json": "c9daa3424e783521fc01d4a178bad2f345b4193af615d4ff45c052ab2d09d179",
+    "packet.py": "0382a8994057b73a4bf937f469a0d8854b05419e2f00502e8cd229f56271e1e6",
+    "private_verifier_summary.json": "2d9bbdf97e483ab7f36d0348c9f7317e80d6030df3c633f1344a09759a16ced8",
+    "raw/GG.txt": "aa6a1b6d856e52608d3c6b0f887b03d3559011cae22c33bee7e7b11187e606e5",
+    "raw/GP.txt": "df4ca2a7ae6a0393a212bed367eb949c64c89207c500473c656e9ee109ba8c19",
+    "raw/PG.txt": "a75147c0659b046c71de676c5e7b066133502ae65074a7006a9cd8d7a3d47bcf",
+    "raw/PP.txt": "87bd951ec0f3df3964e31a01546424e9dad54d0a3adbd33dad85951602a3bc51",
+    "test_packet.py": "7c3ca32a5a9d86218eb2ec59cc4d73731d816336ff5f6e234edba09a6b50ebfa"
+  }
+}
