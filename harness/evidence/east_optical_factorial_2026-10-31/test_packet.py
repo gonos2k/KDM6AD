@@ -104,20 +104,52 @@ class AnalysisTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "packet source changed"):
                     p.check_source_pins()
 
-    def test_optimized_replay_rejects_mutated_quality(self):
-        export = json.loads((p.HERE / "export.json").read_bytes())
-        export["arms"]["GG"]["quality"][0][0] = 1
+    def test_external_identical_export_copy_replays_in_both_modes(self):
+        raw = (p.HERE / "export.json").read_bytes()
+        published = (p.HERE / "analysis.json").read_bytes()
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "mutated.json"
-            path.write_text(json.dumps(export))
-            result = subprocess.run(
-                [sys.executable, "-O", str(p.HERE / "packet.py"), "replay", str(path)],
-                capture_output=True,
-                text=True,
-                cwd=p.REPO,
-            )
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("quality differs", result.stderr)
+            copied = Path(directory) / "external-export.json"
+            copied.write_bytes(raw)
+            for optimized in (False, True):
+                command = [sys.executable]
+                if optimized:
+                    command.append("-O")
+                command.extend((str(p.HERE / "packet.py"), "replay", str(copied)))
+                result = subprocess.run(command, cwd=p.REPO, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(result.stdout, published)
+
+    def test_external_changed_export_bytes_rejected_in_both_modes(self):
+        original = (p.HERE / "export.json").read_bytes()
+        variants = {}
+        for name in ("K_calls", "manifest_sha256", "coordinate", "finite_BT"):
+            changed = json.loads(original)
+            if name == "K_calls":
+                changed["arms"]["GG"]["receipt"]["K_calls"] = 1
+            elif name == "manifest_sha256":
+                changed["manifest_sha256"] = "0" * 64
+            elif name == "coordinate":
+                changed["arms"]["GG"]["receipt"]["coordinate"] = "native"
+            else:
+                changed["arms"]["GP"]["bt"][0][0] += 1.0
+            variants[name] = json.dumps(changed).encode()
+        variants["whitespace_only"] = original + b" "
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "changed-export.json"
+            for name, raw in variants.items():
+                path.write_bytes(raw)
+                for optimized in (False, True):
+                    with self.subTest(change=name, optimized=optimized):
+                        command = [sys.executable]
+                        if optimized:
+                            command.append("-O")
+                        command.extend((str(p.HERE / "packet.py"), "replay", str(path)))
+                        result = subprocess.run(
+                            command, cwd=p.REPO, capture_output=True
+                        )
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn(b"replay packet SHA differs", result.stderr)
+                        self.assertEqual(result.stdout, b"")
 
 
 if __name__ == "__main__":

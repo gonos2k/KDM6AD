@@ -56,6 +56,7 @@ def check_source_pins():
             digest((HERE / name).read_bytes()) == expected,
             "packet source changed: " + name,
         )
+    return manifest
 
 
 def historical():
@@ -347,7 +348,7 @@ def analyze(packet, witness):
 
 
 def main():
-    check_source_pins()
+    manifest = check_source_pins()
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="action", required=True)
     ex = sub.add_parser("export")
@@ -363,10 +364,13 @@ def main():
             f.write(payload)
         print(json.dumps({"export_sha256": digest(payload), "model_calls": 0}))
     else:
+        packet_bytes = args.packet.read_bytes()
+        check(
+            digest(packet_bytes) == manifest["sha256"]["export.json"],
+            "replay packet SHA differs",
+        )
         print(
-            encoded(
-                analyze(json.loads(args.packet.read_bytes()), historical())
-            ).decode(),
+            encoded(analyze(json.loads(packet_bytes), historical())).decode(),
             end="",
         )
 
