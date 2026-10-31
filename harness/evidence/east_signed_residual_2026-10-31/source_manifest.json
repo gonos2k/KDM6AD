@@ -1,0 +1,14 @@
+{
+  "base_commit": "c186c752c70226d6c3fd72fe93e45ccaa9c14bed",
+  "files": {
+    "README.md": "43d29a9c3f56d14857b913110caf352617f99f16cec11bbd249eb56b8fc11557",
+    "replay.py": "87e628eb41ba4e3fa1107abe127de16022b255754720d198c197110e70bea3a3",
+    "results.json": "908d2555b92168b36b4b93fbb7868a78f897ef8f1bb2bf2a674e45b775b8daae",
+    "test_replay.py": "a89478855dc405c844d979a3e9a079dffdf23b43ebd3f20fd25e48f0bb7a46b7"
+  },
+  "schema": "east-signed-residual-sources-v1",
+  "upstream_source_manifests": {
+    "east_optical_deff_onehot_2026-10-31": "64762cd9dff7415cb8ef3221c2a6f173ceb8e679bdd674a080e26c0995ef3934",
+    "east_optical_onehot_2026-10-31": "77d943544bf94766ea4c26314f2f47943ddfcac5462a945f1128009c57e339a3"
+  }
+}

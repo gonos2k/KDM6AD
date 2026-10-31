@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/east-signed-residual-2026-10-31]] — 저장된 광학 K의 부호 잔차와 동등 상대 변화 벡터 상쇄를 오프라인에서 재생한다. 새 공동 RTTOV 호출은 없다.
 - [[sources/east-optical-deff-onehot-2026-10-31]] — A layer-39 diameter direction raises the optical span to rank four per profile; the offline packet independently checks raw radiance conversion and FD arithmetic.
 - [[sources/east-optical-onehot-2026-10-31]] — A one-layer serialized ice-content direction adds per-profile rank beyond the prior two optical directions; 16 direct calls show small FD–K residuals without a plateau or host-derivative claim.
 - [[sources/east-optical-coordinate-factor-2026-10-31]] — Independent scalar replay checks GG/PP native-to-KMA BT derivative factors on 140 saved cells using a separately supplied SHA-pinned RTTOV coefficient file; scientific status remains INCONCLUSIVE.
