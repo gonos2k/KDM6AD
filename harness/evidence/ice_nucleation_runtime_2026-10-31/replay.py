@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
 H = 1e-4
 OUTPUT_FIELDS = ("qi", "ni", "qv", "th")
+OUTPUT_SCALES = {"qi": 1e8, "ni": 1.0, "qv": 1e3, "th": 1.0}
 
 
 def require(value, message):
@@ -383,12 +384,47 @@ def runtime_derivatives(state, forcing, *, normalized):
         require(bool(torch.isfinite(fd).all()) and signal > 0 and
                 torch.allclose(fd, jvp_plain, rtol=1e-5, atol=1e-9),
                 "runtime FD-JVP selected direction " + name)
+        ncell = state.qi.numel()
+        fields = {}
+        for index, field in enumerate(OUTPUT_FIELDS):
+            factor = OUTPUT_SCALES[field]
+            selected = slice(index * ncell, (index + 1) * ncell)
+            j_raw = (jvp_plain[selected] / factor).reshape(state.qi.shape)
+            fd_raw = (fd[selected] / factor).reshape(state.qi.shape)
+            e_raw = fd_raw - j_raw
+            field_signal = torch.linalg.vector_norm(j_raw)
+            fields[field] = {
+                "output_scale_used_in_packed_check": factor,
+                "jvp_wrf_bottom_first": j_raw.detach().tolist(),
+                "fd_wrf_bottom_first": fd_raw.detach().tolist(),
+                "fd_minus_jvp_wrf_bottom_first": e_raw.detach().tolist(),
+                "max_abs_fd_minus_jvp": float(e_raw.abs().max()),
+                "relative_l2_fd_minus_jvp": (
+                    float(torch.linalg.vector_norm(e_raw) / field_signal)
+                    if bool(field_signal > 0) else None),
+            }
+        direction = dqi if name == "qi_only" else dni
+        field_name = "qi" if name == "qi_only" else "ni"
+        baseline_value = float(getattr(state, field_name)[0, 1])
+        direction_value = float(direction[0, 1])
         results[name] = {
             "max_abs_fd_minus_jvp_scaled": float(error.abs().max()),
             "relative_l2_fd_minus_jvp_scaled": float(torch.linalg.vector_norm(error) / signal),
             "jvp_scaled_norm": float(signal),
             "selected_c3_branch": "active strict number-deficit minimum at baseline and endpoints",
             "captured_stage_masks_equal": True,
+            "input_direction": {
+                "field": field_name, "column_zero_based": 0,
+                "wrf_level_zero_based": 1,
+                "top_first_level_zero_based": state.qi.shape[-1] - 1 - 1,
+                "baseline_value": baseline_value,
+                "absolute_direction_per_unit_epsilon": direction_value,
+                "relative_direction": direction_value / baseline_value,
+                "fd_step": H,
+                "plus_input": baseline_value + H * direction_value,
+                "minus_input": baseline_value - H * direction_value,
+            },
+            "outputs_by_field": fields,
         }
     return results
 
@@ -443,6 +479,12 @@ def main():
             state, forcing, normalized=normalized)
         for normalized in (False, True)
     }
+    for field in ("qi", "ni"):
+        legacy = runtime_ad["legacy"]["ni_only"]["outputs_by_field"][field]
+        normalized = runtime_ad["normalized"]["ni_only"]["outputs_by_field"][field]
+        require(legacy["jvp_wrf_bottom_first"][0][1] < 0 and
+                normalized["jvp_wrf_bottom_first"][0][1] > 0,
+                "selected NI sensitivity sign contrast " + field)
     precision = precision_probe()
     print(json.dumps({"status": "ICE_NUCLEATION_RUNTIME_REPLAY_PASSED",
                       "scientific_status": "INCONCLUSIVE",

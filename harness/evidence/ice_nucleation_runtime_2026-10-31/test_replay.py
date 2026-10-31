@@ -54,6 +54,21 @@ class NucleationRuntimeReplayTest(unittest.TestCase):
                 self.assertTrue(diagnostic["captured_stage_masks_equal"])
                 self.assertGreater(diagnostic["jvp_scaled_norm"], 0)
                 self.assertLess(diagnostic["max_abs_fd_minus_jvp_scaled"], 1e-8)
+                self.assertEqual(set(diagnostic["outputs_by_field"]),
+                                 {"qi", "ni", "qv", "th"})
+                self.assertEqual(diagnostic["input_direction"]["relative_direction"], 1.0)
+                for field in ("qi", "ni", "qv", "th"):
+                    values = diagnostic["outputs_by_field"][field]
+                    self.assertEqual(len(values["jvp_wrf_bottom_first"]), 2)
+                    self.assertEqual(len(values["jvp_wrf_bottom_first"][0]), 3)
+                    self.assertEqual(len(values["fd_minus_jvp_wrf_bottom_first"]), 2)
+        for field in ("qi", "ni"):
+            legacy = result["runtime_selected_derivatives"]["legacy"]["ni_only"][
+                "outputs_by_field"][field]["jvp_wrf_bottom_first"][0][1]
+            normalized = result["runtime_selected_derivatives"]["normalized"]["ni_only"][
+                "outputs_by_field"][field]["jvp_wrf_bottom_first"][0][1]
+            self.assertLess(legacy, 0.0)
+            self.assertGreater(normalized, 0.0)
 
     def test_source_mutation_rejected(self):
         manifest = json.loads((replay.ROOT / "source_manifest.json").read_bytes())

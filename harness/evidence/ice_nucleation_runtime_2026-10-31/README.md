@@ -42,6 +42,15 @@ QI-only and NI-only one-hot perturbations at the first column's middle **fixture
 
 These numbers are **fixture diagnostics**, not a general derivative tolerance or physically unit-bearing BT response. The captured masks do not enumerate every internal slope/min/clip branch. At `dt=1`, the runtime topology is fixed in these perturbations; topology changes require separate one-sided checks.
 
+The replay now retains each selected input's baseline value, absolute and relative direction, actual ± endpoint and the **signed unscaled JVP, FD and error for every field, column and WRF level**. It also records the numerical factors used by the preceding packed-vector check (`QI*1e8`, `NI`, `QV*1e3`, `TH`). For a relative increase of initial NI at the first column's middle fixture level, the same output level gives:
+
+| Handoff | Final QI JVP, unscaled | Final NI JVP, raw kernel coordinate |
+| --- | ---: | ---: |
+| Legacy | `-4.63411610585e-11` | `-2.53481348370e-4` |
+| Normalized | `+4.60406780875e-10` | `+5.37310055030e-4` |
+
+The opposite signs are results of two distinct forward rules at this one synthetic state. They do not establish which physical rule should be adopted. The [separate weak-supersaturation replay](../ice_nucleation_supply_2026-10-31/README.md) tests a strict supply cap in the full public runtime.
+
 An f32-input replay is classified as **mixed precision**: QI is float32 after sedimentation but float64 after D2–D4, and final QI/NI are float64. It cannot certify an operational f32 C++/Fortran calculation or its branch bits.
 
 ```bash
