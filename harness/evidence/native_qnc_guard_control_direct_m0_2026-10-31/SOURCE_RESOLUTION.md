@@ -35,11 +35,12 @@ bindings do not pin every native library loaded at runtime.
 Archive SHA-256: `568b09524f6ab5ca9eaade51cd77c45ebcbe2b17afe5bd0827ff0590717845c5`.
 Binding SHA-256: `9380922ab5e7e30e26ea2602fcccd1c43ba170cfa60c014b7541d99d00fc0864`.
 Summary SHA-256: `7818fb559bd1358cd968a538b2ed1690bfe2622aefd2e43a3839bd84a6d455e7`.
-Strengthened verifier/exporter SHA-256: `04c4bc9674f36249546ef60da7fc3901bb48fcbd2c5f7326b239923310fdd85d`.
+Strengthened verifier/exporter SHA-256: `b4d8ae8f9a8473a523ff775a1754c31dbed45f571692d35f0fc1af7f358eddcd`.
 The exporter used for the original copy is preserved at
 `executed_sources/verify_export_executed.py.txt` (SHA-256 `69739993c1ef54b0f78abe1dc49901bc2258d820b79dfff75a9b6be83a2fe9fc`).
 After export, a separate read-only check compared every archived file byte for
-byte with the finalized private producer files; all 391 hashes matched.
+byte with the finalized private producer files; all 389 hashes matched
+(binding and summary, plus three files for each of 129 blocks).
 The producer's full private call folders remain outside the packet; their
 presence was checked in a separate private replay, and their contents are not
 hash-verified by this public packet. No hash independently proves execution.

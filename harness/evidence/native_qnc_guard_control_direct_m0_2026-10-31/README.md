@@ -36,7 +36,7 @@ The pinned `executed_sources/verify_export_executed.py.txt` is the offline
 exporter used on the stopped finalized run. It checked the accessible private
 source pins, trace-on/off host receipts, plans, build receipt, retained
 checkpoint, and operational source-tree hash, then copied only the binding,
-summary, attempts, results and captures. It replayed that copy again. A subsequent read-only check compared all 391
+summary, attempts, results and captures. It replayed that copy again. A subsequent read-only check compared all 389
 archived files byte for byte against the finalized producer files; all hashes
 matched. The exact exporter source used is preserved separately; the current
 verifier additionally checks receipt profile ordering and direct-driver semantics. The

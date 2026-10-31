@@ -1,0 +1,17 @@
+{
+  "model_calls_in_replay": 0,
+  "packet_files_sha256": {
+    "README.md": "2fccd2fda154937dc3808677fe42bdd007d1eeab5409bd0752506e5fce2d2a36",
+    "analysis.json": "00756d47f22924006cf5ccfeb840947a75b2c399ebc3ed0d2d8860b8776f66d0",
+    "analyze.py": "1f5536dd1fac9d4a209f51e5743a1d49f285bcabf9dcdb66e601a3db71f616cf",
+    "replay.py": "41b7b68e8a36232f31cdc74fdc3a7b0551bfa1d7f1ac41b0a36a1c6485b9e5bb",
+    "test_replay.py": "1fa0c2a7afecb1c3a1c0f51bb1f8c70767fa0fdf7e7dbe20161c1b0daf8b9332"
+  },
+  "schema": "east-optical-cloud-gate-manifest-v1",
+  "upstream_sha256": {
+    "harness/evidence/east_optical_witness_2026-10-31/analysis.json": "9585c21954e19719da94a55282b10fea6030458597e5a957223458486f305b05",
+    "harness/evidence/east_optical_witness_2026-10-31/source_manifest.json": "88f295c3f919728f79bd611619c5233cebf041ec0c89ce0c0a824d7bc03730c5",
+    "harness/evidence/east_optical_witness_2026-10-31/witness.json": "a7748163ccf75252ec6fa8d0b38b26973dbceb8c5d24fef537ee3db356fc0136",
+    "harness/evidence/native_qnc_guard_control_direct_m0_2026-10-31/manifest.json": "4f8ce8eb7f401cd21945e53b235a9b6fd59fee434e61aaadeecc18b48111c4cc"
+  }
+}
