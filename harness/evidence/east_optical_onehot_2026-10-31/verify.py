@@ -2,6 +2,7 @@
 """Offline arithmetic and capture checks; never executes RTTOV."""
 
 import hashlib
+import io
 import json
 import math
 import re
@@ -15,6 +16,11 @@ PROJECT = HERE.parents[2]
 P = HERE / "packet"
 PRIOR = HERE.parent / "east_optical_derivative_2026-10-31" / "packet"
 HS = (1e-4, 2e-4, 4e-4, 8e-4)
+CAL_SHA = "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d"
+CAL_PATH = PROJECT / "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json"
+CHANNEL_NAMES = ("wv073", "ir087", "ir096", "ir105", "ir112", "ir123", "ir133")
+BT_BOUND_K = 64 * np.finfo(np.float64).eps * 300
+PACKET_SHA = "f1b7e41e18b12a7151beb82d0782b0dd2a3c35897421863c437002aa9ec26384"
 
 
 def sha(p):
@@ -41,11 +47,12 @@ def verify_sources(root=HERE):
         check(sha(root / name) == digest, "source hash: " + name)
 
 
-def check_raw(path):
-    # Narrow parser for the two required 70-element blocks; no imported helpers.
-    text = path.read_text()
+def check_raw(raw):
+    # Narrow parser for the three required 70-element blocks; no imported helpers.
+    text = raw.decode("ascii")
     check(len(text) < 1000000, "raw size")
-    for name in ("BT", "QUALITY"):
+    blocks = {}
+    for name in ("TOTAL", "BT", "QUALITY"):
         matches = re.findall(
             r"(?m)^RADIANCE%" + name + r"\s*=\s*\(\s*([\s\S]*?)\s*\)", text
         )
@@ -59,6 +66,34 @@ def check_raw(path):
         check(all(math.isfinite(x) for x in values), "raw finite")
         if name == "QUALITY":
             check(all(x == 0 for x in values), "raw quality")
+        if name == "TOTAL":
+            check(all(x > 0 for x in values), "raw TOTAL must be positive")
+        blocks[name] = np.asarray(values, dtype=np.float64).reshape(10, 7)
+    return blocks
+
+
+def kma_bt_from_total(total, calibration):
+    """Independent scalar Planck inverse on serialized RTTOV TOTAL radiance."""
+    out = np.empty((10, 7), dtype=np.float64)
+    for channel, name in enumerate(CHANNEL_NAMES):
+        cal = calibration[name]
+        wavenumber = float(cal["bt_wavenumber_cm1"]) * 100.0
+        h = float(cal["Plank_constant_h"])
+        c = float(cal["light_speed"])
+        k = float(cal["Boltzmann_constant_k"])
+        a = h * c * wavenumber / k
+        b = 2.0 * h * c * c * wavenumber**3
+        for profile in range(10):
+            x = float(total[profile, channel]) * 1e-5
+            check(x > 0 and math.isfinite(x), "nonpositive TOTAL radiance")
+            teff = a / math.log1p(b / x)
+            out[profile, channel] = (
+                float(cal["Teff_to_Tbb_c0"])
+                + float(cal["Teff_to_Tbb_c1"]) * teff
+                + float(cal["Teff_to_Tbb_c2"]) * teff * teff
+            )
+    check(np.isfinite(out).all(), "nonfinite recomputed KMA BT")
+    return out
 
 
 def check_product(k, direction, stored, replay):
@@ -75,24 +110,28 @@ def check_product(k, direction, stored, replay):
 
 def main():
     verify_sources()
+    manifest_raw = (P / "manifest.json").read_bytes()
     check(
-        sha(P / "manifest.json")
-        == "f1b7e41e18b12a7151beb82d0782b0dd2a3c35897421863c437002aa9ec26384",
+        hashlib.sha256(manifest_raw).hexdigest() == PACKET_SHA,
         "manifest digest",
     )
-    manifest = load(P / "manifest.json")["files"]
+    manifest = json.loads(manifest_raw)["files"]
     actual = {str(p.relative_to(P)) for p in P.rglob("*") if p.is_file()} - {
         "manifest.json"
     }
     check(actual == set(manifest), "inventory")
+    verified = {}
     for name, digest in manifest.items():
-        check(sha(P / name) == digest, name)
-    pins = load(P / "pins.json")
-    summary = load(P / "summary.json")
-    attempt = load(P / "attempt.json")
+        raw = (P / name).read_bytes()
+        check(hashlib.sha256(raw).hexdigest() == digest, name)
+        verified[name] = raw
+    pins = json.loads(verified["pins.json"])
+    summary = json.loads(verified["summary.json"])
+    attempt = json.loads(verified["attempt.json"])
     check(
-        sha(P / "pins.json") == attempt["manifest_sha256"]
-        and sha(P / "runner.py") == attempt["runner_sha256"],
+        hashlib.sha256(verified["pins.json"]).hexdigest() == attempt["manifest_sha256"]
+        and hashlib.sha256(verified["runner.py"]).hexdigest()
+        == attempt["runner_sha256"],
         "launch pins",
     )
     check(
@@ -102,24 +141,42 @@ def main():
         == {"direct": 16, "K": 0},
         "call counts",
     )
-    prior = load(PRIOR / "preflight.json")
-    old = load(PRIOR / "pins.json")
+    prior_raw = (PRIOR / "preflight.json").read_bytes()
+    old_raw = (PRIOR / "pins.json").read_bytes()
+    prior = json.loads(prior_raw)
+    old = json.loads(old_raw)
     check(pins["old_pins"] == old, "prior manifest")
     check(
-        sha(PRIOR / "preflight.json")
+        hashlib.sha256(prior_raw).hexdigest()
         == "a0515c1da6025b4b069f21039e0012274ba6136251eb192d6e93733699dd222e",
         "prior preflight",
     )
+    calibration_raw = CAL_PATH.read_bytes()
+    check(
+        hashlib.sha256(calibration_raw).hexdigest() == CAL_SHA,
+        "KMA calibration SHA differs",
+    )
+    source_cal = [
+        digest
+        for path, digest in old["sources"].items()
+        if path.endswith("/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json")
+    ]
+    check(source_cal == [CAL_SHA], "historical calibration source pin differs")
+    calibration = json.loads(calibration_raw)["channels"]
+    raw_to_kma_max_abs = 0.0
+    raw_to_kma_cells = 0
     out = {}
     for c in ("GG", "PP"):
+        k_path = PRIOR / f"{c}_K/values.npz"
+        k_raw = k_path.read_bytes()
         check(
-            sha(PRIOR / f"{c}_K/values.npz")
+            hashlib.sha256(k_raw).hexdigest()
             == next(
                 v for k, v in pins["extra"].items() if k.endswith(f"/{c}_K/values.npz")
             ),
             "K pin",
         )
-        with np.load(PRIOR / f"{c}_K/values.npz") as z:
+        with np.load(io.BytesIO(k_raw), allow_pickle=False) as z:
             kh = z["hydro7"].copy()
         check(kh.shape[:2] == (10, 7) and np.isfinite(kh).all(), "K shape")
         n = kh.shape[2]
@@ -156,14 +213,15 @@ def main():
             vals = []
             for s in ("plus", "minus"):
                 k = f"{c}_{idx}_{s}"
-                r = load(P / k / "receipt.json")
+                r = json.loads(verified[f"{k}/receipt.json"])
                 inventory = pins["cases"][k]
                 base = old["cases"][f"{c}_K"]
                 check(
                     r["mode"] == "direct"
                     and r["do_k"] is False
                     and r["input_hashes"] == r["post_input_hashes"] == inventory
-                    and r["value_sha256"] == sha(P / k / "values.npz"),
+                    and r["value_sha256"]
+                    == hashlib.sha256(verified[f"{k}/values.npz"]).hexdigest(),
                     "receipt " + k,
                 )
                 check(set(inventory) == set(base), "input inventory")
@@ -176,10 +234,20 @@ def main():
                     ),
                     "fixed inputs",
                 )
-                check_raw(P / k / "direct_radiance.txt")
-                with np.load(P / k / "values.npz") as z:
+                raw_blocks = check_raw(verified[f"{k}/direct_radiance.txt"])
+                with np.load(
+                    io.BytesIO(verified[f"{k}/values.npz"]), allow_pickle=False
+                ) as z:
                     bt = z["bt"].copy()
                 check(bt.shape == (10, 7) and np.isfinite(bt).all(), "BT")
+                recomputed_bt = kma_bt_from_total(raw_blocks["TOTAL"], calibration)
+                delta = np.abs(recomputed_bt - bt)
+                check(
+                    np.isfinite(delta).all() and np.max(delta) <= BT_BOUND_K,
+                    "raw TOTAL to KMA BT differs",
+                )
+                raw_to_kma_max_abs = max(raw_to_kma_max_abs, float(np.max(delta)))
+                raw_to_kma_cells += delta.size
                 vals.append(bt)
             direction = []
             for e in checks:
@@ -225,7 +293,16 @@ def main():
             }
     print(
         json.dumps(
-            {"status": "INCONCLUSIVE", "public_replay_calls": 0, "metrics": out},
+            {
+                "status": "INCONCLUSIVE",
+                "public_replay_calls": 0,
+                "raw_total_to_kma_bt": {
+                    "cells": raw_to_kma_cells,
+                    "max_abs_delta_K": raw_to_kma_max_abs,
+                    "bound_K": BT_BOUND_K,
+                },
+                "metrics": out,
+            },
             indent=2,
         )
     )
