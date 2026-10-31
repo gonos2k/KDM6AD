@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import netCDF4
@@ -36,6 +37,29 @@ def digest(path):
     return h.hexdigest()
 
 
+def digest_open_file(stream):
+    stream.seek(0)
+    h = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(8 << 20), b""):
+        h.update(chunk)
+    return h.hexdigest()
+
+
+def is_owned(path, identity):
+    if identity is None:
+        return False
+    try:
+        current = path.lstat()
+    except FileNotFoundError:
+        return False
+    return (current.st_dev, current.st_ino) == identity
+
+
+def remove_if_owned(path, identity):
+    if is_owned(path, identity):
+        path.unlink()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -43,11 +67,14 @@ def main():
     parser.add_argument("--case-manifest", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    for path, expected in (
+    if args.out.suffix != ".npz":
+        parser.error("--out must end in .npz")
+    pinned_sources = (
         (args.checkpoint, CHECKPOINT_SHA),
         (args.inputs, INPUTS_SHA),
         (args.case_manifest, CASE_MANIFEST_SHA),
-    ):
+    )
+    for path, expected in pinned_sources:
         if digest(path) != expected:
             raise ValueError(f"pinned private input differs: {path}")
     config = json.loads(args.case_manifest.read_bytes())["case_preparation"]
@@ -83,33 +110,56 @@ def main():
             arrays["reference__" + name] = np.array(source[key], dtype=np.float64)
     if any(not np.isfinite(value).all() for value in arrays.values()):
         raise ValueError("nonfinite selected input")
+    metadata_path = args.out.with_suffix(".json")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    if args.out.exists() or args.out.with_suffix(".json").exists():
-        raise FileExistsError("fixture output already exists")
-    np.savez_compressed(args.out, **arrays)
-    metadata = {
-        "schema": "kdm6.interior_profile_jvp_column.v1",
-        "native_ijk_1based": [164, 242, 21],
-        "flat_index_0based": 56557,
-        "rttov_row_0based": 45,
-        "fixed_upper_count": 27,
-        "source_sha256": {
-            "checkpoint": CHECKPOINT_SHA,
-            "observation_inputs": INPUTS_SHA,
-            "case_manifest": CASE_MANIFEST_SHA,
-        },
-        "exporter_sha256": digest(Path(__file__)),
-        "fixture_sha256": digest(args.out),
-        "prep_configuration": config["prep_configuration"],
-        "experiment": {
-            name: config["experiment"][name]
-            for name in ("ncmin_land", "ncmin_sea")
-        },
-        "coordinate_contract": "raw checkpoint QNICE; profile_jvp converts raw NI/rho_d before the dry-number optical bridge",
-        "checkpoint_unit_labels": unit_labels,
-        "raw_number_unit_certified": False,
-    }
-    args.out.with_suffix(".json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+    npz_identity = metadata_identity = None
+    try:
+        # Reserve both names exclusively before writing either payload. Passing the
+        # file object also prevents NumPy from silently appending another suffix.
+        with args.out.open("x+b") as npz_stream:
+            npz_stat = os.fstat(npz_stream.fileno())
+            npz_identity = (npz_stat.st_dev, npz_stat.st_ino)
+            with metadata_path.open("xb") as metadata_stream:
+                metadata_stat = os.fstat(metadata_stream.fileno())
+                metadata_identity = (metadata_stat.st_dev, metadata_stat.st_ino)
+                np.savez_compressed(npz_stream, **arrays)
+                npz_stream.flush()
+                os.fsync(npz_stream.fileno())
+                fixture_sha = digest_open_file(npz_stream)
+                metadata = {
+                    "schema": "kdm6.interior_profile_jvp_column.v1",
+                    "native_ijk_1based": [164, 242, 21],
+                    "flat_index_0based": 56557,
+                    "rttov_row_0based": 45,
+                    "fixed_upper_count": 27,
+                    "source_sha256": {
+                        "checkpoint": CHECKPOINT_SHA,
+                        "observation_inputs": INPUTS_SHA,
+                        "case_manifest": CASE_MANIFEST_SHA,
+                    },
+                    "exporter_sha256": digest(Path(__file__)),
+                    "fixture_sha256": fixture_sha,
+                    "prep_configuration": config["prep_configuration"],
+                    "experiment": {
+                        name: config["experiment"][name]
+                        for name in ("ncmin_land", "ncmin_sea")
+                    },
+                    "coordinate_contract": "raw checkpoint QNICE; profile_jvp converts raw NI/rho_d before the dry-number optical bridge",
+                    "checkpoint_unit_labels": unit_labels,
+                    "raw_number_unit_certified": False,
+                }
+                metadata_stream.write((json.dumps(metadata, indent=2, sort_keys=True) + "\n").encode())
+                metadata_stream.flush()
+                os.fsync(metadata_stream.fileno())
+        for path, expected in pinned_sources:
+            if digest(path) != expected:
+                raise ValueError(f"pinned private input changed during export: {path}")
+        if not is_owned(args.out, npz_identity) or not is_owned(metadata_path, metadata_identity):
+            raise RuntimeError("output path replaced during export")
+    except BaseException:
+        remove_if_owned(metadata_path, metadata_identity)
+        remove_if_owned(args.out, npz_identity)
+        raise
     print(json.dumps({"fixture_sha256": metadata["fixture_sha256"], "selected_levels": 39}))
 
 

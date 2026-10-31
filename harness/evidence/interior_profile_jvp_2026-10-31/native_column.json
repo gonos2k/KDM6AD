@@ -10,7 +10,7 @@
     "ncmin_land": 10.0,
     "ncmin_sea": 10.0
   },
-  "exporter_sha256": "0b6de55b962f60405da4b7b63b7f05ccbd50f1ec3bf3a18de59ccd600af8c488",
+  "exporter_sha256": "058a6d9e147f9920d42b730d146ee85a6b7f6185136caa3fe78e2c6253eb13ed",
   "fixed_upper_count": 27,
   "fixture_sha256": "602f2713549ac99ee2272db74245aca65ad28511f087dac7f2ec985300a54be1",
   "flat_index_0based": 56557,
