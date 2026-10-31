@@ -21,6 +21,8 @@ A one-hot qv direction at the first column's middle WRF level uses `dqv/dparamet
 
 An **exact ice-saturation** boundary contrast runs initial offsets `-1e-12`, `0`, `+1e-12`. The actual C3 outer gate is false, false, true, respectively. The full-runtime final NI also changes through other branches, so the one-sided results must not be assigned to C3 alone; no central derivative is asserted at equality.
 
+The [follow-up C4/DSD replay](../ice_c4_dsd_boundary_2026-11-01/README.md) links these same three inputs to the actual signed C4 candidates and final NI rewrite, and adds a separate `253.15 K` supply-cap comparison.
+
 Near this `qs_ice`, one binary32 qv ULP is `2.3283064365e-10`, larger than the weak offset `1e-10`. The f64 supply branch therefore does **not** certify the existence or bit pattern of an operational f32 host branch. There are no new host, C++, Fortran or RTTOV calls. QNICE units, applied native budgets and observation cost remain **INCONCLUSIVE**.
 
 ```bash
