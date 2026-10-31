@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/east-optical-cloud-gate-review-2026-10-31]] — East fixed-M0 pilot Control has 42 cloud-fraction-positive ice-content increases; all 29 observed diameter-bound-category changes are in clear rows. A controlled RTTOV content/diameter contrast and boundary physical/derivative contracts remain open.
 - [[sources/native-qnc-guard-control-direct-m0-2026-10-31]] — Guard-only Control direct replay retains all original M0 cells; fixed-support cost is 11.007967186042567. Physical attribution and acceptance remain open.
 - [[sources/native-qi-m0-cost-decomposition-2026-10-31]] — Ten east-edge profiles explain about 98.84% of the pilot-control cost increase over original control; alpha has mixed profile/channel losses despite lower aggregate cost. Boundary physics and derivative admission remain open.
 - [[sources/native-qi-postmicro-direct-m0-2026-10-30]] — Both pilot checkpoints retain all 377,342 original-M0 cells in 129 direct RTTOV blocks each; alpha-minus-control Huber cost is −0.0009641239. Physical boundary and derivative admission remain open.

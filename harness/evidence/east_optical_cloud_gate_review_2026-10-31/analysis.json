@@ -1,0 +1,63 @@
+{
+  "bt_delta_K": {
+    "cells": 70,
+    "max": -0.798306485991759,
+    "min": -5.370063623403723,
+    "negative": 70,
+    "positive": 0,
+    "zero": 0
+  },
+  "cases": [
+    "qnc_guard_control",
+    "pilot_control"
+  ],
+  "changed_moment_layers": 82,
+  "cloud_fraction_changed": 0,
+  "cloudy_diameter_changes": [
+    {
+      "delta_um": 3.552713678800501e-15,
+      "guard_float64_ulp_um": 3.552713678800501e-15,
+      "guard_um": 20.020000000000003,
+      "native_ijk": [
+        234,
+        52,
+        25
+      ],
+      "pilot_um": 20.020000000000007,
+      "rttov_layer_1based": 42,
+      "same_float32": true
+    }
+  ],
+  "cloudy_ice_pilot_over_guard_ratio": {
+    "max": 5.238117019777437,
+    "min": 1.0230559951493698
+  },
+  "huber": {
+    "fixed_m0_cost_delta": 0.0003284028295906759,
+    "fixed_m0_denominator": 377342,
+    "local_70_cell_mean_delta": 1.7702882931914974,
+    "numerator_delta": 123.92018052340481
+  },
+  "native_levels_examined": 390,
+  "schema": "east-optical-cloud-gate-review-v1",
+  "scope": "saved serialized optical rows and direct BTs; no new model calls or causal attribution",
+  "serialized_total_content_threshold_crossings": 0,
+  "strata": {
+    "cloud_fraction_positive": {
+      "diameter_bound_category_changed": 0,
+      "diameter_changed": 1,
+      "ice_changed": 42,
+      "ice_decrease": 0,
+      "ice_increase": 42,
+      "native_rows": 42
+    },
+    "cloud_fraction_zero": {
+      "diameter_bound_category_changed": 29,
+      "diameter_changed": 29,
+      "ice_changed": 40,
+      "ice_decrease": 40,
+      "ice_increase": 0,
+      "native_rows": 348
+    }
+  }
+}
