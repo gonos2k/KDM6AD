@@ -13,7 +13,39 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 PACKET = ROOT / "packet"
 MANIFEST_SHA = "e02527838e173f81827468d627531cdef7a06d666e6216b2aced814c4b81e3a6"
+LOCK_SHA = "74920e9c2c4021a4699f3d9c1e3cc3a1d49e3d56ead146d8862fc1eb2fc47cdc"
 HS = (1e-4, 2e-4, 4e-4, 8e-4)
+CASE_INPUT_PATHS = frozenset(
+    (
+        "channels.txt",
+        "coef.txt",
+        "lprofiles.txt",
+        "out/env.sh",
+        "out/rttov_test.txt",
+        "out/run.sh",
+        "profiles/001/angles.txt",
+        "profiles/001/atm/co2.txt",
+        "profiles/001/atm/deff_param.txt",
+        "profiles/001/atm/hydro.txt",
+        "profiles/001/atm/hydro_deff.txt",
+        "profiles/001/atm/hydro_frac.txt",
+        "profiles/001/atm/mmr_hydro_aer.txt",
+        "profiles/001/atm/o3.txt",
+        "profiles/001/atm/p.txt",
+        "profiles/001/atm/p_half.txt",
+        "profiles/001/atm/q.txt",
+        "profiles/001/atm/simple_cloud.txt",
+        "profiles/001/atm/t.txt",
+        "profiles/001/be.txt",
+        "profiles/001/datetime.txt",
+        "profiles/001/gas_units.txt",
+        "profiles/001/prof_id.txt",
+        "profiles/001/sfc/01/near_surface.txt",
+        "profiles/001/sfc/01/skin.txt",
+    )
+)
+DIRECT_CONFIG_SHA = "48c77a828fe91a021e7706c135420ce5546461522eb6d86455f11377dbcd4117"
+COMBINED_CONFIG_SHA = "353a8b71780faa242425c8ce2bf765dbf20c20e3f7156fae494852cf18f48661"
 
 
 def check(value, message):
@@ -78,8 +110,19 @@ def main():
         and attempt["planned_direct_only"] == 8,
         "planned calls",
     )
-    check(attempt["lock_sha256"] == sha(data["lock.json"]), "lock")
+    check(
+        sha(data["lock.json"]) == LOCK_SHA == attempt["lock_sha256"],
+        "lock",
+    )
     lock = json.loads(data["lock.json"])
+    names = ["baseline"] + [f"h{i}_{s}" for i in range(4) for s in ("plus", "minus")]
+    check(set(lock["cases"]) == set(names), "locked case inventory")
+    for name in names:
+        check(set(lock["cases"][name]) == CASE_INPUT_PATHS, "locked input inventory")
+        check(
+            lock["cases"][name]["out/rttov_test.txt"] == DIRECT_CONFIG_SHA,
+            "locked direct configuration",
+        )
     pins = json.loads(data["prepared/pins.json"])
     check(
         pins["checkpoint_sha256"]
@@ -92,7 +135,6 @@ def main():
         "summary binding",
     )
     check(audit["lock_sha256"] == sha(data["lock.json"]), "audit lock")
-    names = ["baseline"] + [f"h{i}_{s}" for i in range(4) for s in ("plus", "minus")]
     cal_raw = (
         ROOT.parents[2] / "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json"
     ).read_bytes()
@@ -109,16 +151,20 @@ def main():
         prefix = f"results/{name}/"
         receipt = json.loads(data[prefix + "receipt.json"])
         ca = json.loads(data[prefix + "attempt.json"])
+        expected_inputs = dict(lock["cases"][name])
+        expected_mode = "combined_direct_k" if name == "baseline" else "direct_only"
+        if name == "baseline":
+            expected_inputs["out/rttov_test.txt"] = COMBINED_CONFIG_SHA
         check(
-            receipt["pre_input_hashes"]
+            expected_inputs
+            == receipt["pre_input_hashes"]
             == receipt["post_input_hashes"]
             == ca["input_hashes"],
-            "input attestation",
+            "locked input attestation " + name,
         )
         check(
-            receipt["mode"]
-            == ("combined_direct_k" if name == "baseline" else "direct_only"),
-            "mode",
+            receipt["mode"] == ca["mode"] == expected_mode,
+            "mode " + name,
         )
         check(
             receipt["values_sha256"] == sha(data[prefix + "values.npz"]),
