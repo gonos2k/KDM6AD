@@ -362,6 +362,7 @@ def ice_substep_advection_torch(
     dtcld: float,
     params: SubstepAdvectionParams,
     ledger=None,   # [P0-4b] duck-typed SedimentationLedger; None → no diagnostic (byte-identical)
+    number_ledger=None,  # opt-in NI applied-amount capture; separate from mass ledger
 ) -> IceSubstepOutputs:
     """Fortran 1240-1271 — ice (qi/ni) sedimentation substep.
 
@@ -386,6 +387,9 @@ def ice_substep_advection_torch(
     fall_ni_cols = [fall_ni_in[:, k] for k in range(K)]
 
     _cap = _SubstepCapture(("qi",)) if ledger is not None else None
+    if number_ledger is not None:
+        n_candidate_out, n_applied_out = [], []
+        n_candidate_in, n_applied_in, n_projection = [], [], []
 
     # Top cell
     falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] / mstep_col_safe * gate
@@ -396,6 +400,14 @@ def ice_substep_advection_torch(
         _cap.top("qi", qi_cols[0], falk_qi_top * dtcld / dend_safe[:, 0])
     qi_cols[0] = torch.clamp(qi_cols[0] - falk_qi_top * dtcld / dend_safe[:, 0], min=0.0)
     ni_cols[0] = torch.clamp(ni_cols[0] - falk_ni_top * dtcld, min=0.0)
+    if number_ledger is not None:
+        with torch.no_grad():
+            raw_top = falk_ni_top.detach() * dtcld
+            n_candidate_out.append(raw_top)
+            n_applied_out.append(raw_top)
+            n_candidate_in.append(torch.zeros_like(raw_top))
+            n_applied_in.append(torch.zeros_like(raw_top))
+            n_projection.append(torch.clamp(-(state.ni[:, 0].detach() - raw_top), min=0.0))
 
     # Interior — STORED-falk inflow, same Fortran fix as substep_advection_torch
     # (module_mp_kdm6.F:1228-1232): inflow uses the cell-above's falk from ITS entry q (carried
@@ -423,10 +435,23 @@ def ice_substep_advection_torch(
                           qi_cols[k - 1])
         qi_cols[k] = torch.clamp(qi_cols[k] - dqi_k + dqi_above, min=0.0)
         ni_cols[k] = torch.clamp(ni_cols[k] - dni_k + dni_above, min=0.0)
+        if number_ledger is not None:
+            with torch.no_grad():
+                raw_out = falk_ni_k.detach() * dtcld
+                raw_in = (falk_ni_prev.detach() * delz[:, k - 1].detach() /
+                          delz_safe[:, k].detach() * dtcld)
+                n_candidate_out.append(raw_out)
+                n_applied_out.append(dni_k.detach())
+                n_candidate_in.append(raw_in)
+                n_applied_in.append(dni_above.detach())
+                n_projection.append(torch.clamp(
+                    -(state.ni[:, k].detach() - dni_k.detach() + dni_above.detach()), min=0.0))
 
         falk_qi_prev, falk_ni_prev = falk_qi_k, falk_ni_k  # carry stored falk to next cell
 
     qi_stacked = torch.stack(qi_cols, dim=-1)
+    ni_stacked = torch.stack(ni_cols, dim=-1)
+    fall_ni_stacked = torch.stack(fall_ni_cols, dim=-1)
     if _cap is not None:
         _cap.commit(
             ledger,
@@ -437,11 +462,29 @@ def ice_substep_advection_torch(
             entry_state={"qi": state.qi},
             post_state={"qi": qi_stacked},
         )
+    if number_ledger is not None:
+        if torch.is_tensor(gate):
+            gate_values = gate
+            divisor_values = mstep_col_safe
+        else:
+            gate_values = torch.ones(state.ni.shape[0], dtype=state.ni.dtype, device=state.ni.device)
+            divisor_values = torch.full_like(gate_values, float(mstep_col_safe))
+        number_ledger.record(
+            before=state.ni, after=ni_stacked,
+            candidate_out=torch.stack(n_candidate_out, dim=-1),
+            applied_out=torch.stack(n_applied_out, dim=-1),
+            candidate_in=torch.stack(n_candidate_in, dim=-1),
+            applied_in=torch.stack(n_applied_in, dim=-1),
+            projection=torch.stack(n_projection, dim=-1),
+            fall_before=fall_ni_in, fall_after=fall_ni_stacked,
+            delz=delz, dend=dend, gate=gate_values,
+            mstep_divisor=divisor_values, dtcld=dtcld, n_current=n_current,
+        )
     return IceSubstepOutputs(
         state=IceSubstepState(qi=qi_stacked,
-                              ni=torch.stack(ni_cols, dim=-1)),
+                              ni=ni_stacked),
         fall_qi=torch.stack(fall_qi_cols, dim=-1),
-        fall_ni=torch.stack(fall_ni_cols, dim=-1),
+        fall_ni=fall_ni_stacked,
     )
 
 
