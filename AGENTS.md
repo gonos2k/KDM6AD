@@ -110,7 +110,7 @@ non-overlapping tasks, reuse completed agents and existing evidence, and return
 concise findings instead of duplicating the main agent's investigation.
 
 Organize sub-agent work into Green and Red teams. Both teams use
-`gpt-5.6-luna` with reasoning effort `high` by default. Apply this setting when
+`gpt-6.1-terra` with reasoning effort `medium` by default. Apply this setting when
 spawning or restarting agents unless the user explicitly requests otherwise.
 Before ending a work session, have the Green and Red sub-agent teams review
 the final changes and evidence: Green checks consistency and demonstrated
