@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/east-optical-onehot-2026-10-31]] — A one-layer serialized ice-content direction adds per-profile rank beyond the prior two optical directions; 16 direct calls show small FD–K residuals without a plateau or host-derivative claim.
 - [[sources/east-optical-coordinate-factor-2026-10-31]] — Independent scalar replay checks GG/PP native-to-KMA BT derivative factors on 140 saved cells using a separately supplied SHA-pinned RTTOV coefficient file; scientific status remains INCONCLUSIVE.
 - [[sources/east-optical-derivative-2026-10-31]] — Serialized ice-content/diameter RTTOV K and central differences agree closely at h=1e-4 for ten east profiles; h=1e-3 diameter steps cross a 20 µm table knot. Host/QNICE derivatives and physical budgets remain open.
 - [[sources/east-optical-factorial-2026-10-31]] — Four direct RTTOV content×diameter cases at ten east fixed-M0 profiles reproduce the BT decrease through serialized ice-content substitution; diameter contrasts vanish in saved KMA BT but not raw radiance. Physical budget and full derivatives remain open.
