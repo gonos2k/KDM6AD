@@ -1,0 +1,2554 @@
+{
+  "huber_delta": 1,
+  "model_calls_in_replay": 0,
+  "profiles": [
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 256.59788496590016,
+            "GP": 256.59788496590016,
+            "PG": 255.52512311013382,
+            "PP": 255.52512311013382
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.0727618557663448,
+            "content_at_pilot_diameter": -1.0727618557663448,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.558700635218827,
+            "GP": 4.558700635218827,
+            "PG": 5.631462490985172,
+            "PP": 5.631462490985172
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.0727618557663448,
+            "content_at_pilot_diameter": 1.0727618557663448,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.5969279095587,
+            "GP": 287.5969279095587,
+            "PG": 286.0286763905254,
+            "PP": 286.0286763905254
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.5682515190333106,
+            "content_at_pilot_diameter": -1.5682515190333106,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.122752166146881,
+            "GP": 4.122752166146881,
+            "PG": 5.691003685180192,
+            "PP": 5.691003685180192
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.5682515190333106,
+            "content_at_pilot_diameter": 1.5682515190333106,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 267.1833032775992,
+            "GP": 267.1833032775992,
+            "PG": 266.1045176031817,
+            "PP": 266.1045176031817
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.0787856744174746,
+            "content_at_pilot_diameter": -1.0787856744174746,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.32336916541454047,
+            "GP": 0.32336916541454047,
+            "PG": 1.382986103930591,
+            "PP": 1.382986103930591
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.0596169385160505,
+            "content_at_pilot_diameter": 1.0596169385160505,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.999481066044,
+            "GP": 288.999481066044,
+            "PG": 287.184870310991,
+            "PP": 287.184870310991
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.8146107550529678,
+            "content_at_pilot_diameter": -1.8146107550529678,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.2648699556556835,
+            "GP": 5.2648699556556835,
+            "PG": 7.079480710708651,
+            "PP": 7.079480710708651
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.8146107550529678,
+            "content_at_pilot_diameter": 1.8146107550529678,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 285.8782678807605,
+            "GP": 285.8782678807605,
+            "PG": 283.3787212109688,
+            "PP": 283.3787212109688
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.499546669791698,
+            "content_at_pilot_diameter": -2.499546669791698,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.610626443532908,
+            "GP": 7.610626443532908,
+            "PG": 10.110173113324606,
+            "PP": 10.110173113324606
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.499546669791698,
+            "content_at_pilot_diameter": 2.499546669791698,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 281.5801614920881,
+            "GP": 281.5801614920881,
+            "PG": 278.81818536261784,
+            "PP": 278.81818536261784
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.76197612947027,
+            "content_at_pilot_diameter": -2.76197612947027,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.509380468356767,
+            "GP": 8.509380468356767,
+            "PG": 11.271356597827037,
+            "PP": 11.271356597827037
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.76197612947027,
+            "content_at_pilot_diameter": 2.76197612947027,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 267.5470438353689,
+            "GP": 267.5470438353689,
+            "PG": 265.22849760251125,
+            "PP": 265.22849760251125
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.3185462328576705,
+            "content_at_pilot_diameter": -2.3185462328576705,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 6.828628482967588,
+            "GP": 6.828628482967588,
+            "PG": 9.147174715825258,
+            "PP": 9.147174715825258
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.3185462328576705,
+            "content_at_pilot_diameter": 2.3185462328576705,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 701,
+      "j": 3
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 256.31912404031976,
+            "GP": 256.31912404031976,
+            "PG": 255.1593781788358,
+            "PP": 255.1593781788358
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.1597458614839695,
+            "content_at_pilot_diameter": -1.1597458614839695,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.654574803421724,
+            "GP": 4.654574803421724,
+            "PG": 5.8143206649056935,
+            "PP": 5.8143206649056935
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.1597458614839695,
+            "content_at_pilot_diameter": 1.1597458614839695,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.42320115388316,
+            "GP": 287.42320115388316,
+            "PG": 285.7263280547539,
+            "PP": 285.7263280547539
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.6968730991292773,
+            "content_at_pilot_diameter": -1.6968730991292773,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.175802901338841,
+            "GP": 4.175802901338841,
+            "PG": 5.872676000468118,
+            "PP": 5.872676000468118
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.6968730991292773,
+            "content_at_pilot_diameter": 1.6968730991292773,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 267.06085812877643,
+            "GP": 267.06085812877643,
+            "PG": 265.8939408187316,
+            "PP": 265.8939408187316
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.1669173100448234,
+            "content_at_pilot_diameter": -1.1669173100448234,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.3690302841350709,
+            "GP": 0.3690302841350709,
+            "PG": 1.5260218253804965,
+            "PP": 1.5260218253804965
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.1569915412454255,
+            "content_at_pilot_diameter": 1.1569915412454255,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.80510405159725,
+            "GP": 288.80510405159725,
+            "PG": 286.84290465592557,
+            "PP": 286.84290465592557
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.9621993956716892,
+            "content_at_pilot_diameter": -1.9621993956716892,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.37060665209583,
+            "GP": 5.37060665209583,
+            "PG": 7.332806047767519,
+            "PP": 7.332806047767519
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.9621993956716892,
+            "content_at_pilot_diameter": 1.9621993956716892,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 285.5975272292476,
+            "GP": 285.5975272292476,
+            "PG": 282.89802790373744,
+            "PP": 282.89802790373744
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.6994993255101463,
+            "content_at_pilot_diameter": -2.6994993255101463,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.758795211306619,
+            "GP": 7.758795211306619,
+            "PG": 10.458294536816766,
+            "PP": 10.458294536816766
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.6994993255101463,
+            "content_at_pilot_diameter": 2.6994993255101463,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 281.253899053445,
+            "GP": 281.253899053445,
+            "PG": 278.27245611525876,
+            "PP": 278.27245611525876
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.9814429381862624,
+            "content_at_pilot_diameter": -2.9814429381862624,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.67873159720557,
+            "GP": 8.67873159720557,
+            "PG": 11.660174535391832,
+            "PP": 11.660174535391832
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.9814429381862624,
+            "content_at_pilot_diameter": 2.9814429381862624,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 267.25574475859236,
+            "GP": 267.25574475859236,
+            "PG": 264.75173633525355,
+            "PP": 264.75173633525355
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.504008423338803,
+            "content_at_pilot_diameter": -2.504008423338803,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 6.92167737385995,
+            "GP": 6.92167737385995,
+            "PG": 9.425685797198753,
+            "PP": 9.425685797198753
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.504008423338803,
+            "content_at_pilot_diameter": 2.504008423338803,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 935,
+      "j": 4
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 256.12155162678243,
+            "GP": 256.12155162678243,
+            "PG": 254.9360322685701,
+            "PP": 254.9360322685701
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.185519358212332,
+            "content_at_pilot_diameter": -1.185519358212332,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.852147216959054,
+            "GP": 4.852147216959054,
+            "PG": 6.037666575171386,
+            "PP": 6.037666575171386
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.185519358212332,
+            "content_at_pilot_diameter": 1.185519358212332,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.3324574546513,
+            "GP": 287.3324574546513,
+            "PG": 285.59447215080223,
+            "PP": 285.59447215080223
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.7379853038490864,
+            "content_at_pilot_diameter": -1.7379853038490864,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.290696854028624,
+            "GP": 4.290696854028624,
+            "PG": 6.028682157877711,
+            "PP": 6.028682157877711
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.7379853038490864,
+            "content_at_pilot_diameter": 1.7379853038490864,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.99790028476235,
+            "GP": 266.99790028476235,
+            "PG": 265.80292853017,
+            "PP": 265.80292853017
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.194971754592359,
+            "content_at_pilot_diameter": -1.194971754592359,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.4408167548171623,
+            "GP": 0.4408167548171623,
+            "PG": 1.6339251664474546,
+            "PP": 1.6339251664474546
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.1931084116302921,
+            "content_at_pilot_diameter": 1.1931084116302921,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.71100966947347,
+            "GP": 288.71100966947347,
+            "PG": 286.7017194009058,
+            "PP": 286.7017194009058
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.0092902685676677,
+            "content_at_pilot_diameter": -2.0092902685676677,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.401340754982414,
+            "GP": 5.401340754982414,
+            "PG": 7.410631023550081,
+            "PP": 7.410631023550081
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.0092902685676677,
+            "content_at_pilot_diameter": 2.0092902685676677,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 285.47002263840096,
+            "GP": 285.47002263840096,
+            "PG": 282.70702010494955,
+            "PP": 282.70702010494955
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.763002533451413,
+            "content_at_pilot_diameter": -2.763002533451413,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.819958255367567,
+            "GP": 7.819958255367567,
+            "PG": 10.58296078881898,
+            "PP": 10.58296078881898
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.763002533451413,
+            "content_at_pilot_diameter": 2.763002533451413,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 281.1079232048941,
+            "GP": 281.1079232048941,
+            "PG": 278.0569478608971,
+            "PP": 278.0569478608971
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -3.050975343997038,
+            "content_at_pilot_diameter": -3.050975343997038,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.667612528871757,
+            "GP": 8.667612528871757,
+            "PG": 11.718587872868795,
+            "PP": 11.718587872868795
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 3.050975343997038,
+            "content_at_pilot_diameter": 3.050975343997038,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 267.1256019497303,
+            "GP": 267.1256019497303,
+            "PG": 264.56279380494556,
+            "PP": 264.56279380494556
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.5628081447847535,
+            "content_at_pilot_diameter": -2.5628081447847535,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 6.96912708436912,
+            "GP": 6.96912708436912,
+            "PG": 9.531935229153873,
+            "PP": 9.531935229153873
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.5628081447847535,
+            "content_at_pilot_diameter": 2.5628081447847535,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 1169,
+      "j": 5
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 255.8845193526349,
+            "GP": 255.8845193526349,
+            "PG": 254.65341037908405,
+            "PP": 254.65341037908405
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.231108973550846,
+            "content_at_pilot_diameter": -1.231108973550846,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 5.0076693928672,
+            "GP": 5.0076693928672,
+            "PG": 6.238778366418046,
+            "PP": 6.238778366418046
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.231108973550846,
+            "content_at_pilot_diameter": 1.231108973550846,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.17990250178525,
+            "GP": 287.17990250178525,
+            "PG": 285.3711737968645,
+            "PP": 285.3711737968645
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.8087287049207248,
+            "content_at_pilot_diameter": -1.8087287049207248,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.261940908298129,
+            "GP": 4.261940908298129,
+            "PG": 6.070669613218854,
+            "PP": 6.070669613218854
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.8087287049207248,
+            "content_at_pilot_diameter": 1.8087287049207248,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.88909630701465,
+            "GP": 266.88909630701465,
+            "PG": 265.6460735551916,
+            "PP": 265.6460735551916
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.243022751823048,
+            "content_at_pilot_diameter": -1.243022751823048,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.4477920952546707,
+            "GP": 0.4477920952546707,
+            "PG": 1.689375852155763,
+            "PP": 1.689375852155763
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.2415837569010924,
+            "content_at_pilot_diameter": 1.2415837569010924,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.5462988577707,
+            "GP": 288.5462988577707,
+            "PG": 286.4564917801546,
+            "PP": 286.4564917801546
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.089807077616115,
+            "content_at_pilot_diameter": -2.089807077616115,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.426524341978393,
+            "GP": 5.426524341978393,
+            "PG": 7.516331419594508,
+            "PP": 7.516331419594508
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.089807077616115,
+            "content_at_pilot_diameter": 2.089807077616115,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 285.2485067198999,
+            "GP": 285.2485067198999,
+            "PG": 282.3774051062709,
+            "PP": 282.3774051062709
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.871101613629037,
+            "content_at_pilot_diameter": -2.871101613629037,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.842226352891089,
+            "GP": 7.842226352891089,
+            "PG": 10.713327966520126,
+            "PP": 10.713327966520126
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.871101613629037,
+            "content_at_pilot_diameter": 2.871101613629037,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 280.85918941009027,
+            "GP": 280.85918941009027,
+            "PG": 277.6902388855393,
+            "PP": 277.6902388855393
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -3.168950524550951,
+            "content_at_pilot_diameter": -3.168950524550951,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.744759832484533,
+            "GP": 8.744759832484533,
+            "PG": 11.913710357035484,
+            "PP": 11.913710357035484
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 3.168950524550951,
+            "content_at_pilot_diameter": 3.168950524550951,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.9065800540744,
+            "GP": 266.9065800540744,
+            "PG": 264.2448210756566,
+            "PP": 264.2448210756566
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.661758978417822,
+            "content_at_pilot_diameter": -2.661758978417822,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 6.790490425057328,
+            "GP": 6.790490425057328,
+            "PG": 9.45224940347515,
+            "PP": 9.45224940347515
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.661758978417822,
+            "content_at_pilot_diameter": 2.661758978417822,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 1403,
+      "j": 6
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 255.60247124125144,
+            "GP": 255.60247124125144,
+            "PG": 254.50095465280756,
+            "PP": 254.50095465280756
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.1015165884438716,
+            "content_at_pilot_diameter": -1.1015165884438716,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 5.105804893506701,
+            "GP": 5.105804893506701,
+            "PG": 6.207321481950572,
+            "PP": 6.207321481950572
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.1015165884438716,
+            "content_at_pilot_diameter": 1.1015165884438716,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 286.956501104074,
+            "GP": 286.956501104074,
+            "PG": 285.32299220649355,
+            "PP": 285.32299220649355
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.633508897580441,
+            "content_at_pilot_diameter": -1.633508897580441,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.388469036451511,
+            "GP": 4.388469036451511,
+            "PG": 6.021977934031952,
+            "PP": 6.021977934031952
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.633508897580441,
+            "content_at_pilot_diameter": 1.633508897580441,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.73373696132916,
+            "GP": 266.73373696132916,
+            "PG": 265.6126865531335,
+            "PP": 265.6126865531335
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.1210504081956287,
+            "content_at_pilot_diameter": -1.1210504081956287,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.567880052294754,
+            "GP": 0.567880052294754,
+            "PG": 1.6889304604903828,
+            "PP": 1.6889304604903828
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.1210504081956287,
+            "content_at_pilot_diameter": 1.1210504081956287,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.29802359973684,
+            "GP": 288.29802359973684,
+            "PG": 286.414013393854,
+            "PP": 286.414013393854
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.8840102058828165,
+            "content_at_pilot_diameter": -1.8840102058828165,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.573208672383089,
+            "GP": 5.573208672383089,
+            "PG": 7.4572188782659055,
+            "PP": 7.4572188782659055
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.8840102058828165,
+            "content_at_pilot_diameter": 1.8840102058828165,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 284.91120947747316,
+            "GP": 284.91120947747316,
+            "PG": 282.3266267533792,
+            "PP": 282.3266267533792
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.584582724093991,
+            "content_at_pilot_diameter": -2.584582724093991,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 8.126334149031834,
+            "GP": 8.126334149031834,
+            "PG": 10.710916873125825,
+            "PP": 10.710916873125825
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.584582724093991,
+            "content_at_pilot_diameter": 2.584582724093991,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 280.4820308536699,
+            "GP": 280.4820308536699,
+            "PG": 277.6332982181426,
+            "PP": 277.6332982181426
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.8487326355273126,
+            "content_at_pilot_diameter": -2.8487326355273126,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 9.064673994711143,
+            "GP": 9.064673994711143,
+            "PG": 11.913406630238455,
+            "PP": 11.913406630238455
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.8487326355273126,
+            "content_at_pilot_diameter": 2.8487326355273126,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.5793554529541,
+            "GP": 266.5793554529541,
+            "PG": 264.19330889719896,
+            "PP": 264.19330889719896
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.386046555755115,
+            "content_at_pilot_diameter": -2.386046555755115,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 7.051320320230332,
+            "GP": 7.051320320230332,
+            "PG": 9.437366875985447,
+            "PP": 9.437366875985447
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.386046555755115,
+            "content_at_pilot_diameter": 2.386046555755115,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 1637,
+      "j": 7
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 255.31508888227592,
+            "GP": 255.31508888227592,
+            "PG": 254.34276484366737,
+            "PP": 254.34276484366737
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.9723240386085479,
+            "content_at_pilot_diameter": -0.9723240386085479,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.961252090084088,
+            "GP": 4.961252090084088,
+            "PG": 5.933576128692636,
+            "PP": 5.933576128692636
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.9723240386085479,
+            "content_at_pilot_diameter": 0.9723240386085479,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 286.7247354051466,
+            "GP": 286.7247354051466,
+            "PG": 285.2664804737295,
+            "PP": 285.2664804737295
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.458254931417116,
+            "content_at_pilot_diameter": -1.458254931417116,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 3.2510477779025564,
+            "GP": 3.2510477779025564,
+            "PG": 4.709302709319672,
+            "PP": 4.709302709319672
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.458254931417116,
+            "content_at_pilot_diameter": 1.458254931417116,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.570114749352,
+            "GP": 266.570114749352,
+            "PG": 265.57106062267957,
+            "PP": 265.57106062267957
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.9990541266724335,
+            "content_at_pilot_diameter": -0.9990541266724335,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.02562499309374884,
+            "GP": 0.02562499309374884,
+            "PG": 0.7254387246191527,
+            "PP": 0.7254387246191527
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.6998137315254038,
+            "content_at_pilot_diameter": 0.6998137315254038,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 288.0403003042319,
+            "GP": 288.0403003042319,
+            "PG": 286.36205331301426,
+            "PP": 286.36205331301426
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.6782469912176339,
+            "content_at_pilot_diameter": -1.6782469912176339,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 4.295091203145262,
+            "GP": 4.295091203145262,
+            "PG": 5.973338194362896,
+            "PP": 5.973338194362896
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.6782469912176339,
+            "content_at_pilot_diameter": 1.6782469912176339,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 284.5604040215827,
+            "GP": 284.5604040215827,
+            "PG": 282.2621051541957,
+            "PP": 282.2621051541957
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.298298867387018,
+            "content_at_pilot_diameter": -2.298298867387018,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.233668337820802,
+            "GP": 7.233668337820802,
+            "PG": 9.53196720520782,
+            "PP": 9.53196720520782
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.298298867387018,
+            "content_at_pilot_diameter": 2.298298867387018,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 280.08941275202636,
+            "GP": 280.08941275202636,
+            "PG": 277.56054953945807,
+            "PP": 277.56054953945807
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.5288632125682966,
+            "content_at_pilot_diameter": -2.5288632125682966,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.59566656847511,
+            "GP": 8.59566656847511,
+            "PG": 11.124529781043407,
+            "PP": 11.124529781043407
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.5288632125682966,
+            "content_at_pilot_diameter": 2.5288632125682966,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.2380982722679,
+            "GP": 266.2380982722679,
+            "PG": 264.12749660026043,
+            "PP": 264.12749660026043
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.1106016720074763,
+            "content_at_pilot_diameter": -2.1106016720074763,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 6.993494449380137,
+            "GP": 6.993494449380137,
+            "PG": 9.104096121387613,
+            "PP": 9.104096121387613
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.1106016720074763,
+            "content_at_pilot_diameter": 2.1106016720074763,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 1871,
+      "j": 8
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 255.0204483318914,
+            "GP": 255.0204483318914,
+            "PG": 254.18384370301527,
+            "PP": 254.18384370301527
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.8366046288761311,
+            "content_at_pilot_diameter": -0.8366046288761311,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 5.111029905817787,
+            "GP": 5.111029905817787,
+            "PG": 5.947634534693918,
+            "PP": 5.947634534693918
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.8366046288761311,
+            "content_at_pilot_diameter": 0.8366046288761311,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 286.48975791662787,
+            "GP": 286.48975791662787,
+            "PG": 285.2166058917458,
+            "PP": 285.2166058917458
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.2731520248820516,
+            "content_at_pilot_diameter": -1.2731520248820516,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 3.572319609461317,
+            "GP": 3.572319609461317,
+            "PG": 4.845471634343369,
+            "PP": 4.845471634343369
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.2731520248820516,
+            "content_at_pilot_diameter": 1.2731520248820516,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.4075797232955,
+            "GP": 266.4075797232955,
+            "PG": 265.5371464517704,
+            "PP": 265.5371464517704
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.8704332715250871,
+            "content_at_pilot_diameter": -0.8704332715250871,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.1870097590797209,
+            "GP": 0.1870097590797209,
+            "PG": 0.9820046231754418,
+            "PP": 0.9820046231754418
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.794994864095721,
+            "content_at_pilot_diameter": 0.794994864095721,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.77721149177154,
+            "GP": 287.77721149177154,
+            "PG": 286.3160175869881,
+            "PP": 286.3160175869881
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.4611939047834426,
+            "content_at_pilot_diameter": -1.4611939047834426,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 4.944270166906108,
+            "GP": 4.944270166906108,
+            "PG": 6.405464071689551,
+            "PP": 6.405464071689551
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.4611939047834426,
+            "content_at_pilot_diameter": 1.4611939047834426,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 284.1949439449458,
+            "GP": 284.1949439449458,
+            "PG": 282.19828092319744,
+            "PP": 282.19828092319744
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.9966630217483612,
+            "content_at_pilot_diameter": -1.9966630217483612,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 7.760318033266117,
+            "GP": 7.760318033266117,
+            "PG": 9.756981055014478,
+            "PP": 9.756981055014478
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.9966630217483612,
+            "content_at_pilot_diameter": 1.9966630217483612,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 279.6760687671842,
+            "GP": 279.6760687671842,
+            "PG": 277.48406107869533,
+            "PP": 277.48406107869533
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.192007688488843,
+            "content_at_pilot_diameter": -2.192007688488843,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 8.922540313089144,
+            "GP": 8.922540313089144,
+            "PG": 11.114548001577987,
+            "PP": 11.114548001577987
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.192007688488843,
+            "content_at_pilot_diameter": 2.192007688488843,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 265.8777515820861,
+            "GP": 265.8777515820861,
+            "PG": 264.05707670998214,
+            "PP": 264.05707670998214
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.8206748721039503,
+            "content_at_pilot_diameter": -1.8206748721039503,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 7.420440363009334,
+            "GP": 7.420440363009334,
+            "PG": 9.241115235113284,
+            "PP": 9.241115235113284
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.8206748721039503,
+            "content_at_pilot_diameter": 1.8206748721039503,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 2105,
+      "j": 9
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 254.81117659181146,
+            "GP": 254.81117659181146,
+            "PG": 254.0128701058197,
+            "PP": 254.0128701058197
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.798306485991759,
+            "content_at_pilot_diameter": -0.798306485991759,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.883013792780702,
+            "GP": 4.883013792780702,
+            "PG": 5.681320278772461,
+            "PP": 5.681320278772461
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.798306485991759,
+            "content_at_pilot_diameter": 0.798306485991759,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 286.38917553740583,
+            "GP": 286.38917553740583,
+            "PG": 285.16367304362177,
+            "PP": 285.16367304362177
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.225502493784063,
+            "content_at_pilot_diameter": -1.225502493784063,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.433006360704269,
+            "GP": 4.433006360704269,
+            "PG": 5.658508854488332,
+            "PP": 5.658508854488332
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.225502493784063,
+            "content_at_pilot_diameter": 1.225502493784063,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.3362636607568,
+            "GP": 266.3362636607568,
+            "PG": 265.4992828029091,
+            "PP": 265.4992828029091
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.8369808578477205,
+            "content_at_pilot_diameter": -0.8369808578477205,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.6601613890972544,
+            "GP": 0.6601613890972544,
+            "PG": 1.4971422469449749,
+            "PP": 1.4971422469449749
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.8369808578477205,
+            "content_at_pilot_diameter": 0.8369808578477205,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.67082250604466,
+            "GP": 287.67082250604466,
+            "PG": 286.2661565606389,
+            "PP": 286.2661565606389
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.4046659454057817,
+            "content_at_pilot_diameter": -1.4046659454057817,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.614342071436624,
+            "GP": 5.614342071436624,
+            "PG": 7.019008016842406,
+            "PP": 7.019008016842406
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.4046659454057817,
+            "content_at_pilot_diameter": 1.4046659454057817,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 284.0395846769925,
+            "GP": 284.0395846769925,
+            "PG": 282.12237616111975,
+            "PP": 282.12237616111975
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.917208515872744,
+            "content_at_pilot_diameter": -1.917208515872744,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 8.277545405042645,
+            "GP": 8.277545405042645,
+            "PG": 10.194753920915389,
+            "PP": 10.194753920915389
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.917208515872744,
+            "content_at_pilot_diameter": 1.917208515872744,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 279.4913911576626,
+            "GP": 279.4913911576626,
+            "PG": 277.38911536308433,
+            "PP": 277.38911536308433
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.1022757945782473,
+            "content_at_pilot_diameter": -2.1022757945782473,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 9.193688162838896,
+            "GP": 9.193688162838896,
+            "PG": 11.295963957417143,
+            "PP": 11.295963957417143
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.1022757945782473,
+            "content_at_pilot_diameter": 2.1022757945782473,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 265.70907010744025,
+            "GP": 265.70907010744025,
+            "PG": 263.9670744477471,
+            "PP": 263.9670744477471
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.7419956596931456,
+            "content_at_pilot_diameter": -1.7419956596931456,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 7.305838052048216,
+            "GP": 7.305838052048216,
+            "PG": 9.047833711741362,
+            "PP": 9.047833711741362
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.7419956596931456,
+            "content_at_pilot_diameter": 1.7419956596931456,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 2339,
+      "j": 10
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 254.6763293186771,
+            "GP": 254.6763293186771,
+            "PG": 253.8438986968597,
+            "PP": 253.8438986968597
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.8324306218173945,
+            "content_at_pilot_diameter": -0.8324306218173945,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 4.871187204666427,
+            "GP": 4.871187204666427,
+            "PG": 5.703617826483821,
+            "PP": 5.703617826483821
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.8324306218173945,
+            "content_at_pilot_diameter": 0.8324306218173945,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 286.4001489194393,
+            "GP": 286.4001489194393,
+            "PG": 285.1198037888862,
+            "PP": 285.1198037888862
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.280345130553087,
+            "content_at_pilot_diameter": -1.280345130553087,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 4.4220329786708135,
+            "GP": 4.4220329786708135,
+            "PG": 5.7023781092239005,
+            "PP": 5.7023781092239005
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.280345130553087,
+            "content_at_pilot_diameter": 1.280345130553087,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 266.34537948207105,
+            "GP": 266.34537948207105,
+            "PG": 265.4707997908053,
+            "PP": 265.4707997908053
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -0.8745796912657511,
+            "content_at_pilot_diameter": -0.8745796912657511,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 0.7019987542646504,
+            "GP": 0.7019987542646504,
+            "PG": 1.5765784455304015,
+            "PP": 1.5765784455304015
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 0.8745796912657511,
+            "content_at_pilot_diameter": 0.8745796912657511,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 287.6932651188476,
+            "GP": 287.6932651188476,
+            "PG": 286.2254073331023,
+            "PP": 286.2254073331023
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.4678577857453092,
+            "content_at_pilot_diameter": -1.4678577857453092,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 5.54078140879011,
+            "GP": 5.54078140879011,
+            "PG": 7.008639194535419,
+            "PP": 7.008639194535419
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.4678577857453092,
+            "content_at_pilot_diameter": 1.4678577857453092,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 284.0568266707131,
+            "GP": 284.0568266707131,
+            "PG": 282.05347766803203,
+            "PP": 282.05347766803203
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.003349002681091,
+            "content_at_pilot_diameter": -2.003349002681091,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 8.153199525328034,
+            "GP": 8.153199525328034,
+            "PG": 10.156548528009125,
+            "PP": 10.156548528009125
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.003349002681091,
+            "content_at_pilot_diameter": 2.003349002681091,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 279.4950938711629,
+            "GP": 279.4950938711629,
+            "PG": 277.298417462787,
+            "PP": 277.298417462787
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.196676408375936,
+            "content_at_pilot_diameter": -2.196676408375936,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 9.074679265688246,
+            "GP": 9.074679265688246,
+            "PG": 11.271355674064182,
+            "PP": 11.271355674064182
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 2.196676408375936,
+            "content_at_pilot_diameter": 2.196676408375936,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 265.7013088495481,
+            "GP": 265.7013088495481,
+            "PG": 263.88041586026895,
+            "PP": 263.88041586026895
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.820892989279173,
+            "content_at_pilot_diameter": -1.820892989279173,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 7.29691620985659,
+            "GP": 7.29691620985659,
+            "PG": 9.117809199135763,
+            "PP": 9.117809199135763
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.820892989279173,
+            "content_at_pilot_diameter": 1.820892989279173,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 2573,
+      "j": 11
+    },
+    {
+      "cells": [
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 249.1416088567771,
+            "GP": 249.1416088567771,
+            "PG": 247.34657853102226,
+            "PP": 247.34657853102226
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -1.7950303257548512,
+            "content_at_pilot_diameter": -1.7950303257548512,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 10,
+          "huber": {
+            "GG": 0.04171313758709891,
+            "GP": 0.04171313758709891,
+            "PG": 1.5838663954798733,
+            "PP": 1.5838663954798733
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 1.5421532578927744,
+            "content_at_pilot_diameter": 1.5421532578927744,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 282.5004076482108,
+            "GP": 282.5004076482108,
+            "PG": 279.14671076701075,
+            "PP": 279.14671076701075
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -3.353696881200051,
+            "content_at_pilot_diameter": -3.353696881200051,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 11,
+          "huber": {
+            "GG": 1.716266454969059,
+            "GP": 1.716266454969059,
+            "PG": 0.637430426230992,
+            "PP": 0.637430426230992
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": -1.078836028738067,
+            "content_at_pilot_diameter": -1.078836028738067,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 263.6980689484606,
+            "GP": 263.6980689484606,
+            "PG": 261.45642775898654,
+            "PP": 261.45642775898654
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -2.2416411894740804,
+            "content_at_pilot_diameter": -2.2416411894740804,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 12,
+          "huber": {
+            "GG": 3.066021350360529,
+            "GP": 3.066021350360529,
+            "PG": 0.8243801608864487,
+            "PP": 0.8243801608864487
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": -2.2416411894740804,
+            "content_at_pilot_diameter": -2.2416411894740804,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 283.9805081681974,
+            "GP": 283.9805081681974,
+            "PG": 280.2134147138714,
+            "PP": 280.2134147138714
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -3.767093454326016,
+            "content_at_pilot_diameter": -3.767093454326016,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 13,
+          "huber": {
+            "GG": 1.948752517693947,
+            "GP": 1.948752517693947,
+            "PG": 0.8183409366320689,
+            "PP": 0.8183409366320689
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": -1.1304115810618782,
+            "content_at_pilot_diameter": -1.1304115810618782,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 279.82703740935915,
+            "GP": 279.82703740935915,
+            "PG": 274.81643106460933,
+            "PP": 274.81643106460933
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -5.010606344749817,
+            "content_at_pilot_diameter": -5.010606344749817,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 14,
+          "huber": {
+            "GG": 0.011295547437336293,
+            "GP": 0.011295547437336293,
+            "PG": 4.360303001890543,
+            "PP": 4.360303001890543
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 4.349007454453207,
+            "content_at_pilot_diameter": 4.349007454453207,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 274.95573749231943,
+            "GP": 274.95573749231943,
+            "PG": 269.5856738689157,
+            "PP": 269.5856738689157
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -5.370063623403723,
+            "content_at_pilot_diameter": -5.370063623403723,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 15,
+          "huber": {
+            "GG": 0.29091504652363925,
+            "GP": 0.29091504652363925,
+            "PG": 5.632841502636779,
+            "PP": 5.632841502636779
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 5.34192645611314,
+            "content_at_pilot_diameter": 5.34192645611314,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        },
+        {
+          "GG_minus_historical_guard": 0.0,
+          "PP_minus_historical_pilot": 0.0,
+          "bt": {
+            "GG": 262.0888688863819,
+            "GP": 262.0888688863819,
+            "PG": 257.75908326821036,
+            "PP": 257.75908326821036
+          },
+          "bt_effects": {
+            "content_at_guard_diameter": -4.329785618171513,
+            "content_at_pilot_diameter": -4.329785618171513,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          },
+          "channel": 16,
+          "huber": {
+            "GG": 0.06312238139147089,
+            "GP": 0.06312238139147089,
+            "PG": 4.185095008397752,
+            "PP": 4.185095008397752
+          },
+          "huber_effects": {
+            "content_at_guard_diameter": 4.121972627006281,
+            "content_at_pilot_diameter": 4.121972627006281,
+            "diameter_at_guard_content": 0.0,
+            "diameter_at_pilot_content": 0.0,
+            "interaction": 0.0
+          }
+        }
+      ],
+      "flat": 12167,
+      "j": 52
+    }
+  ],
+  "raw_diameter_differences": {
+    "BT": {
+      "GP_minus_GG": {
+        "differences": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.842170943040401e-14,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_abs": 2.842170943040401e-14,
+        "nonzero": 1
+      },
+      "PP_minus_PG": {
+        "differences": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_abs": 0.0,
+        "nonzero": 0
+      }
+    },
+    "TOTAL": {
+      "GP_minus_GG": {
+        "differences": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.552713678800501e-15,
+          7.105427357601002e-15,
+          -7.105427357601002e-15,
+          -1.4210854715202004e-14,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max_abs": 1.4210854715202004e-14,
+        "nonzero": 4
+      },
+      "PP_minus_PG": {
+        "differences": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          7.105427357601002e-15,
+          0.0,
+          0.0,
+          0.0,
+          1.4210854715202004e-14,
+          0.0
+        ],
+        "max_abs": 1.4210854715202004e-14,
+        "nonzero": 2
+      }
+    }
+  },
+  "recorded_direct_calls": 4,
+  "schema": "east-optical-factorial-analysis-v1",
+  "summary": {
+    "huber_content_fixed_m0_contribution": 0.0003284028295906759,
+    "huber_content_mean_70_cells": 1.7702882931914974,
+    "huber_content_numerator_fsum": 123.92018052340481
+  },
+  "support_denominator": 377342
+}

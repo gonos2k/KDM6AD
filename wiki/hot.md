@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/east-optical-factorial-2026-10-31]] — Four direct RTTOV content×diameter cases at ten east fixed-M0 profiles reproduce the BT decrease through serialized ice-content substitution; diameter contrasts vanish in saved KMA BT but not raw radiance. Physical budget and full derivatives remain open.
 - [[sources/east-optical-cloud-gate-review-2026-10-31]] — East fixed-M0 pilot Control has 42 cloud-fraction-positive ice-content increases; all 29 observed diameter-bound-category changes are in clear rows. A controlled RTTOV content/diameter contrast and boundary physical/derivative contracts remain open.
 - [[sources/native-qnc-guard-control-direct-m0-2026-10-31]] — Guard-only Control direct replay retains all original M0 cells; fixed-support cost is 11.007967186042567. Physical attribution and acceptance remain open.
 - [[sources/native-qi-m0-cost-decomposition-2026-10-31]] — Ten east-edge profiles explain about 98.84% of the pilot-control cost increase over original control; alpha has mixed profile/channel losses despite lower aggregate cost. Boundary physics and derivative admission remain open.
