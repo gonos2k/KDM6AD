@@ -43,7 +43,11 @@ cmp /tmp/east-factorial-analysis.json harness/evidence/east_optical_factorial_20
 python3 -m unittest discover -s harness/evidence/east_optical_factorial_2026-10-31 -p 'test_*.py'
 ```
 
-Replay verifies the source/packet inventory and parent witness, including its
+Replay reads the supplied export file once, checks those exact bytes against
+the manifest's pinned `export.json` SHA-256, and analyzes the same bytes.
+A byte-identical copy at another path is accepted; changed metadata, BT or
+even whitespace is rejected before numeric analysis. Replay also verifies
+the source/packet inventory and parent witness, including its
 receipt-mapped guard and pilot captures, then recomputes the analysis. The
 parent witness replay invokes `crosscheck_qnc.py` on the QNC archive and
 `crosscheck_pilot.py` on the pilot archive; those checks join receipt-mapped
