@@ -23,6 +23,15 @@ class ProfileJvpReplayTest(unittest.TestCase):
         self.assertGreater(result["directions"]["coupled"]["jvp"][1], 0)
         self.assertLess(result["directions"]["raw_ni_only"]["jvp"][1], 0)
         self.assertEqual(result["directions"]["qi_rho_null"]["jvp"], [0.0, 0.0])
+        self.assertEqual(set(result["vjp_checks"]),
+                         {"content", "diameter", "combined", "signed_k"})
+        self.assertEqual(result["vjp_checks"]["content"]["native_gradient"][1], 0.0)
+        self.assertLess(result["vjp_checks"]["diameter"]["native_gradient"][1], 0.0)
+        conditional = result["conditional_number_basis"]
+        self.assertAlmostEqual(conditional["raw_as_dry_specific"]["deff7_um"],
+                               36.37937516039071, delta=1e-9)
+        self.assertGreater(conditional["raw_as_dry_specific"]["deff7_um"],
+                           conditional["raw_as_volume"]["deff7_um"])
         expected = (9.220804259024717e-10, 1.5108492026905118e-9,
                     6.355934847879219e-9, 2.503401740072686e-8)
         for row, maximum in zip(result["real4_secants"], expected):
