@@ -5,6 +5,8 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[kdm6ad-east-ice-radius-floor-2026-10-31]] — Bounded source-form checkpoint ice-radius floor replay and physical-unit limits.
+
 - [[native-qnc-control-witnesses-2026-10-28]] — Existing control checkpoint at all 54 candidate-failed profiles and native layers, with raw-word repair mechanisms and stage-attribution limits.
 - [[native-qnc-host-backoff-review-2026-10-28]] — Versioned source-pin closure and three-way original/variant block28 BT comparison with full-M0 limits.
 - [[native-qnc-target-host-backoff-2026-10-27]] — Four isolated full-host steps and two original-B512 direct RTTOV calls verify one target moment repair with remaining full-support invalidity.
