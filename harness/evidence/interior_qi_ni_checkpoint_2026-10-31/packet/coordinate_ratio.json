@@ -1,0 +1,14 @@
+{
+  "ratio": [
+    1.0000056404821098,
+    0.9999906109634902,
+    1.000005748023617,
+    0.9999805361498494,
+    0.9999626808073614,
+    0.9999352981731169,
+    0.999571909165681
+  ],
+  "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+  "coordinate_source_sha256": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+  "meaning": "same-run d(KMA BT)/d(RTTOV BT); source-derived with pinned licensed coefficient"
+}
