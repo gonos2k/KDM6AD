@@ -1,0 +1,3 @@
+# East native ice radius floor
+
+A source-pinned, value-only [checkpoint replay](../harness/evidence/east_ice_radius_floor_2026-10-31/README.md) joins the saved guard and pilot controls to the ten fixed-M0 east profiles. All 84 selected cloudy positive-QI/NI rows have zero snow and estimated ice radii below the bridge's 10.01 µm floor; saved effective diameters are 20.02 µm. The estimate is not an executed branch trace, and the checkpoint QNICE physical dry-air basis remains uncertified. No host or RTTOV call was made. Search other native profiles for an interior ice radius or active snow blend before proposing a local direction that changes both optical content and diameter.
