@@ -1,0 +1,7 @@
+{
+  "harness/evidence/ice_nucleation_runtime_2026-10-31/replay.py": "6eab5fb028e5747df12e4da0afe10fc0f3e585a1f49b1bd0cbeba622c570ed37",
+  "harness/evidence/ice_nucleation_supply_2026-10-31/replay.py": "63291ae30b6b0bcd2f1884d69c5c3f2f842239f51bddfc412a29634f7cc8717a",
+  "harness/evidence/ice_nucleation_supply_2026-10-31/test_replay.py": "146e799efbd83e912e5c3007d08e91d5d6618e94f0dccc5602bf705a68e207c2",
+  "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+  "oracle/kdm6/warm.py": "147ec753f7a4294625cfc0a0ad57ad3af8eb8713ee83b3a1c94433b2458e0a33"
+}
