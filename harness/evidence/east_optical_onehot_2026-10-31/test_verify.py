@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import math
+import re
 import shutil
 from pathlib import Path
 
@@ -51,17 +52,29 @@ def test_rehashed_corrupt_saved_product_rejected(tmp_path, monkeypatch):
     manifest = json.loads(manifest_path.read_text())
     manifest["files"]["summary.json"] = verify.sha(summary_path)
     manifest_path.write_text(json.dumps(manifest))
-    original_sha = verify.sha
     # Simulate accepting a newly authenticated, rehashed capture manifest.
     monkeypatch.setattr(verify, "P", packet)
-    monkeypatch.setattr(
-        verify,
-        "sha",
-        lambda p: (
-            "f1b7e41e18b12a7151beb82d0782b0dd2a3c35897421863c437002aa9ec26384"
-            if p == manifest_path
-            else original_sha(p)
-        ),
-    )
+    monkeypatch.setattr(verify, "PACKET_SHA", verify.sha(manifest_path))
     with pytest.raises(ValueError, match="product roundoff"):
+        verify.main()
+
+
+def test_rehashed_raw_total_does_not_match_saved_kma_bt(tmp_path, monkeypatch):
+    packet = tmp_path / "packet"
+    shutil.copytree(HERE / "packet", packet)
+    name = "GG_0_plus/direct_radiance.txt"
+    raw_path = packet / name
+    raw = raw_path.read_text()
+    pattern = r"(RADIANCE%TOTAL\s*=\s*\(\s*)([-+0-9.EeDd]+)"
+    match = re.search(pattern, raw)
+    assert match is not None
+    changed_token = f"{float(match.group(2).replace('D', 'E')) * 1.01:.17E}"
+    raw_path.write_text(raw[: match.start(2)] + changed_token + raw[match.end(2) :])
+    manifest_path = packet / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["files"][name] = verify.sha(raw_path)
+    manifest_path.write_text(json.dumps(manifest))
+    monkeypatch.setattr(verify, "P", packet)
+    monkeypatch.setattr(verify, "PACKET_SHA", verify.sha(manifest_path))
+    with pytest.raises(ValueError, match="raw TOTAL to KMA BT differs"):
         verify.main()
