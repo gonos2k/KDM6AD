@@ -144,3 +144,5 @@ date_modified: 2026-10-26
 - [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.
 
 - [[sources/pr411-v4-actual-integration-2026-10-12]] — One real V4 spawn/RTTOV/analysis/audit/checkpoint path on retained Jul19 inputs; no native rerun/new date or convergence claim.
+
+- [[sources/east-optical-coordinate-factor-2026-10-31|East optical coordinate-factor replay]] — Offline reconstruction of 140 saved GG/PP coordinate factors and BTs using separately supplied SHA-pinned RTTOV coefficients.

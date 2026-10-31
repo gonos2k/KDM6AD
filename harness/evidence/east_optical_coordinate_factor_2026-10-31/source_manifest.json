@@ -1,0 +1,8 @@
+{
+  "schema": "east-optical-coordinate-factor-source-v1",
+  "files": {
+    "replay.py": "7d9c6e222bed56a263538c4066c37318631c9457c928a81d7bc4ef32e2d3b80e",
+    "test_replay.py": "d3ca6874d0f4b76a3260a6e66034fc47829db673ef2317a0bb891a681e53ab03",
+    "README.md": "f626dadb173d45718f0cfdad957b8fc38ac773c8d92575838ab5eb39137d86bd"
+  }
+}
