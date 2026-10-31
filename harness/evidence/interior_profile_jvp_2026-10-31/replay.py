@@ -28,7 +28,7 @@ PARENT = ROOT.parent / "interior_qi_ni_checkpoint_2026-10-31"
 FIXTURE = ROOT / "native_column.npz"
 METADATA = ROOT / "native_column.json"
 FIXTURE_SHA = "602f2713549ac99ee2272db74245aca65ad28511f087dac7f2ec985300a54be1"
-METADATA_SHA = "bec417f37c78ae83569e0572e3e8115a8adf03c5e196506edfcd918d905fdfae"
+METADATA_SHA = "dc15b4cab2a9c4e5e4be8cbae908f63e5787db8185a8f85adbd2574bbe11a761"
 SOURCE_ROOT = "/private/tmp/KDM6AD-east-ice-radius-floor/"
 CASE_FIELDS = (
     "THM_2", "QVAPOR", "QCLOUD", "QICE", "QSNOW", "QNCLOUD",
@@ -243,11 +243,20 @@ def main():
             "content/radius/diameter branch margins")
     require(float(baseline.cfrac[0, TARGET_ROW]) == 0.999999, "cloud gate")
     vjp = check_vjp(block, output, config, h0, d0, qi, ni, rho)
+    # The parent verifier authenticated these same-run K arrays and BT secants.
+    with np.load(PARENT / "packet/results/baseline/values.npz", allow_pickle=False) as saved_k:
+        k_h = saved_k["hydro7"][0, :, TARGET_ROW].copy()
+        k_d = saved_k["deff7"][0, :, TARGET_ROW].copy()
+    parent_audit = json.loads((PARENT / "packet/results/independent_audit.json").read_bytes())
+    require(parent_audit["channels"] == list(range(10, 17)) and
+            k_h.shape == k_d.shape == (7,) and
+            np.isfinite(k_h).all() and np.isfinite(k_d).all(), "same-run K coordinate")
     directions = {
         "qi_only": (qi, 0.0, 0.0),
         "raw_ni_only": (0.0, ni, 0.0),
         "coupled": (qi, -ni, 0.0),
         "rho_only": (0.0, 0.0, rho),
+        "qi_rho_null": (qi, 0.0, -rho),
     }
     results = {}
     for name, (dq, dn, dr) in directions.items():
@@ -326,8 +335,42 @@ def main():
         close(float(j["HYDRO7"][0, TARGET_ROW]), wanted[0], "REAL4 direction content JVP", atol=1e-15)
         close(float(j["HYDRO_DEFF7"][0, TARGET_ROW]), wanted[1], "REAL4 direction diameter JVP")
         secant = [(endpoints[0][k] - endpoints[1][k]) / (2 * h) for k in (2, 3)]
+        j_h = float(j["HYDRO7"][0, TARGET_ROW])
+        j_d = float(j["HYDRO_DEFF7"][0, TARGET_ROW])
+        fd = np.asarray(parent_audit["steps"][str(h)]["central_fd"], dtype=np.float64)
+        k_optical_h, k_optical_d = k_h * secant[0], k_d * secant[1]
+        k_optical = k_optical_h + k_optical_d
+        require(np.array_equal(k_optical, np.asarray(parent_audit["steps"][str(h)]["k_total"])),
+                "parent optical K join")
+        k_jvp_h, k_jvp_d = k_h * j_h, k_d * j_d
+        k_jvp = k_jvp_h + k_jvp_d
+        optical_residual = fd - k_optical
+        content_curvature = k_h * (secant[0] - j_h)
+        diameter_curvature = k_d * (secant[1] - j_d)
+        full_residual = fd - k_jvp
+        reconstruction = np.array([
+            math.fsum((float(optical_residual[c]), float(content_curvature[c]),
+                       float(diameter_curvature[c]))) for c in range(7)
+        ])
+        decomposition_roundoff = full_residual - reconstruction
+        scale = (np.abs(fd) + np.abs(k_optical_h) + np.abs(k_optical_d) +
+                 np.abs(k_jvp_h) + np.abs(k_jvp_d) +
+                 np.abs(content_curvature) + np.abs(diameter_curvature))
+        bound = 32 * np.finfo(np.float64).eps * scale + 16 * np.finfo(np.float64).tiny
+        require(np.isfinite(full_residual).all() and
+                np.all(np.abs(decomposition_roundoff) <= bound),
+                "signed FD-KJG decomposition")
         realized.append({"h": h, "relative_qi": dq / qi, "relative_raw_ni": dn / ni,
-                         "optical_secant_minus_jvp": [secant[0] - wanted[0], secant[1] - wanted[1]]})
+                         "optical_secant_minus_jvp": [secant[0] - wanted[0], secant[1] - wanted[1]],
+                         "channel_ids": parent_audit["channels"],
+                         "bt_fd": fd.tolist(), "k_optical_secant": k_optical.tolist(),
+                         "k_profile_jvp": k_jvp.tolist(),
+                         "bt_fd_minus_optical_k": optical_residual.tolist(),
+                         "content_curvature_k": content_curvature.tolist(),
+                         "diameter_curvature_k": diameter_curvature.tolist(),
+                         "bt_fd_minus_profile_jvp_k": full_residual.tolist(),
+                         "decomposition_roundoff": decomposition_roundoff.tolist(),
+                         "max_abs_bt_fd_minus_profile_jvp_k": float(np.max(np.abs(full_residual)))})
     print(json.dumps({"status": "PROFILE_JVP_REPLAY_PASSED", "scientific_status": "INCONCLUSIVE",
                       "native_ijk": [164, 242, 21], "rttov_row": TARGET_ROW,
                       "baseline": {"hydro7_g_m3": h0, "deff7_um": d0, "rho_d": rho},
