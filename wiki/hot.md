@@ -6,6 +6,7 @@ date_modified: 2026-10-30
 # Hot Cache
 
 ## Current Focus
+- [[sources/east-optical-derivative-2026-10-31]] — Serialized ice-content/diameter RTTOV K and central differences agree closely at h=1e-4 for ten east profiles; h=1e-3 diameter steps cross a 20 µm table knot. Host/QNICE derivatives and physical budgets remain open.
 - [[sources/east-optical-factorial-2026-10-31]] — Four direct RTTOV content×diameter cases at ten east fixed-M0 profiles reproduce the BT decrease through serialized ice-content substitution; diameter contrasts vanish in saved KMA BT but not raw radiance. Physical budget and full derivatives remain open.
 - [[sources/east-optical-cloud-gate-review-2026-10-31]] — East fixed-M0 pilot Control has 42 cloud-fraction-positive ice-content increases; all 29 observed diameter-bound-category changes are in clear rows. A controlled RTTOV content/diameter contrast and boundary physical/derivative contracts remain open.
 - [[sources/native-qnc-guard-control-direct-m0-2026-10-31]] — Guard-only Control direct replay retains all original M0 cells; fixed-support cost is 11.007967186042567. Physical attribution and acceptance remain open.
