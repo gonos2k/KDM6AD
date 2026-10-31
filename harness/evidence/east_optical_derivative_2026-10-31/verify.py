@@ -11,6 +11,7 @@ import sys
 import tempfile
 import hashlib
 import json
+from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,10 @@ RUNNER_SHA = "20bcd57f001d2a63fbb4d70a9b64029622de50576d2dd7174baac5f4972099ca"
 LAUNCH_SHA = "f21949d6a8a845ee54c07b3c9bb881101c30e5c41e79a8eae4d946e7cb04b7a5"
 HYDROTABLE_SHA = "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890"
 PINS_SHA = "3287e676da020da12b5de78fd5b7cb8c4348b275d6ca25677587c313943b6585"
+UNIT_ROUNDOFF = Fraction(1, 2**53)
+HALF_MIN_SUBNORMAL = Fraction(1, 2**1075)
+MIN_NORMAL = Fraction.from_float(sys.float_info.min)
+MAX_FINITE = Fraction.from_float(sys.float_info.max)
 
 
 def sha(path):
@@ -68,6 +73,107 @@ def arr(path, keys):
 
 def same(a, b):
     return a.shape == b.shape and np.array_equal(a.view(np.uint64), b.view(np.uint64))
+
+
+def gamma(operations):
+    """Conservative nearest-binary64 relative bound for a serial path."""
+    n_u = operations * UNIT_ROUNDOFF
+    return n_u / (1 - n_u)
+
+
+def contract_jvp(kh, kd, vh, vd):
+    """Replay the runner's reduction, kept replaceable for order-portability tests."""
+    return np.einsum("pcl,pl->pc", kh, vh) + np.einsum("pcl,pl->pc", kd, vd)
+
+
+def exact_contraction_reference(kh, kd, vh, vd, cot):
+    """Exact contractions of the *stored* binary64 K, direction and cotangent.
+
+    Each field has at most six nonzero direction layers per profile. A product
+    plus at most five field additions and one cross-field addition is bounded
+    by gamma(8). Dot bounds cover the 70-output lhs and 660-layer rhs serial
+    reduction paths. Small absolute allowances cover gradual subnormal results.
+    No bound here covers errors in the RTTOV K or in constructing the inputs.
+    """
+    references = [[Fraction(0) for _ in range(7)] for _ in range(10)]
+    scales = [[Fraction(0) for _ in range(7)] for _ in range(10)]
+    exact_dot = Fraction(0)
+    dot_scale = Fraction(0)
+    for p in range(10):
+        active_h = np.flatnonzero(vh[p])
+        active_d = np.flatnonzero(vd[p])
+        check(len(active_h) <= 6 and len(active_d) <= 6, "roundoff term inventory")
+        for matrix, direction, active in (
+            (kh, vh, active_h),
+            (kd, vd, active_d),
+        ):
+            for layer in active:
+                weighted = [
+                    Fraction.from_float(float(cot[p, channel]))
+                    * Fraction.from_float(float(matrix[p, channel, layer]))
+                    for channel in range(7)
+                ]
+                for term in weighted:
+                    check(
+                        term == 0 or MIN_NORMAL <= abs(term) <= MAX_FINITE,
+                        "rhs cotangent-K intermediate is subnormal or overflowing",
+                    )
+                channel_sum = sum(weighted, Fraction(0))
+                check(
+                    channel_sum == 0 or MIN_NORMAL <= abs(channel_sum) <= MAX_FINITE,
+                    "rhs channel contraction is subnormal or overflowing",
+                )
+                propagated = channel_sum * Fraction.from_float(
+                    float(direction[p, layer])
+                )
+                check(
+                    propagated == 0 or MIN_NORMAL <= abs(propagated) <= MAX_FINITE,
+                    "rhs direction product is subnormal or overflowing",
+                )
+        for channel in range(7):
+            weight = Fraction.from_float(float(cot[p, channel]))
+            terms = [
+                Fraction.from_float(float(kh[p, channel, layer]))
+                * Fraction.from_float(float(vh[p, layer]))
+                for layer in active_h
+            ]
+            terms.extend(
+                Fraction.from_float(float(kd[p, channel, layer]))
+                * Fraction.from_float(float(vd[p, layer]))
+                for layer in active_d
+            )
+            for term in terms:
+                check(
+                    term == 0 or MIN_NORMAL <= abs(term) <= MAX_FINITE,
+                    "roundoff reference has a subnormal or overflowing product",
+                )
+                weighted = weight * term
+                check(
+                    weighted == 0 or MIN_NORMAL <= abs(weighted) <= MAX_FINITE,
+                    "dot reference has a subnormal or overflowing product",
+                )
+            reference = sum(terms, Fraction(0))
+            scale = sum((abs(term) for term in terms), Fraction(0))
+            check(
+                abs(reference) <= MAX_FINITE and scale <= MAX_FINITE,
+                "roundoff reference exceeds binary64 range",
+            )
+            references[p][channel] = reference
+            scales[p][channel] = scale
+            exact_dot += weight * reference
+            dot_scale += abs(weight) * scale
+    check(
+        abs(exact_dot) <= MAX_FINITE and dot_scale <= MAX_FINITE,
+        "dot reference exceeds binary64 range",
+    )
+    return references, scales, exact_dot, dot_scale
+
+
+def within_exact_bound(value, reference, bound, message):
+    check(np.isfinite(value), message + ": nonfinite value")
+    difference = abs(Fraction.from_float(float(value)) - reference)
+    check(difference <= bound, message)
+    return float(difference)
 
 
 def verify(root):
@@ -287,7 +393,7 @@ def verify(root):
                 plus = data[f"{c}_{mode}_{i}_plus"]["bt"]
                 minus = data[f"{c}_{mode}_{i}_minus"]["bt"]
                 fd = (plus - minus) / (2 * h)
-                jvp = np.einsum("pcl,pl->pc", kh, vh) + np.einsum("pcl,pl->pc", kd, vd)
+                jvp = contract_jvp(kh, kd, vh, vd)
                 cot = np.where(np.arange(70).reshape(10, 7) % 2 == 0, 1.0, -1.0) / 70
                 lhs = float(np.sum(cot * jvp))
                 rhs = float(
@@ -295,26 +401,102 @@ def verify(root):
                     + np.sum(vd * np.einsum("pc,pcl->pl", cot, kd))
                 )
                 saved = summary["comparisons"][c]["steps"][f"{mode}_{h:g}"]
+                saved_fd = np.asarray(saved["fd"], dtype=np.float64)
+                saved_jvp = np.asarray(saved["jvp"], dtype=np.float64)
                 check(
-                    np.array_equal(fd, saved["fd"])
-                    and np.array_equal(jvp, saved["jvp"]),
-                    "summary computation mismatch",
+                    same(fd, saved_fd) and saved_jvp.shape == jvp.shape,
+                    "FD or JVP shape/computation mismatch",
                 )
-                check(
-                    lhs == saved["dot_lhs"] and rhs == saved["dot_rhs"],
-                    "algebraic transpose mismatch",
+                references, scales, exact_dot, dot_scale = exact_contraction_reference(
+                    kh, kd, vh, vd, cot
+                )
+                saved_jvp_roundoff = []
+                replay_jvp_roundoff = []
+                jvp_roundoff_bounds = []
+                for profile in range(10):
+                    for channel in range(7):
+                        bound = (
+                            gamma(8) * scales[profile][channel]
+                            + 20 * HALF_MIN_SUBNORMAL
+                        )
+                        saved_jvp_roundoff.append(
+                            within_exact_bound(
+                                saved_jvp[profile, channel],
+                                references[profile][channel],
+                                bound,
+                                "saved JVP exceeds binary64 reduction bound",
+                            )
+                        )
+                        replay_jvp_roundoff.append(
+                            within_exact_bound(
+                                jvp[profile, channel],
+                                references[profile][channel],
+                                bound,
+                                "recomputed JVP exceeds binary64 reduction bound",
+                            )
+                        )
+                        jvp_roundoff_bounds.append(float(bound))
+                lhs_bound = gamma(80) * dot_scale + 200 * HALF_MIN_SUBNORMAL
+                max_direction = max(
+                    1.0, float(np.max(np.abs(vh))), float(np.max(np.abs(vd)))
+                )
+                rhs_bound = gamma(670) * dot_scale + (
+                    2000 * HALF_MIN_SUBNORMAL * Fraction.from_float(max_direction)
+                )
+                saved_lhs = saved["dot_lhs"]
+                saved_rhs = saved["dot_rhs"]
+                saved_lhs_roundoff = within_exact_bound(
+                    saved_lhs,
+                    exact_dot,
+                    lhs_bound,
+                    "saved lhs dot exceeds binary64 reduction bound",
+                )
+                saved_rhs_roundoff = within_exact_bound(
+                    saved_rhs,
+                    exact_dot,
+                    rhs_bound,
+                    "saved rhs dot exceeds binary64 reduction bound",
+                )
+                replay_lhs_roundoff = within_exact_bound(
+                    lhs,
+                    exact_dot,
+                    lhs_bound,
+                    "recomputed lhs dot exceeds binary64 reduction bound",
+                )
+                replay_rhs_roundoff = within_exact_bound(
+                    rhs,
+                    exact_dot,
+                    rhs_bound,
+                    "recomputed rhs dot exceeds binary64 reduction bound",
                 )
                 steps.append(
                     {
                         "observed_20_micron_knot_crossing_rows": knot_crossings,
-                        "algebraic_transpose_dot_abs_error": abs(lhs - rhs),
+                        "algebraic_transpose_dot_abs_error": abs(saved_lhs - saved_rhs),
+                        "arithmetic_replay": {
+                            "saved_jvp_vs_exact_max_abs": max(saved_jvp_roundoff),
+                            "recomputed_jvp_vs_exact_max_abs": max(replay_jvp_roundoff),
+                            "saved_vs_recomputed_jvp_max_abs": float(
+                                np.max(np.abs(saved_jvp - jvp))
+                            ),
+                            "jvp_roundoff_bound_max_abs": max(jvp_roundoff_bounds),
+                            "saved_lhs_vs_exact_abs": saved_lhs_roundoff,
+                            "saved_rhs_vs_exact_abs": saved_rhs_roundoff,
+                            "recomputed_lhs_vs_exact_abs": replay_lhs_roundoff,
+                            "recomputed_rhs_vs_exact_abs": replay_rhs_roundoff,
+                            "lhs_roundoff_bound_abs": float(lhs_bound),
+                            "rhs_roundoff_bound_abs": float(rhs_bound),
+                            "saved_vs_recomputed_lhs_abs": abs(saved_lhs - lhs),
+                            "saved_vs_recomputed_rhs_abs": abs(saved_rhs - rhs),
+                            "method": "exact rational contraction of stored f64 operands; gamma(8) JVP, gamma(80/670) dot bounds under IEEE nearest with gradual underflow",
+                        },
                         "h": h,
                         "max_abs_fd": float(np.max(np.abs(fd))),
-                        "max_abs_error": float(np.max(np.abs(fd - jvp))),
+                        "max_abs_error": float(np.max(np.abs(fd - saved_jvp))),
                         "max_abs_bt_difference": float(np.max(np.abs(plus - minus))),
                         "nonzero_bt_elements": int(np.count_nonzero(plus - minus)),
                         "fd": fd.tolist(),
-                        "jvp": jvp.tolist(),
+                        "jvp": saved_jvp.tolist(),
                     }
                 )
             modes[mode] = {
