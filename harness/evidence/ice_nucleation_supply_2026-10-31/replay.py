@@ -43,11 +43,11 @@ def verify_sources():
                 "source digest " + relative)
 
 
-def coherent_state(offset, *, qv=None):
+def coherent_state(offset, *, qv=None, temperature_k=T_K):
     """Construct qv, temperature, Exner and moist density from one p,T relation."""
     base, forcing = PARENT.build_state()
     thermo = default_thermo_params()
-    temperature = torch.full_like(base.th, T_K)
+    temperature = torch.full_like(base.th, temperature_k)
     pressure = torch.full_like(base.th, P_PA)
     qs_ice = compute_qs_ice(temperature, pressure, params=thermo)
     qs_water = compute_qs_water(temperature, pressure, params=thermo)
