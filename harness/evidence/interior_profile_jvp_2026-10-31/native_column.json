@@ -1,0 +1,40 @@
+{
+  "checkpoint_unit_labels": {
+    "AL": "m3 kg-1",
+    "ALB": "m3 kg-1",
+    "QICE": "kg kg-1",
+    "QNICE": "  kg-1"
+  },
+  "coordinate_contract": "raw checkpoint QNICE; profile_jvp converts raw NI/rho_d before the dry-number optical bridge",
+  "experiment": {
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0
+  },
+  "exporter_sha256": "0b6de55b962f60405da4b7b63b7f05ccbd50f1ec3bf3a18de59ccd600af8c488",
+  "fixed_upper_count": 27,
+  "fixture_sha256": "602f2713549ac99ee2272db74245aca65ad28511f087dac7f2ec985300a54be1",
+  "flat_index_0based": 56557,
+  "native_ijk_1based": [
+    164,
+    242,
+    21
+  ],
+  "prep_configuration": {
+    "alpha": 1.6083624362945557,
+    "g": 9.8100004196167,
+    "gamma": 1.399999976158142,
+    "kappa": 0.2857142984867096,
+    "p0": 100000.0,
+    "ptop": 5000.0,
+    "rd": 287.0,
+    "t0": 300.0
+  },
+  "raw_number_unit_certified": false,
+  "rttov_row_0based": 45,
+  "schema": "kdm6.interior_profile_jvp_column.v1",
+  "source_sha256": {
+    "case_manifest": "58d23f72be7ae717b20d0d60b53f908c2ecf28bd1c973756a1d4c7e4f0ec7c8d",
+    "checkpoint": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+    "observation_inputs": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b"
+  }
+}
