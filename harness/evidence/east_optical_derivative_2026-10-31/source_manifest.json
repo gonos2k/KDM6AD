@@ -1,0 +1,9 @@
+{
+  "files": {
+    "README.md": "dd4c609b9ea5375c90015d5a00eac60cae6a5be12c771c538444e3eb2b59e8d9",
+    "export.py": "936569998d50795521e779d1e23c87e9058018aa8eefacde69c8c9820ab764ed",
+    "test_verify.py": "dfeb2e3f734cecd087b750d7d3dbc90bf1cb21ed5c4e9053c8955b62a68a5527",
+    "verify.py": "414e5a9db14888bee65065c675998048c5a1bec67033a7a3b62a5208db4e6c5d"
+  },
+  "schema": "east-optical-derivative-sources-v1"
+}
