@@ -1,0 +1,8 @@
+{
+  "manifest_sha256": "2f190b1a660b50a14585b8a554b14cc4c4136b96aba0860334609e14de3cc0ba",
+  "planned_calls": {
+    "K": 0,
+    "direct": 16
+  },
+  "runner_sha256": "339450c95f1ad1815e6ff295b2f256a752c43cf756423f3d5e92bbbca10527e8"
+}

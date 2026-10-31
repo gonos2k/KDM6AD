@@ -1,0 +1,175 @@
+{
+  "cases": {
+    "GG_0_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_0_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_1_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_1_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_2_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_2_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_3_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "GG_3_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_0_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_0_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_1_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_1_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_2_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_2_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_3_minus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    },
+    "PP_3_plus": {
+      "bt_match": true,
+      "inputs_pre_post_match": true,
+      "k_empty": true,
+      "quality_zero": true,
+      "raw_hashes_match": true
+    }
+  },
+  "fixed_content_fraction_and_no_20um_or_clamp_crossing": true,
+  "rank4_all_profiles": true,
+  "results": {
+    "GG": {
+      "0.0001": {
+        "max_abs_error_K": 6.112306216721208e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 9.259135160978172e-10
+      },
+      "0.0002": {
+        "max_abs_error_K": 3.148713290102023e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 4.754232603666583e-10
+      },
+      "0.0004": {
+        "max_abs_error_K": 3.6879996834215945e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 9.591893772196166e-10
+      },
+      "0.0008": {
+        "max_abs_error_K": 1.2389382408883876e-08,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 3.5915562557869543e-09
+      }
+    },
+    "PP": {
+      "0.0001": {
+        "max_abs_error_K": 6.144903252902623e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 7.403071574535711e-10
+      },
+      "0.0002": {
+        "max_abs_error_K": 2.4880781879232927e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 4.018208255510053e-10
+      },
+      "0.0004": {
+        "max_abs_error_K": 3.848771523706773e-09,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 1.043227702154282e-09
+      },
+      "0.0008": {
+        "max_abs_error_K": 1.5146049747727375e-08,
+        "nonzero_bt_differences": 70,
+        "nonzero_kv": 70,
+        "relative_l2_error": 3.9611650751640985e-09
+      }
+    }
+  },
+  "scope": "serialized RTTOV optical diameter sensitivity only; no host attribution or convergence verdict",
+  "source_and_prepared_pins_match": true,
+  "status": "AUDIT_COMPLETE"
+}
