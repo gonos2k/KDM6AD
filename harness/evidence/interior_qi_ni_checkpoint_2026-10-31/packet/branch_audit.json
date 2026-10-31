@@ -1,0 +1,177 @@
+{
+  "checkpoint_values": {
+    "AL": 0.10225474834442139,
+    "ALB": 1.9333163499832153,
+    "QCLOUD": 0.0,
+    "QICE": 8.316413158127034e-08,
+    "QNICE": 40.72736740112305,
+    "QSNOW": 0.0
+  },
+  "rho_d": 0.49126261472702026,
+  "rows": {
+    "baseline": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.085542773211682e-05,
+        "cloud_above_threshold_g_m3": 3.985542873211683e-05,
+        "deff_above_lower_um": 18.705148916281722,
+        "deff_below_upper_um": 91.29485108371827,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.72736740112305,
+        "qi_above_qmin": 8.316413058127034e-08,
+        "radius_above_lower_um": 4.342574458140859,
+        "radius_below_upper_um": 110.64742554185914,
+        "slope_above_lower_m": 8.556599619939461e-05,
+        "slope_below_upper_m": 2.401671184146321e-05
+      },
+      "source_radius_um": 14.35257445814086,
+      "source_rslope_m": 8.611544674884516e-05
+    },
+    "h0_minus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.0851343694054566e-05,
+        "cloud_above_threshold_g_m3": 3.985134469405457e-05,
+        "deff_above_lower_um": 18.703235336404248,
+        "deff_below_upper_um": 91.29676466359575,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.731441497802734,
+        "qi_above_qmin": 8.315581723126194e-08,
+        "radius_above_lower_um": 4.341617668202124,
+        "radius_below_upper_um": 110.64838233179788,
+        "slope_above_lower_m": 8.556025545976219e-05,
+        "slope_below_upper_m": 2.4022452581095628e-05
+      },
+      "source_radius_um": 14.351617668202124,
+      "source_rslope_m": 8.610970600921275e-05
+    },
+    "h0_plus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.0859511770179094e-05,
+        "cloud_above_threshold_g_m3": 3.98595127701791e-05,
+        "deff_above_lower_um": 18.707062623867664,
+        "deff_below_upper_um": 91.29293737613233,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.72329330444336,
+        "qi_above_qmin": 8.317244393127873e-08,
+        "radius_above_lower_um": 4.34353131193383,
+        "radius_below_upper_um": 110.64646868806616,
+        "slope_above_lower_m": 8.557173732215243e-05,
+        "slope_below_upper_m": 2.401097071870539e-05
+      },
+      "source_radius_um": 14.35353131193383,
+      "source_rslope_m": 8.612118787160298e-05
+    },
+    "h1_minus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.0847256165361476e-05,
+        "cloud_above_threshold_g_m3": 3.984725716536148e-05,
+        "deff_above_lower_um": 18.70132196254113,
+        "deff_below_upper_um": 91.29867803745887,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.735511779785156,
+        "qi_above_qmin": 8.314749677582619e-08,
+        "radius_above_lower_um": 4.340660981270565,
+        "radius_below_upper_um": 110.64933901872944,
+        "slope_above_lower_m": 8.555451533817284e-05,
+        "slope_below_upper_m": 2.402819270268498e-05
+      },
+      "source_radius_um": 14.350660981270565,
+      "source_rslope_m": 8.61039658876234e-05
+    },
+    "h1_plus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.086359929887218e-05,
+        "cloud_above_threshold_g_m3": 3.986360029887218e-05,
+        "deff_above_lower_um": 18.70897638014969,
+        "deff_below_upper_um": 91.29102361985031,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.71922302246094,
+        "qi_above_qmin": 8.318076438671448e-08,
+        "radius_above_lower_um": 4.344488190074847,
+        "radius_below_upper_um": 110.64551180992515,
+        "slope_above_lower_m": 8.557747859099852e-05,
+        "slope_below_upper_m": 2.4005229449859298e-05
+      },
+      "source_radius_um": 14.354488190074846,
+      "source_rslope_m": 8.612692914044908e-05
+    },
+    "h2_minus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.083908459860613e-05,
+        "cloud_above_threshold_g_m3": 3.9839085598606134e-05,
+        "deff_above_lower_um": 18.69749462293581,
+        "deff_below_upper_um": 91.3025053770642,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.74365997314453,
+        "qi_above_qmin": 8.313086297038205e-08,
+        "radius_above_lower_um": 4.338747311467904,
+        "radius_below_upper_um": 110.6512526885321,
+        "slope_above_lower_m": 8.554303331935687e-05,
+        "slope_below_upper_m": 2.4039674721500952e-05
+      },
+      "source_radius_um": 14.348747311467903,
+      "source_rslope_m": 8.609248386880742e-05
+    },
+    "h2_plus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.087177086562753e-05,
+        "cloud_above_threshold_g_m3": 3.987177186562754e-05,
+        "deff_above_lower_um": 18.712805251332103,
+        "deff_below_upper_um": 91.2871947486679,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.71107482910156,
+        "qi_above_qmin": 8.319739819215862e-08,
+        "radius_above_lower_um": 4.34640262566605,
+        "radius_below_upper_um": 110.64359737433395,
+        "slope_above_lower_m": 8.558896520454575e-05,
+        "slope_below_upper_m": 2.3993742836312073e-05
+      },
+      "source_radius_um": 14.35640262566605,
+      "source_rslope_m": 8.61384157539963e-05
+    },
+    "h3_minus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.0822744955726246e-05,
+        "cloud_above_threshold_g_m3": 3.982274595572625e-05,
+        "deff_above_lower_um": 18.68984408104979,
+        "deff_below_upper_um": 91.31015591895022,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.75994873046875,
+        "qi_above_qmin": 8.309760246492112e-08,
+        "radius_above_lower_um": 4.334922040524898,
+        "radius_below_upper_um": 110.65507795947511,
+        "slope_above_lower_m": 8.552008169369882e-05,
+        "slope_below_upper_m": 2.4062626347158995e-05
+      },
+      "source_radius_um": 14.344922040524898,
+      "source_rslope_m": 8.606953224314938e-05
+    },
+    "h3_plus": {
+      "blend_qsnow": 0.0,
+      "margins": {
+        "blend_above_epsilon_g_m3": 4.088811050850741e-05,
+        "cloud_above_threshold_g_m3": 3.988811150850741e-05,
+        "deff_above_lower_um": 18.720461916379946,
+        "deff_below_upper_um": 91.27953808362005,
+        "density_above_zero": 0.49126261472702026,
+        "ni_above_zero": 40.694786071777344,
+        "qi_above_qmin": 8.323065869761955e-08,
+        "radius_above_lower_um": 4.350230958189973,
+        "radius_below_upper_um": 110.63976904181003,
+        "slope_above_lower_m": 8.561193519968929e-05,
+        "slope_below_upper_m": 2.3970772841168533e-05
+      },
+      "source_radius_um": 14.360230958189973,
+      "source_rslope_m": 8.616138574913984e-05
+    }
+  },
+  "schema": "kdm6.checkpoint_qi_ni_branch_audit.v1",
+  "source": "source-form fp64 replay, with f32 reciprocal-density and one-third exponent; validates executed diameter against serialized profile"
+}
