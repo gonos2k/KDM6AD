@@ -196,23 +196,41 @@ def scalar_endpoint(d0, qi, ni, rho, dq, dn, dr, t):
     return 1000.0 * r * q, d0 * math.exp(SOURCE_EXPONENT * math.log(ratio))
 
 
-def check_vjp(block, output, config, h0, d0, qi, ni, rho):
+def check_vjp(block, output, config, h0, d0, qi, ni, rho, k_h, k_d):
     cloud = output.cloud_state
     q = cloud.qi.clone().detach().requires_grad_(True)
     n = cloud.ni.clone().detach().requires_grad_(True)
     r = output.rho_d.clone().detach().requires_grad_(True)
     result = profile(block, output._replace(cloud_state=cloud._replace(qi=q, ni=n), rho_d=r), config)
-    scalar = result.ciw[0, TARGET_ROW] / h0 + result.deff_ice[0, TARGET_ROW] / d0
-    gradients = torch.autograd.grad(scalar, (q, n, r))
-    expected = ((1.0 + SOURCE_EXPONENT) / qi, -SOURCE_EXPONENT / ni,
-                (1.0 + SOURCE_EXPONENT) / rho)
-    for name, grad, want in zip(("QI", "raw NI", "rho"), gradients, expected):
-        values = grad.detach().numpy()[0]
-        close(float(values[TARGET_K]), want, "VJP " + name, atol=1e-12, rtol=2e-12)
-        values = values.copy()
-        values[TARGET_K] = 0.0
-        require(np.count_nonzero(values) == 0, "VJP off-target " + name)
-    return [float(grad[0, TARGET_K]) for grad in gradients]
+    channel_weights = (1.0, -2.0, 3.0, -4.0, 5.0, -6.0, 7.0)
+    signed_h = math.fsum(weight * float(value) for weight, value in zip(channel_weights, k_h))
+    signed_d = math.fsum(weight * float(value) for weight, value in zip(channel_weights, k_d))
+    checks = {
+        "content": (1.0 / h0, 0.0),
+        "diameter": (0.0, 1.0 / d0),
+        "combined": (1.0 / h0, 1.0 / d0),
+        "signed_k": (signed_h, signed_d),
+    }
+    checked = {}
+    for index, (label, (weight_h, weight_d)) in enumerate(checks.items()):
+        scalar = weight_h * result.ciw[0, TARGET_ROW] + weight_d * result.deff_ice[0, TARGET_ROW]
+        gradients = torch.autograd.grad(scalar, (q, n, r), retain_graph=index < len(checks) - 1)
+        expected = (
+            weight_h * 1000.0 * rho + weight_d * SOURCE_EXPONENT * d0 / qi,
+            -weight_d * SOURCE_EXPONENT * d0 / ni,
+            weight_h * 1000.0 * qi + weight_d * SOURCE_EXPONENT * d0 / rho,
+        )
+        values_at_target = []
+        for name, grad, want in zip(("QI", "raw NI", "rho"), gradients, expected):
+            values = grad.detach().numpy()[0]
+            close(float(values[TARGET_K]), want, label + " VJP " + name, atol=1e-12, rtol=2e-12)
+            values_at_target.append(float(values[TARGET_K]))
+            values = values.copy()
+            values[TARGET_K] = 0.0
+            require(np.count_nonzero(values) == 0, label + " VJP off-target " + name)
+        checked[label] = {"output_weights": [weight_h, weight_d],
+                          "native_gradient": values_at_target}
+    return checked
 
 
 def main():
@@ -242,7 +260,22 @@ def main():
     require(h0 > 1e-6 and 10.01 < d0 / 2 < 125.0 and 10.0 < d0 < 120.0,
             "content/radius/diameter branch margins")
     require(float(baseline.cfrac[0, TARGET_ROW]) == 0.999999, "cloud gate")
-    vjp = check_vjp(block, output, config, h0, d0, qi, ni, rho)
+    # Conditional optical interpretation only: if the saved raw number were
+    # dry-mass-specific, its volume number at fixed density would be rho*NI.
+    dry_interpretation = profile(block, change(output, ni=rho * ni), config)
+    dry_h = float(dry_interpretation.ciw[0, TARGET_ROW])
+    dry_d = float(dry_interpretation.deff_ice[0, TARGET_ROW])
+    close(dry_h, h0, "conditional dry-basis content", atol=1e-17)
+    close(dry_d, d0 * rho ** (-SOURCE_EXPONENT), "conditional dry-basis diameter")
+    require(float(dry_interpretation.cfrac[0, TARGET_ROW]) ==
+            float(baseline.cfrac[0, TARGET_ROW]), "conditional dry-basis cloud gate")
+    for field, original in base.items():
+        trial = components(dry_interpretation)[field]
+        mask = np.ones(original.shape, dtype=bool)
+        if field == "HYDRO_DEFF7":
+            mask[TARGET_ROW] = False
+        require(np.array_equal(trial[mask], original[mask]),
+                "conditional dry-basis off-target " + field)
     # The parent verifier authenticated these same-run K arrays and BT secants.
     with np.load(PARENT / "packet/results/baseline/values.npz", allow_pickle=False) as saved_k:
         k_h = saved_k["hydro7"][0, :, TARGET_ROW].copy()
@@ -251,6 +284,7 @@ def main():
     require(parent_audit["channels"] == list(range(10, 17)) and
             k_h.shape == k_d.shape == (7,) and
             np.isfinite(k_h).all() and np.isfinite(k_d).all(), "same-run K coordinate")
+    vjp = check_vjp(block, output, config, h0, d0, qi, ni, rho, k_h, k_d)
     directions = {
         "qi_only": (qi, 0.0, 0.0),
         "raw_ni_only": (0.0, ni, 0.0),
@@ -266,8 +300,12 @@ def main():
         jh, jd = float(j["HYDRO7"][0, TARGET_ROW]), float(j["HYDRO_DEFF7"][0, TARGET_ROW])
         close(jh, predicted[0], name + " content JVP", atol=1e-15)
         close(jd, predicted[1], name + " diameter JVP")
-        dot = vjp[0] * dq + vjp[1] * dn + vjp[2] * dr
-        close(jh / h0 + jd / d0, dot, name + " JVP/VJP dot", atol=1e-12)
+        for label, checked in vjp.items():
+            gradients = checked["native_gradient"]
+            weights = checked["output_weights"]
+            dot = gradients[0] * dq + gradients[1] * dn + gradients[2] * dr
+            close(weights[0] * jh + weights[1] * jd, dot,
+                  name + " " + label + " JVP/VJP dot", atol=1e-12)
         fd_errors = []
         for h in HS:
             endpoints = []
@@ -374,7 +412,12 @@ def main():
     print(json.dumps({"status": "PROFILE_JVP_REPLAY_PASSED", "scientific_status": "INCONCLUSIVE",
                       "native_ijk": [164, 242, 21], "rttov_row": TARGET_ROW,
                       "baseline": {"hydro7_g_m3": h0, "deff7_um": d0, "rho_d": rho},
-                      "directions": results, "real4_secants": realized}, indent=2, sort_keys=True))
+                      "conditional_number_basis": {
+                          "raw_as_volume": {"n_per_m3": ni, "deff7_um": d0},
+                          "raw_as_dry_specific": {"n_per_m3": rho * ni, "deff7_um": dry_d},
+                      },
+                      "directions": results, "vjp_checks": vjp,
+                      "real4_secants": realized}, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
