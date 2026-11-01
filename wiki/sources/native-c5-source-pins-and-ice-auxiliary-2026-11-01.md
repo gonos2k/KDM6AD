@@ -30,6 +30,10 @@ views. Its C4 audit uses the recomputed intercept and slope that C4 consumes;
 a nearby half-saturation cap probe checks that the audited winner changes with
 the actual selected rate. Exact selected-branch ties remain outside the local
 derivative claim.
+The reported half-saturation gap now uses the appropriate candidate index for
+each rate sign: candidate 2 for sublimation, candidate 1 for deposition. Its
+meaning is `0.5 * (supsat / dtcld) - raw_pidep` at both native levels and all
+four represented derivative endpoints.
 
 This result uses the post-freeze working coordinate, fixed density and fixed
 other producer inputs. The selected number rewrite is inactive. It does not
