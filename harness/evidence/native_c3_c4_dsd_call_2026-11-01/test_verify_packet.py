@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import struct
 import unittest
 
 from verify_packet import STAGES, verify, verify_sources
@@ -23,7 +24,7 @@ def synthetic_packet():
           'endpoint_sha256', 'historical_endpoint_sha256', 'executable_sha256', 'dso_sha256',
           'isolated_build_receipt_sha256')}
     run.update(source_sha256={'runtime': h}, compiled_source_sha256={'runtime': h},
-               historical_endpoint_match=True, capture_files={'capture.csv': h})
+               historical_endpoint_match=True, capture_files={'first.csv': h, 'second.csv': h})
     members = {name + '.cpp.o': {'historical_sha256': h, 'diagnostic_sha256': h}
                for name in ('cloud_dsd', 'cold', 'coordinator', 'melt_freeze', 'ops', 'progb', 'runtime', 'satadj', 'sedimentation', 'sedimentation_conservative', 'slope', 'state', 'thermo', 'warm')}
     build = {'schema':'kdm6.isolated_factorial_qr_capture_build.v1', 'dso_sha256':h,
@@ -40,13 +41,14 @@ def synthetic_packet():
             for field in fields:
                 dtype = 'f32' if stage == 'abi_ingress' else ('bool' if field in
                     ('icenuc.ifsat', 'depsub.ifsat', 'depsub.ice_complete_sublim') else 'f64')
-                rows.append(dict(one_step_call='1', runtime_call='1', substep='1', b_zero='22617',
+                rows.append(dict(one_step_call='2', runtime_call='2', substep='1', b_zero='22617',
                             k_zero=str(k), B='32248', K='39', stage=stage, field=field,
                             dtype=dtype, raw_hex='0'))
     # Sedimentation sits between these two stages: differing values are allowed.
     next(r for r in rows if r['stage'] == 'step_entry' and r['field'] == 'state.qi')['raw_hex'] = '3ff0000000000000'
-    meta = dict(one_step_call='1', runtime_call='1', substep='1', b_zero='0', k_zero='0',
+    meta = dict(one_step_call='2', runtime_call='2', substep='1', b_zero='0', k_zero='0',
                 B='32248', K='39', stage='meta', field='dtcld', dtype='f64', raw_hex='4034000000000000')
+    first_meta = dict(meta, one_step_call='1', runtime_call='1', B='32712')
     return {'schema':'kdm6.native_c3_c4_dsd_selected.v1', 'scientific_status':'INCONCLUSIVE',
             'coordinate':{'native_ijk_1based':[[164,242,21],[164,242,23]],
                           'batch_b_zero':22617,'k_zero':[20,22],'tile2_B':32248,
@@ -55,9 +57,12 @@ def synthetic_packet():
             'host_trace_sha256':{'off_v6':h,'on_v6':h},
             'host_selected_trace':{'off_v6':copy.deepcopy(trace),'on_v6':copy.deepcopy(trace)},
             'selected_rows':rows,
-            'capture_files':[{'name':'capture.csv','sha256':h,'total_rows':2,'scalar_rows':1,
-                              'metadata_rows':1,'identity':['1','1','1','32248','39']}],
-            'capture_metadata':[{'name':'capture.csv','rows':[meta]}],
+            'capture_files':[{'name':'first.csv','sha256':h,'total_rows':2,'scalar_rows':1,
+                              'metadata_rows':1,'identity':['1','1','1','32712','39']},
+                             {'name':'second.csv','sha256':h,'total_rows':2,'scalar_rows':1,
+                              'metadata_rows':1,'identity':['2','2','1','32248','39']}],
+            'capture_metadata':[{'name':'first.csv','rows':[first_meta]},
+                                {'name':'second.csv','rows':[meta]}],
             'unique_batch_checks':[{'batch_b_zero':22617,'six_host_fields_exact':True,'unique_candidate_count':1}],
             'limitations':['raw QNICE physical basis remains uncertified']}
 
@@ -133,6 +138,40 @@ class PacketReplay(unittest.TestCase):
     def test_wrong_pin(self):
         with self.assertRaises(ValueError):
             verify(self.raw, '0' * 64)
+
+    def test_other_tile_call_identity_rejected(self):
+        changed = copy.deepcopy(self.packet)
+        for row in changed['selected_rows']:
+            row['one_step_call'] = row['runtime_call'] = '1'
+        with self.assertRaisesRegex(ValueError, 'selected call/level inventory'):
+            verify(*encode(changed))
+
+    def test_f32_c4_input_cannot_skip_replay(self):
+        changed = copy.deepcopy(self.packet)
+        target = next(row for row in changed['selected_rows'] if
+                      row['k_zero'] == '22' and row['stage'] == 'c4_in' and
+                      row['field'] == 'work1_ice')
+        original = struct.unpack('<d', int(target['raw_hex'], 16).to_bytes(8, 'little'))[0]
+        target['dtype'] = 'f32'
+        target['raw_hex'] = format(int.from_bytes(struct.pack('<f', original), 'little'), 'x')
+        for stage, field in (('c4_out', 'depsub.pidep'),
+                             ('pre_limit', 'cold_out.pidep'),
+                             ('limited', 'scaled.cold.pidep')):
+            row = next(r for r in changed['selected_rows'] if
+                       r['k_zero'] == '22' and r['stage'] == stage and r['field'] == field)
+            row['raw_hex'] = '0'
+        with self.assertRaisesRegex(ValueError, 'field dtype'):
+            verify(*encode(changed))
+
+    def test_coherent_state_output_mutation_rejected(self):
+        changed = copy.deepcopy(self.packet)
+        for stage in ('state_out', 'dsd_in', 'dsd_out'):
+            row = next(r for r in changed['selected_rows'] if
+                       r['k_zero'] == '20' and r['stage'] == stage and
+                       r['field'] == 'new_state.qi')
+            row['raw_hex'] = format(int(row['raw_hex'], 16) ^ 1, 'x')
+        with self.assertRaisesRegex(ValueError, 'state update raw bits'):
+            verify(*encode(changed))
 
 
 if __name__ == '__main__':

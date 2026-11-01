@@ -49,6 +49,12 @@ STAGES = {
     "dsd_in": {"new_state.qi", "new_state.ni", "forcing.dend", "ncmin_gate"},
     "dsd_out": {"new_state.qi", "new_state.ni"},
 }
+BRANCH_FIELDS = {'icenuc.ifsat', 'depsub.ifsat', 'depsub.ice_complete_sublim'}
+CAPTURE_IDENTITIES = {
+    ('1', '1', '1', '32712', '39'),
+    ('2', '2', '1', '32248', '39'),
+}
+SELECTED_CALL = ('2', '2', '1', '32248', '39')
 
 
 def need(ok, message):
@@ -78,6 +84,37 @@ def number(row):
     v = struct.unpack('<f' if size == 4 else '<d', bits.to_bytes(size, 'little'))[0]
     need(math.isfinite(v), 'nonfinite scalar')
     return v
+
+
+def replay_selected_ice_update(val, dt):
+    """Replay the executed f64 QI/NI update order in the two selected cells.
+
+    The source's D1-D4 amounts have already entered the working state; its D5
+    bundle supplies exact zeros for the QI/NI inline amounts in this call.
+    The C3 preamble supcol is the same pre2.supcol consumed by state_update.
+    """
+    def rate(name):
+        return val('limited', 'scaled.cold.' + name)
+    cold_mask = 1.0 if val('c3_in', 'pre.supcol') >= 0.0 else 0.0
+    qi_inner = (rate('psaut') + rate('praci') + rate('psaci') + rate('pgaci')
+                - rate('pinud') - rate('pidep') - rate('piacw')
+                - rate('pmulcs') - rate('pmulcg') - rate('pmulrs') - rate('pmulrg'))
+    qi_rate_sum = cold_mask * (-qi_inner)
+    qi_amount = (0.0 + 0.0) - 0.0
+    qi_base = val('state_in', 'working.qi') + qi_amount
+    qi_new = max(qi_base + qi_rate_sum * dt, 0.0)
+
+    ni_inner = (-rate('nraci') - rate('nsaci') - rate('ngaci') - rate('niacr')
+                + rate('ninud') + rate('nmulcs') + rate('nmulcg')
+                + rate('nmulrs') + rate('nmulrg') - rate('nsaut'))
+    ni_rate_sum = cold_mask * ni_inner
+    ni_amount = (0.0 + 0.0) - 0.0
+    complete = float(val('c4_out', 'depsub.ice_complete_sublim'))
+    ni_base = (val('state_in', 'working.ni') + ni_amount) * (1.0 - complete)
+    ni_new = max(ni_base + ni_rate_sum * dt, 0.0)
+    return {'qi': qi_new, 'ni': ni_new,
+            'qi_rate_sum': qi_rate_sum, 'ni_rate_sum': ni_rate_sum,
+            'cold_mask': cold_mask, 'complete_sublim_mask': bool(complete)}
 
 
 def verify(raw, pinned, *, check_local_sources=True):
@@ -163,29 +200,36 @@ def verify(raw, pinned, *, check_local_sources=True):
         need(int(row['b_zero']) == 22617 and int(row['B']) == 32248 and int(row['K']) == 39 and int(row['k_zero']) in (20, 22), 'row coordinate')
         stage, field = row['stage'], row['field']
         need(stage in STAGES and field in STAGES[stage], 'stage inventory')
-        need(row['dtype'] == 'bool' if field in ('icenuc.ifsat', 'depsub.ifsat', 'depsub.ice_complete_sublim') else row['dtype'] in ('f32', 'f64'), 'field dtype')
+        expected_dtype = 'f32' if stage == 'abi_ingress' else ('bool' if field in BRANCH_FIELDS else 'f64')
+        need(row['dtype'] == expected_dtype, 'field dtype ' + stage + '/' + field)
         number(row)
-        identity = tuple(row[x] for x in ('one_step_call', 'runtime_call', 'substep', 'k_zero'))
+        identity = tuple(row[x] for x in ('one_step_call', 'runtime_call', 'substep', 'B', 'K', 'k_zero'))
         group = groups.setdefault(identity, {})
         need((stage, field) not in group, 'duplicate selected row')
         group[(stage, field)] = row
     need(groups, 'no selected calls')
-    calls = {identity[:3] for identity in groups}
-    need(len({x[1] for x in calls}) == 1 and set(groups) == {call + (str(k),) for call in calls for k in (20, 22)}, 'call/level inventory')
+    calls = {identity[:5] for identity in groups}
+    need(calls == {SELECTED_CALL} and
+         set(groups) == {SELECTED_CALL + (str(k),) for k in (20, 22)},
+         'selected call/level inventory')
     expected = {(stage, field) for stage, fields in STAGES.items() for field in fields}
     metadata = p['capture_metadata']
     need(len(metadata) == len(p['capture_files']) and {m['name'] for m in metadata} == {f['name'] for f in p['capture_files']}, 'capture metadata inventory')
     times = {}
     descriptors = {f['name']: f for f in p['capture_files']}
+    need(len(descriptors) == 2 and
+         {tuple(f['identity']) for f in descriptors.values()} == CAPTURE_IDENTITIES,
+         'capture call and tile inventory')
     for m in metadata:
         need(len(m['rows']) == 1, 'one timestep per capture')
         row = m['rows'][0]
         need(set(row) == rowkeys and row['stage'] == 'meta' and row['field'] == 'dtcld' and row['dtype'] == 'f64' and number(row) > 0, 'timestep metadata')
-        call = tuple(row[x] for x in ('one_step_call', 'runtime_call', 'substep'))
-        need(list(call) + [row['B'], row['K']] == descriptors[m['name']]['identity'], 'metadata capture identity')
+        call = tuple(row[x] for x in ('one_step_call', 'runtime_call', 'substep', 'B', 'K'))
+        need(list(call) == descriptors[m['name']]['identity'], 'metadata capture identity')
         need(call not in times, 'duplicate timestep call')
         times[call] = number(row)
-    need(calls <= set(times), 'selected call timestep')
+    need(set(times) == CAPTURE_IDENTITIES and calls <= set(times),
+         'full capture timestep identities')
     diagnostics = []
     for identity, rows in sorted(groups.items()):
         need(set(rows) == expected, 'incomplete stage inventory')
@@ -197,7 +241,7 @@ def verify(raw, pinned, *, check_local_sources=True):
 
         def same(a, b):
             return (a['dtype'], int(a['raw_hex'], 16)) == (b['dtype'], int(b['raw_hex'], 16))
-        k = int(identity[3]) + 1
+        k = int(identity[5]) + 1
         for host, abi, conv in [('QI', 'qi', 'scalar_ingress_state->qi'), ('NI', 'ni', 'scalar_ingress_state->ni'), ('P', 'p', 'scalar_ingress_forcing->p'), ('DEN', 'den', 'scalar_ingress_forcing->den')]:
             a, b = get('abi_ingress', abi), get('converted_ingress', conv)
             need(a['dtype'] == 'f32' and int(a['raw_hex'], 16) == int(native[('MP_INPUT', (164, 242, k))][host], 16), 'host to ABI ' + host)
@@ -206,7 +250,7 @@ def verify(raw, pinned, *, check_local_sources=True):
         # Converted ingress precedes sedimentation; step entry is after it.
         # Both inventories are required, but their state values need not match.
         active = (val('c3_in','pre.supcol') > 8 and val('c3_in','pre.supsat') > 0) or val('c3_in','pre.rh_ice') > 1.08
-        dt = times[identity[:3]]
+        dt = times[identity[:5]]
         def rnd(v, dtype):
             return struct.unpack('<f', struct.pack('<f', v))[0] if dtype == 'f32' else v
         dtype = get('c3_in', 'pre.supsat')['dtype']
@@ -234,21 +278,17 @@ def verify(raw, pinned, *, check_local_sources=True):
             need(val('c3_out','icenuc.pinud') == 0 and val('c3_out','icenuc.ninud') == 0 and not val('c3_out','icenuc.ifsat'), 'C3 inactive output')
         if val('c3_in','pre.supcol') <= 0 or val('c4_in','state.qi') <= 0 or val('c3_out','icenuc.ifsat'):
             need(val('c4_out','depsub.pidep') == 0 and not val('c4_out','depsub.ice_complete_sublim'), 'C4 inactive ice output')
-        # Independently replay the ice candidate, limiter and exact-equality
-        # sublimation branch when all contributing tensors are f64.
-        ice_fields = [('c4_in', x) for x in ('state.qi', 'n0i', 's.rslopemu_i', 's.rslope2_i', 'work1_ice')]
-        ice_fields += [('c3_in', x) for x in ('pre.rh_ice', 'pre.supsat', 'prevp')]
-        ice_fields += [('c3_out', 'icenuc.pinud')]
-        if all(get(*x)['dtype'] == 'f64' for x in ice_fields):
-            qi = val('c4_in','state.qi')
-            raw_ice = (4.0 * val('c4_in','n0i') * 1.0 * val('c4_in','s.rslopemu_i') *
-                       val('c4_in','s.rslope2_i') * (val('c3_in','pre.rh_ice') - 1.0) /
-                       max(val('c4_in','work1_ice'), 1e-9))
-            supice = satdt - val('c3_in','prevp') - val('c3_out','icenuc.pinud')
-            cap = max(max(max(raw_ice, -qi / dt), 0.5 * satdt), supice) if raw_ice < 0 else min(min(raw_ice, 0.5 * satdt), supice)
-            entered = val('c3_in','pre.supcol') > 0 and qi > 0 and not val('c3_out','icenuc.ifsat')
-            need(val('c4_out','depsub.pidep') == (cap if entered else 0), 'C4 ice candidate and cap')
-            need(val('c4_out','depsub.ice_complete_sublim') == (entered and raw_ice == -qi / dt and raw_ice < 0), 'C4 complete sublimation branch')
+        # All non-ABI process operands are f64 by the fixed packet contract.
+        # Replay the C4 ice candidate and limiter on every accepted packet.
+        qi = val('c4_in','state.qi')
+        raw_ice = (4.0 * val('c4_in','n0i') * 1.0 * val('c4_in','s.rslopemu_i') *
+                   val('c4_in','s.rslope2_i') * (val('c3_in','pre.rh_ice') - 1.0) /
+                   max(val('c4_in','work1_ice'), 1e-9))
+        supice = satdt - val('c3_in','prevp') - val('c3_out','icenuc.pinud')
+        cap = max(max(max(raw_ice, -qi / dt), 0.5 * satdt), supice) if raw_ice < 0 else min(min(raw_ice, 0.5 * satdt), supice)
+        entered = val('c3_in','pre.supcol') > 0 and qi > 0 and not val('c3_out','icenuc.ifsat')
+        need(val('c4_out','depsub.pidep') == (cap if entered else 0), 'C4 ice candidate and cap')
+        need(val('c4_out','depsub.ice_complete_sublim') == (entered and raw_ice == -qi / dt and raw_ice < 0), 'C4 complete sublimation branch')
         c4_active = val('c3_in','pre.supcol') > 0
         running = rnd(val('c3_in','prevp') + val('c3_out','icenuc.pinud'), dtype)
         saturated = val('c3_out','icenuc.ifsat')
@@ -270,6 +310,12 @@ def verify(raw, pinned, *, check_local_sources=True):
         need(same(get('c3_in','state.ni'),get('state_in','working.ni')) and
              same(get('c4_in','state.qi'),get('state_in','working.qi')),
              'selected working-state handoff')
+        replayed_update = replay_selected_ice_update(val, dt)
+        for field in ('qi', 'ni'):
+            row = get('state_out', 'new_state.' + field)
+            expected_bits = int.from_bytes(struct.pack('<d', replayed_update[field]), 'little')
+            need(int(row['raw_hex'], 16) == expected_bits,
+                 'source-order ' + field.upper() + ' state update raw bits')
         # Reclassification, satadj and cleanup lie between these stages. Equality
         # is an observed property of the two selected cells, not a general rule.
         for field in ('qi','ni'):
@@ -290,10 +336,12 @@ def verify(raw, pinned, *, check_local_sources=True):
         if interior:
             need(same(get('dsd_in','new_state.ni'), get('dsd_out','new_state.ni')), 'DSD interior number')
         diagnostics.append({'native_k_1based': k, 'selected_rate_and_stage_handoffs_equal': True,
+                            'state_update_replayed_raw_bits': True,
+                            'replayed_state_update': replayed_update,
                             'c3_active': active, 'c3_nid': nid, 'c3_deficit_rate': deficit_rate,
                             'c3_raw_pinud': raw_pinud, 'c3_half_satdt': half_sat, 'c3_remaining': remaining,
                             'c3_selected_pinud': expected_pinud, 'c3_selected_ninud': expected_ninud,
-                            'c4_raw_pidep': raw_ice if all(get(*x)['dtype'] == 'f64' for x in ice_fields) else None,
+                            'c4_raw_pidep': raw_ice,
                             'c4_selected_pidep': val('c4_out','depsub.pidep'), 'dsd_lamda': lamda, 'dsd_interior': interior})
         if val('dsd_in','new_state.qi') < 1e-15 or val('dsd_in','new_state.ni') < val('dsd_in','ncmin_gate'):
             need(same(get('dsd_in','new_state.ni'),get('dsd_out','new_state.ni')), 'DSD inactive number')
