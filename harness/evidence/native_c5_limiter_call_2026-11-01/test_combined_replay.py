@@ -2,9 +2,11 @@
 
 import importlib
 import json
+import math
 import unittest
 from pathlib import Path
 import torch
+from oracle.kdm6.cold import default_dep_sub_params
 combined_module = importlib.import_module(
     "harness.evidence.native_c5_limiter_call_2026-11-01.combined_replay")
 combined = combined_module.combined
@@ -68,6 +70,45 @@ class CombinedTests(unittest.TestCase):
             )
             with self.subTest(field=field), self.assertRaises(ValueError):
                 combined(rows, q, n, check=True)
+
+    def test_moving_ice_auxiliary_audit_tracks_actual_c4_cap(self):
+        rows = self.cells["22"]
+        q = torch.tensor([read(rows, "limiter_in", "working.qi")],
+                         dtype=torch.float64)
+        n = torch.tensor([read(rows, "limiter_in", "working.ni")],
+                         dtype=torch.float64)
+        n0 = read(rows, "c4_in", "n0i")
+        slope2 = read(rows, "c4_in", "s.rslope2_i")
+        params = default_dep_sub_params()
+        rh = read(rows, "c3_in", "pre.rh_ice")
+        work1 = read(rows, "c4_in", "work1_ice")
+        mu = read(rows, "c4_in", "s.rslopemu_i")
+        raw_base = (4 * n0 * params.g2pmi * mu * slope2 * (rh - 1)
+                    / max(work1, params.qcrmin))
+        dt = read(rows, "c5_in", "dtcld")
+        half_cap = 0.5 * read(rows, "c3_in", "pre.supsat") / dt
+        crossover = half_cap / raw_base
+        self.assertGreater(crossover, 90)
+        self.assertLess(crossover, 92)
+        for below, scale in ((True, crossover * (1 - 1e-6)),
+                             (False, crossover * (1 + 1e-6))):
+            audit = {}
+            combined(rows, q, n, audit=audit,
+                     ice_aux=(torch.tensor([n0 * scale], dtype=torch.float64),
+                              torch.tensor([slope2], dtype=torch.float64)))
+            producer = audit["producers"]
+            raw = raw_base * scale
+            self.assertTrue(math.isclose(
+                producer["margins"]["c4_ice_raw_sign"], raw,
+                rel_tol=2e-15))
+            self.assertTrue(math.isclose(
+                producer["margins"]["c4_ice_cap_1_0"], half_cap - raw,
+                rel_tol=2e-9, abs_tol=1e-20))
+            self.assertEqual(producer["signature"]["c4_phases"][0][3],
+                             0 if below else 1)
+            self.assertTrue(math.isclose(
+                producer["selected_rates"]["pidep"], min(raw, half_cap),
+                rel_tol=2e-15))
 
 
 if __name__ == "__main__":
