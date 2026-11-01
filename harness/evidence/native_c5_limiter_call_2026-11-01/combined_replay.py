@@ -26,7 +26,7 @@ def read(rows, stage, field):
     )[0]
 
 
-def combined(rows, qi, ni, *, check=False, audit=None):
+def combined(rows, qi, ni, *, check=False, audit=None, ice_aux=None):
     def t(stage, field):
         return torch.tensor([read(rows, stage, field)], dtype=torch.float64)
 
@@ -45,9 +45,11 @@ def combined(rows, qi, ni, *, check=False, audit=None):
     )
     args = [qi] + [t("c4_in", x) for x in ("state.qs", "state.qg")]
     args += [t("c3_in", x) for x in ("pre.rh_ice", "pre.supcol", "pre.supsat", "prevp")]
-    args += [c3.pinud, c3.ifsat, t("c4_in", "n0i")]
+    n0i = t("c4_in", "n0i") if ice_aux is None else ice_aux[0]
+    rslope2_i = t("c4_in", "s.rslope2_i") if ice_aux is None else ice_aux[1]
+    args += [c3.pinud, c3.ifsat, n0i]
     args += [
-        t("c4_in", x)
+        rslope2_i if x == "s.rslope2_i" else t("c4_in", x)
         for x in (
             "n0so",
             "n0go",

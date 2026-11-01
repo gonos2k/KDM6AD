@@ -39,3 +39,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[native-target-artifact-diagnostic-2026-10-08]] — Eight saved native states and RTTOV H diagnostics from a runner-invalid target; all results remain diagnostic-only and R2 remains OPEN.
 
 - [[review388389-local-resolution-2026-10-08]] — Local metadata correction and bounded termination/RTTOV warning diagnosis; underlying native/physical correspondence remains open.
+- [[native-c5-source-pins-and-ice-auxiliary-2026-11-01]] — Historical C3/C5 source snapshots, shared-input bit checks, and conditional ice auxiliary response at two native levels.

@@ -18,10 +18,11 @@ REPO = Path(__file__).resolve().parents[3]
 BASELINE = (
     REPO / "harness/evidence/native_c3_c4_dsd_call_2026-11-01/selected_packet.json"
 )
+PUBLIC_SOURCES = Path(__file__).resolve().parent / "public_sources"
 # Filled only after private exporter succeeds and packet bytes are frozen.
 PACKET_SHA256 = "cb73fc3c6c2b30c080bde622b88db097e933e7ea88e56d2b9583a46f394d33ba"
 SOURCE_MANIFEST_SHA256 = (
-    "3e6996b0cce665274b27edb7ef4a6987c271e35d14c132284118400a1fb41235"
+    "043ab50bd23b7acf879947edc173150bb8695c4c93d99108844d38dbaa30ed37"
 )
 SELECTED_CAPTURE_SHA256 = (
     "ff7130c4b4b42a58eca275ef2e2cf86a3f698ae8e64c3ecb5a7d0e939cd34a4e"
@@ -205,7 +206,7 @@ def verify(raw, pin):
     need(set(off["source_sha256"]) == expected_sources, "executed source inventory")
     for relative, expected in off["source_sha256"].items():
         need(
-            sha((REPO / relative).read_bytes()) == expected,
+            sha((PUBLIC_SOURCES / relative).read_bytes()) == expected,
             "executed source " + relative,
         )
     c = packet["coordinate"]
@@ -291,6 +292,15 @@ def verify(raw, pin):
         and all(set(g) == inventory for g in groups.values()),
         "complete per-level inventory",
     )
+    for rows in groups.values():
+        for field in ("pre.supcol", "forcing.dend"):
+            c3 = rows[("c3_in", field)]
+            c5 = rows[("c5_in", field)]
+            need(
+                c3["dtype"] == c5["dtype"]
+                and c3["raw_hex"] == c5["raw_hex"],
+                "C3/C5 shared input " + field,
+            )
 
     def key(r):
         return tuple(r[x] for x in sorted(FIELDS))

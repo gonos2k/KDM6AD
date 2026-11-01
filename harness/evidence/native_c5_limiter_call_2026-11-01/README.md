@@ -4,6 +4,8 @@ This packet extends the [same-call C3/C4/DSD evidence](../native_c3_c4_dsd_call_
 
 The [selected packet](selected_packet.json) retains **312 raw-bit rows** for the second WRF tile's single substep at zero-based batch `22617`, tensor rows `20` and `22`, plus the relevant host `MP_INPUT/MP_OUTPUT` words, call metadata, build receipts, and full private-capture hashes. The [verifier](verify_packet.py) pins the packet, source and selected capture digests; checks the complete `(one_step_call,runtime_call,substep,B,K)` identity and dtypes; rechecks the original 172 C3/C4/DSD rows; and compares native host, ABI and final output bits. The full captures, executable, checkpoint and asset bytes are private and are attested by hashes rather than redistributed.
 
+The [historical public sources](public_sources/) are checked against the run receipt as immutable evidence, distinct from the [compiled capture sources](executed_sources/). A later change to the live executed C++ source does not invalidate that historical source check. The separately pinned replay implementation and oracle files may still require a reviewed manifest update when they change. For each selected level, the verifier also compares the dtype and raw bits of C3/C5 `pre.supcol` and `forcing.dend`, which were read from unchanged shared tensors; inconsistent re-pinned records are rejected even when a C5 branch is idle.
+
 The C5 oracle, supplied with the **directly captured C5 inputs**, reproduces both raw `psaut/nsaut` outputs at each level bit-for-bit. [The limiter replay](source_order_limiter.py) reads the full pre-limit input inventory and applies all 14 groups in executed C++ order. It reproduces every **captured selected cold-rate output** and the selected QI/NI state update in f64 bits. It does not compare every warm/MF/other cold output because those outputs were not captured. A rehashed change to an unused or inactive input can still round to, or produce, the same selected output; the pinned private capture records attest its execution source.
 
 | Native level | Raw C5 `psaut` | Raw C5 `nsaut` | Final DSD NI change |
@@ -22,6 +24,8 @@ Both maps require baseline raw-bit equality, componentwise JVP/VJP checks and th
 
 These are conditional local derivatives: post-freeze intercepts, slopes, other producer rates and upstream forcing are fixed, and the host does not execute an AD pass. QNICE's physical unit basis, a full mass/number budget, an end-to-end host JVP/VJP and RTTOV effects remain separate. **`scientific_status: INCONCLUSIVE`**.
 
+An additional [ice auxiliary replay](ice_auxiliary_ad.py) recomputes `n0i` and `rslope2_i` from the captured post-freeze QI, NI and density, then passes both through C4, the sequential limiter and the selected QI/NI update. The two baseline auxiliaries and final states match captured f64 bits. Relative QI and NI directions keep the ice slope strictly within `9080..1.82e6`, preserve the C3/C4/C5/limiter branch signature at both represented endpoints, and compare JVP, VJP and centered differences. At level 23, the additional 20 s QI sensitivities through these auxiliaries are `+7.237213036e−8` (QI direction) and `+1.447442543e−7` (NI direction), agreeing with the independent `a·dt·pidep` and `(1−a)·dt·pidep` expressions for `a=float32(1/3)`. This is conditional on the captured smooth, inactive number-rewrite branch and fixed density/other producers; it does not replay upstream slope production across a rewrite or provide a host derivative.
+
 ```bash
 python3 -m harness.evidence.native_c5_limiter_call_2026-11-01.verify_packet \
   harness/evidence/native_c5_limiter_call_2026-11-01/selected_packet.json \
@@ -30,6 +34,7 @@ python3 -m harness.evidence.native_c5_limiter_call_2026-11-01.combined_replay \
   harness/evidence/native_c5_limiter_call_2026-11-01/selected_packet.json \
   --sha256 cb73fc3c6c2b30c080bde622b88db097e933e7ea88e56d2b9583a46f394d33ba
 python3 -m unittest discover -s harness/evidence/native_c5_limiter_call_2026-11-01 -v
+python3 -m harness.evidence.native_c5_limiter_call_2026-11-01.ice_auxiliary_ad
 ```
 
 The packet includes review snapshots of the executed coordinator, private runner and exporter. Replaying the private host step requires the pinned omitted inputs and executable. The selected-packet digest is co-versioned; the reviewed Git commit is the content identity anchor.

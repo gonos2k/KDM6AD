@@ -12,9 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
 SOURCE_MANIFEST = ROOT / 'source_manifest.json'
+PUBLIC_SOURCES = ROOT / 'public_sources'
 SOURCE_FILES = {
-    'CMakeLists.txt': REPO / 'libtorch/CMakeLists.txt',
-    'bridge/kdm6_c_api.cpp': REPO / 'libtorch/bridge/kdm6_c_api.cpp',
+    'CMakeLists.txt': PUBLIC_SOURCES / 'libtorch/CMakeLists.txt',
+    'bridge/kdm6_c_api.cpp': PUBLIC_SOURCES / 'libtorch/bridge/kdm6_c_api.cpp',
     'src/runtime.cpp': ROOT / 'executed_overlay/runtime.cpp.txt',
     'src/coordinator.cpp': ROOT / 'executed_overlay/coordinator.cpp.txt',
     'src/sedimentation.cpp': ROOT / 'executed_overlay/sedimentation.cpp.txt',
@@ -162,7 +163,9 @@ def verify(raw, pinned, *, check_local_sources=True):
         need(set(off['source_sha256']) == expected_runtime_sources,
              'executed public source inventory')
         for relative, expected in off['source_sha256'].items():
-            path = REPO / relative
+            # These bytes describe the historical public source at execution.
+            # A later checkout may legitimately contain different source.
+            path = PUBLIC_SOURCES / relative
             need(path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() == expected,
                  'executed public source ' + relative)
     members = build['archive_members']
