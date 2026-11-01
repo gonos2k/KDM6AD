@@ -2,6 +2,9 @@
 #include "kdm6/runtime.h"
 #include "kdm6/fconst.h"
 #include "kdm6/coordinator.h"
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+#include <atomic>
+#endif
 #include "kdm6/ops.h"
 #include "kdm6/sedimentation.h"
 
@@ -9,6 +12,13 @@
 #include <unordered_set>
 
 namespace kdm6 {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+extern thread_local bool scalar_capture_value_only;
+extern thread_local unsigned long scalar_runtime_call;
+extern thread_local unsigned long scalar_substep;
+extern thread_local const CoordinatorState* scalar_ingress_state;
+extern thread_local const CoordinatorForcing* scalar_ingress_forcing;
+#endif
 
 // ── Parameters ──────────────────────────────────────────────────────────────
 static torch::Tensor mkparam(double value, bool grad,
@@ -417,6 +427,14 @@ FnResult kdm6_fn(const State& state,
     // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
     auto cs = state_to_coord(state, forcing);
     auto cf = build_forcing(forcing);
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    struct IngressGuard {
+        IngressGuard(const CoordinatorState& s, const CoordinatorForcing& f) {
+            scalar_ingress_state = &s; scalar_ingress_forcing = &f;
+        }
+        ~IngressGuard() { scalar_ingress_state = nullptr; scalar_ingress_forcing = nullptr; }
+    } ingress_guard(cs, cf);
+#endif
     torch::Tensor rho_dry, nccn_volume_entry;
     if (dry_number) {
         // Validation is value-only; the successful conversion remains live in the AD graph.
@@ -1043,6 +1061,15 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const c10::optional<torch::Tensor>& xland,
                      double ncmin_land, double ncmin_sea,
                      const PhysicsOptions& physics, bool dry_number) {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    struct CaptureGuard {
+        explicit CaptureGuard(bool enabled) {
+            static std::atomic<unsigned long> calls{0};
+            scalar_runtime_call = ++calls; scalar_substep = 0; scalar_capture_value_only = enabled;
+        }
+        ~CaptureGuard() { scalar_capture_value_only = false; }
+    } capture_guard(value_only);
+#endif
     // Fail-loud variant gate FIRST (C3) — shared helper, identical behavior to
     // the previous inline switch (see validate_physics_variant above).
     validate_physics_variant(physics.variant, "kdm6_step");

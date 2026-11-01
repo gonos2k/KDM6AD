@@ -209,6 +209,23 @@ struct FpEnvGuard {
 
 }  // anonymous namespace
 
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+// Historical host compatibility only: the old context callback accepted eight
+// by-value C integers for optional moment tracing. This build does not implement
+// that tracing; the callback deliberately has no effect on model calculations.
+extern "C" KDM6_C_API void kdm6_moment_trace_context_c(int, int, int, int, int, int, int, int) noexcept {}
+namespace kdm6 {
+extern thread_local const float *scalar_abi_qi, *scalar_abi_ni, *scalar_abi_p, *scalar_abi_den;
+extern thread_local int scalar_abi_im, scalar_abi_jme, scalar_abi_kme;
+}
+        struct AbiIngressGuard {
+            AbiIngressGuard(const float* qi, const float* ni, const float* p, const float* den, int im, int jme, int kme) {
+                kdm6::scalar_abi_qi = qi; kdm6::scalar_abi_ni = ni; kdm6::scalar_abi_p = p; kdm6::scalar_abi_den = den;
+                kdm6::scalar_abi_im = im; kdm6::scalar_abi_jme = jme; kdm6::scalar_abi_kme = kme;
+            }
+            ~AbiIngressGuard() { kdm6::scalar_abi_qi = kdm6::scalar_abi_ni = kdm6::scalar_abi_p = kdm6::scalar_abi_den = nullptr; }
+        };
+#endif
 extern "C" int kdm6_step_c(
     const float* th, const float* qv, const float* qc, const float* qr,
     const float* qi, const float* qs, const float* qg,
@@ -267,6 +284,9 @@ extern "C" int kdm6_step_c(
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
 
     try {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+        AbiIngressGuard abi_ingress(qi, ni, p, rho, im, jme, kme);
+#endif
         kdm6::FortranArrayDescriptor desc{
             th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg, im, kme, jme};
         // [C4] requires_grad는 value_only=0일 때만 켬
@@ -417,6 +437,9 @@ extern "C" int kdm6_native_fp64_value_c(
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
 
     try {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+        AbiIngressGuard abi_ingress(qi, ni, p, rho, im, jme, kme);
+#endif
         kdm6::FortranArrayDescriptor desc{
             th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg, im, kme, jme};
         // Decode REAL4 storage first; never reinterpret a float buffer as double.
@@ -616,6 +639,9 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
 
     try {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+        AbiIngressGuard abi_ingress(args->qi, args->ni, args->p, args->rho, im, jme, kme);
+#endif
         kdm6::FortranArrayDescriptor desc{
             args->th, args->qv, args->qc, args->qr, args->qi, args->qs, args->qg,
             args->nccn, args->nc, args->ni, args->nr, args->bg, im, kme, jme};
