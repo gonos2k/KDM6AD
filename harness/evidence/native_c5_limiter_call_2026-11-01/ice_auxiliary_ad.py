@@ -14,17 +14,26 @@ import torch
 
 from oracle.kdm6 import fconst
 from oracle.kdm6.constants import LAMDAIMAX, LAMDAIMIN
-from .combined_replay import combined, read
+from .combined_replay import audit_ties, combined, read
 from .replay import bits
 
 ROOT = Path(__file__).resolve().parent
 EXPONENT = struct.unpack("<f", struct.pack("<f", 1.0 / 3.0))[0]
 
 
-def rows_for(level):
-    packet = json.loads((ROOT / "selected_packet.json").read_bytes())
+def rows_for(packet, level):
+    """Select a level from an already parsed packet; never reopen its file."""
     return {(r["stage"], r["field"]): r for r in packet["selected_rows"]
             if r["k_zero"] == str(level)}
+
+
+def verified_cells(raw, pinned):
+    """Authenticate one byte string before sharing its rows across both levels."""
+    from .verify_packet import verify
+
+    verify(raw, pinned)
+    packet = json.loads(raw)
+    return {level: rows_for(packet, level) for level in (20, 22)}
 
 
 def auxiliaries(qi, ni, density):
@@ -41,12 +50,22 @@ def auxiliaries(qi, ni, density):
 
 def branch_signature(audit):
     return (audit["producers"]["signature"], audit["branches"],
-            tuple((g["group"], g["active"], g["binding"], g["factor"])
+            tuple((g["group"], g["active"], g["binding"])
                   for g in audit["limiter"]))
 
 
-def diagnose(level, h=2e-4):
-    rows = rows_for(level)
+def ice_c4_audit(audit):
+    producer = audit["producers"]
+    return {
+        "raw_pidep": producer["margins"]["c4_ice_raw_sign"],
+        "half_cap_minus_raw": producer["margins"]["c4_ice_cap_1_0"],
+        "selected_pidep": producer["selected_rates"]["pidep"],
+        "cap_winner": producer["signature"]["c4_phases"][0][3],
+    }
+
+
+def diagnose(level, rows, h=2e-4):
+    """Diagnose rows supplied by verified_cells (isolated tests may inject rows)."""
     q0 = read(rows, "c4_in", "state.qi")
     n0 = read(rows, "c3_in", "state.ni")
     den = read(rows, "c3_in", "forcing.dend")
@@ -68,6 +87,8 @@ def diagnose(level, h=2e-4):
         raise ValueError("captured ice slope raw bits")
     baseline_audit = {}
     baseline, _ = auxiliary_map(q, n, check=True, audit=baseline_audit)
+    if audit_ties(baseline_audit):
+        raise ValueError("ice auxiliary baseline branch tie")
     signature = branch_signature(baseline_audit)
     pidep = read(rows, "c4_out", "depsub.pidep")
     dt = read(rows, "c5_in", "dtcld")
@@ -78,14 +99,18 @@ def diagnose(level, h=2e-4):
             return auxiliary_map(qx, nx)[0]
         return combined(rows, qx, nx)
 
+    def moving(x):
+        return flat_map(x, moving=True)
+
+    def frozen(x):
+        return flat_map(x, moving=False)
+
     x = torch.tensor([q0, n0], dtype=torch.float64, requires_grad=True)
     findings = {}
     for name, direction, coefficient in (
         ("relative_qi", torch.tensor([q0, 0.0], dtype=torch.float64), EXPONENT),
         ("relative_ni", torch.tensor([0.0, n0], dtype=torch.float64), 1.0 - EXPONENT),
     ):
-        moving = lambda z: flat_map(z, moving=True)
-        frozen = lambda z: flat_map(z, moving=False)
         _, jvp = torch.autograd.functional.jvp(moving, x, direction)
         _, frozen_jvp = torch.autograd.functional.jvp(frozen, x, direction)
         extra = (jvp - frozen_jvp).detach()
@@ -112,6 +137,8 @@ def diagnose(level, h=2e-4):
                 raise ValueError("ice auxiliary endpoint branch")
             audit = {}
             auxiliary_map(qe, ne, audit=audit)
+            if audit_ties(audit):
+                raise ValueError("ice auxiliary endpoint branch tie")
             if branch_signature(audit) != signature:
                 raise ValueError("ice producer/limiter endpoint branch")
             audits.append(audit)
@@ -126,12 +153,34 @@ def diagnose(level, h=2e-4):
             "fd_minus_actual_jvp": (fd - actual_jvp).tolist(),
             "extra_qi_from_auxiliary": extra[0].item(),
             "independent_extra_qi": expected,
+            "plus_c4_audit": ice_c4_audit(audits[0]),
+            "minus_c4_audit": ice_c4_audit(audits[1]),
         }
     return {"level_zero": int(level), "baseline": baseline.tolist(),
             "n0i": n0i.item(), "rslope2_i": slope2.item(),
-            "lambda_i": lam.item(), "h": h, "directions": findings,
+            "lambda_i": lam.item(), "h": h,
+            "baseline_c4_audit": ice_c4_audit(baseline_audit),
+            "directions": findings,
             "status": "conditional branch interior; scientific status INCONCLUSIVE"}
 
 
+def main():
+    import argparse
+    from .verify_packet import PACKET_SHA256
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("packet", nargs="?", type=Path,
+                        default=ROOT / "selected_packet.json")
+    parser.add_argument("--sha256", default=PACKET_SHA256)
+    args = parser.parse_args()
+    try:
+        raw = args.packet.read_bytes()
+        cells = verified_cells(raw, args.sha256)
+        print(json.dumps({level: diagnose(level, cells[level])
+                          for level in (20, 22)}, indent=2, allow_nan=False))
+    except (ValueError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
+        parser.exit(1, "INVALID: " + str(exc) + "\n")
+
+
 if __name__ == "__main__":
-    print(json.dumps({level: diagnose(level) for level in (20, 22)}, indent=2))
+    main()

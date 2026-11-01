@@ -110,7 +110,8 @@ def combined(rows, qi, ni, *, check=False, audit=None, ice_aux=None):
             "combined working handoff",
         )
     if audit is not None:
-        audit["producers"] = producer_audit(rows, qi, ni, c3, c4, p, dp, dt)
+        audit["producers"] = producer_audit(
+            rows, qi, ni, c3, c4, p, dp, dt, n0i=n0i, rslope2_i=rslope2_i)
     return replay(
         rows,
         qi=qi,
@@ -122,7 +123,7 @@ def combined(rows, qi, ni, *, check=False, audit=None, ice_aux=None):
     )
 
 
-def producer_audit(rows, qi, ni, c3, c4, p, dp, dt):
+def producer_audit(rows, qi, ni, c3, c4, p, dp, dt, *, n0i, rslope2_i):
     """Value-only source-order branch margins for each active C3/C4 arm."""
 
     def v(stage, field):
@@ -174,10 +175,10 @@ def producer_audit(rows, qi, ni, c3, c4, p, dp, dt):
     margin("c4_work1_floor", v("c4_in", "work1_ice") - dp.qcrmin)
     ice_raw = (
         4
-        * v("c4_in", "n0i")
+        * diagnostic_scalar(n0i[0])
         * dp.g2pmi
         * v("c4_in", "s.rslopemu_i")
-        * v("c4_in", "s.rslope2_i")
+        * diagnostic_scalar(rslope2_i[0])
         * (rh - 1)
         / r1
     )
@@ -243,6 +244,8 @@ def producer_audit(rows, qi, ni, c3, c4, p, dp, dt):
                     margin("c4_" + name + "_cap_%d_%d" % (i, j), caps[i] - caps[j])
         chosen = max(caps) if raw < 0 else min(caps)
         winner = caps.index(chosen)
+        if entered and not math.isclose(chosen, amount, rel_tol=2e-14, abs_tol=1e-25):
+            raise ValueError("C4 audit selected rate differs from actual " + name)
         running = (
             prev
             + pin
@@ -262,6 +265,7 @@ def producer_audit(rows, qi, ni, c3, c4, p, dp, dt):
     margin("c3_saturation", c3_sat, outer)
     return {
         "margins": dict(strict),
+        "selected_rates": {"pidep": ice, "psdep": snow, "pgdep": graupel},
         # Explicitly frozen input words; never perturbed by the QI/NI map.
         "frozen_species_bits": {
             species: rows[("c4_in", "state." + species)]["raw_hex"]
@@ -277,6 +281,24 @@ def producer_audit(rows, qi, ni, c3, c4, p, dp, dt):
             "complete_sublim": bool(c4.ice_complete_sublim[0]),
         },
     }
+
+
+def audit_ties(a):
+    """Exact ties in selected branches; zero snow/graupel gates are frozen."""
+    excluded = {"c4_snow_reservoir": "qs", "c4_graupel_reservoir": "qg"}
+    frozen = a["producers"]["frozen_species_bits"]
+    out = [
+        "producer/" + k
+        for k, v in a["producers"]["margins"].items()
+        if v == 0 and not (k in excluded and int(frozen[excluded[k]], 16) == 0)
+    ]
+    out += ["c5/" + k for k, v in a["c5_margins"].items() if v == 0]
+    out += [
+        "limiter/" + v["group"]
+        for v in a["limiter"]
+        if v["active"] and v["margin"] == 0
+    ]
+    return out
 
 
 def combined_diagnostics(rows):
@@ -298,24 +320,6 @@ def combined_diagnostics(rows):
     initial = {}
     y = f(base, initial)
 
-    def ties(a):
-        # QS/QG are fixed packet operands. At exactly zero their inactive
-        # C4 gates are tied, but cannot change in either tested direction.
-        excluded = {"c4_snow_reservoir": "qs", "c4_graupel_reservoir": "qg"}
-        frozen = a["producers"]["frozen_species_bits"]
-        out = [
-            "producer/" + k
-            for k, v in a["producers"]["margins"].items()
-            if v == 0 and not (k in excluded and int(frozen[excluded[k]], 16) == 0)
-        ]
-        out += ["c5/" + k for k, v in a["c5_margins"].items() if v == 0]
-        out += [
-            "limiter/" + v["group"]
-            for v in a["limiter"]
-            if v["active"] and v["margin"] == 0
-        ]
-        return out
-
     def sig(a):
         return (
             a["producers"]["signature"],
@@ -323,7 +327,7 @@ def combined_diagnostics(rows):
             [(v["group"], v["active"], v["binding"]) for v in a["limiter"]],
         )
 
-    tied = ties(initial)
+    tied = audit_ties(initial)
     if tied:
         return {
             "status": "inconclusive",
@@ -397,8 +401,8 @@ def combined_diagnostics(rows):
             ym = f(minus, am)
             stable = (
                 sig(ap) == baseline_sig == sig(am)
-                and not ties(ap)
-                and not ties(am)
+                and not audit_ties(ap)
+                and not audit_ties(am)
                 and ap["producers"]["frozen_species_bits"] == frozen_bits
                 and am["producers"]["frozen_species_bits"] == frozen_bits
                 and all(diagnostic_scalar(v) > 0 for v in yp)

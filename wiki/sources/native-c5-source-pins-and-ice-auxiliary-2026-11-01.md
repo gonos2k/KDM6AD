@@ -25,6 +25,11 @@ and the ice state update preserves the captured baseline output bits. At level
 `+7.237213036e−8` for QI and `+1.447442543e−7` for NI. JVP, VJP, represented
 central differences and endpoint branch checks support these conditional
 values. The earlier map with frozen auxiliaries remains a separate diagnostic.
+The auxiliary CLI verifies one packet byte string before forming both level
+views. Its C4 audit uses the recomputed intercept and slope that C4 consumes;
+a nearby half-saturation cap probe checks that the audited winner changes with
+the actual selected rate. Exact selected-branch ties remain outside the local
+derivative claim.
 
 This result uses the post-freeze working coordinate, fixed density and fixed
 other producer inputs. The selected number rewrite is inactive. It does not

@@ -22,7 +22,7 @@ PUBLIC_SOURCES = Path(__file__).resolve().parent / "public_sources"
 # Filled only after private exporter succeeds and packet bytes are frozen.
 PACKET_SHA256 = "cb73fc3c6c2b30c080bde622b88db097e933e7ea88e56d2b9583a46f394d33ba"
 SOURCE_MANIFEST_SHA256 = (
-    "043ab50bd23b7acf879947edc173150bb8695c4c93d99108844d38dbaa30ed37"
+    "3dcc0c6bcd12885337edcca28f57031f6206b55994d2732bbe0b9b31abe01be5"
 )
 SELECTED_CAPTURE_SHA256 = (
     "ff7130c4b4b42a58eca275ef2e2cf86a3f698ae8e64c3ecb5a7d0e939cd34a4e"
