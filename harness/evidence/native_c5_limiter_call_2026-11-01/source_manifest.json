@@ -1,0 +1,9 @@
+{
+  "harness/evidence/native_c5_limiter_call_2026-11-01/capture_schema.py": "4e207c5f610118168e5e861679f13305402b91b157d75706133b82a85605fead",
+  "harness/evidence/native_c5_limiter_call_2026-11-01/combined_replay.py": "09107100d20060266bcfc8803f2a1d2854e435190878f681d4715da1c1b64e37",
+  "harness/evidence/native_c5_limiter_call_2026-11-01/replay.py": "ded39a11d87894e4ceba84cbced6c3017fec0ce07fc77c80d898ed28854afcf7",
+  "harness/evidence/native_c5_limiter_call_2026-11-01/source_order_limiter.py": "0e34429116f6fbc1d5cfd8b3e102e6f5dcb0c88f471cc7ee0b61aeab8a6679c0",
+  "oracle/kdm6/cold.py": "7114b5f75d4badfdf1f979c5148b42c5f7e0c00a06b5c958346deb8dacac3a59",
+  "oracle/kdm6/constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+  "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2"
+}
