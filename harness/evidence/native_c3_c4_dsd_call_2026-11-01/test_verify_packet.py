@@ -5,7 +5,12 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import shutil
+import tempfile
 import unittest
+from unittest.mock import patch
+
+import verify_packet as verifier
 
 from verify_packet import STAGES, verify, verify_sources
 
@@ -97,6 +102,16 @@ class PacketReplay(unittest.TestCase):
     def test_actual_packet(self):
         verify_sources()
         self.assertEqual(verify(self.raw, self.pin)['scientific_status'], 'INCONCLUSIVE')
+
+    def test_historical_public_snapshot_mutation_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'public_sources'
+            shutil.copytree(verifier.PUBLIC_SOURCES, root)
+            source = root / 'libtorch/src/coordinator.cpp'
+            source.write_bytes(source.read_bytes() + b'\n')
+            with patch.object(verifier, 'PUBLIC_SOURCES', root):
+                with self.assertRaisesRegex(ValueError, 'executed public source'):
+                    verify(self.raw, self.pin)
 
     def reject(self, mutate):
         packet = copy.deepcopy(self.packet)

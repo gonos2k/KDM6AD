@@ -6,6 +6,8 @@ The WRF run has two physical tiles. The selected second tile has local `I=2..233
 
 The [selected packet](selected_packet.json) preserves 172 selected scalar rows with dtype and raw IEEE bits, `dtcld`, the two selected host input/output trace records, the build receipt, and hashes for both complete C++ captures, both host traces, the inputs, executable, DSO and endpoints. [The verifier](verify_packet.py) hashes the exact packet bytes before parsing, checks the local executed-overlay source snapshots, binds every selected row to the capture's full `(one_step_call,runtime_call,substep,B,K)` identity, and requires ABI `f32`, working numeric `f64`, and branch `bool` values. It compares raw input/output words and independently replays the C3 ice-nucleation and C4 ice deposition candidates from the consumed operands. The full private captures, checkpoint, executable, input assets and archive are pinned but not redistributed, so their hashes are execution attestations rather than independently downloadable artifacts.
 
+The packet's [historical public sources](public_sources/) are retained separately from the compiled [capture overlay](executed_overlay/). The verifier checks each public source snapshot against its original run receipt, rather than against the current development checkout. In particular, a later edit to `libtorch/src/coordinator.cpp` cannot invalidate this historical replay. A changed snapshot still fails its original digest.
+
 | Native level | C3 outer/inner result | Selected C3 mass rate `pinud` | Selected C4 ice rate `pidep` | Final DSD NI change |
 | ---: | --- | ---: | ---: | --- |
 | 21 | Outer cold/ice-saturation gate false | `0` | `−8.782281178665383e−12` | None; slope interior |

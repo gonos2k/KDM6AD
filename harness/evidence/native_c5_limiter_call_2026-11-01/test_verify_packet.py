@@ -4,6 +4,9 @@ import importlib
 import hashlib
 import json
 import unittest
+import struct
+import shutil
+import tempfile
 from unittest.mock import patch
 verifier = importlib.import_module(
     "harness.evidence.native_c5_limiter_call_2026-11-01.verify_packet")
@@ -39,6 +42,43 @@ class PacketPinTests(unittest.TestCase):
 
 
 class NativeMutationTests(unittest.TestCase):
+    def test_historical_public_snapshot_mutation_rejected(self):
+        raw = (verifier.Path(__file__).parent / "selected_packet.json").read_bytes()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = verifier.Path(tmp) / "public_sources"
+            shutil.copytree(verifier.PUBLIC_SOURCES, root)
+            source = root / "libtorch/src/coordinator.cpp"
+            source.write_bytes(source.read_bytes() + b"\n")
+            with patch.object(verifier, "PUBLIC_SOURCES", root):
+                with self.assertRaisesRegex(ValueError, "executed source"):
+                    verifier.verify(raw, verifier.PACKET_SHA256)
+
+    def test_shared_c3_c5_inputs_rejected_after_repinning(self):
+        raw = (verifier.Path(__file__).parent / "selected_packet.json").read_bytes()
+        for level, field, value in (
+            ("20", "pre.supcol", 1.0),
+            ("20", "forcing.dend", 0.9825252294540405),
+            ("22", "pre.supcol", 1.0),
+            ("22", "forcing.dend", 0.9825252294540405),
+        ):
+            obj = json.loads(raw)
+            row = next(r for r in obj["selected_rows"] if
+                       r["k_zero"] == level and r["stage"] == "c5_in"
+                       and r["field"] == field)
+            row["raw_hex"] = format(
+                int.from_bytes(struct.pack("<d", value), "little"), "x")
+            changed = json.dumps(obj, sort_keys=True).encode()
+            selection = {k: obj[k] for k in
+                         ("selected_rows", "capture_files", "capture_metadata")}
+            selected_pin = hashlib.sha256(json.dumps(
+                selection, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            packet_pin = hashlib.sha256(changed).hexdigest()
+            with (self.subTest(level=level, field=field),
+                  patch.object(verifier, "PACKET_SHA256", packet_pin),
+                  patch.object(verifier, "SELECTED_CAPTURE_SHA256", selected_pin)):
+                with self.assertRaisesRegex(ValueError, "C3/C5 shared input " + field):
+                    verifier.verify(changed, packet_pin)
+
     def test_rehashed_native_mutations_rejected(self):
         raw = (verifier.Path(__file__).parent / "selected_packet.json").read_bytes()
         json.loads(raw)
