@@ -18,12 +18,150 @@
 #include <limits>
 #include <string>
 #include <vector>
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+#include <algorithm>
+#include <atomic>
+#include <cstdio>
+#include <exception>
+#include <cerrno>
+#include <climits>
+#include <fcntl.h>
+#include <stdexcept>
+#include <unistd.h>
+#endif
 
 namespace kdm6 {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+thread_local bool scalar_capture_value_only = false;
+thread_local unsigned long scalar_runtime_call = 0;
+thread_local unsigned long scalar_substep = 0;
+thread_local const CoordinatorState* scalar_ingress_state = nullptr;
+thread_local const CoordinatorForcing* scalar_ingress_forcing = nullptr;
+thread_local const float *scalar_abi_qi = nullptr, *scalar_abi_ni = nullptr, *scalar_abi_p = nullptr, *scalar_abi_den = nullptr;
+thread_local int scalar_abi_im = 0, scalar_abi_jme = 0, scalar_abi_kme = 0;
+#endif
 
 namespace {
 
 constexpr double PI = 3.14159265358979323846;
+
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+// Value-only forensic output: detached copies are never fed back into the model.
+// B and K are zero-based tensor indices; mapping to host levels needs evidence.
+thread_local FILE* scalar_capture = nullptr;
+thread_local long scalar_b = 0;
+thread_local long scalar_k1 = 20, scalar_k2 = 22;
+thread_local unsigned long scalar_records = 0;
+thread_local unsigned long scalar_metadata_records = 0;
+long capture_parse(const char* name, const char* value, long fallback) {
+    if (!value) return fallback;
+    if (!*value || *value < '0' || *value > '9') throw std::runtime_error(std::string("invalid ") + name);
+    for (const char* p = value; *p; ++p) if (*p < '0' || *p > '9') throw std::runtime_error(std::string("invalid ") + name);
+    errno = 0; char* end = nullptr; long n = std::strtol(value, &end, 10);
+    if (errno == ERANGE || !end || *end) throw std::runtime_error(std::string("invalid ") + name);
+    return n;
+}
+struct ScalarCapture {
+    ScalarCapture() {
+        static std::atomic<unsigned long> sequence{0};
+        const auto call = ++sequence;
+        const char* dir = std::getenv("KDM6_NATIVE_CAPTURE_DIR");
+        if (!dir || !*dir) return;
+        if (!scalar_capture_value_only) throw std::runtime_error("scalar capture requires value-only kdm6_step");
+        const char* selected = std::getenv("KDM6_NATIVE_CAPTURE_CALL");
+        if (selected && std::strcmp(selected, "all") != 0) {
+            const auto target = capture_parse("KDM6_NATIVE_CAPTURE_CALL", selected, 0);
+            if (target != 0 && target != call) return;
+        }
+        const char* b = std::getenv("KDM6_NATIVE_CAPTURE_B");
+        scalar_b = capture_parse("KDM6_NATIVE_CAPTURE_B", b, 0);
+        const char* k1 = std::getenv("KDM6_NATIVE_CAPTURE_K1");
+        const char* k2 = std::getenv("KDM6_NATIVE_CAPTURE_K2");
+        scalar_k1 = capture_parse("KDM6_NATIVE_CAPTURE_K1", k1, 20);
+        scalar_k2 = capture_parse("KDM6_NATIVE_CAPTURE_K2", k2, 22);
+        if (scalar_k1 < 0 || scalar_k2 < 0) throw std::runtime_error("invalid capture K (zero-based)");
+        if (scalar_k1 == scalar_k2) throw std::runtime_error("capture K indices must differ");
+        if (scalar_b < 0) throw std::runtime_error("negative KDM6_NATIVE_CAPTURE_B");
+        path_ = std::string(dir) + "/cpp_scalar_" + std::to_string(getpid()) + "_" + std::to_string(call) + ".csv";
+        partial_ = path_ + ".partial";
+        int fd = open(partial_.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+        if (fd < 0) throw std::runtime_error("cannot exclusively create scalar capture: " + partial_);
+        scalar_capture = fdopen(fd, "w");
+        if (!scalar_capture) { close(fd); throw std::runtime_error("fdopen failed for scalar capture: " + partial_); }
+        if (std::fprintf(scalar_capture, "one_step_call,runtime_call,substep,b_zero,k_zero,B,K,stage,field,dtype,raw_hex\n") < 0) {
+            std::fclose(scalar_capture); scalar_capture = nullptr;
+            throw std::runtime_error("scalar capture header write failed: " + partial_);
+        }
+        call_ = call;
+    }
+    // Only publish the final filename after every write, flush, sync and close succeeds.
+    // A failed/interrupted attempt remains at the .partial path.
+    void finish() {
+        if (!scalar_capture) return;
+        if (std::fprintf(scalar_capture, "# scalar_records=%lu,metadata_records=%lu,status=complete\n",
+                         scalar_records, scalar_metadata_records) < 0 ||
+            std::fflush(scalar_capture) != 0 || fsync(fileno(scalar_capture)) != 0)
+            throw std::runtime_error("scalar capture flush/sync failed: " + partial_);
+        FILE* f = scalar_capture; scalar_capture = nullptr;
+        if (std::fclose(f) != 0) throw std::runtime_error("scalar capture close failed: " + partial_);
+        if (link(partial_.c_str(), path_.c_str()) != 0)
+            throw std::runtime_error("scalar capture publish failed: " + path_);
+        if (unlink(partial_.c_str()) != 0)
+            throw std::runtime_error("scalar capture partial cleanup failed: " + partial_);
+    }
+    ~ScalarCapture() {
+        if (scalar_capture) {
+            const int write_rc = std::fprintf(scalar_capture, "# scalar_records=%lu,metadata_records=%lu,status=failed\n", scalar_records, scalar_metadata_records);
+            const int close_rc = std::fclose(scalar_capture);
+            if (write_rc < 0 || close_rc != 0) std::fprintf(stderr, "KDM6 scalar capture failure cleanup failed\n");
+            scalar_capture = nullptr;
+        }
+    }
+    std::string path_, partial_;
+    unsigned long call_ = 0;
+};
+thread_local unsigned long scalar_call = 0;
+void capture_scalar(const char* stage, const char* name, const torch::Tensor& value, bool all_b = false) {
+    if (!scalar_capture) return;
+    if (value.dim() != 2 || scalar_b >= value.size(0) || value.size(1) <= std::max(scalar_k1, scalar_k2))
+        throw std::runtime_error(std::string("scalar capture incompatible shape: ") + name);
+    // Explicit diagnostic-only snapshot, retaining original dtype and raw bits.
+    auto t = value.detach().contiguous().cpu();
+    if (all_b && t.size(0) > 100000) throw std::runtime_error("scalar capture ingress exceeds 100000 columns");
+    const long start = all_b ? 0 : scalar_b;
+    const long end = all_b ? t.size(0) : scalar_b + 1;
+    for (long b = start; b < end; ++b) for (long k : {scalar_k1, scalar_k2}) {
+        if (scalar_records >= 2000000) throw std::runtime_error("scalar capture exceeds 2000000 records");
+        auto idx = b * t.size(1) + k;
+        unsigned long long bits = 0; const char* dtype = nullptr;
+        if (t.scalar_type() == torch::kFloat32) { uint32_t v; std::memcpy(&v, t.data_ptr<float>() + idx, 4); bits = v; dtype = "f32"; }
+        else if (t.scalar_type() == torch::kFloat64) { uint64_t v; std::memcpy(&v, t.data_ptr<double>() + idx, 8); bits = v; dtype = "f64"; }
+        else if (t.scalar_type() == torch::kBool) { bits = t.data_ptr<bool>()[idx] ? 1 : 0; dtype = "bool"; }
+        else throw std::runtime_error(std::string("scalar capture unsupported dtype: ") + name);
+        if (std::fprintf(scalar_capture, "%lu,%lu,%lu,%ld,%ld,%lld,%lld,%s,%s,%s,%llx\n", scalar_call, scalar_runtime_call, scalar_substep, b, k, static_cast<long long>(t.size(0)), static_cast<long long>(t.size(1)), stage, name, dtype, bits) < 0)
+            throw std::runtime_error("scalar capture write failed");
+        ++scalar_records;
+    }
+}
+void capture_abi(const char* name, const float* values) {
+    if (!scalar_capture || !values) return;
+    const long b_count = static_cast<long>(scalar_abi_im) * scalar_abi_jme;
+    if (scalar_b >= b_count || scalar_k1 >= scalar_abi_kme || scalar_k2 >= scalar_abi_kme)
+        throw std::runtime_error("ABI capture index out of bounds");
+    const long i = scalar_b / scalar_abi_jme, j = scalar_b % scalar_abi_jme;
+    for (long k : {scalar_k1, scalar_k2}) {
+        const size_t index = static_cast<size_t>(i) + static_cast<size_t>(scalar_abi_im) * (k + static_cast<size_t>(scalar_abi_kme) * j);
+        uint32_t bits; std::memcpy(&bits, values + index, sizeof(bits));
+        if (std::fprintf(scalar_capture, "%lu,%lu,%lu,%ld,%ld,%ld,%d,abi_ingress,%s,f32,%x\n",
+                         scalar_call, scalar_runtime_call, scalar_substep, scalar_b, k, b_count, scalar_abi_kme, name, bits) < 0)
+            throw std::runtime_error("ABI scalar capture write failed");
+        ++scalar_records;
+    }
+}
+#define CAP(stage, field) capture_scalar(stage, #field, field)
+#define CAP_ALL(stage, field) capture_scalar(stage, #field, field, true)
+#endif
+
 
 // ── per-substep parity dump (forensic; OFF by default) ───────────────────────
 // Compiled out unless KDM6_SUBSTEP_DUMP is defined at build time (keeps the active
@@ -257,6 +395,10 @@ ColdPhaseOutputs cold_phase(
     };
     auto hm = cold::hallett_mossop_torch(c2e_in, params.hallett_mossop);
 
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("c3_in", pre.supcol); CAP("c3_in", pre.supsat); CAP("c3_in", pre.rh_ice);
+    CAP("c3_in", prevp); CAP("c3_in", state.ni); CAP("c3_in", forcing.dend);
+#endif
     // C3: ice nucleation
     cold::IceNucleationInputs c3_in{
         pre.supcol, pre.supsat, pre.rh_ice, prevp,
@@ -278,6 +420,17 @@ ColdPhaseOutputs cold_phase(
     };
     auto depsub = cold::dep_sub_torch(c4_in, params.dep_sub, dtcld);
 
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("c3_out", icenuc.pinud); CAP("c3_out", icenuc.ninud); CAP("c3_out", icenuc.ifsat);
+    CAP("c4_in", state.qi); CAP("c4_in", state.qs); CAP("c4_in", state.qg);
+    CAP("c4_in", n0i); CAP("c4_in", n0so); CAP("c4_in", n0go); CAP("c4_in", s.n0sfac_field);
+    CAP("c4_in", work1_ice); CAP("c4_in", pre.work2); CAP("c4_in", pre.precg2);
+    CAP("c4_in", s.rslope_s); CAP("c4_in", s.rslope2_s); CAP("c4_in", s.rslopeb_s); CAP("c4_in", s.rslopemu_s);
+    CAP("c4_in", s.rslope_g); CAP("c4_in", s.rslope2_g); CAP("c4_in", s.rslopeb_g); CAP("c4_in", s.rslopemu_g);
+    CAP("c4_in", s.rslope2_i); CAP("c4_in", s.rslopemu_i);
+    CAP("c4_out", depsub.pidep); CAP("c4_out", depsub.psdep); CAP("c4_out", depsub.pgdep);
+    CAP("c4_out", depsub.ifsat); CAP("c4_out", depsub.ice_complete_sublim);
+#endif
     // C5: ice aggregation (no Inputs struct — takes tensors directly)
     auto agg = cold::ice_aggregation_torch(
         state.qi, state.ni, state.t, forcing.dend, pre.supcol,
@@ -661,6 +814,28 @@ CoordinatorState kdm62d_one_step(
     const torch::Tensor& entry_cpm,
     const torch::Tensor& entry_xl
 ) {
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    ++scalar_substep;
+    ScalarCapture scalar_capture_scope;
+    scalar_call = scalar_capture_scope.call_;
+    scalar_records = 0;
+    scalar_metadata_records = 0;
+    capture_abi("qi", scalar_abi_qi); capture_abi("ni", scalar_abi_ni);
+    capture_abi("p", scalar_abi_p); capture_abi("den", scalar_abi_den);
+    if (scalar_capture && scalar_ingress_state && scalar_ingress_forcing) {
+        // One detached CPU copy per field; all B rows support host tile mapping.
+        CAP_ALL("converted_ingress", scalar_ingress_state->qi); CAP_ALL("converted_ingress", scalar_ingress_state->ni);
+        CAP_ALL("converted_ingress", scalar_ingress_state->t); CAP_ALL("converted_ingress", scalar_ingress_state->qv);
+        CAP_ALL("converted_ingress", scalar_ingress_forcing->p); CAP_ALL("converted_ingress", scalar_ingress_forcing->den);
+    }
+    CAP("step_entry", state.qi); CAP("step_entry", state.ni); CAP("step_entry", state.t);
+    CAP("step_entry", state.qv); CAP("step_entry", forcing.p); CAP("step_entry", forcing.den);
+    if (scalar_capture && std::fprintf(scalar_capture, "%lu,%lu,%lu,%ld,0,%lld,%lld,meta,dtcld,f64,%llx\n", scalar_call, scalar_runtime_call, scalar_substep, scalar_b,
+        static_cast<long long>(state.qi.size(0)), static_cast<long long>(state.qi.size(1)),
+        [&]{ unsigned long long u; std::memcpy(&u, &dtcld, sizeof(u)); return u; }()) < 0)
+        throw std::runtime_error("scalar capture dt write failed");
+    if (scalar_capture) ++scalar_metadata_records;
+#endif
     // §53d: persistent ProgB bundle — callers thread the sed-era bundle in; standalone
     // callers (tests, kdm62d_step) get a fresh F:990-zeros bundle for this step.
     auto local_progb_ret = progb::make_zero_progb_state(state.qg);
@@ -1096,6 +1271,9 @@ CoordinatorState kdm62d_one_step(
         cold_params, dtcld
     );
 
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("pre_limit", cold_out.pidep); CAP("pre_limit", cold_out.pinud); CAP("pre_limit", cold_out.ninud);
+#endif
     // F1d: D5 enhanced melting — reads cold_out + the working state + rebuilt slopes.
     auto mf5 = melt_freeze_d5(
         working, forcing, pre_mf_view(pre2), cold_out,
@@ -1182,11 +1360,26 @@ CoordinatorState kdm62d_one_step(
     // postfreeze (= Fortran budget base) to isolate base-vs-budget for the structural qr/qs/qg residual.
     if (kdm6_dump_on) kdm6_dump_state_substep(working, "prestate");
 #endif
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("limited", scaled.cold.pinud); CAP("limited", scaled.cold.ninud); CAP("limited", scaled.cold.pidep);
+    CAP("limited", scaled.cold.psdep); CAP("limited", scaled.cold.pgdep);
+    CAP("limited", scaled.cold.psaut); CAP("limited", scaled.cold.praci);
+    CAP("limited", scaled.cold.psaci); CAP("limited", scaled.cold.pgaci);
+    CAP("limited", scaled.cold.piacw); CAP("limited", scaled.cold.pmulcs);
+    CAP("limited", scaled.cold.pmulcg); CAP("limited", scaled.cold.pmulrs); CAP("limited", scaled.cold.pmulrg);
+    CAP("limited", scaled.cold.nraci); CAP("limited", scaled.cold.nsaci); CAP("limited", scaled.cold.ngaci);
+    CAP("limited", scaled.cold.niacr); CAP("limited", scaled.cold.nsaut); CAP("limited", scaled.cold.nmulcs);
+    CAP("limited", scaled.cold.nmulcg); CAP("limited", scaled.cold.nmulrs); CAP("limited", scaled.cold.nmulrg);
+    CAP("state_in", working.qi); CAP("state_in", working.ni);
+#endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
         full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on,
         /*midpoint_trace=*/full_params.midpoint_trace
     );
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("state_out", new_state.qi); CAP("state_out", new_state.ni);
+#endif
     // BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = LAST ProgB, AFTER the
     // cold/warm graupel-volume adds L2643/L2751 — the reclamp that produces the OUTPUT bg).
     // Caps newly-formed COLD-PHASE graupel (snow→graupel sets brs at density 1000) to
@@ -1319,10 +1512,25 @@ CoordinatorState kdm62d_one_step(
     new_state = apply_threshold_cleanup(new_state);
 
     // F1i: DSD number limiters (lamda boundary snap + NRMAX/NCMAX caps).
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("dsd_in", new_state.qi); CAP("dsd_in", new_state.ni); CAP("dsd_in", forcing.dend);
+    if (scalar_capture) {
+        auto ncmin_gate = ncmin_for_slope.has_value()
+            ? ncmin_for_slope.value().to(new_state.nc.scalar_type())
+            : torch::full_like(new_state.nc, constants::NCMIN);
+        CAP("dsd_in", ncmin_gate);
+    }
+#endif
     new_state = apply_dsd_number_limiters(new_state, forcing.dend, /*qmin=*/1.0e-15,
                                           /*qcrmin=*/1.0e-9, /*ncmin_tensor=*/ncmin_for_slope);
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("dsd_out", new_state.qi); CAP("dsd_out", new_state.ni);
+#endif
 #ifdef KDM6_SUBSTEP_DUMP
     if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "final");
+#endif
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    scalar_capture_scope.finish();
 #endif
     return new_state;
 }

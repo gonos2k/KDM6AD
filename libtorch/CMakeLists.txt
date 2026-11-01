@@ -42,6 +42,10 @@ target_include_directories(kdm6
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+option(KDM6_NATIVE_SCALAR_CAPTURE "Enable value-only forensic scalar capture" OFF)
+if(KDM6_NATIVE_SCALAR_CAPTURE)
+    target_compile_definitions(kdm6 PRIVATE KDM6_NATIVE_SCALAR_CAPTURE)
+endif()
 target_link_libraries(kdm6 PUBLIC ${TORCH_LIBRARIES})
 target_compile_options(kdm6 PRIVATE -Wall -Wextra -Wpedantic)
 # kdm6_c shared lib에서 링크하려면 PIC 필요
@@ -65,6 +69,9 @@ target_include_directories(kdm6_c
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bridge>
         $<INSTALL_INTERFACE:include>
 )
+if(KDM6_NATIVE_SCALAR_CAPTURE)
+    target_compile_definitions(kdm6_c PRIVATE KDM6_NATIVE_SCALAR_CAPTURE KDM6_ENABLE_NATIVE_FP64_VALUE_BRIDGE)
+endif()
 target_link_libraries(kdm6_c PUBLIC kdm6)
 
 # ── PR3: symbol visibility / export allowlist (docs/PR3_VISIBILITY_DESIGN.md) ─
@@ -84,10 +91,21 @@ target_compile_definitions(kdm6_c PRIVATE KDM6_C_BUILD=1)
 
 if(APPLE)
     set(_kdm6_c_exports "${CMAKE_CURRENT_SOURCE_DIR}/bridge/kdm6_c.exports")
+    if(KDM6_NATIVE_SCALAR_CAPTURE)
+        file(READ "${_kdm6_c_exports}" _kdm6_capture_exports)
+        set(_kdm6_c_exports "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.exports")
+        file(WRITE "${_kdm6_c_exports}" "${_kdm6_capture_exports}\n_kdm6_moment_trace_context_c\n_kdm6_native_fp64_value_c\n")
+    endif()
     target_link_options(kdm6_c PRIVATE "-Wl,-exported_symbols_list,${_kdm6_c_exports}")
     set_target_properties(kdm6_c PROPERTIES LINK_DEPENDS "${_kdm6_c_exports}")
 elseif(UNIX)
     set(_kdm6_c_version_script "${CMAKE_CURRENT_SOURCE_DIR}/bridge/kdm6_c.map")
+    if(KDM6_NATIVE_SCALAR_CAPTURE)
+        file(READ "${_kdm6_c_version_script}" _kdm6_capture_map)
+        string(REPLACE "  local:" "    kdm6_moment_trace_context_c;\n    kdm6_native_fp64_value_c;\n  local:" _kdm6_capture_map "${_kdm6_capture_map}")
+        set(_kdm6_c_version_script "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.map")
+        file(WRITE "${_kdm6_c_version_script}" "${_kdm6_capture_map}")
+    endif()
     target_link_options(kdm6_c PRIVATE "-Wl,--version-script,${_kdm6_c_version_script}")
     set_target_properties(kdm6_c PROPERTIES LINK_DEPENDS "${_kdm6_c_version_script}")
 endif()
