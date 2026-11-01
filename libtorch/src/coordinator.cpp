@@ -121,27 +121,49 @@ struct ScalarCapture {
     unsigned long call_ = 0;
 };
 thread_local unsigned long scalar_call = 0;
+void capture_row(const char* stage, const char* name, long b, long k,
+                 int64_t B, int64_t K, const char* dtype, unsigned long long bits) {
+    if (scalar_records >= 2000000) throw std::runtime_error("scalar capture exceeds 2000000 records");
+    if (std::fprintf(scalar_capture, "%lu,%lu,%lu,%ld,%ld,%lld,%lld,%s,%s,%s,%llx\n",
+                     scalar_call, scalar_runtime_call, scalar_substep, b, k,
+                     static_cast<long long>(B), static_cast<long long>(K), stage, name, dtype, bits) < 0)
+        throw std::runtime_error("scalar capture write failed");
+    ++scalar_records;
+}
 void capture_scalar(const char* stage, const char* name, const torch::Tensor& value, bool all_b = false) {
     if (!scalar_capture) return;
     if (value.dim() != 2 || scalar_b >= value.size(0) || value.size(1) <= std::max(scalar_k1, scalar_k2))
         throw std::runtime_error(std::string("scalar capture incompatible shape: ") + name);
-    // Explicit diagnostic-only snapshot, retaining original dtype and raw bits.
-    auto t = value.detach().contiguous().cpu();
-    if (all_b && t.size(0) > 100000) throw std::runtime_error("scalar capture ingress exceeds 100000 columns");
+    const auto B = value.size(0), K = value.size(1);
+    if (all_b && B > 100000) throw std::runtime_error("scalar capture ingress exceeds 100000 columns");
+    // Only the all-column ingress capture copies the entire array. Other captures
+    // snapshot each selected cell without copying the full B*K tensor to the CPU.
+    auto detached = value.detach();
+    auto all = all_b ? detached.contiguous().cpu() : torch::Tensor();
     const long start = all_b ? 0 : scalar_b;
-    const long end = all_b ? t.size(0) : scalar_b + 1;
+    const long end = all_b ? B : scalar_b + 1;
     for (long b = start; b < end; ++b) for (long k : {scalar_k1, scalar_k2}) {
-        if (scalar_records >= 2000000) throw std::runtime_error("scalar capture exceeds 2000000 records");
-        auto idx = b * t.size(1) + k;
+        auto t = all_b ? all : detached.select(0, b).select(0, k).contiguous().cpu();
+        const auto idx = all_b ? b * K + k : 0;
         unsigned long long bits = 0; const char* dtype = nullptr;
         if (t.scalar_type() == torch::kFloat32) { uint32_t v; std::memcpy(&v, t.data_ptr<float>() + idx, 4); bits = v; dtype = "f32"; }
         else if (t.scalar_type() == torch::kFloat64) { uint64_t v; std::memcpy(&v, t.data_ptr<double>() + idx, 8); bits = v; dtype = "f64"; }
         else if (t.scalar_type() == torch::kBool) { bits = t.data_ptr<bool>()[idx] ? 1 : 0; dtype = "bool"; }
         else throw std::runtime_error(std::string("scalar capture unsupported dtype: ") + name);
-        if (std::fprintf(scalar_capture, "%lu,%lu,%lu,%ld,%ld,%lld,%lld,%s,%s,%s,%llx\n", scalar_call, scalar_runtime_call, scalar_substep, b, k, static_cast<long long>(t.size(0)), static_cast<long long>(t.size(1)), stage, name, dtype, bits) < 0)
-            throw std::runtime_error("scalar capture write failed");
-        ++scalar_records;
+        capture_row(stage, name, b, k, B, K, dtype, bits);
     }
+}
+template <typename T>
+void capture_constant(const char* stage, const char* name, T value, const torch::Tensor& shape) {
+    if (!scalar_capture) return;
+    if (shape.dim() != 2 || scalar_b >= shape.size(0) || shape.size(1) <= std::max(scalar_k1, scalar_k2))
+        throw std::runtime_error(std::string("scalar capture incompatible shape: ") + name);
+    static_assert(sizeof(T) == 4 || sizeof(T) == 8, "unsupported capture constant");
+    unsigned long long bits = 0;
+    if constexpr (sizeof(T) == 4) { uint32_t raw; std::memcpy(&raw, &value, 4); bits = raw; }
+    else { uint64_t raw; std::memcpy(&raw, &value, 8); bits = raw; }
+    for (long k : {scalar_k1, scalar_k2})
+        capture_row(stage, name, scalar_b, k, shape.size(0), shape.size(1), sizeof(T) == 4 ? "f32" : "f64", bits);
 }
 void capture_abi(const char* name, const float* values) {
     if (!scalar_capture || !values) return;
@@ -431,12 +453,25 @@ ColdPhaseOutputs cold_phase(
     CAP("c4_out", depsub.pidep); CAP("c4_out", depsub.psdep); CAP("c4_out", depsub.pgdep);
     CAP("c4_out", depsub.ifsat); CAP("c4_out", depsub.ice_complete_sublim);
 #endif
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("c5_in", state.qi); CAP("c5_in", state.ni); CAP("c5_in", state.t);
+    CAP("c5_in", forcing.dend); CAP("c5_in", pre.supcol);
+    capture_constant("c5_in", "dtcld", dtcld, state.qi);
+    capture_constant("c5_in", "params.deni", params.ice_aggregation.deni, state.qi);
+    capture_constant("c5_in", "params.di125", params.ice_aggregation.di125, state.qi);
+    capture_constant("c5_in", "params.t_split", params.ice_aggregation.t_split, state.qi);
+    capture_constant("c5_in", "params.qcrmin", params.ice_aggregation.qcrmin, state.qi);
+    capture_constant("c5_in", "fconst.pi_f32", static_cast<float>(fconst::get().pi), state.qi);
+#endif
     // C5: ice aggregation (no Inputs struct — takes tensors directly)
     auto agg = cold::ice_aggregation_torch(
         state.qi, state.ni, state.t, forcing.dend, pre.supcol,
         params.ice_aggregation, dtcld
     );
 
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    CAP("c5_out", agg.psaut); CAP("c5_out", agg.nsaut);
+#endif
     // C6: snow evap (warm-only; review3#1 uses work1_water)
     cold::SnowEvapInputs c6_in{
         state.qs, pre.rh_w, pre.supcol,
@@ -1285,6 +1320,70 @@ CoordinatorState kdm62d_one_step(
     // Fortran's combined budget+mass-balance loop (:2449-2756, gate `t.le.t0c`).
     // D1-D4 are already committed to `working`, and scale_rates only touches the
     // D5 fields (pseml/pgeml/nseml/ngeml), so passing mf5 is sufficient.
+#ifdef KDM6_NATIVE_SCALAR_CAPTURE
+    // Complete input inventory for the ordered limiter below; names preserve their owners.
+    CAP("limiter_in", working.qc);
+    CAP("limiter_in", working.qr);
+    CAP("limiter_in", working.qs);
+    CAP("limiter_in", working.qg);
+    CAP("limiter_in", working.qi);
+    CAP("limiter_in", working.nc);
+    CAP("limiter_in", working.nr);
+    CAP("limiter_in", working.ni);
+    CAP("limiter_in", warm_out.praut);
+    CAP("limiter_in", warm_out.nraut);
+    CAP("limiter_in", warm_out.pracw);
+    CAP("limiter_in", warm_out.nracw);
+    CAP("limiter_in", warm_out.nccol);
+    CAP("limiter_in", warm_out.nrcol);
+    CAP("limiter_in", warm_out.prevp);
+    CAP("limiter_in", cold_out.praci);
+    CAP("limiter_in", cold_out.piacr);
+    CAP("limiter_in", cold_out.psaci);
+    CAP("limiter_in", cold_out.pgaci);
+    CAP("limiter_in", cold_out.nraci);
+    CAP("limiter_in", cold_out.niacr);
+    CAP("limiter_in", cold_out.nsaci);
+    CAP("limiter_in", cold_out.ngaci);
+    CAP("limiter_in", cold_out.paacw_adj);
+    CAP("limiter_in", cold_out.naacw);
+    CAP("limiter_in", cold_out.piacw);
+    CAP("limiter_in", cold_out.niacw);
+    CAP("limiter_in", cold_out.pracs);
+    CAP("limiter_in", cold_out.psacr_adj);
+    CAP("limiter_in", cold_out.nsacr);
+    CAP("limiter_in", cold_out.pgacr_adj);
+    CAP("limiter_in", cold_out.ngacr);
+    CAP("limiter_in", cold_out.pmulcs);
+    CAP("limiter_in", cold_out.pmulrs);
+    CAP("limiter_in", cold_out.pmulcg);
+    CAP("limiter_in", cold_out.pmulrg);
+    CAP("limiter_in", cold_out.nmulcs);
+    CAP("limiter_in", cold_out.nmulrs);
+    CAP("limiter_in", cold_out.nmulcg);
+    CAP("limiter_in", cold_out.nmulrg);
+    CAP("limiter_in", cold_out.pinud);
+    CAP("limiter_in", cold_out.ninud);
+    CAP("limiter_in", cold_out.pidep);
+    CAP("limiter_in", cold_out.psdep);
+    CAP("limiter_in", cold_out.pgdep);
+    CAP("limiter_in", cold_out.psaut);
+    CAP("limiter_in", cold_out.nsaut);
+    CAP("limiter_in", cold_out.psevp);
+    CAP("limiter_in", cold_out.pgevp);
+    CAP("limiter_in", mf5.pseml);
+    CAP("limiter_in", mf5.nseml);
+    CAP("limiter_in", mf5.pgeml);
+    CAP("limiter_in", mf5.ngeml);
+    CAP("limiter_in", pre2.supcol);
+    capture_constant("limiter_in", "dtcld", dtcld, working.qc);
+    if (scalar_capture) {
+        const auto& floor = cold_params.cloud_water_riming.ncmin_tensor;
+        capture_constant("limiter_in", "ncmin_present", floor.has_value() ? 1.0 : 0.0, working.qc);
+        if (floor.has_value()) capture_scalar("limiter_in", "ncmin", floor.value());
+        else capture_constant("limiter_in", "ncmin", constants::NCMIN, working.qc);
+    }
+#endif
     auto scaled = scale_rates_for_conservation(
         working, pre2.supcol, warm_out, cold_out, mf5, dtcld,
         // per-cell ncmin floor for the cloud/ice NUMBER budgets (1:1 fix #18); same
