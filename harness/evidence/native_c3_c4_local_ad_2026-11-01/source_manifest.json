@@ -1,0 +1,17 @@
+{
+  "docs/NATIVE_C3_C4_C5_LOCAL_AD_20261101.md": "975fb3930d579551459b5cf80fc3aa87451ea9d92a7f8fb02b1e189e310f8980",
+  "harness/evidence/native_c3_c4_dsd_call_2026-11-01/source_manifest.json": "2061d325942a6b10fe04ac5b6005ab56fa7e8a20033f150bfcf91174097fa714",
+  "harness/evidence/native_c3_c4_dsd_call_2026-11-01/verify_packet.py": "4915257b5f5a7e51a20dd6bc64f78b4a10def86f4f0e161104cf187d43e81686",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/README.md": "8d47776d64d8f5e75fa3a60192684c65ab8da30c4fe73602d17d9e3de6573d4e",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/c5_replay.py": "fd1a2f15c8050699d804533fe5cf8e30f77d6a3a03108003e9c1a0583a76b0a7",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/c5_results.json": "e0b0db80493058b69342e0522c308e47c765596a3cc0c42efd72b13c66485577",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/replay.py": "79df924cf32f963b8325a214a7cb91589ebcd96f3d16470d65a0dcfbcd54ade1",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/results.json": "33df9715551c3959ed1815bae7cc49e904b15dc87b88bc4d8d817c723ae884ac",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/test_c5_replay.py": "c8303239f7cde3d1a6aa95c3170fbd4b13dd4257264eb757d394cace13d44254",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/test_replay.py": "d05f32adb1eff9fec62ff79c57a88540711ad01e5e11831e1c65fd656c9d1d26",
+  "harness/evidence/native_c3_c4_local_ad_2026-11-01/test_results.py": "983d9b9715b837042b9e6df62c7786ea996d7ace4190e7712097a259fce0abe9",
+  "oracle/kdm6/cold.py": "7114b5f75d4badfdf1f979c5148b42c5f7e0c00a06b5c958346deb8dacac3a59",
+  "oracle/kdm6/constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+  "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+  "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd"
+}
