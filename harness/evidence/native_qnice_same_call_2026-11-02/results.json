@@ -1,0 +1,70 @@
+{
+  "schema": "kdm6.native_qnice_same_call_coordinate.v1",
+  "parent_packet_sha256": "cb73fc3c6c2b30c080bde622b88db097e933e7ea88e56d2b9583a46f394d33ba",
+  "parent_selected_rows": 312,
+  "cells": {
+    "21": {
+      "native_ijk_1based": [
+        164,
+        242,
+        21
+      ],
+      "host_input_raw_hex": {
+        "Q": "3aaca436",
+        "DEN": "3efb86c6",
+        "QI": "33ba237e",
+        "NN": "4d8b99bc",
+        "NC": "00000000",
+        "NI": "3e0cfabb",
+        "NR": "00000000"
+      },
+      "host_output_ni_raw_hex": "4222e8d3",
+      "legacy_ingress_ni": 0.1376752108335495,
+      "legacy_ingress_den": 0.49126261472702026,
+      "converted_ingress_qv": 0.0013171497266739607,
+      "dsd_output_ni": 40.72736922974132,
+      "conditional_dry_number": {
+        "source_inferred_native_dry_den": 0.49126261472702026,
+        "generic_v2_density_from_den_and_qv": 0.49061639947055585,
+        "host_ni_times_native_den": 0.06763468405718331,
+        "host_ni_times_generic_v2_density": 0.06754571623550572,
+        "generic_to_native_density_ratio": 0.9986845828746331
+      }
+    },
+    "23": {
+      "native_ijk_1based": [
+        164,
+        242,
+        23
+      ],
+      "host_input_raw_hex": {
+        "Q": "3a21c943",
+        "DEN": "3ed5bd11",
+        "QI": "352dcf36",
+        "NN": "4d45ea8a",
+        "NC": "00000000",
+        "NI": "47e3f7e9",
+        "NR": "00000000"
+      },
+      "host_output_ni_raw_hex": "47e9f551",
+      "legacy_ingress_ni": 116719.8203125,
+      "legacy_ingress_den": 0.41745808720588684,
+      "converted_ingress_qv": 0.0006171652930788696,
+      "dsd_output_ni": 119786.63415268344,
+      "conditional_dry_number": {
+        "source_inferred_native_dry_den": 0.41745808720588684,
+        "generic_v2_density_from_den_and_qv": 0.41720060547193805,
+        "host_ni_times_native_den": 48725.63292667107,
+        "host_ni_times_generic_v2_density": 48695.57970495081,
+        "generic_to_native_density_ratio": 0.9993832153649911
+      }
+    }
+  },
+  "executed_coordinate": "legacy raw NI at ingress; dry_number opt-in not executed",
+  "physical_unit_status": "INCONCLUSIVE",
+  "limits": [
+    "The host trace has Q, DEN and NI but no same-call AL/ALB or ABI Q word.",
+    "Current private host source is a source-level density inference, not a historical build attestation.",
+    "Neither conditional dry-number multiplier certifies the original QNICE payload basis."
+  ]
+}
