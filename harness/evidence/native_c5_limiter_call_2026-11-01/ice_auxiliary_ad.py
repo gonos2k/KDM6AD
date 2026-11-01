@@ -56,11 +56,18 @@ def branch_signature(audit):
 
 def ice_c4_audit(audit):
     producer = audit["producers"]
+    ice_phase = producer["signature"]["c4_phases"][0]
+    if not ice_phase[1]:
+        raise ValueError("C4 ice branch not entered")
+    raw = producer["margins"]["c4_ice_raw_sign"]
+    # Sublimation inserts the available-ice cap at candidate 1. Its
+    # half-saturation cap is candidate 2; deposition uses candidate 1.
+    half_margin = "c4_ice_cap_2_0" if raw < 0 else "c4_ice_cap_1_0"
     return {
-        "raw_pidep": producer["margins"]["c4_ice_raw_sign"],
-        "half_cap_minus_raw": producer["margins"]["c4_ice_cap_1_0"],
+        "raw_pidep": raw,
+        "half_cap_minus_raw": producer["margins"][half_margin],
         "selected_pidep": producer["selected_rates"]["pidep"],
-        "cap_winner": producer["signature"]["c4_phases"][0][3],
+        "cap_winner": ice_phase[3],
     }
 
 

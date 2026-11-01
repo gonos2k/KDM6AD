@@ -96,6 +96,54 @@ class IceAuxiliaryAD(unittest.TestCase):
         self.assertEqual(cells[20][("c3_in", "pre.supcol")]["k_zero"], "20")
         self.assertEqual(cells[22][("c3_in", "pre.supcol")]["k_zero"], "22")
 
+    def test_cli_half_saturation_gap_for_both_rate_signs_and_endpoints(self):
+        packet_path = Path(module.ROOT) / "selected_packet.json"
+        process = subprocess.run(
+            [sys.executable, "-m", module.__name__, str(packet_path),
+             "--sha256", verifier.PACKET_SHA256],
+            cwd=module.ROOT.parents[2], capture_output=True, text=True, check=True)
+        report = json.loads(process.stdout)
+        for level, sign in ((20, -1), (22, 1)):
+            rows = self.cells[level]
+            sup = module.read(rows, "c3_in", "pre.supsat")
+            dt = module.read(rows, "c5_in", "dtcld")
+            half = 0.5 * (sup / dt)  # same source order as the C4 candidate
+            entry = report[str(level)]
+            audits = [entry["baseline_c4_audit"]]
+            for direction in entry["directions"].values():
+                audits += [direction["plus_c4_audit"],
+                           direction["minus_c4_audit"]]
+            self.assertEqual(len(audits), 5)
+            for audit in audits:
+                with self.subTest(level=level, raw=audit["raw_pidep"]):
+                    self.assertEqual((audit["raw_pidep"] > 0) -
+                                     (audit["raw_pidep"] < 0), sign)
+                    self.assertEqual(audit["half_cap_minus_raw"],
+                                     half - audit["raw_pidep"])
+            if level == 20:
+                q = module.read(rows, "c4_in", "state.qi")
+                available_ice_gap = -q / dt - audits[0]["raw_pidep"]
+                self.assertNotEqual(audits[0]["half_cap_minus_raw"],
+                                    available_ice_gap)
+                self.assertAlmostEqual(audits[0]["half_cap_minus_raw"],
+                                       -4.144285872186099e-7, delta=1e-20)
+            else:
+                self.assertAlmostEqual(audits[0]["half_cap_minus_raw"],
+                                       9.864846405808e-7, delta=1e-20)
+
+    def test_zero_raw_and_inactive_ice_audit_contract(self):
+        producer = {
+            "signature": {"c4_phases": [("ice", True, False, 0, False)]},
+            "margins": {"c4_ice_raw_sign": 0.0, "c4_ice_cap_1_0": 2.0},
+            "selected_rates": {"pidep": 0.0},
+        }
+        self.assertEqual(module.ice_c4_audit({"producers": producer})[
+            "half_cap_minus_raw"], 2.0)
+        producer["signature"]["c4_phases"] = [("ice", False, False, None, False)]
+        producer["margins"].clear()
+        with self.assertRaisesRegex(ValueError, "C4 ice branch not entered"):
+            module.ice_c4_audit({"producers": producer})
+
 
 if __name__ == "__main__":
     unittest.main()
