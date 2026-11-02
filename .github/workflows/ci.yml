@@ -31,7 +31,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, research/east_ice_radius_floor_packet]
   workflow_dispatch:
 
 # Superseded PR runs have no remaining merge evidence value. Keep every main run.

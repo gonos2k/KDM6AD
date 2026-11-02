@@ -10,7 +10,10 @@ def overlay_cpp_source(source: str) -> str:
     if marker in source:
         raise ValueError("moment trace overlay is already present")
     begin = source.index('extern "C" int kdm6_native_fp64_value_c(')
-    end = source.index("\n#endif", begin)
+    # The value bridge now contains an inner KDM6_NATIVE_SCALAR_CAPTURE guard.
+    # The first #endif after the entry no longer closes the function; stop at
+    # its top-level brace followed by the FP64 bridge guard instead.
+    end = source.index("\n}\n#endif\n", begin)
     body = source[begin:end]
 
     input_anchor = "        auto params = kdm6::make_parameters(param_grad_flags);"

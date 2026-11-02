@@ -7,6 +7,7 @@ import math
 
 import numpy as np
 import pytest
+from harness.historical_ice_sources import historical_manifest_source
 
 E = Path(__file__).parents[1] / "evidence/actual_qr_transport_2026-10-24"
 
@@ -175,7 +176,8 @@ def test_executed_source_and_artifact_manifest():
                 "harness/run_native_candidate_observation.py": "run_native_candidate_observation.py.txt",
                 "harness/tests/test_actual_qr_evidence.py": "test_actual_qr_evidence.py.txt",
             }
-            source = root / path
+            source = (historical_manifest_source(path, digest)
+                      if name == "source_sha256" else root / path)
             if name == "source_sha256" and path in archived:
                 source = (
                     root
