@@ -42,3 +42,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[native-c5-source-pins-and-ice-auxiliary-2026-11-01]] — Historical C3/C5 source snapshots, shared-input bit checks, and conditional ice auxiliary response at two native levels.
 - [[native-qnice-same-call-coordinate-2026-11-02]] — Captured QNICE/DEN/QV numeric handoff and the distinct native versus generic dry-number coordinate formulas.
 - [[native-qnice-pre-c3-endpoint-2026-11-02]] — Pre-C3 NI net intervals and later saved endpoint density words, with same-call and budget limits.
+- [[synthetic-qnice-applied-replay-2026-11-02]] — Synthetic raw-word NI replay separates state arithmetic, interface mismatch and column change.

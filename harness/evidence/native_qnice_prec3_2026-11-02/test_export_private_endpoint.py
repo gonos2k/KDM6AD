@@ -1,6 +1,7 @@
 """Reject ambiguous time, axis and scaling in the private extractor."""
 
 import importlib
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -95,6 +96,18 @@ class PrivateEndpointSelection(unittest.TestCase):
             with patch.object(module, "EXPECTED_ENDPOINT_SHA256", module.digest(source)):
                 result = module.export(source)
                 self.assertEqual(result["cells"], expected)
+                source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+                self.assertEqual(
+                    {name: result[name] for name in
+                     ("schema", "endpoint_sha256", "native_ij_1based",
+                      "saved_time", "timing")},
+                    {
+                        "schema": "kdm6.native_qnice_endpoint_words.v1",
+                        "endpoint_sha256": source_hash,
+                        "native_ij_1based": [164, 242],
+                        "saved_time": "2025-07-19_00:01:00",
+                        "timing": "saved 00:01:00 endpoint, not the microphysics call",
+                    })
                 with patch.object(sys, "argv", ["export_private_endpoint",
                                                "--endpoint", str(source),
                                                "--out", str(output)]):
