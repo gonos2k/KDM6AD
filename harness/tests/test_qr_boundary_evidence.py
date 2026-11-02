@@ -7,6 +7,7 @@ import json
 import math
 import numpy as np
 import pytest
+from harness.historical_ice_sources import historical_manifest_source
 
 E = Path(__file__).parents[1] / "evidence/qr_boundary_attribution_2026-10-24"
 
@@ -129,7 +130,8 @@ def test_evidence_and_executed_source_hashes():
                 "harness/analyze_rain_boundary_trace.py": "analyze_rain_boundary_trace.py.txt",
                 "harness/tests/test_qr_boundary_evidence.py": "test_qr_boundary_evidence.py.txt",
             }
-            source = root / path
+            source = (historical_manifest_source(path, expected)
+                      if group == "source_sha256" else root / path)
             if group == "source_sha256" and path in archived:
                 source = (
                     root

@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
 
 import pytest
 
 from harness import make_same_call_budget_overlay as generator
+from harness.historical_ice_sources import checked_factorial_root
 
 
 def source_runtime():
-    return Path(__file__).parents[2] / "libtorch/src/runtime.cpp"
+    return checked_factorial_root() / "src/runtime.cpp"
 
 
 def test_generator_instruments_pinned_runtime_only_and_records_its_hash(tmp_path, monkeypatch):
