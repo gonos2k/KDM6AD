@@ -7,6 +7,7 @@ import json
 import numpy as np
 
 from harness.run_native_candidate_observation import direction_vectors, EXPERIMENT
+from harness.historical_ice_sources import historical_manifest_source
 
 ROOT = Path(__file__).resolve().parents[2]
 E = ROOT / "harness/evidence/saved_candidate_attribution_2026-10-24"
@@ -58,6 +59,8 @@ def test_saved_analysis_source_and_artifact_pins():
     for group in ["source_sha256", "input_sha256", "artifact_sha256"]:
         assert manifest[group]
         for path, digest in manifest[group].items():
-            assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, (
+            source = (historical_manifest_source(path, digest)
+                      if group == "source_sha256" else ROOT / path)
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == digest, (
                 path
             )
