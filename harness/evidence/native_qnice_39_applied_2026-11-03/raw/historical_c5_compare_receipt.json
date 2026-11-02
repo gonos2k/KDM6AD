@@ -1,0 +1,16 @@
+{
+  "schema": "kdm6.native_qnice_39_historical_endpoint_comparison.v1",
+  "comparison_tool": "harness/strict_bitwise_nc.py",
+  "comparison_tool_sha256": "e073e1a7146b28498eff78a2673cc7302059d407cd6f89b15d71907db0dd9177",
+  "historical_c5_endpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+  "new_off_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "stdout_sha256": "9d585300e23994523dfaed180098e2a337725c60f873775dc754c6d05a22828a",
+  "exit_code": 1,
+  "common_variables": 652,
+  "bitwise_matching_variables": 650,
+  "differing_variables": {
+    "QNCLOUD": 15,
+    "RE_CLOUD": 1
+  },
+  "interpretation": "private endpoint-byte comparison; new and historical executables have distinct source/build lineage"
+}

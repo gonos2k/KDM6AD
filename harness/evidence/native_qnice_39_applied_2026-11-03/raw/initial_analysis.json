@@ -1,0 +1,110 @@
+{
+  "arithmetic_closure_residual_ni_dz": 2.6382586313862565e-11,
+  "attributed_loss_ni_dz": -2.588552482710273e-12,
+  "bottom_out_ni_dz": 0.0,
+  "column_change_ni_dz": -2.3794033831152292e-11,
+  "delz_floor_active_levels": 0,
+  "departure_cap_active_levels": 0,
+  "gate_active_levels": 39,
+  "host_density_f32_words_equal": 39,
+  "host_sha256": "4bc95ebe84551eb360b97975b71cc7af21429fff5143b28fbb808e29b702f5ca",
+  "host_to_runtime_den_qv_ni_words_equal": 117,
+  "ice_substeps": 1,
+  "interface_difference_max_abs_ni_dz": 3.0448629728674348e-12,
+  "interface_difference_ni_dz": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.5790320440078887e-15,
+    4.54830617613311e-13,
+    -3.0448629728674348e-12,
+    -9.915950015710077e-17,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "levels": 39,
+  "native_sha256": "27b89eb5b38b88174f55188be7d724cd74df8e6577c034a044581c78b3dff3bf",
+  "numerical_coordinate": "NI * raw DELZ; QNICE physical basis unresolved",
+  "physical_conservation_certified": false,
+  "pre_c3_ni_changes": {
+    "d1_melt": {
+      "changed_native_levels_1based": [],
+      "weighted_ni_dz_change": 0.0
+    },
+    "d2_d3_d4": {
+      "changed_native_levels_1based": [],
+      "weighted_ni_dz_change": 0.0
+    },
+    "homogeneous_freeze": {
+      "changed_native_levels_1based": [],
+      "weighted_ni_dz_change": 0.0
+    },
+    "snap_a": {
+      "changed_native_levels_1based": [
+        25,
+        20,
+        19,
+        18,
+        17,
+        16
+      ],
+      "weighted_ni_dz_change": 49027.35812796282
+    },
+    "snap_b": {
+      "changed_native_levels_1based": [],
+      "weighted_ni_dz_change": 0.0
+    }
+  },
+  "pre_c3_stage_handoffs_raw_words_equal": 234,
+  "schema": "kdm6.native_qnice_39_private_replay.v1",
+  "sedimentation_state_and_fall_raw_words_equal": true,
+  "selected_levels": {
+    "21": {
+      "applied_in_ni": 40.591479729160824,
+      "applied_out_ni": 0.0017857102530552098,
+      "delz": 742.85888671875,
+      "ni_after": 40.72736922974132,
+      "ni_before": 0.1376752108335495,
+      "realized_delta_ni": 40.58969401890777,
+      "top_first_k_zero": 18
+    },
+    "23": {
+      "applied_in_ni": 1.10466000736014,
+      "applied_out_ni": 172.77053588541446,
+      "delz": 729.7373046875,
+      "ni_after": 116548.15443662195,
+      "ni_before": 116719.8203125,
+      "realized_delta_ni": -171.66587587805407,
+      "top_first_k_zero": 16
+    }
+  }
+}
