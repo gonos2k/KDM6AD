@@ -24,5 +24,11 @@ The next capture must bind same-call AL/ALB/DEN/QV/QNICE and ordered applied
 NI changes to the actual instrumented host build. Physical QNICE units and a
 full-column applied number budget remain inconclusive.
 
+The [capture contract](../../docs/NATIVE_QNICE_APPLIED_CAPTURE_CONTRACT_20261102.md)
+requires entry clamp, full-column applied sedimentation departure and arrival,
+number rewrites, branch identity, source/build linkage and same-variant
+instrumentation noninterference. The current storage headroom does not yet
+support a safely attributed paired host run.
+
 See [selected evidence and recipe](../../harness/evidence/native_qnice_prec3_2026-11-02/README.md)
 and the [QNICE unit audit](../../docs/NATIVE_QNICE_UNIT_COORDINATE_AUDIT_20261031.md).
