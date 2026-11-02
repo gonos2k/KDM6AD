@@ -1,6 +1,7 @@
 name: oracle-ci
 
-# Least-privilege: read-only; this job only runs the oracle pytest.
+# Least-privilege: read-only; this job runs the portable oracle and selected
+# Torch-dependent public evidence tests.
 permissions:
   contents: read
 
@@ -23,6 +24,11 @@ on:
     branches: [main]
     paths:
       - 'oracle/**'
+      - 'harness/evidence/native_qnice_same_call_2026-11-02/**'
+      - 'harness/evidence/native_qnice_prec3_2026-11-02/**'
+      - 'harness/evidence/native_qnice_applied_schema_2026-11-02/**'
+      - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
+      - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - '.github/workflows/oracle-ci.yml'
   # No paths filter on pull_request: "oracle pytest (f64 reference)" is a
   # REQUIRED status check in the main ruleset, so it must REPORT on every PR
@@ -30,9 +36,9 @@ on:
   # forever — GitHub waits for a required context that never runs, and a
   # manual workflow_dispatch run is not credited to the PR merge-box. The job
   # is a ~1-2 min pure-Python pytest; running it on all PRs is cheap and makes
-  # the gate always satisfiable. (push stays oracle-scoped — post-merge only.)
+  # the gate always satisfiable. (push stays oracle/evidence-scoped — post-merge only.)
   pull_request:
-    branches: [main]
+    branches: [main, research/east_ice_radius_floor_packet]
   workflow_dispatch:
 
 # Superseded PR runs have no remaining merge evidence value. Keep every main run.
@@ -82,3 +88,21 @@ jobs:
           harness/tests/test_run_native_satellite_case.py
           harness/tests/test_native_satellite_replay.py
           harness/tests/test_prepare_native_satellite_case.py
+
+      # These public evidence suites live outside harness/tests and depend
+      # on Torch + NumPy + netCDF4. Keep separate discovery processes because
+      # all three directories contain test_replay.py. No private host/RTTOV is used.
+      - name: unittest (QNICE evidence, normal)
+        run: |
+          python -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
+          python -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
+          python -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v
+
+      # The tests launch child Python CLIs. Propagate optimization to them too.
+      - name: unittest (QNICE evidence, optimized)
+        env:
+          PYTHONOPTIMIZE: '1'
+        run: |
+          python -O -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
+          python -O -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
+          python -O -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v

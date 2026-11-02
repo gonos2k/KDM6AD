@@ -25,7 +25,7 @@ on:
   # probe builds. Reporting on every PR costs little and is the whole reason an
   # advisory job is worth having. (push stays harness-scoped -- post-merge only.)
   pull_request:
-    branches: [main]
+    branches: [main, research/east_ice_radius_floor_packet]
   workflow_dispatch:
 
 # Superseded PR runs have no remaining merge evidence value. Keep every main run.
