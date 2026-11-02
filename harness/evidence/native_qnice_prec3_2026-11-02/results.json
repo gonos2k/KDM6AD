@@ -1,0 +1,47 @@
+{
+  "schema": "kdm6.native_qnice_prec3_endpoints.v1",
+  "parent_packet_sha256": "cb73fc3c6c2b30c080bde622b88db097e933e7ea88e56d2b9583a46f394d33ba",
+  "endpoint_words_sha256": "84c5c44ccac4980697dfccd1e971f10c7799b3194302490d551d509f35e4e631",
+  "cells": {
+    "21": {
+      "ingress_ni": 0.1376752108335495,
+      "post_sed_step_entry_ni": 40.72736922974132,
+      "c3_input_ni": 40.72736922974132,
+      "final_dsd_ni": 40.72736922974132,
+      "net_ingress_to_step": 40.58969401890777,
+      "net_step_to_c3": 0.0,
+      "net_c3_to_final": 0.0,
+      "endpoint_words": {
+        "AL": "3dd16af0",
+        "ALB": "3ff776e9",
+        "QNICE": "4222e8d3",
+        "QVAPOR": "3aaca660",
+        "RHO": "3efb86c6"
+      },
+      "endpoint_source_order_rho": 0.49126261472702026,
+      "endpoint_rho_equals_ingress_den_bits": true,
+      "endpoint_qv_equals_ingress_qv_bits": false
+    },
+    "23": {
+      "ingress_ni": 116719.8203125,
+      "post_sed_step_entry_ni": 116548.15443662195,
+      "c3_input_ni": 116548.15443662195,
+      "final_dsd_ni": 119786.63415268344,
+      "net_ingress_to_step": -171.66587587805407,
+      "net_step_to_c3": 0.0,
+      "net_c3_to_final": 3238.479716061498,
+      "endpoint_words": {
+        "AL": "3e008820",
+        "ALB": "4011468c",
+        "QNICE": "47e9f551",
+        "QVAPOR": "3a21ba72",
+        "RHO": "3ed5bd11"
+      },
+      "endpoint_source_order_rho": 0.41745808720588684,
+      "endpoint_rho_equals_ingress_den_bits": true,
+      "endpoint_qv_equals_ingress_qv_bits": false
+    }
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "interpretation": "Selected numeric net intervals and later saved endpoint only; no applied process budget or same-call AL/ALB capture."
+}

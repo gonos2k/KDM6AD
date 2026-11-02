@@ -41,3 +41,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[review388389-local-resolution-2026-10-08]] — Local metadata correction and bounded termination/RTTOV warning diagnosis; underlying native/physical correspondence remains open.
 - [[native-c5-source-pins-and-ice-auxiliary-2026-11-01]] — Historical C3/C5 source snapshots, shared-input bit checks, and conditional ice auxiliary response at two native levels.
 - [[native-qnice-same-call-coordinate-2026-11-02]] — Captured QNICE/DEN/QV numeric handoff and the distinct native versus generic dry-number coordinate formulas.
+- [[native-qnice-pre-c3-endpoint-2026-11-02]] — Pre-C3 NI net intervals and later saved endpoint density words, with same-call and budget limits.
