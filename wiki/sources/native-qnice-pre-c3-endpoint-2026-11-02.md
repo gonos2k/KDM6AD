@@ -29,6 +29,9 @@ requires entry clamp, full-column applied sedimentation departure and arrival,
 number rewrites, branch identity, source/build linkage and same-variant
 instrumentation noninterference. The current storage headroom does not yet
 support a safely attributed paired host run.
+The [synthetic applied-NI replay](../../harness/evidence/native_qnice_applied_schema_2026-11-02/README.md)
+keeps state replay residual, interface mismatch and column change distinct;
+its source is the public Python substep, not the native C++ call.
 
 See [selected evidence and recipe](../../harness/evidence/native_qnice_prec3_2026-11-02/README.md)
 and the [QNICE unit audit](../../docs/NATIVE_QNICE_UNIT_COORDINATE_AUDIT_20261031.md).
