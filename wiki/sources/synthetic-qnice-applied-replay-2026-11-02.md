@@ -25,5 +25,11 @@ requires identity, geometry and substep continuity. The `NI×dz` measure is a
 numerical-coordinate diagnostic. This is **not** a native C++ capture, a
 physical particle budget, or QNICE unit certification.
 
+Exact-type identity checks now reject Boolean/fractional indices and blank
+case/call names even when hashes are recomputed. A one-layer f32 example
+starts at NI `1024` and schedules a `2^-16` debit; the stored state remains
+1024, so raw-bit replay succeeds while aggregate closure is `−2^-16`. The
+same f64 example records the debit in state and has zero closure.
+
 See [synthetic packet and replay](../../harness/evidence/native_qnice_applied_schema_2026-11-02/README.md)
 and [native capture contract](../../docs/NATIVE_QNICE_APPLIED_CAPTURE_CONTRACT_20261102.md).

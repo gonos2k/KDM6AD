@@ -209,14 +209,66 @@ class AppliedNumberReplay(unittest.TestCase):
         self.assertEqual(packet["dtype"], "f32")
         self.assertTrue(result["substeps"][0]["state_replay_raw_bits_equal"])
 
+    def test_state_roundoff_can_leave_nonzero_closure(self):
+        debit = 2.0 ** -16
+        for dtype, loss, closure in ((torch.float32, 0.0, -debit),
+                                     (torch.float64, debit, 0.0)):
+            ledger = IceNumberAppliedLedger()
+            run([1024], [2.0 ** -26], [1], dtype=dtype, ledger=ledger)
+            packet, result = packet_from(ledger, "small_debit", [[2.0 ** -26]])
+            step = result["substeps"][0]
+            self.assertTrue(step["state_replay_raw_bits_equal"])
+            self.assertEqual(step["state_replay_max_abs_residual"], 0.0)
+            self.assertEqual(step["top_scheduled_debit_before_floor"], debit)
+            self.assertEqual(step["column_loss_dz"], loss)
+            self.assertEqual(step["closure_residual_dz"], closure)
+            self.assertEqual(step["interface_difference_dz"], [])
+            self.assertEqual(packet["substeps"][0]["fields"]["before"][0] ==
+                             packet["substeps"][0]["fields"]["after"][0],
+                             dtype == torch.float32)
+
+    def test_cli_rejects_rehashed_malformed_identifiers(self):
+        source = json.loads((ROOT / "sample_arrival_cap.json").read_bytes())
+        cases = (
+            (lambda p: p["call_identity"].update(column=False), "two_layer_arrival_cap", 0),
+            (lambda p: p["substeps"][0].update(n_current=True), "two_layer_arrival_cap", 0),
+            (lambda p: p.update(case_id=""), "", 0),
+            (lambda p: p["call_identity"].update(call=""), "two_layer_arrival_cap", 0),
+            (lambda p: p["call_identity"].update(column=-1), "two_layer_arrival_cap", -1),
+        )
+        for mutate, case_id, column in cases:
+            packet = copy.deepcopy(source)
+            mutate(packet)
+            raw = module.canonical_bytes(packet)
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "malformed.json"
+                path.write_bytes(raw)
+                command = [sys.executable, "-m", module.__name__, str(path),
+                           "--sha256", hashlib.sha256(raw).hexdigest(),
+                           "--case-id", case_id,
+                           "--call", packet["call_identity"]["call"],
+                           "--column", str(column), "--levels", "2",
+                           "--substeps", "1"]
+                completed = subprocess.run(command, cwd=ROOT.parents[2],
+                                           capture_output=True, text=True,
+                                           check=False)
+            with self.subTest(case_id=case_id, column=column, mutate=mutate):
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn("INVALID:", completed.stderr)
+
     def test_rehashed_semantic_mutations_rejected(self):
         packet = json.loads((ROOT / "sample_arrival_cap.json").read_bytes())
         changes = [
             lambda p: p.update(dtype="f32"),
             lambda p: p["call_identity"].update(call="other-call"),
+            lambda p: p["call_identity"].update(column=False),
+            lambda p: p["call_identity"].update(column=0.0),
             lambda p: p["substeps"][0].update(n_current=2),
+            lambda p: p["substeps"][0].update(n_current=True),
+            lambda p: p["substeps"][0].update(n_current=1.0),
             lambda p: p["substeps"][0].update(mstep=module.word(101.0, "f64")),
             lambda p: p.update(K=1),
+            lambda p: p.update(K=2.0),
             lambda p: p.update(substeps=[]),
             lambda p: p["substeps"][0]["fields"]["after"].pop(),
             lambda p: p["substeps"][0]["fields"]["after"].__setitem__(0, "0000000000000000"),
@@ -233,6 +285,20 @@ class AppliedNumberReplay(unittest.TestCase):
                 module.replay(altered, expected_case_id="two_layer_arrival_cap",
                               expected_identity=IDENTITY,
                               expected_levels=2, expected_substeps=1)
+
+    def test_serializer_rejects_the_same_bad_identity(self):
+        ledger = IceNumberAppliedLedger()
+        run([10, 0], [0.8, 0], [1, 1], ledger=ledger)
+        workn = [torch.tensor([[0.8, 0.0]], dtype=torch.float64)]
+        for case_id, identity in (("", IDENTITY),
+                                  ("   ", IDENTITY),
+                                  ("valid", {**IDENTITY, "call": " "}),
+                                  ("valid", {**IDENTITY, "column": False}),
+                                  ("valid", {**IDENTITY, "column": -1})):
+            with self.subTest(case_id=case_id, identity=identity):
+                with self.assertRaises(ValueError):
+                    module.serialize(ledger.records, case_id=case_id,
+                                     call_identity=identity, workn_by_step=workn)
 
 
 if __name__ == "__main__":
