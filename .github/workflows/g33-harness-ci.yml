@@ -79,7 +79,11 @@ jobs:
           harness/
 
       - name: pytest (harness/tests — container, comparator, overlay, probes)
-        run: python -m pytest -rs -q harness/tests
+        # This suite intentionally has no Torch. The ice-chain applied-budget
+        # test imports Torch at collection and runs in oracle-ci instead.
+        run: >
+          python -m pytest -rs -q harness/tests
+          --ignore=harness/tests/test_ice_chain_applied_budget.py
 
       - name: overlay 4-check (all instrumented TUs)
         run: python harness/g33_overlay/verify_overlay.py
