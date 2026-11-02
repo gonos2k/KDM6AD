@@ -1,0 +1,455 @@
+#!/usr/bin/env python3
+"""Pinned, isolated one-step native QNICE applied-ledger run."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+
+ROOT = Path(__file__).resolve().parent
+CANONICAL = Path("/Users/yhlee/KDM6AD-k")
+PLAN = CANONICAL / "host/research_evidence/native_qnc_flux_trace_20261026/plans/pr457_v5/experiment_plan.json"
+PLAN_SHA = "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7"
+HISTORICAL_C5_ENDPOINT_SHA = "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6"
+CPP_RECEIPT_SHA = "d6c660f0bcfdb6bf3913c8498f8cb00af47b95e26673cecce7a6a54ec792a780"
+HOST_RECEIPT_SHA = "4fba9898dfd807b9407af8ede82a5e72ded0723cb0da2b7d6145f131ed05031d"
+HOST_RETRY_RECEIPT_SHA = "be85f2dee2d40ebd658c5088cb9302ffb37d630be9346769be957e7b57864aa4"
+CPP_ATTEMPT2_RECEIPT_SHA = "047520449cc58654bb004c3e529ad986da5073d000c305cd917c941dd16ec951"
+HOST_ATTEMPT3_RECEIPT_SHA = "408db0c4933750446a7630d9d1e59ee30eaf5701a159a1aa57fff5bfe96b9882"
+CPP_ATTEMPT4_RECEIPT_SHA = "c8aa9e5b2e7bd6634d1ab91dc131dd7b37f0e147d638de6201529c6130bd3cd4"
+HOST_ATTEMPT5_RECEIPT_SHA = "62e807021aa842c30b49c3122d850542e948bda70e028c68665f9b425dbe029f"
+
+
+def digest(path: Path | str) -> str:
+    h = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify_cpp_build(receipt_path: Path, library: Path, worktree: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if receipt.get("schema") != "kdm6.native_qnice_39_cpp_build.v1":
+        raise ValueError("unexpected C++ build receipt schema")
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=worktree, text=True).strip()
+    if commit != receipt["public_worktree_commit"]:
+        raise ValueError("public checkout differs from C++ build receipt")
+    expected_dso = receipt["dso_sha256"]
+    for path in (library, Path(receipt["dso_path"]), Path(receipt["staged_dso_path"])):
+        if digest(path) != expected_dso:
+            raise ValueError("C++ build DSO identity differs: " + str(path))
+    if (receipt["staged_dso_sha256"] != expected_dso or
+            receipt["staged_dso_byte_identical_to_build"] is not True or
+            digest(ROOT / "cpp_build/build/libkdm6.a") != receipt["archive_sha256"] or
+            digest(receipt["parent_c5_receipt_path"]) != receipt["parent_c5_receipt_sha256"]):
+        raise ValueError("C++ archive/staging/parent receipt differs")
+    source_root = ROOT / "cpp_build/source"
+    for relative, expected in receipt["instrumented_source_sha256"].items():
+        if digest(source_root / relative) != expected:
+            raise ValueError("instrumented C++ source differs: " + relative)
+    for relative, expected in receipt["current_public_source_sha256"].items():
+        if digest(worktree / "libtorch" / relative) != expected:
+            raise ValueError("public C++ source differs: " + relative)
+    object_dir = ROOT / "cpp_build/build/CMakeFiles"
+    for name, expected in receipt["instrumented_object_sha256"].items():
+        kind = "kdm6_c.dir/bridge" if name == "kdm6_c_api.cpp.o" else "kdm6.dir/src"
+        if digest(object_dir / kind / name) != expected:
+            raise ValueError("instrumented C++ object differs: " + name)
+    if (receipt["verification"]["host_run_performed"] is not False or
+            receipt["verification"]["all_required_ice_fields_cover_39_K"] is not True or
+            receipt["verification"]["historical_c5_scalar_stream_byte_identical"] is not True):
+        raise ValueError("C++ build preflight did not pass")
+    return receipt
+
+
+def verify_cpp_attempt2(receipt_path: Path, library: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if receipt.get("schema") != "kdm6.native_qnice_39_cpp_build_attempt2.v1":
+        raise ValueError("unexpected conservative C++ receipt schema")
+    if (digest(receipt["attempt1_receipt_path"]) != CPP_RECEIPT_SHA or
+            receipt["attempt1_receipt_sha256"] != CPP_RECEIPT_SHA or
+            receipt["attempt1_archive_sha256"] !=
+            json.loads(Path(receipt["attempt1_receipt_path"]).read_bytes())["archive_sha256"]):
+        raise ValueError("conservative C++ parent lineage")
+    for path in (library, Path(receipt["dso_path"]), Path(receipt["staged_dso_path"])):
+        if digest(path) != receipt["dso_sha256"]:
+            raise ValueError("conservative C++ DSO pin: " + str(path))
+    if (receipt["staged_dso_sha256"] != receipt["dso_sha256"] or
+            receipt["staged_byte_identical"] is not True or
+            digest(ROOT / "cpp_build_attempt2/build/libkdm6.a") != receipt["archive_sha256"] or
+            set(receipt["archive_member_changes_vs_attempt1"]) !=
+            {"sedimentation_conservative.cpp.o"}):
+        raise ValueError("conservative C++ archive/staged DSO")
+    for relative, expected in receipt["attempt2_source_file_sha256"].items():
+        if digest(ROOT / "cpp_build_attempt2/source" / relative) != expected:
+            raise ValueError("conservative C++ source pin: " + relative)
+    objects = ROOT / "cpp_build_attempt2/build/CMakeFiles"
+    for name, expected in receipt["object_sha256"].items():
+        kind = "kdm6_c.dir/bridge" if name == "kdm6_c_api.cpp.o" else "kdm6.dir/src"
+        if digest(objects / kind / name) != expected:
+            raise ValueError("conservative C++ object pin: " + name)
+    verification = receipt["verification"]
+    if (verification["host_run_performed"] is not False or
+            verification["runtime_norm_actual_smoke"]["conservative_stage_present"] is not True or
+            verification["runtime_norm_actual_smoke"]["required_39K_fields"] is not True or
+            verification["direct_conservative_kernel_smoke"]["source_order_replay_all39"] is not True or
+            verification["legacy_C5_scalar_stream_byte_identical"] is not True):
+        raise ValueError("conservative C++ smoke contract")
+    return receipt
+
+
+def verify_cpp_attempt4(receipt_path: Path, library: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if receipt.get("schema") != "kdm6.native_qnice_39_cpp_build_attempt4.v1":
+        raise ValueError("unexpected identity-fix C++ receipt schema")
+    if (digest(receipt["attempt2_receipt_path"]) != CPP_ATTEMPT2_RECEIPT_SHA or
+            receipt["attempt2_receipt_sha256"] != CPP_ATTEMPT2_RECEIPT_SHA or
+            receipt["attempt2_archive_sha256"] !=
+            json.loads(Path(receipt["attempt2_receipt_path"]).read_bytes())["archive_sha256"]):
+        raise ValueError("identity-fix C++ parent lineage")
+    for path in (library, Path(receipt["dso_path"]), Path(receipt["staged_dso_path"])):
+        if digest(path) != receipt["dso_sha256"]:
+            raise ValueError("identity-fix C++ DSO pin: " + str(path))
+    if (receipt["staged_dso_sha256"] != receipt["dso_sha256"] or
+            receipt["staged_byte_identical"] is not True or
+            digest(ROOT / "cpp_build_attempt4/build/libkdm6.a") != receipt["archive_sha256"] or
+            set(receipt["archive_member_changes_vs_attempt2"]) !=
+            {"coordinator.cpp.o", "runtime.cpp.o"}):
+        raise ValueError("identity-fix C++ archive/staged DSO")
+    for relative, hashes in receipt["source_changes_vs_attempt2"].items():
+        if digest(ROOT / "cpp_build_attempt4/source" / relative) != hashes["attempt4"]:
+            raise ValueError("identity-fix C++ source pin: " + relative)
+    objects = ROOT / "cpp_build_attempt4/build/CMakeFiles"
+    for name, expected in receipt["object_sha256"].items():
+        kind = "kdm6_c.dir/bridge" if name == "kdm6_c_api.cpp.o" else "kdm6.dir/src"
+        if digest(objects / kind / name) != expected:
+            raise ValueError("identity-fix C++ object pin: " + name)
+    v = receipt["verification"]
+    if (v["host_run_performed"] is not False or
+            v["call2_single_loop"]["header_first_one_step_call"] != 2 or
+            v["call2_single_loop"]["attempt2_legacy_byte_equal"] is not True or
+            v["two_calls_two_outer_subcycles"]["all_legacy_streams_byte_identical_to_attempt2"] is not True or
+            v["direct_conservative_cap_smoke"]["binary64_source_order_replay_all39"] is not True):
+        raise ValueError("identity-fix C++ smoke contract")
+    return receipt
+
+
+def verify_host_build(receipt_path: Path, executable: Path, library: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if receipt.get("schema") != "kdm6ad.native_qnice_host_build.v1" or \
+            receipt.get("host_case_run_performed") is not False:
+        raise ValueError("unexpected host build receipt schema/status")
+    for section, key, expected_path in (
+        ("executable", "sha256", executable),
+        ("cxx_dso", "sha256", library),
+    ):
+        record = receipt[section]
+        if Path(record["path"]).resolve() != expected_path.resolve() or \
+                digest(expected_path) != record[key]:
+            raise ValueError("host build binary binding differs: " + section)
+    if (receipt["cxx_dso"]["sha256"] != receipt["cxx_dso"]["expected_sha256"] or
+            receipt["cxx_dso"]["sha256"] != receipt["cxx_dso"]["cpp_build_receipt"]["staged_dso_sha256"] or
+            digest(receipt["cxx_dso"]["cpp_build_receipt"]["path"]) != CPP_RECEIPT_SHA or
+            Path(receipt["executable"]["expected_runtime_dso_realpath"]).resolve() != library.resolve() or
+            receipt["executable"]["linked_dso_install_name"] != "@rpath/libkdm6_c.2.dylib"):
+        raise ValueError("host/C++ DSO lineage differs")
+    for record in (receipt["source_copy"]["canonical_source"],
+                   receipt["source_copy"]["instrumented_source"],
+                   receipt["source_copy"]["copied_build_prerequisite"],
+                   receipt["fortran"]["solve_em_object"],
+                   receipt["archive"],
+                   receipt["link"]["link_log"],
+                   receipt["link"]["link_exit_file"]):
+        if digest(record["path"]) != record["sha256"]:
+            raise ValueError("host build source/object/archive/log pin differs: " + record["path"])
+    archive = receipt["archive"]
+    if (digest(archive["canonical_archive_path"]) != archive["canonical_archive_sha256"] or
+            archive["member_count"] != 376 or archive["canonical_member_count"] != 376 or
+            archive["member_inventory_equal"] is not True or
+            archive["only_replaced_member"] != "solve_em.o" or
+            archive["solve_em_member_sha256"] != receipt["fortran"]["solve_em_object"]["sha256"] or
+            receipt["source_copy"]["apply_kdm6ad_config_ran"] is not True or
+            receipt["source_copy"]["configure_ran_in_clone"] is not False or
+            receipt["link"]["link_exit_status"] != 0 or
+            receipt["fortran"]["kdm6_fortran_fp_contract_rule"] != "-ffp-contract=off"):
+        raise ValueError("host build archive/flags contract differs")
+    return receipt
+
+
+def verify_host_retry(receipt_path: Path, executable: Path, library: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if (receipt.get("schema") != "kdm6ad.native_qnice_host_retry_pr457_v3.v1" or
+            receipt.get("host_run_performed") is not False or
+            receipt.get("first_frozen_build_mutated") is not False):
+        raise ValueError("unexpected historical host retry schema/status")
+    exe = receipt["retry_executable"]
+    dso = receipt["dso"]
+    historical = receipt["historical_archive"]
+    sources = receipt["source_and_objects"]
+    if (Path(exe["path"]).resolve() != executable.resolve() or
+            digest(executable) != exe["sha256"] or
+            Path(dso["path"]).resolve() != library.resolve() or
+            digest(library) != dso["sha256"] or
+            dso["sha256"] != dso["expected_sha256"] or
+            digest(dso["cpp_receipt_path"]) != CPP_RECEIPT_SHA or
+            dso["cpp_receipt_sha256"] != CPP_RECEIPT_SHA or
+            exe["imports_native_fp64"] is not True or
+            exe["imports_f32_step_wrapper"] is not False or
+            dso["exports_native_fp64_symbol"] is not True or
+            Path(exe["runtime_dso_realpath_expected"]).resolve() != library.resolve()):
+        raise ValueError("historical host retry executable/DSO binding")
+    for path_key, hash_key in (("path", "sha256"),
+                               ("retry_archive_path", "retry_archive_sha256"),
+                               ("receipt_path", "receipt_sha256")):
+        if digest(historical[path_key]) != historical[hash_key]:
+            raise ValueError("historical archive/receipt pin differs")
+    if (historical["member_count"] != 379 or
+            historical["retry_member_count"] != 379 or
+            historical["member_name_inventory_equal"] is not True or
+            historical["only_changed_member_vs_pr457"] != "solve_em.o" or
+            historical["retry_only_replacement"] != "solve_em.o" or
+            historical["fresh_solve_em_member_matches_object"] is not True):
+        raise ValueError("historical archive replacement contract")
+    for key in ("instrumented_solve_em_source", "solve_em_object"):
+        record = sources[key]
+        if digest(record["path"]) != record["sha256"]:
+            raise ValueError("historical host retry source/object pin: " + key)
+    if (sources["solve_em_object"]["sha256"] !=
+            historical["retry_solve_em_member_sha256"] or
+            sources["historical_module_mp_kdm6ad_object_sha256"] !=
+            sources["historical_module_mp_kdm6ad_object_expected_sha256"] or
+            sources["historical_kdm6_iso_c_object_sha256"] !=
+            sources["historical_kdm6_iso_c_object_expected_sha256"] or
+            receipt["build"]["link_exit_status"] != 0 or
+            receipt["build"]["cxx_fp_contract_off"] is not True):
+        raise ValueError("historical host retry objects/flags")
+    for key in ("link_log", "exit_file"):
+        record = receipt["build"][key]
+        if digest(record["path"]) != record["sha256"]:
+            raise ValueError("historical host retry link record: " + key)
+    return receipt
+
+
+def verify_host_attempt3(receipt_path: Path, executable: Path, library: Path) -> dict:
+    receipt = json.loads(receipt_path.read_bytes())
+    if receipt.get("schema") != "kdm6ad.native_qnice_attempt3_host_bundle.v1" or \
+            receipt["build_action"]["host_run_performed"] is not False or \
+            receipt["build_action"]["relinked"] is not False:
+        raise ValueError("unexpected attempt3 host bundle status")
+    exe = receipt["executable"]
+    dso = receipt["dso"]
+    if (Path(exe["path"]).resolve() != executable.resolve() or
+            digest(executable) != exe["sha256"] or
+            digest(exe["copied_from"]) != exe["source_sha256"] or
+            exe["byte_identical_to_retry"] is not True or
+            exe["imports_native_fp64_value"] is not True or
+            exe["imports_kdm6_step_c"] is not False or
+            Path(dso["attempt3_path"]).resolve() != library.resolve() or
+            digest(library) != dso["attempt3_sha256"] or
+            digest(dso["source_build_path"]) != dso["build_sha256"] or
+            digest(dso["source_isolated_prefix_path"]) != dso["isolated_prefix_sha256"] or
+            dso["attempt3_copy_byte_identical_to_staged"] is not True or
+            dso["exports_native_fp64_value"] is not True or
+            dso["attempt3_sha256"] != dso["build_sha256"]):
+        raise ValueError("attempt3 executable/DSO binding")
+    if (digest(receipt["cpp_build_receipt"]["path"]) != CPP_ATTEMPT2_RECEIPT_SHA or
+            receipt["cpp_build_receipt"]["sha256"] != CPP_ATTEMPT2_RECEIPT_SHA or
+            digest(receipt["retry_host_receipt"]["path"]) != HOST_RETRY_RECEIPT_SHA or
+            receipt["retry_host_receipt"]["sha256"] != HOST_RETRY_RECEIPT_SHA or
+            receipt["loader_resolution"]["first_rpath_resolves_to_attempt3_prefix"] is not True or
+            Path(receipt["loader_resolution"]["expected_loaded_dso_realpath"]).resolve() != library.resolve()):
+        raise ValueError("attempt3 source/build/loader lineage")
+    return receipt
+
+
+def verify_host_attempt5(receipt_path: Path, executable: Path, library: Path) -> dict:
+    if digest(receipt_path) != HOST_ATTEMPT5_RECEIPT_SHA:
+        raise ValueError("attempt5 host bundle receipt pin differs")
+    receipt = json.loads(receipt_path.read_bytes())
+    if (receipt.get("schema") != "kdm6ad.native_qnice_attempt5_host_bundle.v1" or
+            receipt["build_action"]["host_run_performed"] is not False or
+            receipt["build_action"]["relinked"] is not False or
+            receipt["build_action"]["planned_case_modes"] != ["off_final", "on_final"]):
+        raise ValueError("unexpected attempt5 host bundle status")
+    exe = receipt["executable"]
+    dso = receipt["dso"]
+    if (Path(exe["path"]).resolve() != executable.resolve() or
+            digest(executable) != exe["sha256"] or
+            digest(exe["copied_from"]) != exe["copied_source_sha256"] or
+            exe["byte_identical_to_retry"] is not True or
+            exe["imports_native_fp64_value"] is not True or
+            exe["imports_f32_step_wrapper"] is not False or
+            Path(dso["attempt5_path"]).resolve() != library.resolve() or
+            digest(library) != dso["attempt5_sha256"] or
+            digest(dso["attempt4_build_path"]) != dso["build_sha256"] or
+            digest(dso["attempt4_isolated_prefix_path"]) != dso["staged_sha256"] or
+            dso["byte_identical_to_attempt4_staged"] is not True or
+            dso["exports_native_fp64_value"] is not True or
+            dso["attempt5_sha256"] != dso["build_sha256"]):
+        raise ValueError("attempt5 executable/DSO binding")
+    if (digest(receipt["cpp_attempt4_receipt"]["path"]) != CPP_ATTEMPT4_RECEIPT_SHA or
+            receipt["cpp_attempt4_receipt"]["sha256"] != CPP_ATTEMPT4_RECEIPT_SHA or
+            digest(receipt["fp64_retry_lineage"]["receipt_path"]) != HOST_RETRY_RECEIPT_SHA or
+            receipt["fp64_retry_lineage"]["receipt_sha256"] != HOST_RETRY_RECEIPT_SHA or
+            receipt["loader_resolution"]["first_rpath_resolves_to_attempt5_prefix"] is not True or
+            Path(receipt["loader_resolution"]["expected_runtime_dso_realpath"]).resolve() != library.resolve()):
+        raise ValueError("attempt5 source/build/loader lineage")
+    return receipt
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--worktree", type=Path, required=True)
+    parser.add_argument("--exe", type=Path, required=True)
+    parser.add_argument("--library", type=Path, required=True)
+    parser.add_argument("--cpp-receipt", type=Path, required=True)
+    parser.add_argument("--host-receipt", type=Path, required=True)
+    parser.add_argument("--mode", choices=("off", "on", "off_fp64", "on_fp64",
+                                          "off_conservative", "on_conservative",
+                                          "off_final", "on_final"), required=True)
+    parser.add_argument("--batch-index", type=int, default=22617)
+    args = parser.parse_args()
+
+    if digest(PLAN) != PLAN_SHA:
+        raise ValueError("historical input plan differs")
+    runtime = json.loads(PLAN.read_bytes())["runtime"]
+    inputs = [(runtime["origin"]["checkpoint_path"], runtime["origin"]["checkpoint_sha256"]),
+              (runtime["namelist_source_path"], runtime["namelist_source_sha256"])]
+    inputs += [(item["path"], item["sha256"]) for item in runtime["assets"]]
+    for path, expected in inputs:
+        if digest(path) != expected:
+            raise ValueError("host input pin differs: " + path)
+    for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OMP_THREAD_LIMIT", "VECLIB_MAXIMUM_THREADS"):
+        if runtime["environment_without_trace"].get(name) != "1":
+            raise ValueError("one-rank one-thread environment differs: " + name)
+    if shutil.disk_usage(ROOT).free < 8 * (1 << 30):
+        raise OSError("less than 8 GiB free for full-domain host step")
+    for path in (args.exe, args.library, args.cpp_receipt, args.host_receipt):
+        if not path.is_file():
+            raise FileNotFoundError(path)
+    if args.mode.endswith("final"):
+        if digest(args.cpp_receipt) != CPP_ATTEMPT4_RECEIPT_SHA:
+            raise ValueError("identity-fix C++ receipt pin differs")
+        cpp_receipt = verify_cpp_attempt4(args.cpp_receipt, args.library)
+        host_receipt = verify_host_attempt5(args.host_receipt, args.exe, args.library)
+    elif args.mode.endswith("conservative"):
+        if digest(args.cpp_receipt) != CPP_ATTEMPT2_RECEIPT_SHA:
+            raise ValueError("conservative C++ build receipt pin differs")
+        cpp_receipt = verify_cpp_attempt2(args.cpp_receipt, args.library)
+        if digest(args.host_receipt) != HOST_ATTEMPT3_RECEIPT_SHA:
+            raise ValueError("attempt3 host receipt pin differs")
+        host_receipt = verify_host_attempt3(args.host_receipt, args.exe, args.library)
+    elif args.mode.endswith("fp64"):
+        if digest(args.cpp_receipt) != CPP_RECEIPT_SHA:
+            raise ValueError("C++ build receipt pin differs")
+        cpp_receipt = verify_cpp_build(args.cpp_receipt, args.library, args.worktree.resolve())
+        if digest(args.host_receipt) != HOST_RETRY_RECEIPT_SHA:
+            raise ValueError("historical host retry receipt pin differs")
+        host_receipt = verify_host_retry(args.host_receipt, args.exe, args.library)
+    else:
+        if digest(args.cpp_receipt) != CPP_RECEIPT_SHA:
+            raise ValueError("C++ build receipt pin differs")
+        cpp_receipt = verify_cpp_build(args.cpp_receipt, args.library, args.worktree.resolve())
+        if digest(args.host_receipt) != HOST_RECEIPT_SHA:
+            raise ValueError("host build receipt pin differs")
+        host_receipt = verify_host_build(args.host_receipt, args.exe, args.library)
+
+    run = ROOT / "runs" / args.mode
+    run.mkdir(parents=True, exist_ok=False)
+    scratch = run / "scratch"
+    scratch.mkdir()
+    capture = run / "capture"
+    if args.mode.startswith("on"):
+        capture.mkdir()
+
+    sys.path.insert(0, str(args.worktree.resolve()))
+    from harness.native_host_transition import NativeCheckpoint, NativeInputs, PinnedFile
+    from harness.native_live_stepper import NativeLiveStepper
+
+    origin = NativeCheckpoint.capture(
+        runtime["origin"]["checkpoint_path"], expected_time=runtime["start_time"],
+        expected_itimestep=runtime["origin"]["itimestep"])
+    if origin.file.sha256 != runtime["origin"]["checkpoint_sha256"]:
+        raise ValueError("origin checkpoint identity differs")
+    env = dict(runtime["environment_without_trace"])
+    env["KDM6AD_QNC_LIVE_GUARD"] = "1"
+    if args.mode.startswith("on"):
+        env.update(
+            KDM6_NATIVE_CAPTURE_DIR=str(capture.resolve()),
+            KDM6_NATIVE_CAPTURE_CALL="2",
+            KDM6_NATIVE_CAPTURE_B=str(args.batch_index),
+            KDM6_NATIVE_CAPTURE_ALL_K="1",
+            KDM6_NATIVE_CAPTURE_LEGACY_SCALAR="1",
+            KDM6_NATIVE_CAPTURE_K1="20",
+            KDM6_NATIVE_CAPTURE_K2="22",
+            KDM6_NATIVE_CAPTURE_MAX_ROWS="5000",
+            KDM6_NATIVE_CAPTURE_MAX_BYTES=str(1 << 20),
+            KDM6_NATIVE_CAPTURE_LEGACY_MAX_ROWS="450000",
+            KDM6_NATIVE_CAPTURE_LEGACY_MAX_BYTES=str(64 << 20),
+            KDM6AD_NATIVE_QNICE_TRACE=str((capture / "host_qnice_pre_call.csv").resolve()),
+        )
+    external = NativeInputs(
+        namelist=PinnedFile.bind(runtime["namelist_source_path"]),
+        assets=tuple((item["case_basename"], PinnedFile.bind(item["path"]))
+                     for item in runtime["assets"]),
+        environment=tuple(sorted(env.items())),
+    )
+    with NativeLiveStepper(
+        initial=origin, external=external,
+        executable=PinnedFile.bind(args.exe.resolve()),
+        library=PinnedFile.bind(args.library.resolve()),
+        runner=PinnedFile.bind(args.worktree.resolve() / "harness/run_ss_case.py"),
+        work_root=scratch, steps=1, dt_seconds=20,
+        trace_column=(164, 242), radiation_every_step=True,
+        control_family="ANALYSIS_TQ", capture_ready_checkpoint=True,
+    ) as stepper:
+        ready = stepper.current
+        if ready is None or ready.ready is None:
+            raise RuntimeError("host did not expose the READY state")
+        final = stepper.advance(ready, ())
+        result = {
+            "schema": "kdm6.native_qnice_39_same_call_run.v1",
+            "mode": args.mode,
+            "worktree_commit": subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=args.worktree, text=True).strip(),
+            "historical_plan_sha256": PLAN_SHA,
+            "source_sha256": {
+                relative: digest(args.worktree.resolve() / relative)
+                for relative in ("libtorch/CMakeLists.txt", "libtorch/src/runtime.cpp",
+                                 "libtorch/src/coordinator.cpp", "libtorch/src/sedimentation.cpp",
+                                 "harness/native_live_stepper.py", "harness/run_ss_case.py")
+            },
+            "private_runner_sha256": digest(Path(__file__)),
+            "cpp_receipt_sha256": digest(args.cpp_receipt),
+            "host_receipt_sha256": digest(args.host_receipt),
+            "executable_sha256": digest(args.exe),
+            "dso_sha256": digest(args.library),
+            "origin_sha256": origin.file.sha256,
+            "startup_sha256": ready.checkpoint.file.sha256,
+            "startup_path": str(ready.checkpoint.file.path),
+            "endpoint_sha256": final.checkpoint.file.sha256,
+            "endpoint_path": str(final.checkpoint.file.path),
+            "historical_c5_endpoint_sha256": HISTORICAL_C5_ENDPOINT_SHA,
+            "historical_c5_endpoint_match": final.checkpoint.file.sha256 == HISTORICAL_C5_ENDPOINT_SHA,
+            "session_record": str(stepper.case / "live_session.json"),
+            "session_record_sha256": digest(stepper.case / "live_session.json"),
+            "capture_files": {p.name: digest(p) for p in sorted(capture.iterdir())}
+            if args.mode.startswith("on") else {},
+        }
+        path = run / "run_result.json"
+        with path.open("x") as stream:
+            json.dump(result, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+        print(json.dumps(result, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

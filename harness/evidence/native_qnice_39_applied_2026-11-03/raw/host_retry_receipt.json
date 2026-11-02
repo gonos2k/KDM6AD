@@ -1,0 +1,251 @@
+{
+  "abi_compatibility": {
+    "additional_missing_vs_canonical": [],
+    "caution": "Static symbol/signature compatibility is established for linking; no runtime or host-call compatibility was tested.",
+    "current_compile_module_em_mod_sha256": "3297171583b85fdb0cdd8d98616d0e55bd26a2a89debb4bea2802ea8af970448",
+    "current_cpp_c_api_source_sha256": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049",
+    "current_cpp_dso_exports_native_fp64": true,
+    "evidence": [
+      "Historical module_mp_kdm6ad.o exports ___module_mp_kdm6ad_MOD_kdm6ad and references ___kdm6_iso_c_MOD_kdm6_step; historical kdm6_iso_c.o defines that Fortran module procedure.",
+      "Historical kdm6_step wrapper has the same Fortran procedure signature and dummy types as the current wrapper; its BIND(C) name is kdm6_native_fp64_value_c instead of kdm6_step_c.",
+      "Historical BIND(C) interface and current C++ kdm6_native_fp64_value_c agree on float array buffers, int dimensions/flags, double dt/ncmin, output arrays, and handle pointer.",
+      "The final DSO exports _kdm6_native_fp64_value_c; retry executable imports it and does not import _kdm6_step_c.",
+      "All solver-referenced module_em symbols are defined by historical module_em.o; 11 referenced procedure argument lists and available dummy declaration lines match current compiled module_em source.",
+      "Historical module_em qnc_flux_trace_set_context import is defined by historical module_advect_em.o in the same archive.",
+      "Instrumented solve_em object has no additional undefined symbols against PR457-v3 archive compared with canonical archive."
+    ],
+    "historical_c_binding_matches_current_cpp_source_signature": true,
+    "historical_c_binding_name": "kdm6_native_fp64_value_c",
+    "historical_kdm6_step_public_fortran_signature_matches_current": true,
+    "historical_module_em_mod_sha256": "53c3f8d6477b91de005bf75ed956eddf2423f6be94cffafd7b617602202114a7",
+    "historical_module_mp_kdm6ad_formal_signature_matches_current_source": true,
+    "missing_against_canonical_archive_count": 24,
+    "missing_against_historical_archive_count": 24,
+    "module_em_mod_binary_hashes_differ": true,
+    "module_em_procedure_signature_checks": {
+      "bound_qna": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 2,
+        "dummy_declaration_lines_match": true
+      },
+      "bound_tke": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 3,
+        "dummy_declaration_lines_match": true
+      },
+      "q_diabatic_add": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 7,
+        "dummy_declaration_lines_match": true
+      },
+      "q_diabatic_subtr": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 5,
+        "dummy_declaration_lines_match": true
+      },
+      "rk_addtend_dry": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 7,
+        "dummy_declaration_lines_match": true
+      },
+      "rk_scalar_tend": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 0,
+        "dummy_declaration_lines_match": null
+      },
+      "rk_step_prep": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 0,
+        "dummy_declaration_lines_match": null
+      },
+      "rk_tendency": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 0,
+        "dummy_declaration_lines_match": null
+      },
+      "rk_update_scalar": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 0,
+        "dummy_declaration_lines_match": null
+      },
+      "rk_update_scalar_pd": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 9,
+        "dummy_declaration_lines_match": true
+      },
+      "trajectory": {
+        "argument_names_match": true,
+        "dummy_declaration_lines_compared": 0,
+        "dummy_declaration_lines_match": null
+      }
+    },
+    "module_em_signature_check_procedure_names": [
+      "bound_qna",
+      "bound_tke",
+      "q_diabatic_add",
+      "q_diabatic_subtr",
+      "rk_addtend_dry",
+      "rk_scalar_tend",
+      "rk_step_prep",
+      "rk_tendency",
+      "rk_update_scalar",
+      "rk_update_scalar_pd",
+      "trajectory"
+    ],
+    "module_mp_kdm6ad_entry_exported_by_historical_object": true,
+    "module_mp_kdm6ad_fortran_entry": "___module_mp_kdm6ad_MOD_kdm6ad",
+    "module_mp_kdm6ad_source_historical_sha256": "8b47bc625c6b402626e888fe02e5e380fd8557cc582c5c8db4d3be54b97550fa",
+    "native_fp64_c_api_source_sha256": null,
+    "native_fp64_fortran_shim_expected_bind_name": "kdm6_native_fp64_value_c",
+    "native_fp64_fortran_shim_object_sha256": "6f906e851c59b40ded7f868200981f239163bf1a6ea53a96cfa11070f6088b51",
+    "native_fp64_fortran_shim_source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025/build/fortran_precision_overlay_v1/kdm6_iso_c.f90",
+    "native_fp64_fortran_shim_source_sha256": "be86f08bc9344f9a426014eea7e9202daede8a93fa2ec144c9568fd5b4a0c66b",
+    "solve_em_undefined_symbol_count": 324,
+    "solver_module_em_references": [
+      "___module_em_MOD_bound_qna",
+      "___module_em_MOD_bound_tke",
+      "___module_em_MOD_q_diabatic_add",
+      "___module_em_MOD_q_diabatic_subtr",
+      "___module_em_MOD_rk_addtend_dry",
+      "___module_em_MOD_rk_scalar_tend",
+      "___module_em_MOD_rk_step_prep",
+      "___module_em_MOD_rk_tendency",
+      "___module_em_MOD_rk_update_scalar",
+      "___module_em_MOD_rk_update_scalar_pd",
+      "___module_em_MOD_trajectory"
+    ],
+    "status": "static_abi_compatible_for_relink"
+  },
+  "build": {
+    "command": "make -C retry_pr457_v3/host/KIM-meso_v1.0/main em_wrf SOLVER=em WRF_SRC_ROOT_DIR=<retry host root> DM_FC=\"mpif90 -isysroot <Xcode SDK>\" RANLIB=<Xcode ranlib>",
+    "cxx_fp_contract_off": true,
+    "exact_link_command": "time mpif90 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -o wrf.exe  -O2 -ftree-vectorize -funroll-loops -w -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz  -Wl,-rpath,@loader_path/../../../libtorch/install/lib -Wl,-rpath,/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib -Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib  wrf.o wrf_kdm6ad_exit.o ../main/module_wrf_top.o libwrflib.a  /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a -L/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/esmf_time_f90 -lesmf_time /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/frame/module_internal_header_util.o /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/frame/pack_utils.o -L/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/external/io_netcdf -lwrfio_nf -L/opt/homebrew/lib -lnetcdff -lnetcdf        /Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib/libkdm6_c.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+    "exit_file": {
+      "exit_status": 0,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/RETRY_LINK.exit",
+      "sha256": "17b730d7a41ccb8eec7bdbdf8d941ec856c997b86bbf783f560274ad96d871ff"
+    },
+    "fortran_kdm_fp_contract_off_rule": "retry host phys/Makefile explicit KDM6/KDM6AD recipes retain -ffp-contract=off; linked historical archive receipt records KDM6 FMA-off",
+    "kdm6ad_prefix": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install",
+    "link_exit_status": 0,
+    "link_log": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/RETRY_LINK.log",
+      "sha256": "e1e5fa62dd3e9a3b151d41ecb3f784b276198090e7fb44186d77d063460daaa6"
+    },
+    "link_log_sha256": "e1e5fa62dd3e9a3b151d41ecb3f784b276198090e7fb44186d77d063460daaa6",
+    "sdk_sysroot": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk",
+    "wrf_src_root_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0"
+  },
+  "created_utc": "2026-11-02T15:00:18.829983+00:00",
+  "dso": {
+    "cpp_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/cpp_build/build_receipt.json",
+    "cpp_receipt_sha256": "d6c660f0bcfdb6bf3913c8498f8cb00af47b95e26673cecce7a6a54ec792a780",
+    "expected_sha256": "1a6e2ba7a3a1196ab3880ab19a94303a2fc81ae0ab4992a3532696c2bac576b9",
+    "exports_native_fp64_symbol": true,
+    "install_name": "@rpath/libkdm6_c.2.dylib",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "realpath": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "sha256": "1a6e2ba7a3a1196ab3880ab19a94303a2fc81ae0ab4992a3532696c2bac576b9"
+  },
+  "first_build_receipt": {
+    "first_executable_sha256": "974542f4482594fa4c2e8d2d18156d9e88b261ca90ff3c980cf2f882a397fa38",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/HOST_BUILD_RECEIPT.json",
+    "sha256": "4fba9898dfd807b9407af8ede82a5e72ded0723cb0da2b7d6145f131ed05031d"
+  },
+  "first_frozen_build_mutated": false,
+  "historical_archive": {
+    "archive_changed_members_from_pr457_receipt": [
+      "module_advect_em.o",
+      "module_em.o"
+    ],
+    "archive_changed_members_from_receipt": [
+      "module_advect_em.o",
+      "module_em.o"
+    ],
+    "archive_changed_members_vs_original_v1_private": [
+      "kdm6ad_moment_trace_v2.o",
+      "module_mp_kdm6ad.o",
+      "solve_em.o"
+    ],
+    "fresh_solve_em_member_matches_object": true,
+    "fresh_solve_em_object_sha256": "9021d70c983195e8cd515e6648a038e14801ac80d09b973e382709360e5f0563",
+    "historical_solve_em_member_sha256": "4ad27f1debf7787f6a032bbcbd4a78019977fa4ccd79bf5cb4c75728ed009286",
+    "member_count": 379,
+    "member_name_inventory_equal": true,
+    "only_changed_member_vs_pr457": "solve_em.o",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnc_flux_trace_20261026/build/host_pr457_v3/libwrflib.native_qnc_flux_pr457_v3.a",
+    "receipt_archive_member_inventory_count": 378,
+    "receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnc_flux_trace_20261026/build/host_pr457_v3/private_host_build_receipt.json",
+    "receipt_schema": "kdm6.native_qnc_flux_trace_private_host_build.v1",
+    "receipt_sha256": "fe17d37f9beecce107ed56debd5ce67aafca058faa31b32a75aa9bdb6d716a01",
+    "retry_archive_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/main/libwrflib.a",
+    "retry_archive_sha256": "02d16d8a634579eeed8f961f9e917694f211e030c54da1fbd3b4ce58d2c569c5",
+    "retry_member_count": 379,
+    "retry_only_replacement": "solve_em.o",
+    "retry_solve_em_member_sha256": "9021d70c983195e8cd515e6648a038e14801ac80d09b973e382709360e5f0563",
+    "sha256": "63c91a8d9b066426bb8a5ddcb511f208f92ba9222cfa4b84ce045b57bc38c825",
+    "status": "PRIVATE_BUILD_COMPLETE_UNTESTED_NO_HOST_CALLS"
+  },
+  "host_run_performed": false,
+  "limitations": [
+    "Archive originates from PR457-v3 and includes its QNC flux instrumentation; retry is isolated and not a current-head parity claim.",
+    "Static linker and ABI checks passed, but the executable was not run; dyld loaded path and actual host-time path were not observed."
+  ],
+  "retry_copy": {
+    "hardlink_audit": {
+      "matching_regular_files_checked": 6982,
+      "method": "rsync -a without --hard-links",
+      "shared_inode_pairs": 0,
+      "shared_paths": []
+    },
+    "host_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0",
+    "libtorch_prefix": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install",
+    "method": "rsync -a from frozen first isolated host (no --hard-links); run/test excluded"
+  },
+  "retry_executable": {
+    "arch": "arm64 Mach-O",
+    "imports_f32_step_wrapper": false,
+    "imports_native_fp64": true,
+    "nm_undefined_kdm_symbols": [
+      "_kdm6_get_abi_version_c",
+      "_kdm6_handle_close_c",
+      "_kdm6_handle_jvp_c",
+      "_kdm6_handle_vjp_c",
+      "_kdm6_moment_trace_context_c",
+      "_kdm6_native_fp64_value_c",
+      "_kdm6_step_ad_c",
+      "_kdm6_step_v2_args_size_c",
+      "_kdm6_step_v2_c"
+    ],
+    "otool_L": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/main/wrf.exe:\n\t/opt/homebrew/opt/netcdf-fortran/lib/libnetcdff.7.dylib (compatibility version 7.0.0, current version 7.1.0)\n\t/opt/homebrew/opt/netcdf/lib/libnetcdf.22.dylib (compatibility version 22.0.0, current version 22.0.0)\n\t@rpath/libkdm6_c.2.dylib (compatibility version 2.0.0, current version 2.0.0)\n\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempif08.40.dylib (compatibility version 81.0.0, current version 81.3.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempi_ignore_tkr.40.dylib (compatibility version 81.0.0, current version 81.1.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi_mpifh.40.dylib (compatibility version 81.0.0, current version 81.1.0)\n\t/opt/homebrew/opt/open-mpi/lib/libmpi.40.dylib (compatibility version 81.0.0, current version 81.7.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (compatibility version 6.0.0, current version 6.0.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)",
+    "otool_rpaths": [
+      "@loader_path/../../../libtorch/install/lib",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+      "@loader_path",
+      "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin24/15",
+      "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc",
+      "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current"
+    ],
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/main/wrf.exe",
+    "runtime_dso_realpath_expected": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "runtime_load_observed": false,
+    "sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17"
+  },
+  "retry_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3",
+  "schema": "kdm6ad.native_qnice_host_retry_pr457_v3.v1",
+  "source_and_objects": {
+    "historical_kdm6_iso_c_object_expected_sha256": "6f906e851c59b40ded7f868200981f239163bf1a6ea53a96cfa11070f6088b51",
+    "historical_kdm6_iso_c_object_sha256": "6f906e851c59b40ded7f868200981f239163bf1a6ea53a96cfa11070f6088b51",
+    "historical_module_mp_kdm6ad_object_expected_sha256": "fe1410d43f0f49381906632ca7083ac12a730899e4eade4dd3241e5fccb2499b",
+    "historical_module_mp_kdm6ad_object_sha256": "fe1410d43f0f49381906632ca7083ac12a730899e4eade4dd3241e5fccb2499b",
+    "instrumented_solve_em_source": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/dyn_em/solve_em.F",
+      "sha256": "bdf5eccabbc8aeb00a63241fd7bcfa00e8d4c90a8f80601a5c7a00e446abb420"
+    },
+    "solve_em_object": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/retry_pr457_v3/host/KIM-meso_v1.0/dyn_em/solve_em.o",
+      "sha256": "9021d70c983195e8cd515e6648a038e14801ac80d09b973e382709360e5f0563"
+    }
+  }
+}

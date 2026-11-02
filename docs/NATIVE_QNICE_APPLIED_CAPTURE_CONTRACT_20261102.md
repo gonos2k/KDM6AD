@@ -38,3 +38,17 @@ The synthetic regression also fixes exact identifier types and a nonzero f32 sto
 As reviewed on 2026-11-02, free space on the shared `/private/tmp` and canonical-host volume was about **13 GiB after removing only our clean, previously pushed temporary worktrees**. The prior C5 off/on retained runs occupy `3.9 GiB` each. The runner copies output artifacts during a case, so the peak for a new isolated build and two retained runs has not been measured and may exceed free space. Do not launch the pair until a fresh-case dry run or disk budget proves enough headroom for both full outputs, captures and system operation. Keep the private host source/build in an isolated copy without the 80 GiB historical `test/` and 6.4 GiB `run/` trees; audit symlinks and ensure build and runtime resolve the intended isolated DSO. The host `./configure` path requires `./apply_kdm6ad_config.sh` before compiling. Existing operational binaries and libraries must not be overwritten.
 
 The [current numerical and later-endpoint evidence](../harness/evidence/native_qnice_prec3_2026-11-02/README.md) remains `physical_unit_status: INCONCLUSIVE` until these execution and producer/restart records are available.
+
+## 2026-11-03 execution update
+
+The [same-call native 39-level applied packet](../harness/evidence/native_qnice_39_applied_2026-11-03/README.md)
+now records the selected host AL/ALB/RHO/QV/QNICE column, the executed
+`norm_actual` conservative ice sedimentation substep, and the C3-pre NI stage
+boundaries. It replays the 39 layer state and fall-accumulator stores in f64
+raw bits and separates interface difference from arithmetic closure. The
+same-build capture-off/on endpoint files are byte-identical. Its prior C5
+whole-endpoint comparison differs in QNCLOUD and RE_CLOUD, and the original
+QNICE production/restart unit is still unverified; this contract's physical
+unit and full-host derivative gates remain open. The retained synthetic packet
+continues to test legacy cap and roundoff cases separately from the executed
+conservative path.

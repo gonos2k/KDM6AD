@@ -27,6 +27,7 @@ on:
       - 'harness/evidence/native_qnice_same_call_2026-11-02/**'
       - 'harness/evidence/native_qnice_prec3_2026-11-02/**'
       - 'harness/evidence/native_qnice_applied_schema_2026-11-02/**'
+      - 'harness/evidence/native_qnice_39_applied_2026-11-03/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -94,12 +95,13 @@ jobs:
 
       # These public evidence suites live outside harness/tests and depend
       # on Torch + NumPy + netCDF4. Keep separate discovery processes because
-      # all three directories contain test_replay.py. No private host/RTTOV is used.
+      # multiple directories contain test_replay.py. No private host/RTTOV is used.
       - name: unittest (QNICE evidence, normal)
         run: |
           python -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
           python -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
           python -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v
+          python -m unittest discover -s harness/evidence/native_qnice_39_applied_2026-11-03 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -109,3 +111,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
           python -O -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
           python -O -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v
+          python -O -m unittest discover -s harness/evidence/native_qnice_39_applied_2026-11-03 -v

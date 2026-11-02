@@ -63,3 +63,9 @@
 같은 과거 실행의 해시가 일치하는 **종료 체크포인트**에서 AL·ALB·RHO·QV·QNICE 두 셀의 f32 값을 별도로 보존했다. 종료 시점의 f32 연산 `1/(AL+ALB)`는 RHO와 비트 일치했고, RHO는 앞선 호출 입력 DEN과 비트 일치했다. 그러나 종료 QV는 호출 입력 Q와 다르고, 미세물리 뒤의 `calc_p_rho_phi`가 AL을 다시 다룬다. 따라서 이 종료값은 **같은 호출의 AL·ALB 포착을 대신하지 않는다**. 해당 시점의 실제 AL·ALB와 실행 파일에 연결된 private 소스·오브젝트, QNICE 생산·restart 이력을 별도로 기록해야 물리 단위를 판정할 수 있다.
 
 실제 적용량을 얻기 위한 [39층 계측 계약](NATIVE_QNICE_APPLIED_CAPTURE_CONTRACT_20261102.md)은 입구 NI 제한, 침강의 독립 이탈·유입 제한, 중간 입자수 재작성, C3 전후 상태를 서로 다른 단계로 기록하도록 정한다. 현재 두 셀의 순변화를 침강 과정량으로 대신하지 않는다.
+
+2026-11-03에는 [같은 호출의 39층 적용량](NATIVE_QNICE_39_APPLIED_SAME_CALL_20261103.md)을
+실제 `norm_actual` 보존형 경로에서 기록해 두 셀의 유입·유출과 C3 전
+입자수 재작성 A를 분리했다. 이 자료는 호출 시점의 AL·ALB·RHO·QV·QNICE
+원시 비트를 포함하지만, QNICE 생산·restart 이력을 제공하지 않는다.
+따라서 `physical_unit_status: INCONCLUSIVE`는 유지한다.
