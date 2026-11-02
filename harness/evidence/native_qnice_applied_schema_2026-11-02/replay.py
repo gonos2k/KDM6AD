@@ -26,6 +26,20 @@ def need(ok, message):
         raise ValueError(message)
 
 
+def validate_identity(case_id, call_identity):
+    """Apply the same exact-type contract to producer and verifier inputs."""
+    need(type(case_id) is str and bool(case_id.strip()), "case id")
+    need(type(call_identity) is dict and
+         set(call_identity) == {"call", "column", "vertical_order"} and
+         type(call_identity["call"]) is str and
+         bool(call_identity["call"].strip()) and
+         type(call_identity["column"]) is int and
+         call_identity["column"] >= 0 and
+         type(call_identity["vertical_order"]) is str and
+         call_identity["vertical_order"] == "sedimentation_top_first",
+         "call identity")
+
+
 def fmt(dtype):
     return "<f" if dtype == "f32" else "<d"
 
@@ -50,24 +64,20 @@ def rounded(x, dtype):
 
 def serialize(records, *, case_id, call_identity, workn_by_step):
     """Serialize detached records plus the synthetic velocity operands."""
-    need(isinstance(case_id, str) and case_id, "case id")
-    need(isinstance(call_identity, dict) and
-         set(call_identity) == {"call", "column", "vertical_order"} and
-         call_identity["vertical_order"] == "sedimentation_top_first" and
-         isinstance(call_identity["call"], str) and call_identity["call"] and
-         isinstance(call_identity["column"], int) and
-         call_identity["column"] >= 0, "call identity")
-    need(records and len(workn_by_step) == len(records),
+    validate_identity(case_id, call_identity)
+    need(records and len(records) <= 100 and
+         len(workn_by_step) == len(records),
          "substep/velocity inventory")
     first = records[0]
-    need(first.before.shape[0] == 1 and first.before.shape[1] >= 1,
+    need(first.before.shape[0] == 1 and 1 <= first.before.shape[1] <= 39,
          "one nonempty column required")
     K = first.before.shape[1]
     dtype = {"torch.float32": "f32", "torch.float64": "f64"}.get(str(first.before.dtype))
     need(dtype is not None, "record dtype")
     steps = []
     for position, record in enumerate(records, 1):
-        need(record.n_current == position and record.before.shape == (1, K) and
+        need(type(record.n_current) is int and record.n_current == position and
+             record.before.shape == (1, K) and
              record.before.dtype == first.before.dtype, "substep order/shape")
         data = {}
         workn = workn_by_step[position-1].detach().clone()  # value-only capture
@@ -97,19 +107,18 @@ def replay(packet, *, expected_case_id, expected_identity,
     need(isinstance(packet, dict) and set(packet) ==
          {"schema", "scientific_status", "case_id", "call_identity",
           "dtype", "K", "substeps"}, "packet inventory")
+    validate_identity(packet["case_id"], packet["call_identity"])
+    validate_identity(expected_case_id, expected_identity)
     need(packet["schema"] == SCHEMA and
          packet["scientific_status"] == "SYNTHETIC_ONLY" and
          packet["case_id"] == expected_case_id and
-         packet["call_identity"] == expected_identity and
-         isinstance(expected_identity, dict) and
-         set(expected_identity) == {"call", "column", "vertical_order"} and
-         expected_identity["vertical_order"] == "sedimentation_top_first",
+         packet["call_identity"] == expected_identity,
          "trusted synthetic identity")
     dtype = packet["dtype"]
-    need(dtype in ("f32", "f64") and isinstance(expected_levels, int) and
-         not isinstance(expected_levels, bool) and 1 <= expected_levels <= 39 and
-         packet["K"] == expected_levels and isinstance(expected_substeps, int) and
-         not isinstance(expected_substeps, bool) and 1 <= expected_substeps <= 100 and
+    need(dtype in ("f32", "f64") and type(expected_levels) is int and
+         1 <= expected_levels <= 39 and type(packet["K"]) is int and
+         packet["K"] == expected_levels and type(expected_substeps) is int and
+         1 <= expected_substeps <= 100 and
          isinstance(packet["substeps"], list) and
          len(packet["substeps"]) == expected_substeps,
          "dtype/level/substep inventory")
@@ -121,7 +130,9 @@ def replay(packet, *, expected_case_id, expected_identity,
     for n_current, step in enumerate(packet["substeps"], 1):
         need(isinstance(step, dict) and set(step) ==
              {"n_current", "dtcld", "mstep", "gate", "fields"} and
-             step["n_current"] == n_current and isinstance(step["fields"], dict) and
+             type(step["n_current"]) is int and
+             step["n_current"] == n_current and
+             isinstance(step["fields"], dict) and
              set(step["fields"]) == set(FIELDS), "substep field/order inventory")
         dt = value(step["dtcld"], "f64")
         dt_operand = rounded(dt, dtype)  # scalar → tensor dtype before multiply
