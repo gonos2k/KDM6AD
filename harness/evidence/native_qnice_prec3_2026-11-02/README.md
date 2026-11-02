@@ -13,6 +13,8 @@ The [private exporter](export_private_endpoint.py) read the retained `00:01:00` 
 
 The needed next capture is an isolated, source/build-pinned run. At the `moist_physics_prep_em` assignment and the selected mp137 call it must record native `(i,j,k)`, time, tile/rank/call, AL, ALB, RHO/DEN, QV and QNICE f32 words. It must bind the instrumented host source and objects to the actual executable and DSO, then compare capture-off/on endpoints. To explain pre-C3 NI changes, capture full-column pre/post sedimentation with applied departure/arrival, top/bottom fluxes and density/layer geometry, and the ordered NI updates and number rewrites between step entry and C3. Equal sparse endpoints alone are insufficient. The original QNICE producer/restart history remains separate.
 
+The [applied-change capture contract](../../../docs/NATIVE_QNICE_APPLIED_CAPTURE_CONTRACT_20261102.md) fixes the complete stage inventory, execution identity, source-order budget checks and storage preflight for that future native run.
+
 No new host, compiled C++/Fortran or RTTOV execution was performed here. The parent verifier **does** run local Python C5/limiter and derivative replays. Private endpoint bytes are not redistributed; the extraction and source hash are attestations with an auditable selection recipe. `physical_unit_status: INCONCLUSIVE`.
 
 ```bash
