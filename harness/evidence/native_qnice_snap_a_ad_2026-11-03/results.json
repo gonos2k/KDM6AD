@@ -1,0 +1,1524 @@
+{
+  "baseline_39_gates_and_branch_winners_equal": true,
+  "baseline_39_outputs_raw_bits_equal": true,
+  "branch_signature_baseline": [
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      false
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  ],
+  "changed_native_levels_1based": [
+    25,
+    20,
+    19,
+    18,
+    17,
+    16
+  ],
+  "cotangent": [
+    0.5,
+    -0.3,
+    1.1,
+    -0.7,
+    0.25,
+    0.9
+  ],
+  "full_host_or_rttov_derivative_certified": false,
+  "joint_jvp_dot_cotangent": 4.572867058883624,
+  "joint_seed_dot_vjp": 4.57286705888362,
+  "lambda_raw_bit_matches_on_this_platform": 39,
+  "lambda_raw_max_relative_difference": 0.0,
+  "ni_gate_boundary_levels_1based": [
+    25,
+    19,
+    18,
+    17,
+    16
+  ],
+  "observed_weighted_ni_dz_delta": 49027.35812796282,
+  "oracle_under_test": "current checkout oracle.kdm6.coordinator._limit_number_for_lamda",
+  "parent_capture_sha256": "27b89eb5b38b88174f55188be7d724cd74df8e6577c034a044581c78b3dff3bf",
+  "physical_unit_status": "INCONCLUSIVE",
+  "relative_directions": {
+    "relative_dend": {
+      "finite_differences": [
+        {
+          "actual_input_gap": [
+            0.0007028936743735947,
+            0.0010647698640824377,
+            0.0011533328294754952,
+            0.0012438772916794072,
+            0.0013326801061630533,
+            0.001419969916343744
+          ],
+          "actual_spacing_fd": [
+            3.3864200867248032e-06,
+            22.098723072161548,
+            20.46906991898126,
+            15.796100824315612,
+            8.31364022014718,
+            0.7932710418717928
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.001,
+          "input_minus": [
+            0.35109539034962656,
+            0.531852547109127,
+            0.5760897483229637,
+            0.6213167071938515,
+            0.6656737130284309,
+            0.7092749732136726
+          ],
+          "input_plus": [
+            0.35179828402400015,
+            0.5329173169732094,
+            0.5772430811524392,
+            0.6225605844855309,
+            0.667006393134594,
+            0.7106949431300164
+          ],
+          "max_abs_fd_minus_jvp": 1.8687273950490635e-12,
+          "max_scaled_fd_minus_jvp": 8.456268667410018e-14,
+          "min_output_signal_ulps": 9360326749387.0,
+          "output_minus": [
+            3.3830336666380644e-06,
+            22.076624349091254,
+            20.44860084906134,
+            15.780304723492046,
+            8.305326579927264,
+            0.7924777708299039
+          ],
+          "output_plus": [
+            3.3898065068115137e-06,
+            22.12082179523558,
+            20.489538988899305,
+            15.811896925140678,
+            8.32195386036756,
+            0.7940643129136475
+          ]
+        },
+        {
+          "actual_input_gap": [
+            7.028936743735947e-05,
+            0.00010647698640831038,
+            0.00011533328294754952,
+            0.0001243877291678963,
+            0.00013326801061630533,
+            0.0001419969916343078
+          ],
+          "actual_spacing_fd": [
+            3.386420086725862e-06,
+            22.09872307217437,
+            20.46906991898303,
+            15.796100824308816,
+            8.313640220158725,
+            0.7932710418715544
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.0001,
+          "input_minus": [
+            0.3514116925030947,
+            0.5323316935479641,
+            0.5766087480962276,
+            0.6218764519751072,
+            0.6662734190762043,
+            0.7099139596760273
+          ],
+          "input_plus": [
+            0.35148198187053203,
+            0.5324381705343724,
+            0.5767240813791752,
+            0.6220008397042751,
+            0.6664066870868206,
+            0.7100559566676616
+          ],
+          "max_abs_fd_minus_jvp": 1.1313616710140195e-11,
+          "max_scaled_fd_minus_jvp": 1.3608499298204644e-12,
+          "min_output_signal_ulps": 936032674940.0,
+          "output_minus": [
+            3.3860814447161165e-06,
+            22.096513199856197,
+            20.467023011988424,
+            15.794521214233933,
+            8.312808856125395,
+            0.7931917147675887
+          ],
+          "output_plus": [
+            3.3867587287334616e-06,
+            22.100932944470635,
+            20.47111682597222,
+            15.797680434398794,
+            8.314471584169427,
+            0.7933503689759629
+          ]
+        },
+        {
+          "actual_input_gap": [
+            7.028936743758152e-06,
+            1.064769864078663e-05,
+            1.153332829484377e-05,
+            1.2438772916789631e-05,
+            1.3326801061586124e-05,
+            1.419969916338637e-05
+          ],
+          "actual_spacing_fd": [
+            3.386420086700341e-06,
+            22.09872307198232,
+            20.46906991887869,
+            15.796100824344347,
+            8.31364022009761,
+            0.7932710418740353
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 1e-05,
+          "input_minus": [
+            0.3514433227184415,
+            0.5323796081918478,
+            0.576660648073554,
+            0.6219324264532328,
+            0.6663333896809817,
+            0.7099778583222628
+          ],
+          "input_plus": [
+            0.35145035165518523,
+            0.5323902558904886,
+            0.5766721814018488,
+            0.6219448652261496,
+            0.6663467164820432,
+            0.7099920580214262
+          ],
+          "max_abs_fd_minus_jvp": 1.8109602706317673e-10,
+          "max_scaled_fd_minus_jvp": 8.194863860314796e-12,
+          "min_output_signal_ulps": 93603267493.0,
+          "output_minus": [
+            3.3863862225239217e-06,
+            22.098502084932697,
+            20.468865228281132,
+            15.795942863308118,
+            8.313557083745211,
+            0.7932631091613571
+          ],
+          "output_plus": [
+            3.386453950925656e-06,
+            22.098944059394135,
+            20.469274609679513,
+            15.796258785324605,
+            8.313723356549612,
+            0.7932789745821945
+          ]
+        }
+      ],
+      "jvp": [
+        3.3864200867247893e-06,
+        22.098723072163416,
+        20.469069918980324,
+        15.796100824316364,
+        8.31364022014741,
+        0.7932710418717757
+      ]
+    },
+    "relative_ni_level20": {
+      "finite_differences": [
+        {
+          "actual_input_gap": [
+            0.0,
+            3.5377722833254688e-06,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "actual_spacing_fd": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.001,
+          "input_minus": [
+            0.0,
+            0.0017671172555209856,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "input_plus": [
+            0.0,
+            0.001770655027804311,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_abs_fd_minus_jvp": 0.0,
+          "max_scaled_fd_minus_jvp": 0.0,
+          "min_output_signal_ulps": 0.0,
+          "output_minus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ],
+          "output_plus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ]
+        },
+        {
+          "actual_input_gap": [
+            0.0,
+            3.5377722833272035e-07,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "actual_spacing_fd": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.0001,
+          "input_minus": [
+            0.0,
+            0.001768709253048482,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "input_plus": [
+            0.0,
+            0.0017690630302768147,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_abs_fd_minus_jvp": 0.0,
+          "max_scaled_fd_minus_jvp": 0.0,
+          "min_output_signal_ulps": 0.0,
+          "output_minus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ],
+          "output_plus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ]
+        },
+        {
+          "actual_input_gap": [
+            0.0,
+            3.5377722833272035e-08,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "actual_spacing_fd": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 1e-05,
+          "input_minus": [
+            0.0,
+            0.0017688684528012317,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "input_plus": [
+            0.0,
+            0.001768903830524065,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_abs_fd_minus_jvp": 0.0,
+          "max_scaled_fd_minus_jvp": 0.0,
+          "min_output_signal_ulps": 0.0,
+          "output_minus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ],
+          "output_plus": [
+            3.3864200867247893e-06,
+            22.098723072163416,
+            20.469069918980324,
+            15.796100824316364,
+            8.31364022014741,
+            0.7932710418717757
+          ]
+        }
+      ],
+      "jvp": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "relative_q": {
+      "finite_differences": [
+        {
+          "actual_input_gap": [
+            4.043649794690367e-17,
+            1.741942310879003e-10,
+            1.4895867291893586e-10,
+            1.0658465826756733e-10,
+            5.235855480808364e-11,
+            4.68883334259164e-12
+          ],
+          "actual_spacing_fd": [
+            3.386420086724774e-06,
+            22.09872307216333,
+            20.469069918982672,
+            15.79610082431679,
+            8.313640220147649,
+            0.7932710418717676
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.001,
+          "input_minus": [
+            2.019803072447786e-14,
+            8.701001842840493e-08,
+            7.440485712301411e-08,
+            5.323903680465279e-08,
+            2.6153098126638706e-08,
+            2.342072254624359e-09
+          ],
+          "input_plus": [
+            2.0238467222424765e-14,
+            8.718421265949283e-08,
+            7.455381579593305e-08,
+            5.3345621462920355e-08,
+            2.620545668144679e-08,
+            2.3467610879669505e-09
+          ],
+          "max_abs_fd_minus_jvp": 2.348343741687131e-12,
+          "max_scaled_fd_minus_jvp": 1.14726450736757e-13,
+          "min_output_signal_ulps": 9360326749387.0,
+          "output_minus": [
+            3.383033666638064e-06,
+            22.076624349091254,
+            20.448600849061343,
+            15.780304723492046,
+            8.305326579927264,
+            0.7924777708299039
+          ],
+          "output_plus": [
+            3.3898065068115137e-06,
+            22.12082179523558,
+            20.489538988899305,
+            15.811896925140678,
+            8.32195386036756,
+            0.7940643129136475
+          ]
+        },
+        {
+          "actual_input_gap": [
+            4.043649794690367e-18,
+            1.741942310879003e-11,
+            1.489586729189094e-11,
+            1.065846582675144e-11,
+            5.235855480808364e-12,
+            4.688833342592467e-13
+          ],
+          "actual_spacing_fd": [
+            3.3864200867256206e-06,
+            22.098723072172213,
+            20.469069918989863,
+            15.796100824312202,
+            8.313640220159195,
+            0.7932710418715722
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 0.0001,
+          "input_minus": [
+            2.0216227148553968e-14,
+            8.708840583239449e-08,
+            7.447188852582764e-08,
+            5.3286999900873196e-08,
+            2.6176659476302343e-08,
+            2.344182229628525e-09
+          ],
+          "input_plus": [
+            2.0220270798348658e-14,
+            8.710582525550328e-08,
+            7.448678439311953e-08,
+            5.329765836669995e-08,
+            2.618189533178315e-08,
+            2.3446511129627843e-09
+          ],
+          "max_abs_fd_minus_jvp": 1.1784351272581262e-11,
+          "max_scaled_fd_minus_jvp": 1.41747188482163e-12,
+          "min_output_signal_ulps": 936032674940.0,
+          "output_minus": [
+            3.3860814447161165e-06,
+            22.0965131998562,
+            20.467023011988424,
+            15.794521214233933,
+            8.312808856125395,
+            0.7931917147675887
+          ],
+          "output_plus": [
+            3.3867587287334616e-06,
+            22.100932944470635,
+            20.47111682597222,
+            15.797680434398794,
+            8.314471584169427,
+            0.793350368975963
+          ]
+        },
+        {
+          "actual_input_gap": [
+            4.0436497946966776e-19,
+            1.74194231088165e-12,
+            1.4895867291890939e-12,
+            1.0658465826817614e-12,
+            5.235855480841451e-13,
+            4.688833342567652e-14
+          ],
+          "actual_spacing_fd": [
+            3.3864200867055125e-06,
+            22.098723072049815,
+            20.469069919043154,
+            15.796100824249656,
+            8.31364022010666,
+            0.7932710418752155
+          ],
+          "branch_signature_minus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "branch_signature_plus": [
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              true,
+              false,
+              false,
+              true
+            ]
+          ],
+          "h": 1e-05,
+          "input_minus": [
+            2.0218046790961578e-14,
+            8.709624457279344e-08,
+            7.447859166610899e-08,
+            5.329179621049523e-08,
+            2.6179015611268705e-08,
+            2.344393227128942e-09
+          ],
+          "input_plus": [
+            2.0218451155941048e-14,
+            8.709798651510433e-08,
+            7.448008125283818e-08,
+            5.329286205707791e-08,
+            2.617953919681679e-08,
+            2.3444401154623675e-09
+          ],
+          "max_abs_fd_minus_jvp": 1.1360157259332482e-10,
+          "max_scaled_fd_minus_jvp": 5.1406396750779985e-12,
+          "min_output_signal_ulps": 93603267494.0,
+          "output_minus": [
+            3.3863862225239217e-06,
+            22.098502084932697,
+            20.468865228281132,
+            15.795942863308118,
+            8.31355708374521,
+            0.7932631091613571
+          ],
+          "output_plus": [
+            3.386453950925656e-06,
+            22.09894405939414,
+            20.469274609679513,
+            15.796258785324605,
+            8.313723356549612,
+            0.7932789745821945
+          ]
+        }
+      ],
+      "jvp": [
+        3.3864200867247893e-06,
+        22.098723072163416,
+        20.469069918980324,
+        15.796100824316364,
+        8.31364022014741,
+        0.7932710418717757
+      ]
+    }
+  },
+  "schema": "kdm6.native_qnice_snap_a_local_ad.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "selected_levels": [
+    {
+      "dend": 0.35144683718681335,
+      "lambda_low_margin": 9079.9999999999,
+      "lambda_raw": 9.999993137764035e-11,
+      "n_gate_margin": 0.0,
+      "native_level_1based": 25,
+      "ni_after": 3.3864200867247893e-06,
+      "ni_before": 0.0,
+      "ni_two_sided_branch_interior": false,
+      "q": 2.0218248973451313e-14,
+      "q_gate_margin": 1.0218248973451313e-14,
+      "ratio_floor_active": true
+    },
+    {
+      "dend": 0.5323849320411682,
+      "lambda_low_margin": 8688.681699181145,
+      "lambda_raw": 391.31830081885516,
+      "n_gate_margin": 0.0017688861416626483,
+      "native_level_1based": 20,
+      "ni_after": 22.098723072163416,
+      "ni_before": 0.0017688861416626483,
+      "ni_two_sided_branch_interior": true,
+      "q": 8.709711554394888e-08,
+      "q_gate_margin": 8.709710554394889e-08,
+      "ratio_floor_active": false
+    },
+    {
+      "dend": 0.5766664147377014,
+      "lambda_low_margin": 9079.9999999999,
+      "lambda_raw": 9.999993137764035e-11,
+      "n_gate_margin": 0.0,
+      "native_level_1based": 19,
+      "ni_after": 20.469069918980324,
+      "ni_before": 0.0,
+      "ni_two_sided_branch_interior": false,
+      "q": 7.447933645947358e-08,
+      "q_gate_margin": 7.447932645947358e-08,
+      "ratio_floor_active": true
+    },
+    {
+      "dend": 0.6219386458396912,
+      "lambda_low_margin": 9079.9999999999,
+      "lambda_raw": 9.999993137764035e-11,
+      "n_gate_margin": 0.0,
+      "native_level_1based": 18,
+      "ni_after": 15.796100824316364,
+      "ni_before": 0.0,
+      "ni_two_sided_branch_interior": false,
+      "q": 5.329232913378657e-08,
+      "q_gate_margin": 5.329231913378657e-08,
+      "ratio_floor_active": true
+    },
+    {
+      "dend": 0.6663400530815125,
+      "lambda_low_margin": 9079.9999999999,
+      "lambda_raw": 9.999993137764035e-11,
+      "n_gate_margin": 0.0,
+      "native_level_1based": 17,
+      "ni_after": 8.31364022014741,
+      "ni_before": 0.0,
+      "ni_two_sided_branch_interior": false,
+      "q": 2.6179277404042747e-08,
+      "q_gate_margin": 2.6179267404042748e-08,
+      "ratio_floor_active": true
+    },
+    {
+      "dend": 0.7099849581718445,
+      "lambda_low_margin": 9079.9999999999,
+      "lambda_raw": 9.999993137764035e-11,
+      "n_gate_margin": 0.0,
+      "native_level_1based": 16,
+      "ni_after": 0.7932710418717757,
+      "ni_before": 0.0,
+      "ni_two_sided_branch_interior": false,
+      "q": 2.3444166712956547e-09,
+      "q_gate_margin": 2.344406671295655e-09,
+      "ratio_floor_active": true
+    }
+  ],
+  "source_attribution": {
+    "archived_sha256": {
+      "cpp_fconst.h.txt": "0bd277fe788a0b334441c9295fdcef8d0cb8f8eefd9ce5d98172b4cef63aba1d",
+      "oracle_constants.py.txt": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+      "oracle_coordinator.py.txt": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+      "oracle_fconst.py.txt": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2"
+    },
+    "current_checkout_equal_to_archived": {
+      "cpp_fconst.h.txt": true,
+      "oracle_constants.py.txt": true,
+      "oracle_coordinator.py.txt": true,
+      "oracle_fconst.py.txt": true
+    },
+    "current_checkout_sha256": {
+      "cpp_fconst.h.txt": "0bd277fe788a0b334441c9295fdcef8d0cb8f8eefd9ce5d98172b4cef63aba1d",
+      "oracle_constants.py.txt": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+      "oracle_coordinator.py.txt": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+      "oracle_fconst.py.txt": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2"
+    }
+  },
+  "source_constants": {
+    "inverse_dmi_f32_widened_f64": 0.3333333432674408,
+    "lambda_max": 1820000.0,
+    "lambda_min": 9080.0,
+    "pidni_f32_bits": "44c4597c",
+    "pidni_widened_f64": 1570.79638671875,
+    "q_gate": 1e-14
+  },
+  "vjp_dend": [
+    4.8178269490653e-06,
+    -12.452675728877262,
+    39.04506372392056,
+    -17.778716037323623,
+    3.1191432143770648,
+    1.005576145617152
+  ],
+  "vjp_ni_level20": 0.0,
+  "vjp_q": [
+    83746621.45993738,
+    -76117525.59479131,
+    302311728.0741346,
+    -207483342.47623086,
+    79391421.80891109,
+    304529457.7648747
+  ],
+  "zero_ni_levels_two_sided_ni_derivative_claimed": false
+}

@@ -1,0 +1,2760 @@
+"""
+KDM6 kdm62D coordinator — Step F.
+
+각 timestep의 microphysics chain을 *순수 함수* 형태로 묶는다. caller(F4 marshaling)는
+Fortran-side state를 tensor로 변환 → coordinator 호출 → 결과 tensor를 Fortran state로
+write-back.
+
+본 파일은 sub-phase별 함수를 누적한다:
+  F1a (현재): preamble — thermodynamics + cloud DSD + ProgB + slope diagnostics
+  F1b: warm phase (B1-B5)
+  F1c: cold phase (C1-C6)
+  F1d: melt/freeze phase (D1-D5)
+  F1e: state mutation update
+  F2-F4: sub-cycling, marshaling
+
+호출 순서:
+    state, forcing → preamble (F1a) → warm (F1b) → cold (F1c) → melt (F1d)
+                  → state update (F1e) → sedimentation (E with Step E module)
+                  → surface accumulation
+"""
+from __future__ import annotations
+
+import math
+import struct as _struct
+from typing import NamedTuple
+
+import torch
+
+from . import thermo as _thermo
+from . import cloud_dsd as _dsd
+from . import progb as _progb
+from . import slope as _slope
+from . import warm as _warm
+from . import satadj as _satadj
+from . import cold as _cold
+from . import melt_freeze as _mf
+from .process_controls import (ProcessControls, apply_warm_controls,
+    apply_cold_controls, apply_freeze_controls, apply_melt_controls)
+from . import sedimentation as _sed
+from . import constants as c
+from . import fconst as _fc
+
+
+# ─── Step F1a: Preamble ──────────────────────────────────────────────────────
+
+
+class CoordinatorState(NamedTuple):
+    """Microphysics state — caller가 직접 mutation하지 않고 *new state*를 받는다."""
+    qv: torch.Tensor   # water vapor
+    qc: torch.Tensor   # cloud water
+    qr: torch.Tensor   # rain
+    qs: torch.Tensor   # snow
+    qg: torch.Tensor   # graupel
+    qi: torch.Tensor   # cloud ice
+    nc: torch.Tensor   # cloud number
+    nr: torch.Tensor   # rain number
+    ni: torch.Tensor   # ice number
+    brs: torch.Tensor  # graupel volume mixing ratio
+    t: torch.Tensor    # temperature
+
+
+class CoordinatorForcing(NamedTuple):
+    """Microphysics forcing (외부 진단)."""
+    p: torch.Tensor    # pressure [Pa]
+    den: torch.Tensor  # moist air density for air properties
+    delz: torch.Tensor # layer thickness
+    dend: torch.Tensor # density for dry-mass moments (legacy: den), NOT rho × delz
+
+
+class CoordinatorParams(NamedTuple):
+    """모든 sub-module의 params를 하나로 묶음."""
+    thermo: _thermo.ThermoParams
+    cloud_dsd: _dsd.CloudDsdParams
+    progb: _progb.ProgBParams
+    slope: _slope.SlopeParams
+    midpoint_trace: bool = False  # unapproved rho_mid=400 S10 oracle counterfactual; default unchanged
+
+
+def default_coordinator_params() -> CoordinatorParams:
+    return CoordinatorParams(
+        thermo=_thermo.default_thermo_params(),
+        cloud_dsd=_dsd.default_cloud_dsd_params(),
+        progb=_progb.default_progb_params(),
+        slope=_slope.default_slope_params(),
+    )
+
+
+class PreambleOutputs(NamedTuple):
+    """F1a 진단 결과 — 후속 phase의 입력으로 사용."""
+    # Thermodynamics
+    cpm: torch.Tensor
+    xl: torch.Tensor
+    supcol: torch.Tensor
+    qs1: torch.Tensor          # saturation w.r.t. water
+    qs2: torch.Tensor          # saturation w.r.t. ice
+    rh_w: torch.Tensor         # rh w.r.t. water
+    rh_ice: torch.Tensor       # rh w.r.t. ice
+    supsat: torch.Tensor
+    # ICE supsat = max(q,qmin)-qs2 DIRECT (Fortran F:1913) — NOT `supsat+qs1-qs2`
+    # (f32 cancellation near saturation perturbs satdt → flips the cold ifsat gate).
+    supsat_ice: torch.Tensor
+    denfac: torch.Tensor
+    work2: torch.Tensor        # venfac
+
+    # Cloud DSD
+    rslopec: torch.Tensor
+    avedia_c: torch.Tensor
+    avedia_r: torch.Tensor
+    sigma_c: torch.Tensor
+    lencon: torch.Tensor
+    lenconcr: torch.Tensor
+
+    # ProgB outputs
+    progb: _progb.ProgBOutputs   # rhox, bg, cmg, pidn0g, avtg, bvtg, ..., precg2
+
+    # Slope outputs
+    slope: _slope.SlopeOutputs   # rslope_r/s/g/i, rslopeb_*, rslope2_*, rslope3_*, rslopemu_*, rsloped_*, vt_*, vtn_*, n0sfac
+
+
+def preamble_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    sea_mask: torch.Tensor,           # (B, K) bool — for qcr (continental vs maritime)
+    *,
+    params: CoordinatorParams,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud-slope inactive gate
+                                                 # (Fortran F:1603, per-column ncmin); None → scalar c.NCMIN
+) -> PreambleOutputs:
+    """F1a — thermodynamics + cloud DSD + ProgB + slope diagnostics 한 번에.
+
+    *No state mutation*: state/forcing read-only. 모든 결과를 PreambleOutputs로 반환.
+    """
+    # ── Thermodynamics ──────────────────────────────────────────────────
+    cpm = _thermo.compute_cpm(state.qv, params=params.thermo)
+    xl = _thermo.compute_xl(state.t, params=params.thermo)
+    supcol = _thermo.compute_supcol(state.t, params=params.thermo)
+    qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=params.thermo)
+    qs2 = _thermo.compute_qs_ice(state.t, forcing.p, params=params.thermo)
+    rh_w = _thermo.compute_rh(state.qv, qs1, params=params.thermo)
+    rh_ice = _thermo.compute_rh(state.qv, qs2, params=params.thermo)
+    supsat = _thermo.compute_supsat(state.qv, qs1, params=params.thermo)
+    # ICE supsat as a DIRECT single subtraction max(q,qmin)-qs2 (Fortran F:1913) — the
+    # cold dep loop's satdt/supice/ifsat driver. compute_supsat(qv,qs2)=max(qv,qmin)-qs2.
+    supsat_ice = _thermo.compute_supsat(state.qv, qs2, params=params.thermo)
+    denfac = _thermo.compute_denfac(forcing.den, params=params.thermo)
+    work2 = _thermo.compute_work2_venfac(forcing.p, state.t, forcing.den, params=params.thermo)
+
+    # ── Cloud DSD ──────────────────────────────────────────────────────
+    rslopec = _dsd.diag_cloud_slope_torch(state.qc, state.nc, forcing.dend, params=params.cloud_dsd,
+                                          ncmin_tensor=ncmin_tensor)
+    avedia_c = _dsd.diag_avedia_cloud_torch(rslopec, params=params.cloud_dsd)
+    sigma_c = _dsd.diag_sigma_cloud_torch(rslopec, params=params.cloud_dsd)
+    lencon, lenconcr = _dsd.diag_lencon_torch(state.qc, forcing.dend, avedia_c, sigma_c)
+    # qcr is computed by caller via diag_qcr_torch(sea_mask).
+
+    # ── ProgB (graupel density 진단) ────────────────────────────────────
+    progb_out = _progb.progb_param_torch(
+        state.qg, state.brs, params=params.progb, midpoint_trace=params.midpoint_trace)
+
+    # ── Slope (4-species) ───────────────────────────────────────────────
+    slope_out = _slope.slope_kdm6_torch(
+        qr=state.qr, qs=state.qs, qg=state.qg, qi=state.qi,
+        nr=state.nr, ni=state.ni,
+        den=forcing.dend, denfac=denfac, t=state.t,
+        pidn0g=progb_out.pidn0g, pvtg=progb_out.pvtg, bvtg=progb_out.bvtg,
+        rslopegbmax=progb_out.rslopegbmax,
+        params=params.slope,
+    )
+
+    # avedia_r uses rslope_r from slope module
+    avedia_r = _dsd.diag_avedia_rain_torch(slope_out.rslope_r, params=params.cloud_dsd)
+
+    return PreambleOutputs(
+        cpm=cpm, xl=xl, supcol=supcol,
+        qs1=qs1, qs2=qs2, rh_w=rh_w, rh_ice=rh_ice, supsat=supsat,
+        supsat_ice=supsat_ice,
+        denfac=denfac, work2=work2,
+        rslopec=rslopec, avedia_c=avedia_c, avedia_r=avedia_r,
+        sigma_c=sigma_c, lencon=lencon, lenconcr=lenconcr,
+        progb=progb_out, slope=slope_out,
+    )
+
+
+# ─── Step F1b: Warm phase chain (B1-B5) ──────────────────────────────────────
+
+
+class WarmPhaseParams(NamedTuple):
+    """B1-B5의 sub-module params 통합."""
+    autoconv: _warm.WarmAutoconvParams
+    accretion: _warm.WarmAccretionParams
+    self_coll: _warm.WarmSelfCollectionParams
+    rain_evap: _warm.WarmRainEvapParams
+    satadj: _satadj.SatAdjParams
+
+
+def default_warm_phase_params(params=None) -> WarmPhaseParams:
+    """params(runtime.Parameters)가 주어지면 G4 leaf(peaut/ncrk1/ncrk2/eccbrk)를
+    warm 하위 번들에 연결한다 — None이면 기존 상수 경로 그대로(byte-불변)."""
+    if params is None:
+        return WarmPhaseParams(
+            autoconv=_warm.default_warm_autoconv_params(),
+            accretion=_warm.default_warm_accretion_params(),
+            self_coll=_warm.default_warm_self_collection_params(),
+            rain_evap=_warm.default_warm_rain_evap_params(),
+            satadj=_satadj.default_satadj_params(),
+        )
+    return WarmPhaseParams(
+        autoconv=_warm.default_warm_autoconv_params(peaut=params.peaut),
+        accretion=_warm.default_warm_accretion_params(
+            ncrk1=params.ncrk1, ncrk2=params.ncrk2),
+        self_coll=_warm.default_warm_self_collection_params(
+            ncrk1=params.ncrk1, ncrk2=params.ncrk2, eccbrk=params.eccbrk),
+        rain_evap=_warm.default_warm_rain_evap_params(),
+        satadj=_satadj.default_satadj_params(),
+    )
+
+
+class WarmPhaseOutputs(NamedTuple):
+    """B1-B5 모든 rate."""
+    praut: torch.Tensor       # B1 mass autoconv (qc → qr)
+    nraut: torch.Tensor       # B1 number
+    pracw: torch.Tensor       # B2 mass accretion
+    nracw: torch.Tensor
+    nccol: torch.Tensor       # B3 cloud self-collection
+    nrcol: torch.Tensor       # B3 rain self-collection + breakup
+    prevp: torch.Tensor       # B4 rain evap
+    # NOTE: no pcond. The warm-phase B5 saturation adjustment is NOT emitted here — qv↔qc
+    # condensation is done once, in apply_satadj_step_torch (after state_update +
+    # reclassifications, Fortran F:2922-2943). Mirrors the C++ WarmPhaseOutputs (8 rates).
+    rain_complete_evap: torch.Tensor = None  # B4 complete-evap mask → NR→NCCN (Task #74)
+
+
+def warm_phase_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0r: torch.Tensor,            # (B, K) — caller-supplied (slope from nr/(rslope·rslopemu·g1pmr))
+    work1_r: torch.Tensor,         # (B, K) — caller-supplied rain capacitance
+    qcr: torch.Tensor,             # (B, K) — caller-supplied (diag_qcr_torch with sea_mask)
+    *,
+    params: WarmPhaseParams,
+    dtcld: float,
+) -> WarmPhaseOutputs:
+    """F1b — warm phase chain. 모든 phase rate를 묶어 반환.
+
+    Process order (Fortran 1693-1801 + B5 saturation adjustment 2922-2943):
+      B1 autoconv  (qc→qr mass+number)
+      B2 accretion (qc←rain mass+number)
+      B3 self-collection (cloud + rain + break-up)
+      B4 rain evap/cond (qr↔qv)
+      (B5 saturation adjustment qv↔qc is DEFERRED to apply_satadj_step_torch, F:2922-2943)
+
+    *No state mutation* — caller가 F1e에서 적용.
+    """
+    # rslopec3 = rslopec^3 (derived helper)
+    rslopec3 = pre.rslopec * pre.rslopec * pre.rslopec
+
+    # ── B1: Autoconversion ─────────────────────────────────────────────
+    praut, nraut = _warm.autoconv_torch(
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
+        qcr, pre.lenconcr,
+        params=params.autoconv, dtcld=dtcld,
+    )
+
+    # ── B2: Accretion ──────────────────────────────────────────────────
+    pracw, nracw = _warm.accretion_torch(
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
+        pre.avedia_r, rslopec3, pre.slope.rslope3_r, pre.lenconcr,
+        params=params.accretion, dtcld=dtcld,
+    )
+
+    # ── B3: Self-collection ────────────────────────────────────────────
+    nccol, nrcol = _warm.self_collection_torch(
+        state.nc, state.nr, state.qr,
+        pre.avedia_c, pre.avedia_r, rslopec3, pre.slope.rslope3_r, pre.lenconcr,
+        params=params.self_coll,
+    )
+
+    # ── B4: Rain evaporation/condensation ──────────────────────────────
+    prevp, rain_complete_evap = _warm.rain_evap_torch(
+        state.qr, pre.rh_w, pre.supsat,
+        n0r, work1_r, pre.work2,
+        pre.slope.rslope_r, pre.slope.rslopeb_r,
+        pre.slope.rslope2_r, pre.slope.rslopemu_r,
+        params=params.rain_evap, dtcld=dtcld,
+        return_complete_evap=True,
+    )
+
+    # ── B5: Saturation adjustment — DEFERRED (not computed here). qv↔qc condensation is
+    # done once in apply_satadj_step_torch, after state_update + reclassifications
+    # (Fortran F:2922-2943). A duplicate warm-phase satadj used to live here, but its pcond
+    # output was never consumed by the driver (apply_satadj_step recomputes it), so it was
+    # removed to drop dead compute and stay structurally aligned with the C++ WarmPhaseOutputs
+    # (8 rates). The qv-dependence of the warm phase therefore lives only in apply_satadj_step.
+
+    return WarmPhaseOutputs(
+        praut=praut, nraut=nraut,
+        pracw=pracw, nracw=nracw,
+        nccol=nccol, nrcol=nrcol,
+        prevp=prevp,
+        rain_complete_evap=rain_complete_evap,
+    )
+
+
+# ─── Step F1c: Cold phase chain (C1-C6) ──────────────────────────────────────
+
+
+class ColdPhaseParams(NamedTuple):
+    """C1-C6의 sub-module params 통합."""
+    ice_accretion: _cold.IceAccretionParams
+    ice_to_snow_graupel: _cold.IceToSnowGraupelParams
+    number_accretion: _cold.NumberAccretionParams
+    cloud_water_riming: _cold.CloudWaterRimingParams
+    rsg_collection: _cold.RainSnowGraupelCollectionParams
+    hallett_mossop: _cold.HallettMossopParams
+    ice_nucleation: _cold.IceNucleationParams
+    dep_sub: _cold.DepSubParams
+    ice_aggregation: _cold.IceAggregationParams
+    snow_evap: _cold.SnowEvapParams
+    graupel_evap: _cold.GraupelEvapParams
+
+
+def default_cold_phase_params() -> ColdPhaseParams:
+    return ColdPhaseParams(
+        ice_accretion=_cold.default_ice_accretion_params(),
+        ice_to_snow_graupel=_cold.default_ice_to_snow_graupel_params(),
+        number_accretion=_cold.default_number_accretion_params(),
+        cloud_water_riming=_cold.default_cloud_water_riming_params(),
+        rsg_collection=_cold.default_rain_snow_graupel_collection_params(),
+        hallett_mossop=_cold.default_hallett_mossop_params(),
+        ice_nucleation=_cold.default_ice_nucleation_params(),
+        dep_sub=_cold.default_dep_sub_params(),
+        ice_aggregation=_cold.default_ice_aggregation_params(),
+        snow_evap=_cold.default_snow_evap_params(),
+        graupel_evap=_cold.default_graupel_evap_params(),
+    )
+
+
+class ColdPhaseOutputs(NamedTuple):
+    """C1-C6 모든 rate. HM의 *_adj는 caller가 후속 chain에 사용해야 함."""
+    # C1
+    praci: torch.Tensor
+    piacr: torch.Tensor
+    # C2
+    psaci: torch.Tensor
+    pgaci: torch.Tensor
+    # C2b
+    nraci: torch.Tensor
+    niacr: torch.Tensor
+    nsaci: torch.Tensor
+    ngaci: torch.Tensor
+    # C2c
+    psacw: torch.Tensor
+    nsacw: torch.Tensor
+    pgacw: torch.Tensor
+    ngacw: torch.Tensor
+    paacw_adj: torch.Tensor   # post-HM
+    naacw: torch.Tensor
+    piacw: torch.Tensor
+    niacw: torch.Tensor
+    # C2d
+    pracs: torch.Tensor
+    psacr_adj: torch.Tensor   # post-HM
+    nsacr: torch.Tensor
+    pgacr_adj: torch.Tensor   # post-HM
+    ngacr: torch.Tensor
+    # C2e
+    pmulcs: torch.Tensor
+    pmulrs: torch.Tensor
+    pmulcg: torch.Tensor
+    pmulrg: torch.Tensor
+    # C2e number outputs — review3#2: ni number balance에 필요
+    nmulcs: torch.Tensor
+    nmulrs: torch.Tensor
+    nmulcg: torch.Tensor
+    nmulrg: torch.Tensor
+    # C3
+    pinud: torch.Tensor
+    ninud: torch.Tensor
+    # C4
+    pidep: torch.Tensor
+    psdep: torch.Tensor
+    pgdep: torch.Tensor
+    ifsat: torch.Tensor
+    ice_complete_sublim: torch.Tensor
+    # C5
+    psaut: torch.Tensor
+    nsaut: torch.Tensor
+    # C6
+    psevp: torch.Tensor
+    # C6' (codex#4): graupel evap (Fortran 2438-2440)
+    pgevp: torch.Tensor
+
+
+def cold_phase_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    prevp: torch.Tensor,           # B4 output (rain evap rate, used in C3/C4)
+    n0i: torch.Tensor,             # caller-supplied
+    n0r: torch.Tensor,             # rain intercept (caller-supplied)
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    n0c: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,        # for D3 Bigg cloud (not used here but reserve)
+    avedia_i: torch.Tensor,
+    work1_ice: torch.Tensor,       # work1(:,:,2) — ice deposition coefficient
+    work1_water: torch.Tensor,     # work1(:,:,1) — water diffusivity (review3#1: psevp/pgevp용)
+    *,
+    params: ColdPhaseParams,
+    dtcld: float,
+) -> ColdPhaseOutputs:
+    """F1c — cold phase chain. 10개 cold module 함수 sequential chain.
+
+    Process order (Fortran 1818-2440):
+      C1 ice accretion (praci, piacr)
+      C2 ice→snow/graupel (psaci, pgaci)
+      C2b number accretion (nraci, niacr, nsaci, ngaci)
+      C2c cloud water riming (8 outputs incl. paacw)
+      C2d rain-snow-graupel collection (pracs, psacr, nsacr, pgacr, ngacr; nracs=0)
+      C2e Hallett-Mossop (pmul*, nmul*, paacw_adj, psacr_adj, pgacr_adj)
+      C3 ice nucleation (pinud, ninud, ifsat)
+      C4 deposition/sublimation (pidep, psdep, pgdep, ifsat_final, ice_complete_sublim)
+      C5 ice aggregation (psaut, nsaut)
+      C6 snow evap (psevp)
+
+    HM (C2e)의 *_adj outputs를 caller chain에 사용.
+    """
+    rslopec3 = pre.rslopec * pre.rslopec * pre.rslopec
+    s = pre.slope  # alias
+
+    # Codex stop-review fix: the cold deposition/nucleation driver is ICE
+    # supersaturation — Fortran module_mp_kdm6.F:1913 supsat=max(q,qmin)-qs(i,k,2) (qs2=ice
+    # sat), feeding satdt/supice/ifsat + the C3 gate + pidep/psdep/pgdep caps. Use the
+    # DIRECT single subtraction (pre.supsat_ice) — the prior `supsat + qs1 - qs2`
+    # reconstruction lost ~1 ULP via f32 cancellation near saturation, perturbing satdt
+    # → flipping the cold ifsat saturation-exhaustion gate (the dep cascade; C++ parity).
+    # Used ONLY by C3 (ice_nucleation) + C4 (dep_sub); snow/graupel evap use rh_*.
+    supsat_ice = pre.supsat_ice
+
+    # ── C1: ice accretion ──────────────────────────────────────────────
+    # Fix [codex#3]: aux.n0r 사용 (이전 zeros placeholder는 cold-rain coupling 무효화)
+    praci, piacr = _cold.ice_accretion_torch(
+        state.qi, state.qr, forcing.dend, n0i,
+        n0r=n0r,  # codex#3 fix
+        vt2r=s.vt_r, vt2i=s.vt_i,
+        rslope_r=s.rslope_r, rslope2_r=s.rslope2_r, rslope3_r=s.rslope3_r,
+        rslopemu_r=s.rslopemu_r, rsloped_r=s.rsloped_r,
+        rslope_i=s.rslope_i, rslope2_i=s.rslope2_i, rslope3_i=s.rslope3_i,
+        rslopemu_i=s.rslopemu_i, rsloped_i=s.rsloped_i,
+        params=params.ice_accretion, dtcld=dtcld,
+    )
+
+    # ── C2: ice → snow/graupel ────────────────────────────────────────
+    psaci, pgaci = _cold.ice_to_snow_graupel_torch(
+        state.qi, state.qs, state.qg, forcing.dend,
+        n0i, n0so, n0go, s.n0sfac,
+        pre.supcol, s.vt_s, s.vt_g, s.vt_i,
+        s.rslope_s, s.rslope2_s, s.rslope3_s, s.rslopemu_s,
+        s.rslope_g, s.rslope2_g, s.rslope3_g, s.rslopemu_g,
+        s.rslope_i, s.rslope2_i, s.rslope3_i, s.rslopemu_i, s.rsloped_i,
+        params=params.ice_to_snow_graupel, dtcld=dtcld,
+    )
+
+    # ── C2b: number accretion ────────────────────────────────────────
+    nraci, niacr, nsaci, ngaci = _cold.number_accretion_torch(
+        state.qi, state.qs, state.qg, state.qr, state.ni, state.nr,
+        forcing.dend, n0i,
+        n0r=n0r,  # codex#3 fix
+        n0sfac=s.n0sfac, supcol=pre.supcol,
+        vt2r=s.vt_r, vt2s=s.vt_s, vt2g=s.vt_g, vt2i=s.vt_i,
+        rslope_r=s.rslope_r, rslope2_r=s.rslope2_r, rslope3_r=s.rslope3_r, rslopemu_r=s.rslopemu_r,
+        rslope_s=s.rslope_s, rslope2_s=s.rslope2_s, rslope3_s=s.rslope3_s, rslopemu_s=s.rslopemu_s,
+        rslope_g=s.rslope_g, rslope2_g=s.rslope2_g, rslope3_g=s.rslope3_g, rslopemu_g=s.rslopemu_g,
+        rslope_i=s.rslope_i, rslope2_i=s.rslope2_i, rslope3_i=s.rslope3_i, rslopemu_i=s.rslopemu_i,
+        params=params.number_accretion, dtcld=dtcld,
+    )
+
+    # ── C2c: cloud water riming ──────────────────────────────────────
+    cwr = _cold.cloud_water_riming_torch(
+        state.qc, state.nc, state.qs, state.qg, state.qi,
+        forcing.dend, pre.denfac,
+        n0so, n0go, n0i, n0c, s.n0sfac,
+        avtg=pre.progb.avtg, g3pbg=pre.progb.g3pbg,
+        avedia_i=avedia_i, supcol=pre.supcol,
+        rslope3_s=s.rslope3_s, rslopeb_s=s.rslopeb_s, rslopemu_s=s.rslopemu_s,
+        rslope3_g=s.rslope3_g, rslopeb_g=s.rslopeb_g, rslopemu_g=s.rslopemu_g,
+        rslope3_i=s.rslope3_i, rslopeb_i=s.rslopeb_i, rslopemu_i=s.rslopemu_i,
+        rslopec=pre.rslopec, rslopecmu=rslopecmu,
+        params=params.cloud_water_riming, dtcld=dtcld,
+    )
+
+    # ── C2d: rain-snow-graupel collection ────────────────────────────
+    rsgc = _cold.rain_snow_graupel_collection_torch(
+        state.qr, state.qs, state.qg, state.nr,
+        forcing.dend,
+        n0r=n0r,  # codex#3 fix
+        n0so=n0so, n0go=n0go, n0sfac=s.n0sfac,
+        supcol=pre.supcol,
+        vt2r=s.vt_r, vt2s=s.vt_s, vt2g=s.vt_g,
+        rslope_r=s.rslope_r, rslope2_r=s.rslope2_r, rslope3_r=s.rslope3_r,
+        rslopemu_r=s.rslopemu_r, rsloped_r=s.rsloped_r,
+        rslope_s=s.rslope_s, rslope2_s=s.rslope2_s, rslope3_s=s.rslope3_s,
+        rslopemu_s=s.rslopemu_s, rsloped_s=s.rsloped_s,
+        rslope_g=s.rslope_g, rslope2_g=s.rslope2_g, rslope3_g=s.rslope3_g,
+        rslopemu_g=s.rslopemu_g,
+        params=params.rsg_collection, dtcld=dtcld,
+    )
+
+    # ── C2e: Hallett-Mossop multiplication ───────────────────────────
+    hm = _cold.hallett_mossop_torch(
+        cwr.paacw, rsgc.psacr, rsgc.pgacr,
+        state.qc, state.qr, state.qs, state.qg,
+        state.t, forcing.dend,
+        params=params.hallett_mossop,
+    )
+
+    # ── C3: ice nucleation ───────────────────────────────────────────
+    icenuc = _cold.ice_nucleation_torch(
+        pre.supcol, supsat_ice, pre.rh_ice, prevp,
+        state.ni, forcing.dend,
+        params=params.ice_nucleation, dtcld=dtcld,
+    )
+
+    # ── C4: deposition/sublimation ───────────────────────────────────
+    depsub = _cold.dep_sub_torch(
+        state.qi, state.qs, state.qg,
+        pre.rh_ice, pre.supcol, supsat_ice,
+        prevp, icenuc.pinud, icenuc.ifsat,
+        n0i, n0so, n0go, s.n0sfac,
+        work1_ice, pre.work2,
+        precg2=pre.progb.precg2,
+        rslope_s=s.rslope_s, rslope2_s=s.rslope2_s, rslopeb_s=s.rslopeb_s, rslopemu_s=s.rslopemu_s,
+        rslope_g=s.rslope_g, rslope2_g=s.rslope2_g, rslopeb_g=s.rslopeb_g, rslopemu_g=s.rslopemu_g,
+        rslope2_i=s.rslope2_i, rslopemu_i=s.rslopemu_i,
+        params=params.dep_sub, dtcld=dtcld,
+    )
+
+    # ── C5: ice aggregation ──────────────────────────────────────────
+    psaut, nsaut = _cold.ice_aggregation_torch(
+        state.qi, state.ni, state.t, forcing.dend, pre.supcol,
+        params=params.ice_aggregation, dtcld=dtcld,
+    )
+
+    # ── C6: snow evap (warm-only) ────────────────────────────────────
+    # review3#1 fix: Fortran 1679 work1(i,k,1)=water diffusivity. ice 분기 아님.
+    psevp = _cold.snow_evap_torch(
+        state.qs, pre.rh_w, pre.supcol,
+        n0so, s.n0sfac, work1_water, pre.work2,
+        s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
+        params=params.snow_evap, dtcld=dtcld,
+    )
+
+    # ── C6': graupel evap (warm-only) — codex#4 fix + review3#1 ─────
+    # Fortran 2438-2440: psevp와 동일 구조 (work1(:,:,1) water branch),
+    # n0sfac 없음, precg2 (ProgB runtime).
+    pgevp = _cold.graupel_evap_torch(
+        state.qg, pre.rh_w, pre.supcol,
+        n0go, work1_water, pre.work2,
+        s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
+        pre.progb.precg2,
+        params=params.graupel_evap, dtcld=dtcld,
+    )
+
+    return ColdPhaseOutputs(
+        praci=praci, piacr=piacr,
+        psaci=psaci, pgaci=pgaci,
+        nraci=nraci, niacr=niacr, nsaci=nsaci, ngaci=ngaci,
+        psacw=cwr.psacw, nsacw=cwr.nsacw,
+        pgacw=cwr.pgacw, ngacw=cwr.ngacw,
+        paacw_adj=hm.paacw_adj, naacw=cwr.naacw,
+        piacw=cwr.piacw, niacw=cwr.niacw,
+        pracs=rsgc.pracs, psacr_adj=hm.psacr_adj, nsacr=rsgc.nsacr,
+        pgacr_adj=hm.pgacr_adj, ngacr=rsgc.ngacr,
+        pmulcs=hm.pmulcs, pmulrs=hm.pmulrs,
+        pmulcg=hm.pmulcg, pmulrg=hm.pmulrg,
+        nmulcs=hm.nmulcs, nmulrs=hm.nmulrs,
+        nmulcg=hm.nmulcg, nmulrg=hm.nmulrg,
+        pinud=icenuc.pinud, ninud=icenuc.ninud,
+        pidep=depsub.pidep, psdep=depsub.psdep, pgdep=depsub.pgdep,
+        ifsat=depsub.ifsat, ice_complete_sublim=depsub.ice_complete_sublim,
+        psaut=psaut, nsaut=nsaut,
+        psevp=psevp,
+        pgevp=pgevp,
+    )
+
+
+# ─── Step F1d: Melt/Freeze phase chain (D1-D5) ───────────────────────────────
+
+
+class MeltFreezePhaseParams(NamedTuple):
+    melting: _mf.MeltingParams
+    contact: _mf.ContactFreezingParams
+    bigg_cloud: _mf.BiggCloudParams
+    bigg_rain: _mf.BiggRainParams
+    enhanced_melt: _mf.EnhancedMeltingParams
+
+
+def default_melt_freeze_phase_params() -> MeltFreezePhaseParams:
+    return MeltFreezePhaseParams(
+        melting=_mf.default_melting_params(),
+        contact=_mf.default_contact_freezing_params(),
+        bigg_cloud=_mf.default_bigg_cloud_params(),
+        bigg_rain=_mf.default_bigg_rain_params(),
+        enhanced_melt=_mf.default_enhanced_melting_params(),
+    )
+
+
+class MeltFreezePhaseOutputs(NamedTuple):
+    """D1-D5 모든 rate."""
+    # D1
+    psmlt: torch.Tensor
+    pgmlt: torch.Tensor
+    pimlt_qi: torch.Tensor
+    pimlt_ni: torch.Tensor
+    sfac_melt: torch.Tensor
+    gfac_melt: torch.Tensor
+    delta_brs_melt: torch.Tensor
+    # D2
+    pinuc: torch.Tensor
+    ninuc: torch.Tensor
+    # D3
+    pfrzdtc: torch.Tensor
+    nfrzdtc: torch.Tensor
+    # D4
+    pfrzdtr: torch.Tensor
+    nfrzdtr: torch.Tensor
+    delta_brs_freeze: torch.Tensor
+    # D5
+    pseml: torch.Tensor
+    nseml: torch.Tensor
+    pgeml: torch.Tensor
+    ngeml: torch.Tensor
+
+
+def melt_freeze_d1_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+    midpoint_trace: bool = False,
+) -> MeltFreezePhaseOutputs:
+    """Stage-A STEP 3 split: D1 melt only (warm cells). Applied inline first; a
+    rebuild then re-slopes before D2-D4 (Fortran module_mp_kdm6.F melt :1274-1345 →
+    re-slope :1422-1480 → freeze :1485-1561). Returns D2-D5 zeroed. 1:1 mirror of
+    C++ melt_freeze_d1.
+    """
+    s = pre.slope
+    z = torch.zeros_like(state.qc)
+    melt = _mf.melting_torch(
+        state.qs, state.qg, state.qi, state.ni,
+        state.t, forcing.p, forcing.den, pre.progb.rhox,
+        pre.cpm,   # §35 pgmlt sequential-t coupling (F:1326→1336)
+        n0so, n0go, s.n0sfac, pre.work2, pre.progb.precg2,
+        s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
+        s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
+        params=params.melting, dtcld=dtcld, mass_den=forcing.dend,
+        midpoint_trace=midpoint_trace,
+    )
+    return MeltFreezePhaseOutputs(
+        psmlt=melt.psmlt, pgmlt=melt.pgmlt,
+        pimlt_qi=melt.pimlt_qi, pimlt_ni=melt.pimlt_ni,
+        sfac_melt=melt.sfac, gfac_melt=melt.gfac,
+        delta_brs_melt=melt.delta_brs,
+        pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z,        # D2-D4 → melt_freeze_d2_d4_torch
+        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,
+        pseml=z, nseml=z, pgeml=z, ngeml=z,            # D5
+    )
+
+
+def melt_freeze_d2_d4_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Stage-A STEP 3 split: D2 contact + D3 Bigg-cloud (post-D2 cap) + D4 Bigg-rain,
+    computed on the POST-MELT/re-sloped state. Returns D1+D5 zeroed. 1:1 mirror of
+    C++ melt_freeze_d2_d4.
+    """
+    s = pre.slope
+    z = torch.zeros_like(state.qc)
+
+    # ── D2: Contact freezing ───────────────────────────────────────────
+    rslopec2 = rslopec * rslopec
+    rslopec3 = rslopec2 * rslopec
+    contact = _mf.contact_freezing_torch(
+        state.qc, state.nc, state.t, forcing.p, forcing.den,
+        n0c, rslopec, rslopec2, rslopec3, rslopecmu,
+        pre.supcol,
+        params=params.contact, dtcld=dtcld, mass_den=forcing.dend,
+    )
+
+    # ── D3: Bigg cloud (STEP 4: caps vs POST-D2 qc/nc; Fortran :1512-1537) ──
+    qc_post_d2 = state.qc - contact.pinuc
+    nc_post_d2 = state.nc - contact.ninuc
+    bigg_c = _mf.bigg_cloud_freezing_torch(
+        qc_post_d2, nc_post_d2, forcing.dend, n0c,
+        rslopec, rslopecd, rslopecmu, pre.supcol,
+        params=params.bigg_cloud, dtcld=dtcld,
+    )
+
+    # ── D4: Bigg rain ──────────────────────────────────────────────────
+    bigg_r = _mf.bigg_rain_freezing_torch(
+        state.qr, state.nr, forcing.dend, n0r,
+        s.rslope_r, s.rsloped_r, s.rslopemu_r, pre.supcol,
+        params=params.bigg_rain, dtcld=dtcld,
+    )
+
+    return MeltFreezePhaseOutputs(
+        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z,      # D1 → melt_freeze_d1_torch
+        sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
+        pinuc=contact.pinuc, ninuc=contact.ninuc,
+        pfrzdtc=bigg_c.pfrzdtc, nfrzdtc=bigg_c.nfrzdtc,
+        pfrzdtr=bigg_r.pfrzdtr, nfrzdtr=bigg_r.nfrzdtr,
+        delta_brs_freeze=bigg_r.delta_brs,
+        pseml=z, nseml=z, pgeml=z, ngeml=z,            # D5
+    )
+
+
+def melt_freeze_d1_d4_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Combiner — D1-D4 from one state (D5 zeroed). 1:1 mirror of C++
+    melt_freeze_d1_d4. Used by melt_freeze_phase_torch + tests.
+    """
+    out = melt_freeze_d1_torch(state, forcing, pre, n0so, n0go, params=params, dtcld=dtcld)
+    d234 = melt_freeze_d2_d4_torch(
+        state, forcing, pre, n0c, n0r, rslopec, rslopecmu, rslopecd,
+        params=params, dtcld=dtcld)
+    return out._replace(
+        pinuc=d234.pinuc, ninuc=d234.ninuc,
+        pfrzdtc=d234.pfrzdtc, nfrzdtc=d234.nfrzdtc,
+        pfrzdtr=d234.pfrzdtr, nfrzdtr=d234.nfrzdtr,
+        delta_brs_freeze=d234.delta_brs_freeze,
+    )
+
+
+def melt_freeze_d5_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    cold_out: ColdPhaseOutputs,    # paacw_adj, psacr_adj, pgacr_adj 사용
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Stage-A STEP 2 split: D5 enhanced melting — needs cold_out's accretion
+    rates, so computed AFTER cold_phase on the post-melt/freeze working state.
+    Returns D1-D4 fields zeroed. 1:1 mirror of C++ melt_freeze_d5.
+    """
+    s = pre.slope
+    z = torch.zeros_like(state.qc)
+
+    # ── D5: Enhanced melting (uses cold's adjusted paacw/psacr/pgacr) ──
+    enh = _mf.enhanced_melting_torch(
+        state.qs, state.qg,
+        cold_out.paacw_adj, cold_out.psacr_adj, cold_out.pgacr_adj,
+        n0so, n0go, s.n0sfac,
+        s.rslope_s, s.rslope_g, pre.supcol,
+        params=params.enhanced_melt, dtcld=dtcld,
+    )
+
+    return MeltFreezePhaseOutputs(
+        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z,
+        sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
+        pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z,
+        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,
+        pseml=enh.pseml, nseml=enh.nseml,
+        pgeml=enh.pgeml, ngeml=enh.ngeml,
+    )
+
+
+def melt_freeze_phase_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    cold_out: ColdPhaseOutputs,    # paacw_adj, psacr_adj, pgacr_adj 사용
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """F1d — legacy single-call melt/freeze (D1-D5 from one state). Thin combiner
+    over the split halves (melt_freeze_d1_d4_torch + melt_freeze_d5_torch); used by
+    tests + the STEP 1 parallel-from-entry path. Process order:
+      D1 melting → D2 contact freeze → D3 Bigg cloud → D4 Bigg rain → D5 enh-melt.
+    """
+    out = melt_freeze_d1_d4_torch(
+        state, forcing, pre, n0c, n0r, n0so, n0go,
+        rslopec, rslopecmu, rslopecd, params=params, dtcld=dtcld,
+    )
+    d5 = melt_freeze_d5_torch(
+        state, forcing, pre, cold_out, n0so, n0go, params=params, dtcld=dtcld,
+    )
+    return out._replace(
+        pseml=d5.pseml, nseml=d5.nseml, pgeml=d5.pgeml, ngeml=d5.ngeml,
+    )
+
+
+# ─── Step F1e: State mutation update ─────────────────────────────────────────
+
+
+def scale_rates_for_conservation_torch(
+    state: CoordinatorState,
+    supcol: torch.Tensor,
+    warm: WarmPhaseOutputs,
+    cold: ColdPhaseOutputs,
+    mf: MeltFreezePhaseOutputs,
+    *,
+    dtcld: float,
+    ncmin_tensor=None,   # per-cell ncmin floor for cloud/ice NUMBER budgets (1:1 fix #18)
+    budget_trace=None,   # optional SensitivityTrace; diagnostics only
+    diagnostic_step: int = 0,
+):
+    """F1d2 — Fortran group conservation budgets (module_mp_kdm6.F :2460-2597
+    cold-arm + :2657-2728 warm-arm). 14 budgets: value=max(floor,reservoir);
+    source=Σ(signed sinks)·dtcld; if source>value scale every listed sink by
+    factor=value/source. Bounds the SUM of competing sinks on one species — the
+    tier the per-rate caps cannot provide (its absence caused the 806× staged-ice
+    over-production). Runs AFTER melt_freeze (D5 read UNSCALED cold rates, as
+    Fortran does) and BEFORE state_update; supcol gates cold(pass1)/warm(pass2)
+    exactly as state_update's cold_mask=(supcol>=0).
+
+    Mirrors C++ scale_rates_for_conservation 1:1. Each `source` is the LITERAL
+    Fortran arithmetic on the corresponding rate tensors (the port carries
+    Fortran's signs ⇒ identical arithmetic). Rates are scaled IN ORDER,
+    sequentially (a rate re-read by a later budget sees its already-scaled
+    value). factor=value/max(source,value) is an exact no-op (=1) where
+    source≤value (the common case ⇒ existing tests unchanged). pgaut/pgacs ≡ 0
+    (dropped, not invented); paacw/naacw appear ×2 in source but scaled once.
+    For extreme binding sources, normalize numerator and denominator by the
+    same power of two before division: forming a tiny factor first can lose
+    its reverse derivative. Ordinary-source arithmetic is unchanged. Active
+    nonfinite sums/amounts are rejected by value-only checks; these checks
+    do not replace or detach any tensors used by the differentiable map.
+    Returns scaled (warm, cold, mf).
+    """
+    dtype = state.qc.dtype
+    cold_gate = supcol >= 0         # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0; == state_update cold_mask
+    warm_gate = supcol < 0          # complement (warm arm, Fortran t>t0c); supcol==0 stays on the cold arm.
+    delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype)
+    delta3 = (state.qr < 1.0e-4).to(dtype)
+    one_m_d2 = 1.0 - delta2
+    one_m_d3 = 1.0 - delta3
+    EPS = 1.0e-15                   # Fortran qmin (matches C++ constants::EPS)
+
+    # Mutable working copies keyed by rate name (names are unique across the
+    # three structs). Sequential mutation needs mutable state — NamedTuples are
+    # immutable, so we mutate this dict and _replace at the end.
+    W = ("praut", "pracw", "prevp", "nraut", "nccol", "nracw", "nrcol")
+    C = ("paacw_adj", "piacw", "pmulcs", "pmulcg", "psaut", "pinud", "pidep",
+         "praci", "psaci", "pgaci", "pmulrs", "pmulrg", "piacr", "psacr_adj",
+         "pgacr_adj", "psdep", "pracs", "pgdep", "naacw", "niacw", "nraci",
+         "nsaci", "ngaci", "niacr", "nsaut", "ninud", "nmulcs", "nmulcg",
+         "nmulrs", "nmulrg", "nsacr", "ngacr", "psevp", "pgevp")
+    M = ("pseml", "pgeml", "nseml", "ngeml")
+    r = {nm: getattr(warm, nm) for nm in W}
+    r.update({nm: getattr(cold, nm) for nm in C})
+    r.update({nm: getattr(mf, nm) for nm in M})
+
+    def scale_group(value, source_sum, gate, names):
+        source = source_sum * dtcld
+        for label, amount in (("source sum", source_sum), ("source amount", source)):
+            if not bool(torch.isfinite(amount[gate]).all()):
+                raise ValueError(f"conservation {label} must be finite for {names}")
+        # Inactive groups are identities, including when their unused sum is
+        # NaN. Mask operands before division so saved intermediates cannot
+        # contaminate an otherwise finite output's backward pass.
+        source = torch.where(gate, source, torch.zeros_like(source))
+        value = torch.where(gate, value, torch.ones_like(value))
+        denominator = torch.maximum(source, value)
+        if budget_trace is not None and "pidep" in names:
+            # Record the pre-limit ice budget once; the branch mask is the
+            # actual source>reservoir decision used by both arithmetic paths.
+            budget_trace.record_stage(
+                "ice_mass_budget", diagnostic_step, dtcld, None, None,
+                branch=gate & (source > value),
+                operands={"source": source, "value": value},
+                metadata={"kind": "conservation_limiter", "rate_names": list(names)},)
+        # This is an arithmetic choice, not an extra physical cap. Above
+        # sqrt(max), reciprocal differentiation can lose B/S**2 although the
+        # requested controlled derivative is representable. Keep the original
+        # expression (including its tie derivative) for ordinary sources.
+        large = gate & (source > value) & (source > torch.finfo(dtype).max ** .5)
+        if not bool(large.any()):
+            factor = torch.where(gate, value / denominator,
+                                 torch.ones_like(value))
+            for nm in names:
+                r[nm] = r[nm] * factor
+            return
+
+        ordinary_denominator = torch.where(large, torch.ones_like(source), denominator)
+        factor = torch.where(gate, value / ordinary_denominator,
+                             torch.ones_like(value))
+        large_denominator = torch.where(large, source, torch.ones_like(source))
+        # The exponent is a value-only arithmetic choice. Multiplication by
+        # its power of two keeps the full rate/source AD paths; differentiable
+        # ldexp is avoided because its backward can lose subnormal factors.
+        exponent = torch.frexp(large_denominator)[1]
+        reciprocal_scale = torch.exp2(-exponent.to(dtype))
+        normalized_source = large_denominator * reciprocal_scale
+        for nm in names:
+            rate = r[nm]
+            ordinary_rate = torch.where(large, torch.zeros_like(rate), rate)
+            large_rate = torch.where(large, rate, torch.zeros_like(rate))
+            normalized_rate = large_rate * reciprocal_scale
+            ratio = normalized_rate / normalized_source
+            # A subnormal normalized numerator can lose significant bits even
+            # when the final result is ordinary. Normalize rate*budget instead.
+            # If that product would overflow, normalize the (then necessarily
+            # large) budget first. Mask operands before evaluating either form.
+            small = large & (normalized_rate.abs() < torch.finfo(dtype).tiny)
+            product_safe = value <= torch.finfo(dtype).max / rate.abs().clamp(min=1)
+            product_rate = torch.where(small & product_safe, large_rate,
+                                       torch.zeros_like(rate))
+            budget_first_rate = torch.where(small & ~product_safe, large_rate,
+                                            torch.zeros_like(rate))
+            small_numerator = ((product_rate * value) * reciprocal_scale
+                               + budget_first_rate * (value * reciprocal_scale))
+            limited = torch.where(small, small_numerator / normalized_source,
+                                  ratio * value)
+            r[nm] = torch.where(large, limited, ordinary_rate * factor)
+
+    def limit(reservoir, floor, source_sum, gate, names):
+        scale_group(torch.clamp(reservoir, min=floor), source_sum, gate, names)
+
+    def limit_ncmin(reservoir, source_sum, gate, names):
+        # Per-cell ncmin floor (xland-derived) for cloud/ice NUMBER budgets — Fortran
+        # F:2554/2568/2706 max(ncmin,nci), ncmin=10/100, NOT hardcoded 0.01. 1:1 fix #18.
+        value = (torch.maximum(reservoir, ncmin_tensor) if ncmin_tensor is not None
+                 else torch.clamp(reservoir, min=c.NCMIN))
+        scale_group(value, source_sum, gate, names)
+
+    # ── PASS 1: cold arm (t<=t0c), gate=cold_gate ──────────────────────────
+    limit(state.qc, EPS,                                              # cloud mass :2460
+          r["praut"] + r["pracw"] + 2.0 * r["paacw_adj"] + r["piacw"]
+          + r["pmulcs"] + r["pmulcg"], cold_gate,
+          ("praut", "pracw", "paacw_adj", "piacw", "pmulcs", "pmulcg"))
+    limit(state.qi, EPS,                                              # ice mass :2475
+          r["psaut"] - r["pinud"] - r["pidep"] + r["praci"] + r["psaci"]
+          + r["pgaci"] - r["pmulcs"] - r["pmulrs"] - r["pmulcg"] - r["pmulrg"]
+          - r["piacw"], cold_gate,
+          ("psaut", "pinud", "pidep", "praci", "psaci", "pgaci", "piacw",
+           "pmulcs", "pmulrs", "pmulcg", "pmulrg"))
+    limit(state.qr, EPS,                                              # rain mass :2495
+          -r["praut"] - r["prevp"] - r["pracw"] + r["piacr"] + r["psacr_adj"]
+          + r["pgacr_adj"] + r["pmulrs"] + r["pmulrg"], cold_gate,
+          ("praut", "prevp", "pracw", "piacr", "psacr_adj", "pgacr_adj",
+           "pmulrs", "pmulrg"))
+    limit(state.qs, EPS,                                              # snow mass :2512 (pgaut,pgacs≡0)
+          -(r["psdep"] + r["psaut"] + r["paacw_adj"] + r["piacr"] * delta3
+            + r["praci"] * delta3 - r["pracs"] * one_m_d2
+            + r["psacr_adj"] * delta2 + r["psaci"]), cold_gate,
+          ("psdep", "psaut", "paacw_adj", "piacr", "praci", "psaci", "pracs",
+           "psacr_adj"))
+    limit(state.qg, EPS,                                              # graupel mass :2533 (pgaut,pgacs≡0)
+          -(r["pgdep"] + r["piacr"] * one_m_d3 + r["praci"] * one_m_d3
+            + r["psacr_adj"] * one_m_d2 + r["pracs"] * one_m_d2 + r["pgaci"]
+            + r["paacw_adj"] + r["pgacr_adj"]), cold_gate,
+          ("pgdep", "piacr", "praci", "psacr_adj", "pracs", "paacw_adj",
+           "pgaci", "pgacr_adj"))
+    limit_ncmin(state.nc,                                             # cloud number :2554
+          r["nraut"] + r["nccol"] + r["nracw"] + r["niacw"] + 2.0 * r["naacw"],
+          cold_gate, ("nraut", "nccol", "nracw", "naacw", "niacw"))
+    limit_ncmin(state.ni,                                             # ice number :2568
+          r["nraci"] + r["nsaci"] + r["ngaci"] + r["niacr"] + r["nsaut"]
+          - r["nmulcs"] - r["nmulcg"] - r["nmulrs"] - r["nmulrg"] - r["ninud"],
+          cold_gate,
+          ("nraci", "nsaci", "ngaci", "niacr", "nsaut", "ninud", "nmulcs",
+           "nmulcg", "nmulrs", "nmulrg"))
+    limit(state.nr, c.NRMIN,                                          # rain number :2587
+          -r["nraut"] + r["nraci"] + r["nrcol"] + r["niacr"] + r["nsacr"]
+          + r["ngacr"], cold_gate,
+          ("nraci", "nraut", "nrcol", "niacr", "nsacr", "ngacr"))
+
+    # ── PASS 2: warm arm (t>t0c), gate=warm_gate ───────────────────────────
+    limit(state.qc, EPS,                                             # cloud mass :2657
+          r["praut"] + r["pracw"] + 2.0 * r["paacw_adj"], warm_gate,
+          ("praut", "pracw", "paacw_adj"))
+    limit(state.qr, EPS,                                             # rain mass :2669
+          -2.0 * r["paacw_adj"] - r["praut"] + r["pseml"] + r["pgeml"]
+          - r["pracw"] - r["prevp"], warm_gate,
+          ("praut", "prevp", "pracw", "paacw_adj", "pseml", "pgeml"))
+    limit(state.qs, c.QCRMIN,                                        # snow mass :2684 (pgacs≡0)
+          -r["pseml"] - r["psevp"], warm_gate, ("psevp", "pseml"))
+    limit(state.qg, c.QCRMIN,                                        # graupel mass :2695 (pgacs≡0)
+          -(r["pgevp"] + r["pgeml"]), warm_gate, ("pgevp", "pgeml"))
+    limit_ncmin(state.nc,                                            # cloud number :2706
+          r["nraut"] + r["nccol"] + r["nracw"] + 2.0 * r["naacw"], warm_gate,
+          ("nraut", "nccol", "nracw", "naacw"))
+    limit(state.nr, c.NRMIN,                                         # rain number :2719
+          -r["nraut"] + r["nrcol"] - r["nseml"] - r["ngeml"], warm_gate,
+          ("nraut", "nrcol", "nseml", "ngeml"))
+
+    warm2 = warm._replace(**{nm: r[nm] for nm in W})
+    cold2 = cold._replace(**{nm: r[nm] for nm in C})
+    mf2 = mf._replace(**{nm: r[nm] for nm in M})
+    return warm2, cold2, mf2
+
+
+def apply_melt_freeze_inline_torch(
+    state: CoordinatorState,
+    mf: MeltFreezePhaseOutputs,
+    pre: PreambleOutputs,
+    *,
+    dtcld: float,
+    xls: float,
+) -> CoordinatorState:
+    """Stage-A STEP 1: melt(D1)+freeze(D2-D4) as INLINE pre-state-update mutations
+    of a working state, using EXACTLY the signed expressions state_update_torch
+    used for these terms (so inline-apply ⟺ zeroing the D1-D4 mf fields is an
+    algebraic identity). Functional (_replace), no clamps (final clamps stay in
+    state_update_torch). xlf: D1 melt → xlf0 (const), D2-D4 freeze → xls-pre.xl(T). 1:1 mirror of
+    C++ apply_melt_freeze_inline.
+    """
+    dtype = state.qc.dtype
+    warm_mask = (pre.supcol < 0).to(dtype)  # Fortran F:1279 melt gate `t.gt.t0c` ⇔ supcol<0 (strict);
+                                             # matches state_update warm_mask (1-cold_mask, cold=supcol>=0).
+                                             # Codex round-3 Finding 1: must be <0 (not <=0) to keep
+                                             # inline↔state_update algebraically identical at supcol==0.
+    cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
+    # D1 MELT holds xlf = xlf0 (constant 3.5e5; Fortran F:1275 `if(supcol<0) xlf=xlf0`, and the
+    # whole melt block runs at T>T0c so it always uses xlf0 — for BOTH the rate AND the t-update).
+    # D2-D4 FREEZE uses the variable xls-xl(T) (Fortran F:1404). They must NOT share one xlf: using
+    # xls-xl for the melt heat-sink over-cools by +0.67%/K above freezing (audit round-6).
+    xlf_freeze = xls - pre.xl
+    xlf_melt = _mf.DEFAULT_XLF
+    # STEP-67 SEED (structural mirror of C++ apply_melt_freeze_inline): Fortran
+    # applies D2 then D3 as TWO SEQUENTIAL state stores (F:1533-1537 then
+    # F:1563-1567), each rounding the DOUBLE-rate RHS once to REAL(4); the freeze
+    # t-adds are likewise sequential (F:1539/F:1569/F:1591). At the fp64 oracle
+    # dtype the sequencing is value-invisible — kept 1:1 with the C++ structure
+    # (which .to()s each store to the f32 state dtype).
+    qc1 = state.qc - mf.pinuc + mf.pimlt_qi            # D2 store (F:1536; D1 pimlt rides at the first store)
+    qi1 = state.qi + mf.pinuc - mf.pimlt_qi            # D2 store (F:1537)
+    nc1 = state.nc - mf.ninuc + mf.pimlt_ni            # D2 store (F:1533)
+    ni1 = state.ni + mf.ninuc - mf.pimlt_ni            # D2 store (F:1534)
+    # SEED#5 (Fortran module_mp_kdm6.F:1303 then :1327): psmlt/pgmlt are TWO
+    # sequential t-adds, NOT summed before the coefficient (1 ULP otherwise where
+    # snow+graupel melt together). Split; mirror of C++ apply_melt_freeze_inline.
+    t_d1 = (state.t
+            + dtcld * xlf_melt / cpm_safe * mf.psmlt   # D1 melt psmlt → xlf0 (sequential, F:1303)
+            + dtcld * xlf_melt / cpm_safe * mf.pgmlt   # D1 melt pgmlt → xlf0 (sequential, F:1327)
+            - xlf_melt / cpm_safe * mf.pimlt_qi)       # D1 instant ice-melt → xlf0
+    fr_coef = xlf_freeze / cpm_safe                    # D2-D4 freeze → xls-xl(T)
+    t_d2 = t_d1 + fr_coef * mf.pinuc                   # D2 freeze heat (F:1539)
+    t_d3 = t_d2 + fr_coef * mf.pfrzdtc                 # D3 freeze heat (F:1569)
+    return state._replace(
+        qc=qc1 - mf.pfrzdtc,                           # D3 store (F:1565)
+        # §44 association-order (mirror C++): Fortran subtracts psmlt→pgmlt→pfrzdtr as 3 SEQUENTIAL
+        # f32 stores (F:1325→1349→1577). `a - b - c - d` is left-assoc = sequential. Keep warm_mask
+        # (gates ungated-psmlt callers + inline↔state_update T0c identity). dtcld·rate ≡ capped amount.
+        qr=state.qr - dtcld * mf.psmlt * warm_mask - dtcld * mf.pgmlt * warm_mask - mf.pfrzdtr,
+        qs=state.qs + dtcld * mf.psmlt,
+        qg=state.qg + dtcld * mf.pgmlt + mf.pfrzdtr,
+        qi=qi1 + mf.pfrzdtc,                           # D3 store (F:1566)
+        nc=nc1 - mf.nfrzdtc,                           # D3 store (F:1563)
+        nr=state.nr + (-mf.nfrzdtr)
+        + dtcld * (-mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt),  # D1 melt snow/graupel → rain number (Fortran 1299/1323)
+        ni=ni1 + mf.nfrzdtc,                           # D3 store (F:1564)
+        brs=state.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze),
+        t=t_d3 + fr_coef * mf.pfrzdtr,                 # D4 freeze heat (F:1591)
+    )
+
+
+def state_update_torch(
+    state: CoordinatorState,
+    pre: PreambleOutputs,
+    warm: WarmPhaseOutputs,
+    cold: ColdPhaseOutputs,
+    mf: MeltFreezePhaseOutputs,
+    *,
+    dtcld: float,
+    xls: float = 2.85e6,   # CONSTANT sublimation latent heat (Fortran XLS); xlf(T)=xls-xl(T) derived
+    delta_src: CoordinatorState = None,  # Stage-A STEP 1: state to compute delta2/delta3
+                           # from (the ENTRY state) when `state` is a post-melt/freeze
+                           # working base; None → use `state`. Mirrors C++ delta_src.
+    midpoint_trace: bool = False,
+) -> CoordinatorState:
+    """F1e — 모든 phase rate를 state에 적용해 새 state 산출.
+
+    The mass and paired-number budgets select the complete cold arm
+    (`supcol >= 0`) or warm arm (`supcol < 0`) at this boundary. Common
+    praut/pracw terms remain in both arms, and the paacw producer remains
+    available for the arm-specific destination terms. Cold collision,
+    deposition, nucleation, and ice-number terms are excluded from the warm
+    arm, while snow/graupel evaporation and D5 terms are excluded from the
+    cold arm.
+    D1-D4 amounts are applied separately, and the latent-heat update uses the
+    corresponding Fortran `xlwork2` expression (constant `xls` for
+    deposition, `xlf=xls-xl(T)` for freezing/D5, and `xlf0` for D1 melt).
+
+    Note: Fortran의 모든 mutation을 정확히 직역. T-branch routing은 *cold*=`supcol >= 0`
+    (Fortran F:2456 `t.le.t0c`), *warm*=`supcol < 0` mask로 처리한다. 따라서 경계
+    supcol==0은 cold arm에 포함된다.
+    """
+    cold_mask = (pre.supcol >= 0).to(state.qc.dtype)  # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
+    warm_mask = 1.0 - cold_mask  # = supcol<0 (Fortran t>t0c)
+
+    # ── Unit policy (review5#1) ──────────────────────────────────────
+    # warm/cold module 출력은 *rates* (per second) — F1e에서 dtcld 곱.
+    # mf module 일부 출력은 *amounts* (이미 dtcld 적용됨) — 직접 적용:
+    #   amount: pinuc/ninuc, pfrzdtc/nfrzdtc, pfrzdtr/nfrzdtr, pimlt_qi/pimlt_ni,
+    #           delta_brs_freeze (= pfrzdtr/denr)
+    #   rate:   psmlt/pgmlt, pseml/pgeml/nseml/ngeml, delta_brs_melt (= pgmlt/rhox)
+    # F1e 안에서 두 group을 분리해 더한다.
+
+    # ── Mass balance ───────────────────────────────────────────────────
+    # qv (water vapor). pcond is deferred to apply_satadj_step_torch (post-update
+    # + post-reclass, Fortran :2922-2943; mirrors C++ apply_satadj_step). The
+    # Fortran cold arm (:2782) and warm arm (:2913) have different complete rate
+    # sets. Producers intentionally emit residual cold rates in warm cells (the
+    # same rates feed D5), so select the whole arm at this owning boundary.
+    dqv_cold = (
+        - warm.prevp - cold.psdep - cold.pgdep
+        - cold.pinud - cold.pidep
+    )
+    dqv_warm = - warm.prevp - cold.psevp - cold.pgevp
+    dqv = dtcld * torch.where(pre.supcol >= 0, dqv_cold, dqv_warm)
+    qv_new = state.qv + dqv
+
+    # qc (cloud water)
+    dqc_rate = dtcld * (
+        # pcond DEFERRED to apply_satadj_step_torch (see qv). NOT applied here.
+        # praut/pracw and both paacw additions are present in both arms. piacw
+        # and HM cloud splinter sinks are cold-only.
+        - warm.praut - warm.pracw                                # B1/B2 (qc→qr)
+        - cold.piacw * cold_mask                                 # 2616 piacw (cold→qi)
+        - cold.paacw_adj - cold.paacw_adj                        # 2616 paacw twice
+        - cold.pmulcs * cold_mask - cold.pmulcg * cold_mask       # 2616 C2e HM
+    )
+    dqc_amount = -mf.pinuc - mf.pfrzdtc + mf.pimlt_qi            # 1505/1533/1337 (amounts)
+    dqc = dqc_rate + dqc_amount
+    qc_new = state.qc + dqc
+
+    # qr (rain water)
+    dqr_rate = dtcld * (
+        warm.praut + warm.pracw + warm.prevp       # common B1/B2/B4 terms
+        # COLD (F:2712): collision/riming sinks. These producers are not
+        # temperature-gated because their adjusted values feed D5.
+        - cold.piacr * cold_mask - cold.pgacr_adj * cold_mask
+        - cold.psacr_adj * cold_mask
+        - cold.pmulrs * cold_mask - cold.pmulrg * cold_mask
+        # WARM (F:2831): two source-order paacw additions and D5 sinks.
+        + cold.paacw_adj * warm_mask + cold.paacw_adj * warm_mask
+        - mf.pseml * warm_mask - mf.pgeml * warm_mask
+        # D1 snow/graupel melt → rain; mf D1 is zeroed before runtime state_update.
+        - (mf.psmlt + mf.pgmlt) * warm_mask
+    )
+    dqr_amount = -mf.pfrzdtr                      # 1560 Bigg rain → qg (amount)
+    dqr = dqr_rate + dqr_amount
+    qr_new = state.qr + dqr
+
+    # ── delta2/delta3 routing flags (Fortran 2452-2455) — review3#5
+    #   delta2 = 1 if (qr<1e-4 AND qs<1e-4): psacr → qs, pracs stays in snow
+    #   delta3 = 1 if (qr<1e-4):              piacr/praci → qs (else → qg)
+    # Stage-A STEP 1: from ENTRY state (ds) when base is a working state.
+    ds = delta_src if delta_src is not None else state
+    delta2 = ((ds.qr < 1.0e-4) & (ds.qs < 1.0e-4)).to(state.qc.dtype)
+    delta3 = (ds.qr < 1.0e-4).to(state.qc.dtype)
+    one_m_d2 = 1.0 - delta2
+    one_m_d3 = 1.0 - delta3
+
+    # qs (snow) — Fortran 2633-2637 + warm-branch 2743 직역
+    # review4#1: psacw 제거 (Fortran 2633은 paacw만 사용); paacw는 cold arm에만
+    #   적용한다. psevp는 warm branch snow→vapor 직접 sink (Fortran 2743 일부).
+    dqs = dtcld * (
+        cold.psdep * cold_mask                    # C4 deposition (cold arm)
+        + cold.psaut * cold_mask                  # C5 ice aggregation → snow
+        + cold.paacw_adj * cold_mask              # #1: paacw→qs only in COLD arm (Fortran :2633); warm arm sheds to qr
+        + cold.piacr * delta3 * cold_mask         # piacr → qs when qr small
+        + cold.praci * delta3 * cold_mask         # praci → qs when qr small
+        + cold.psacr_adj * delta2 * cold_mask     # psacr → qs when qr&qs small
+        + cold.psaci * cold_mask                  # C2 ice → snow
+        - cold.pracs * one_m_d2 * cold_mask       # snow→graupel when (1-delta2)
+        + cold.psevp * warm_mask                  # 2743 warm: snow evap (psevp<0 → qs sink)
+        + mf.psmlt                                # D1 melt (psmlt<0 → qs sink)
+        + mf.pseml * warm_mask                    # D5 enhanced melt
+        # review5 audit: pmulcs 제거 — Fortran 2633은 pmul* 없음. paacw_adj가 이미
+        # HM 분기를 반영 (paacw_adj = paacw - pmulcs - pmulcg). pmul* 추가 시 double-count.
+    )
+    qs_new = state.qs + dqs
+
+    # qg (graupel) — Fortran 2638-2642 + warm-branch 2745 직역
+    # review4#1: pgacw 제거; graupel collision/deposition terms are cold-arm
+    #   terms, while pgevp remains the warm-branch evaporation (codex#4).
+    dqg_rate = dtcld * (
+        cold.pgdep * cold_mask                    # C4 deposition (cold arm)
+        + cold.paacw_adj * cold_mask              # #1: paacw→qg only in COLD arm (Fortran :2641); warm arm sheds to qr
+        + cold.pgacr_adj * cold_mask              # 2641 rain ←collected by graupel
+        + cold.pracs * one_m_d2 * cold_mask       # snow → graupel when (1-delta2)
+        + cold.piacr * one_m_d3 * cold_mask       # piacr → qg when qr ≥ 1e-4
+        + cold.praci * one_m_d3 * cold_mask       # praci → qg when qr ≥ 1e-4
+        + cold.psacr_adj * one_m_d2 * cold_mask   # psacr → qg
+        + cold.pgaci * cold_mask                  # C2 ice → graupel
+        + cold.pgevp * warm_mask                  # C6' graupel evap (pgevp<0 → qg sink)
+        + mf.pgmlt                                # D1 (pgmlt<0 → qg sink)
+        + mf.pgeml * warm_mask                    # D5 enhanced melt
+    )
+    dqg_amount = mf.pfrzdtr                       # 1558 Bigg rain → qg (amount)
+    dqg = dqg_rate + dqg_amount
+    qg_new = state.qg + dqg
+
+    # qi (cloud ice)
+    # qi (cloud ice) — Fortran 2626-2630 + inline 1505/1533/1337
+    dqi_rate = dtcld * cold_mask * (-(
+        # COLD-only qi budget, in Fortran/C++ source order F:2717:
+        # psaut+praci+psaci+pgaci-pinud-pidep-piacw-pmulcs-pmulcg-pmulrs-pmulrg.
+        cold.psaut + cold.praci + cold.psaci + cold.pgaci
+        - cold.pinud - cold.pidep - cold.piacw
+        - cold.pmulcs - cold.pmulcg - cold.pmulrs - cold.pmulrg
+    ))
+    dqi_amount = mf.pinuc + mf.pfrzdtc - mf.pimlt_qi   # 1506/1534/1338 (amounts)
+    dqi = dqi_rate + dqi_amount
+    qi_new = state.qi + dqi
+
+    # ── Number balance ────────────────────────────────────────────────
+    # nc (cloud number) balance — Fortran nc update at F:2619 & F:2733 (+ inline 1500/1530/1338/1603/1633)
+    dnc_rate = dtcld * (
+        - warm.nraut                              # qc → qr autoconv
+        - warm.nccol                              # cloud self-collection
+        - warm.nracw                              # qc → qr accretion
+        - cold.niacw * cold_mask                  # C2c ice riming on cloud (cold)
+        - cold.naacw - cold.naacw                 # naacw twice (Fortran 2620)
+    )
+    dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni  # 1500/1530/1338 (amounts)
+    dnc = dnc_rate + dnc_amount
+    nc_new = state.nc + dnc
+
+    # nr (rain number) — Fortran 2624 + inline 1556
+    dnr_rate = dtcld * (
+        warm.nraut                                # B1 autoconv → rain
+        - warm.nrcol                              # rain self-collection
+        - cold.niacr * cold_mask - cold.nraci * cold_mask # 2624 rain ←collected by ice
+        - cold.nsacr * cold_mask - cold.ngacr * cold_mask # 2625 rain ←snow/graupel
+        + mf.nseml * warm_mask + mf.ngeml * warm_mask      # 2749-2750 warm enhanced-melt number → rain
+                                                  # (warm-gated in melt_freeze ⇒ no-op when cold; mirrors C++)
+        - mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt  # D1 melt snow/graupel → rain number (Fortran 1299/1323; D1-zeroed in mf5 at runtime, preserves inline↔state_update identity)
+    )
+    dnr_amount = -mf.nfrzdtr                      # 1556 Bigg rain (amount)
+    dnr = dnr_rate + dnr_amount
+    # Complete-rain-evap nr-zeroing (Fortran :1794) is performed by the owning
+    # one-step driver immediately after warm_phase, before the cold phase and
+    # conservation budget. Thus state_update receives the already-zeroed
+    # reservoir in complete-evap cells and only applies the ordinary dnr terms.
+    nr_new = state.nr + dnr
+
+    # ni (ice number) — Fortran 2630-2632 + inline 1501/1531/1338
+    dni_rate = dtcld * cold_mask * (
+        # COLD-only ni budget, in Fortran/C++ source order F:2721. Keep ninud
+        # after the four collision sinks; it is not the first add.
+        - cold.nraci - cold.nsaci - cold.ngaci
+        - cold.niacr + cold.ninud
+        + cold.nmulcs + cold.nmulcg + cold.nmulrs + cold.nmulrg
+        - cold.nsaut
+    )
+    dni_amount = mf.ninuc + mf.nfrzdtc - mf.pimlt_ni  # 1501/1531/1338 (amounts)
+    # complete-sublim zeroes only the BASE reservoir (Fortran F:2435 nci2=0), THEN the
+    # F:2721 cold-rate budget accumulates on top — NOT the whole accumulated budget.
+    # (×1.0 exact ⇒ bitwise-identical to the prior form in all mask=0 cells.)
+    ni_zero_mask = cold.ice_complete_sublim.to(state.qc.dtype)
+    ni_base = (state.ni + dni_amount) * (1.0 - ni_zero_mask)
+    ni_new = ni_base + dni_rate
+
+    # brs (graupel volume) — review4#3: Fortran 2643-2645 (cold) + 2751 (warm) 직역.
+    #   기존 mf.delta_brs_melt (pgmlt/rhox), mf.delta_brs_freeze (pfrzdtr/denr) 외에
+    #   cold-branch 8 항 + warm-branch pgevp 추가.
+    rhox_safe = torch.clamp(pre.progb.rhox, min=c.DENS)  # Fortran 2768 max(rhox, dens)
+    if midpoint_trace:
+        # Tensorize the Fortran arm gates before validating/dividing: a producer
+        # may emit a rate that this cold/warm state-update arm does not consume.
+        pgdep_rate = torch.where(cold_mask.to(torch.bool), cold.pgdep,
+                                 torch.zeros_like(cold.pgdep))
+        pgevp_rate = torch.where(warm_mask.to(torch.bool), cold.pgevp,
+                                 torch.zeros_like(cold.pgevp))
+        pgeml_rate = torch.where(warm_mask.to(torch.bool), mf.pgeml,
+                                 torch.zeros_like(mf.pgeml))
+        pgdep_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgdep_rate, pre.progb.rhox, context="pgdep")
+        pgevp_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgevp_rate, pre.progb.rhox, context="pgevp")
+        pgeml_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgeml_rate, pre.progb.rhox, context="pgeml")
+    else:
+        pgdep_over_rho = cold.pgdep / rhox_safe
+        pgevp_over_rho = cold.pgevp / rhox_safe
+        pgeml_over_rho = mf.pgeml / rhox_safe
+    dbrs_cold_riming = cold_mask * dtcld * (
+        pgdep_over_rho                         # 2643 graupel deposition
+        + cold.piacr / c.DENR                  # biacr
+        + cold.praci / c.DENI                  # braci
+        + cold.psacr_adj / c.DENR              # bsacr (post-HM adj)
+        + cold.pracs / c.DENS                  # bracs
+        + cold.pgaci / c.DENI                  # bgaci
+        + cold.paacw_adj / c.DENR              # baacw (post-HM adj)
+        + cold.pgacr_adj / c.DENR              # bgacr (post-HM adj)
+    )
+    dbrs_warm_evap = warm_mask * dtcld * (
+        pgevp_over_rho                         # 2734 bgevp (pgevp<0 → brs 감소)
+        + pgeml_over_rho                       # 2735 bgeml (pgeml<0 → brs 감소)
+    )
+    # delta_brs_melt = pgmlt/rhox (rate, *dtcld 필요), delta_brs_freeze = pfrzdtr/denr (amount, 그대로)
+    dbrs = (
+        dtcld * mf.delta_brs_melt              # D1 pgmlt/rhox (rate)
+        + mf.delta_brs_freeze                  # D4 pfrzdtr/denr (amount)
+        + dbrs_cold_riming
+        + dbrs_warm_evap
+    )
+    # review5#3: Fortran 2643/2751 `brs = max(brs+...,0.)` 직역. AD subgradient at 0
+    # boundary는 well-defined (zero gradient on clamped cells).
+    brs_new = torch.clamp(state.brs + dbrs, min=0.0)
+
+    # ── Energy balance (T) — review3#4 fix: xls/xlf split ────────────
+    # Fortran 2647-2650: xlwork2 = -xls·(psdep+pgdep+pidep+pinud) + xl·(prevp+psevp+pgevp)
+    #                              + freeze/melt 항(xlf), t -= xlwork2/cpm·dtcld.
+    #   Fortran 2646: xlf = xls - xl(T). xls is the CONSTANT sublimation latent
+    #   heat (2.85e6); fusion xlf is DERIVED and TEMPERATURE-DEPENDENT. The prior
+    #   code inverted this (constant xlf, derived xls), over-heating freezing at
+    #   cold T. Mirrors the C++ coordinator.cpp fix (single bug across both ports).
+    #   세 group으로 분리:
+    #     (a) warm-phase vapor↔water (xl): pcond, prevp, psevp, pgevp
+    #     (b) deposition/sublimation vapor↔ice (xls, CONSTANT): pinud, pidep, psdep, pgdep
+    #     (c) freeze/melt liquid↔solid (xlf=xls-xl(T)): pinuc, pfrzdtc, pfrzdtr, psmlt, pgmlt, pimlt_qi, pseml, pgeml
+    cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
+    xlf = xls - pre.xl  # freeze/D5/cold-riming fusion latent heat (J/kg), temperature-dependent
+    # D1 MELT (psmlt/pgmlt/pimlt_qi) uses the CONSTANT xlf0, NOT xls-xl(T): Fortran F:1275
+    # `if(supcol<0) xlf=xlf0` then the melt block applies it at F:1303/1327/1339. This mirrors
+    # apply_melt_freeze_inline (audit round-6); the single-xlf form over-cooled the D1-melt heat
+    # in the component/legacy state_update path by +0.67%/K above freezing (Codex round-2 catch).
+    # Runtime is shielded (mf5 zeroes D1 before state_update) so this is parity-inert; the split
+    # restores the inline↔state_update algebraic identity. D5 pseml/pgeml stay on xls-xl(T)
+    # (Fortran warm-branch F:2752); cold riming on xls-xl(T) (F:2645).
+    xlf_melt = _mf.DEFAULT_XLF
+
+    # Fortran xlwork2 has two complete arm-specific expressions (cold
+    # F:2738-2741, warm F:2844-2845). Keep each source order and select the
+    # result with the same gate used by every mass/number update. This matters
+    # for residual cold rates in warm cells: they are real producer outputs,
+    # but are not part of the warm latent-heat budget.
+    dep_sum_c = cold.psdep + cold.pgdep + cold.pidep + cold.pinud
+    frz_sum_c = (
+        cold.piacr + cold.paacw_adj
+        + cold.pmulcs + cold.pmulcg + cold.pmulrs + cold.pmulrg
+        + cold.piacw + cold.paacw_adj + cold.pgacr_adj + cold.psacr_adj
+    )
+    xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c
+    vap_sum_w = warm.prevp + cold.psevp + cold.pgevp
+    xlwork2_warm = -pre.xl * vap_sum_w - xlf * (mf.pseml + mf.pgeml)
+    xlwork2 = torch.where(pre.supcol >= 0, xlwork2_cold, xlwork2_warm)
+
+    # D1 melt + D2-D4 freeze amounts. D1 uses constant xlf0; D2-D4 uses
+    # xlf(T), matching apply_melt_freeze_inline_torch and the C++ component
+    # path. Runtime applies D1-D4 inline and passes these as zeroed amounts,
+    # but the component boundary remains directly callable.
+    coef_melt = dtcld * xlf_melt / cpm_safe
+    dT_amount = (
+        coef_melt * mf.psmlt + coef_melt * mf.pgmlt
+        - xlf_melt / cpm_safe * mf.pimlt_qi
+        + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr)
+    )
+    t_new = state.t - xlwork2 / cpm_safe * dtcld + dT_amount
+
+    # review5#2 (partial): Fortran 2615-2756 `max(... ,0.)` — nonnegative clamp만 적용.
+    # review9#1 fix: paired threshold cleanup은 이 함수 *밖*에서 reclassification 뒤에
+    # 적용 (Fortran 순서: state_update → Picons → rain-cloud → pcact → cleanup).
+    return CoordinatorState(
+        qv=torch.clamp(qv_new, min=0.0),
+        qc=torch.clamp(qc_new, min=0.0),
+        qr=torch.clamp(qr_new, min=0.0),
+        qs=torch.clamp(qs_new, min=0.0),
+        qg=torch.clamp(qg_new, min=0.0),
+        qi=torch.clamp(qi_new, min=0.0),
+        nc=torch.clamp(nc_new, min=0.0),
+        nr=torch.clamp(nr_new, min=0.0),
+        ni=torch.clamp(ni_new, min=0.0),
+        brs=brs_new,                    # 위에서 이미 clamp(min=0) 적용
+        t=t_new,                         # T는 clamp 없음 (음수 가능, 비물리적이지만 Fortran도 안 함)
+    )
+
+
+# ─── Step F1h: Post-reclassification paired threshold cleanup ────────────────
+
+
+def apply_threshold_cleanup_torch(
+    state: CoordinatorState,
+    *,
+    qmin: float = 1.0e-15,
+    qcrmin: float = None,
+) -> CoordinatorState:
+    """Fortran 2951-2970 padding for small values (post-reclassification).
+
+    review9#1 fix: 이전엔 `state_update_torch` 내부에 있어 Picons/rain-cloud 전에
+    적용됐음. Fortran 순서는 reclassification *후* cleanup이라, Picons가 만들어낸 작은
+    qs/qc 등을 추가로 zero할 기회가 있어야 함.
+
+    Pattern: q*<=threshold → q=0; paired number도 zero (qc/qr/qi).
+    """
+    if qcrmin is None:
+        qcrmin = c.QCRMIN
+    keep_qc = (state.qc > qmin).to(state.qc.dtype)
+    keep_qi = (state.qi > qmin).to(state.qi.dtype)
+    keep_qr = (state.qr > qcrmin).to(state.qr.dtype)
+    keep_qs = (state.qs > qcrmin).to(state.qs.dtype)
+    keep_qg = (state.qg > qcrmin).to(state.qg.dtype)
+    return CoordinatorState(
+        qv=state.qv,
+        qc=state.qc * keep_qc,
+        nc=state.nc * keep_qc,
+        qr=state.qr * keep_qr,
+        nr=state.nr * keep_qr,
+        qs=state.qs * keep_qs,
+        qg=state.qg * keep_qg,
+        qi=state.qi * keep_qi,
+        ni=state.ni * keep_qi,
+        brs=state.brs,
+        t=state.t,
+    )
+
+
+# ─── Step F1f: Post-update Picons reclassification (Park-Lim 2023) ───────────
+
+
+def reclassify_large_ice_to_snow_torch(
+    state: CoordinatorState,
+    den: torch.Tensor,
+    *,
+    qmin: float = 1.0e-15,
+    di_threshold: float = 200.0e-6,
+    t0c: float = 273.15,
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
+    diagnostic_dtcld: float = 0.0,
+) -> CoordinatorState:
+    """Fortran 2807-2813 (Picons, Park-Lim 2023): 평균 직경이 임계값(200μm) 이상인
+    cloud ice는 더 이상 ice이 아니라 snow로 재분류. T<0°C, qi>qmin 게이트.
+
+    review6#1 / review7#1 fix: avedia_i를 *post-update* qi/ni/den으로 inline 재진단
+    (Fortran 2800-2802 처럼 slope_kdm6 재호출 후 avedia 다시 계산하는 것을 흉내).
+    review8#1 fix: ni<=0 / qi<=qmin 셀에서 rslope_i가 발산해 false-positive Picons가
+    트리거되던 edge bug 수정. slope_kdm6 ice branch와 같은 mask + LAMDAIMAX/MIN clamp.
+
+    Mass conservation: qs gains qi, qi → 0, ni → 0.
+    AD-friendly multiplicative mask on a fixed branch; threshold crossings are
+    discrete and are not treated as smooth derivative points.
+    """
+    # avedia_i = rslope_i · (Γ(4+MUI)/Γ(1+MUI))^(1/3)
+    #   rslope_i = 1/lamdai, clamped to [1/LAMDAIMAX, 1/LAMDAIMIN]
+    #   lamdai = (pidni · ni / (qi·den))^(1/DMI)
+    #   pidni = cmi · Γ(1+DMI+MUI) / Γ(1+MUI),  cmi = π·DENI/6  (documented; pidni itself
+    #   comes from _fc.PIDNI below — the cmi/g1pdimi factors are NOT recomputed here)
+    g1pmi = math.exp(math.lgamma(1.0 + c.MUI))               # Γ(1+MUI)  — used in avedia_factor
+    g4pmi = math.exp(math.lgamma(4.0 + c.MUI))               # Γ(4+MUI)  — used in avedia_factor
+    pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263; see fconst.py)
+    avedia_factor = _fc.powf(g4pmi / g1pmi, 0.3333333)  # F:2802 all-REAL(4) powf (step-91 latent class)
+    rslopeimax = 1.0 / c.LAMDAIMAX
+    rslopeimin = 1.0 / c.LAMDAIMIN
+
+    eps = 1.0e-30
+    ice_active = (state.qi > qmin) & (state.ni > 0.0) & (den > 0.0)
+    qi_safe = torch.clamp(state.qi * den, min=eps)
+    ratio = pidni * torch.clamp(state.ni, min=0.0) / qi_safe
+    lamdai = torch.exp(torch.log(torch.clamp(ratio, min=eps)) * _fc._f32(1.0 / _fc._f32(c.DMI)))  # Fortran exp(log·(1./dmi))
+    rslope_i_raw = torch.clamp(1.0 / torch.clamp(lamdai, min=eps),
+                               min=rslopeimax, max=rslopeimin)
+    # ice_active=False 시 rslope_i = rslopeimax (smallest avedia → Picons mask 거짓)
+    rslope_i = torch.where(ice_active, rslope_i_raw,
+                           torch.full_like(rslope_i_raw, rslopeimax))
+    avedia_i = rslope_i * avedia_factor
+
+    cold_temperature = state.t < t0c
+    large_diameter = avedia_i >= di_threshold
+    mask = ice_active & cold_temperature & large_diameter
+    mask_f = mask.to(state.qc.dtype)
+    result = CoordinatorState(
+        qv=state.qv, qc=state.qc, qr=state.qr,
+        qs=state.qs + state.qi * mask_f,
+        qg=state.qg,
+        qi=state.qi * (1.0 - mask_f),
+        nc=state.nc, nr=state.nr,
+        ni=state.ni * (1.0 - mask_f),
+        brs=state.brs,
+        t=state.t,
+    )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "picons", diagnostic_step, diagnostic_dtcld, state, result, None,
+            branch=torch.stack((ice_active, cold_temperature,
+                                large_diameter, mask), dim=0),
+            operands={"qi": state.qi, "ni": state.ni, "den": den,
+                      "t": state.t, "avedia_i": avedia_i,
+                      "di_threshold": di_threshold, "t0c": t0c},
+            metadata={
+                "kind": "applied_transfer",
+                "branch_labels": ["ice_active", "cold_temperature",
+                                  "large_diameter", "reclassify"],
+                "branch_scope": "Picons qi→qs mass; qi/ni cleared",
+            })
+    return result
+
+
+# ─── Step F1g: Post-update rain→cloud reclassification (small-drop cutoff) ───
+
+
+def reclassify_small_rain_to_cloud_torch(
+    state: CoordinatorState,
+    den: torch.Tensor,
+    *,
+    qcrmin: float = None,
+    di_threshold: float = 82.0e-6,
+) -> CoordinatorState:
+    """Fortran 2883-2892: post-update 평균 빗방울 직경(avedia_r) ≤ 82μm 시
+    cloud water/number로 되돌림. Picons (qi→qs)와 짝을 이루는 산문(small-drop) 처리.
+
+    review8#3 신규 추가. avedia_r은 post-update qr/nr/den으로 inline 재진단.
+
+    Mass conservation: qc gains qr, qr → 0; nc gains nr, nr → 0.
+    AD-friendly multiplicative mask.
+    """
+    if qcrmin is None:
+        qcrmin = c.QCRMIN
+    # avedia_r = rslope_r · (Γ(4+MUR)/Γ(1+MUR))^(1/3)
+    cmr = math.pi * c.DENR / 6.0
+    g1pmr = math.exp(math.lgamma(1.0 + c.MUR))               # Γ(1+MUR)
+    g1pdrmr = math.exp(math.lgamma(1.0 + c.DMR + c.MUR))     # Γ(1+DMR+MUR)
+    g4pmr = math.exp(math.lgamma(4.0 + c.MUR))               # Γ(4+MUR)
+    pidnr = _fc.PIDNR   # f32-stepwise (kdm6init F:3235)
+    avedia_factor = _fc.powf(g4pmr / g1pmr, 0.3333333)  # F:2878 all-REAL(4) powf (step-91 latent class)
+    rslopermax = 1.0 / c.LAMDARMAX
+
+    eps = 1.0e-30
+    rain_active = (state.qr > qcrmin) & (state.nr > 0.0) & (den > 0.0)
+    qr_safe = torch.clamp(state.qr * den, min=eps)
+    ratio = pidnr * torch.clamp(state.nr, min=0.0) / qr_safe
+    lamdar = torch.exp(torch.log(torch.clamp(ratio, min=eps)) * _fc._f32(1.0 / _fc._f32(c.DMR)))  # Fortran exp(log·(1./dmr))
+    # Fortran F:3490 active rain slope = min(1/lamdar, 1e-3): UPPER cap (1e-3 literal) ONLY, NO
+    # lower floor. The earlier `min=rslopermax` floor pinned avedia_r ≥ rslopermax·factor ≈ 82.4μm
+    # > di82=82μm, so the small-drop NR→NC / QR→QC reclass (Fortran F:2879-2892, LH A14/A15) could
+    # NEVER fire — dead code vs Fortran. The inactive branch keeps rslopermax (F:3483), matching the
+    # authoritative slope module (slope.py:161-163 / slope.cpp:44-46). audit round-3.
+    rslope_r_active = torch.minimum(1.0 / torch.clamp(lamdar, min=eps),
+                                    torch.full_like(lamdar, 1.0e-3))
+    rslope_r = torch.where(rain_active, rslope_r_active,
+                           torch.full_like(rslope_r_active, rslopermax))
+    avedia_r = rslope_r * avedia_factor
+
+    # 소형 drop이 cloud로 회귀: rain_active AND avedia_r ≤ 82μm
+    mask = rain_active & (avedia_r <= di_threshold)
+    mask_f = mask.to(state.qc.dtype)
+    return CoordinatorState(
+        qv=state.qv,
+        qc=state.qc + state.qr * mask_f,
+        qr=state.qr * (1.0 - mask_f),
+        qs=state.qs, qg=state.qg, qi=state.qi,
+        nc=state.nc + state.nr * mask_f,
+        nr=state.nr * (1.0 - mask_f),
+        ni=state.ni,
+        brs=state.brs,
+        t=state.t,
+    )
+
+
+# ─── Step F1i: DSD number limiters (Fortran 2972-3013) ──────────────────────
+
+
+def _lamda_from_qn(q, n, den, *, pidn, dm, lamda_min, lamda_max):
+    """Clamped DSD-slope lamda from (q, n):
+        lamda = clamp( (pidn·n / clamp(q·den, 1e-30))^(1/dm), lamda_min, lamda_max ).
+    Fortran exp(log·(1./dm)) form (step-65 class, NOT pow). The f32 casts and the two
+    1e-30 floors are preserved verbatim so this is byte-identical to the inline copies
+    it replaces (post-reslope n0 rewrites). Used only to feed the aux n0 rewrites — the
+    per-species n0 formula/gate is intentionally NOT folded in (they differ)."""
+    return torch.clamp(
+        torch.exp(torch.log(torch.clamp(
+            pidn * n / torch.clamp(q * den, min=1e-30),
+            min=1e-30)) * _fc._f32(1.0 / _fc._f32(dm))),
+        min=lamda_min, max=lamda_max)
+
+
+def _limit_number_for_lamda(
+    q: torch.Tensor, n: torch.Tensor, den: torch.Tensor,
+    *, pidn: float, dm: float, lamda_min: float, lamda_max: float,
+    q_thresh: float, n_thresh: float, diagnostic: dict | None = None,
+) -> torch.Tensor:
+    """Generic per-species DSD limiter:
+        if q >= q_thresh AND n >= n_thresh:
+            lamda = (pidn·n / (q·den))^(1/dm)
+            if lamda <= lamda_min: n = den·q·lamda_min^dm/pidn
+            elif lamda >= lamda_max: n = den·q·lamda_max^dm/pidn
+    Inactive 셀은 n 그대로 반환. AD-friendly (subgradient at boundary OK).
+    """
+    eps = 1.0e-30
+    active = (q >= q_thresh) & (n >= n_thresh)
+    qden = torch.clamp(q * den, min=eps)
+    ratio = torch.clamp(pidn * n / qden, min=eps)
+    lamda = torch.exp(torch.log(ratio) * _fc._f32(1.0 / _fc._f32(dm)))  # Fortran exp(log·(1./dm)) — not pow (step-65 class)
+
+    # Boundary back-derived numbers
+    n_at_min = den * q * (lamda_min ** dm) / pidn
+    n_at_max = den * q * (lamda_max ** dm) / pidn
+
+    # 분기: lamda<=lamda_min 또는 lamda>=lamda_max에서만 n을 재계산.
+    too_small = active & (lamda <= lamda_min)
+    too_large = active & (lamda >= lamda_max)
+    n_new = torch.where(too_small, n_at_min,
+                       torch.where(too_large, n_at_max, n))
+    if diagnostic is not None:
+        diagnostic.update({
+            "q": q, "n_in": n, "den": den, "qden": qden,
+            "ratio": ratio, "lamda": lamda,
+            "n_at_min": n_at_min, "n_at_max": n_at_max,
+            "n_after_lamda": n_new, "active": active,
+            "too_small": too_small, "too_large": too_large,
+        })
+    return n_new
+
+
+def apply_dsd_number_limiters_torch(
+    state: CoordinatorState,
+    den: torch.Tensor,
+    *,
+    qmin: float = 1.0e-15,
+    qcrmin: float = None,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for final cloud/ice snaps
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
+    diagnostic_dtcld: float = 0.0,
+) -> CoordinatorState:
+    """Fortran 2972-3013: post-cleanup DSD number limiter.
+
+    Each (q, n) pair: lamda = (pidn·n / (q·den))^(1/dm). When lamda runs out of
+    [lamda_min, lamda_max], snap and back-derive n. Plus rain/cloud absolute caps
+    via NRMAX/NCMAX (Fortran 3007-3013).
+
+    CCN is carried separately by the driver; this helper updates the cloud,
+    rain and ice numbers stored in CoordinatorState.
+    """
+    if qcrmin is None:
+        qcrmin = c.QCRMIN
+
+    # gamma constants (rgmma = Γ; review6 audit fix 적용 후)
+    rgmma = _fc.rgmma_f  # Fortran-faithful f32 (step-67 class)
+    cmr = math.pi * c.DENR / 6.0
+    cmc = math.pi * c.DENR / 6.0    # cloud uses water density (cmc = π·DENR/6)
+    cmi = math.pi * c.DENI / 6.0
+    pidnr = _fc.PIDNR   # f32-stepwise (kdm6init F:3235)
+    # cloud DMC=3, MUC=2 (Cohard-Pinty modified gamma)
+    pidnc = _fc.PIDNC   # f32-stepwise (kdm6init F:3205)
+    pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
+
+    rain_decision = {} if diagnostic_trace is not None else None
+    cloud_decision = {} if diagnostic_trace is not None else None
+    ice_decision = {} if diagnostic_trace is not None else None
+
+    # Rain
+    nr_new = _limit_number_for_lamda(
+        state.qr, state.nr, den,
+        pidn=pidnr, dm=c.DMR,
+        lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
+        q_thresh=qcrmin, n_thresh=c.NRMIN,
+        diagnostic=rain_decision,
+    )
+    # Cloud — gate by PER-CELL ncmin (Fortran F:3132 `nci1>=ncmin`, sea=10/land=100),
+    # NOT scalar NCMIN=1e-2: low-nc cells (nc<ncmin) must NOT be snapped (they were wrongly
+    # snapped UP to ~3.6e5 by the scalar gate — the nc6 residual). n_thresh=0 + per-cell where.
+    nc_snapped = _limit_number_for_lamda(
+        state.qc, state.nc, den,
+        pidn=pidnc, dm=c.DMC,
+        lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
+        q_thresh=qmin, n_thresh=0.0,
+        diagnostic=cloud_decision,
+    )
+    _ncmin_t = ncmin_tensor if ncmin_tensor is not None else c.NCMIN
+    cloud_final_gate = state.nc >= _ncmin_t
+    nc_new = torch.where(cloud_final_gate, nc_snapped, state.nc)
+    # Ice — apply_dsd_number_limiters implements the FINAL kdm62d block, whose
+    # ice snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
+    # — same qmin/ncmin pattern as the cloud snap (:2984) above. The prior 1e-14/0
+    # gate mis-cited :1467 (the INLINE rate-phase snap, a different occurrence
+    # with no n-gate). Adjudicated vs Fortran 2026-05-31; mirrors the C++ fix.
+    ni_snapped = _limit_number_for_lamda(
+        state.qi, state.ni, den,
+        pidn=pidni, dm=c.DMI,
+        lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
+        q_thresh=qmin, n_thresh=0.0,
+        diagnostic=ice_decision,
+    )
+    ice_final_gate = state.ni >= _ncmin_t
+    ni_new = torch.where(ice_final_gate, ni_snapped, state.ni)
+
+    # Absolute-number threshold triggers (Fortran 3007-3013): rederive n at
+    # lambda_max. This is not min(n, NMAX); the rederived number can increase.
+    eps = 1.0e-30
+    qden_r = torch.clamp(state.qr * den, min=eps)
+    nr_at_max = den * state.qr * (c.LAMDARMAX ** c.DMR) / pidnr
+    nr_before_absolute_cap = nr_new
+    rain_absolute_cap = nr_before_absolute_cap > c.NRMAX
+    nr_new = torch.where(rain_absolute_cap, nr_at_max, nr_before_absolute_cap)
+    qden_c = torch.clamp(state.qc * den, min=eps)
+    nc_at_max = den * state.qc * (c.LAMDACMAX ** c.DMC) / pidnc
+    nc_before_absolute_cap = nc_new
+    cloud_absolute_cap = nc_before_absolute_cap > c.NCMAX
+    nc_new = torch.where(cloud_absolute_cap, nc_at_max, nc_before_absolute_cap)
+
+    if diagnostic_trace is not None:
+        assert rain_decision is not None and cloud_decision is not None
+        assert ice_decision is not None
+        operands = {}
+        for species, values in (("rain", rain_decision), ("cloud", cloud_decision),
+                                ("ice", ice_decision)):
+            operands.update({
+                f"{species}_{name}": value for name, value in values.items()
+                if name not in {"active", "too_small", "too_large"}
+            })
+        operands.update({
+            "rain_absolute_cap_input": nr_before_absolute_cap,
+            "cloud_absolute_cap_input": nc_before_absolute_cap,
+            "rain_absolute_cap_value": nr_at_max,
+            "cloud_absolute_cap_value": nc_at_max,
+        })
+        branch = torch.stack((
+            rain_decision["active"], rain_decision["too_small"], rain_decision["too_large"],
+            cloud_decision["active"], cloud_decision["too_small"], cloud_decision["too_large"],
+            cloud_final_gate,
+            ice_decision["active"], ice_decision["too_small"], ice_decision["too_large"],
+            ice_final_gate, rain_absolute_cap, cloud_absolute_cap,
+        ), dim=0)
+    result = CoordinatorState(
+        qv=state.qv, qc=state.qc, qr=state.qr, qs=state.qs, qg=state.qg,
+        qi=state.qi, nc=nc_new, nr=nr_new, ni=ni_new,
+        brs=state.brs, t=state.t,
+    )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "dsd_limiter", diagnostic_step, diagnostic_dtcld, state, result, None,
+            branch=branch, operands=operands,
+            metadata={
+                "kind": "applied_transfer",
+                "branch_labels": [
+                    "rain_active", "rain_too_small", "rain_too_large",
+                    "cloud_active", "cloud_too_small", "cloud_too_large",
+                    "cloud_final_ncmin_gate", "ice_active", "ice_too_small",
+                    "ice_too_large", "ice_final_ncmin_gate", "rain_absolute_cap",
+                    "cloud_absolute_cap",
+                ],
+                "branch_scope": "final DSD limiter active/snap/cap decisions",
+            })
+
+    return result
+
+
+# ─── Step F2: Sub-cycling wrapper ────────────────────────────────────────────
+
+
+class CoordinatorAuxDiagnostics(NamedTuple):
+    """F1 chain이 사용하는 *외부 진단* 입력. 운영 시 caller가 산출.
+
+    향후 Step F1f에서 자동 진단 모듈로 승격 가능 (n0r/n0i/n0c/n0so/n0go,
+    work1_r/work1_ice, avedia_i, rslopecmu/rslopecd 등).
+    """
+    n0r: torch.Tensor
+    n0i: torch.Tensor
+    n0c: torch.Tensor
+    n0so: torch.Tensor
+    n0go: torch.Tensor
+    work1_r: torch.Tensor
+    work1_ice: torch.Tensor
+    work1_water: torch.Tensor      # work1(:,:,1) — psevp/pgevp용 (review3#1)
+    qcr: torch.Tensor
+    avedia_i: torch.Tensor
+    rslopecmu: torch.Tensor
+    rslopecd: torch.Tensor
+
+
+def build_default_aux_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    rslopec: torch.Tensor,
+    *,
+    thermo_params,
+) -> CoordinatorAuxDiagnostics:
+    """Physics-based DSD aux (n0r/n0i/n0c, work1_water/ice, avedia_i,
+    rslopecmu/rslopecd) computed FROM the state. 1:1 mirror of C++
+    build_default_aux (runtime.cpp:103). n0so/n0go are constants (mus=mug=0);
+    qcr is a placeholder (8e-5) overridden by the caller via qcr_carry. Used by
+    rebuild_aux_torch for the Stage-A sequential re-architecture. AD-safe.
+    """
+    rgmma = _fc.rgmma_f  # Fortran-faithful f32 (step-67 class)
+    g1pmr = rgmma(1.0 + c.MUR)
+    g1pmi = rgmma(1.0 + c.MUI)
+    g4pmi = rgmma(4.0 + c.MUI)
+    pidnr = _fc.PIDNR   # f32-stepwise (kdm6init F:3235)
+    pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
+
+    rslope_r = _dsd.diag_species_slope_torch(
+        state.qr, state.nr, forcing.dend, pidnr, c.DMR, c.LAMDARMAX, c.LAMDARMIN)
+    # Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
+    # = 1/LAMDARMAX. The clamp inside diag_species_slope maps qr≈0 → 1/LAMDARMAX, but a nr<=nrmin
+    # cell WITH qr>qcrmin would wrongly hit 1/LAMDARMIN; the nr<=nrmin gate forces 1/LAMDARMAX so
+    # n0r (and prevp / rain collection) use the correct rain intercept (Codex round-4 F3). Rain ONLY
+    # — ice has no n-threshold inactive branch (only the qi≈0 clamp; see feedback_if_threshold_audit).
+    rain_inactive = (state.qr <= c.QCRMIN) | (state.nr <= c.NRMIN)
+    rslope_r = torch.where(rain_inactive,
+                           torch.full_like(rslope_r, 1.0 / c.LAMDARMAX), rslope_r)
+    rslope_i = _dsd.diag_species_slope_torch(
+        state.qi, state.ni, forcing.dend, pidni, c.DMI, c.LAMDAIMAX, c.LAMDAIMIN)
+    rslopemu_r = rslope_r ** c.MUR
+    rslopemu_i = torch.ones_like(rslope_i) if c.MUI == 0.0 else rslope_i ** c.MUI
+    # STEP-69 SEED mirror: Fortran rslopecmu = DBLE(rslopec)**muc (DOUBLE, F:696) —
+    # exact f64 square, no f32 rounding. Invisible at fp64; required for f32-mode parity.
+    rslopecmu = rslopec.to(torch.float64) ** c.MUC
+
+    n0r = state.nr / (rslope_r * rslopemu_r * g1pmr)
+    # §2B+1C active-rain n0r MULTIPLY form (Fortran F:1462-1465/1696) — MIRROR of C++ runtime.cpp:170-178
+    # (build_default_aux): nr·lamdr^(mur+1) with a fresh f32 lamdr (one fewer f32 rounding than dividing
+    # by the reciprocal-clamped rslope; matches Fortran's active branch). Feeds aux1/aux2/pre-warm n0r —
+    # the post-freeze aux2 adds the F:1700 nr-clamp rewrite on top. mur=1 ⇒ g1pmr=Γ(2)=1.
+    _inv_dmr_n0r = _fc._f32(1.0 / _fc._f32(c.DMR))
+    _lamdr_cl_n0r = torch.clamp(torch.exp(torch.log(torch.clamp(
+        pidnr * state.nr / torch.clamp(state.qr * forcing.dend, min=1e-30), min=1e-30)) * _inv_dmr_n0r),
+        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    # §44 x**2.0=MULT (gfortran compiles lamdr**(mur+1), mur+1=2.0, as x*x not powf) — mirror C++.
+    _n0r_active = (1.0 / g1pmr) * state.nr * (_lamdr_cl_n0r * _lamdr_cl_n0r)
+    _active_rain_n0r = (state.qr >= c.QCRMIN) & (state.nr >= c.NRMIN)
+    n0r = torch.where(_active_rain_n0r, _n0r_active, n0r)
+    n0i = state.ni / (rslope_i * rslopemu_i * g1pmi)
+    n0c = (c.MUC + 1.0) * state.nc / (rslopec * rslopecmu)
+
+    xl = _thermo.compute_xl(state.t, params=thermo_params)
+    xls_t = torch.full_like(state.t, thermo_params.xls)
+    qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+    qs2 = _thermo.compute_qs_ice(state.t, forcing.p, params=thermo_params)
+    work1_water = _thermo.compute_diffac(xl, forcing.p, state.t, forcing.den, qs1, params=thermo_params)
+    work1_ice = _thermo.compute_diffac(xls_t, forcing.p, state.t, forcing.den, qs2, params=thermo_params)
+
+    return CoordinatorAuxDiagnostics(
+        n0r=n0r, n0i=n0i, n0c=n0c,
+        n0so=torch.full_like(state.qs, c.N0S),
+        n0go=torch.full_like(state.qg, c.N0G),
+        work1_r=work1_water, work1_ice=work1_ice, work1_water=work1_water,
+        qcr=torch.full_like(state.qc, 8.0e-5),
+        avedia_i=rslope_i * (g4pmi / g1pmi) ** 0.3333333,  # Fortran F:1672 ice avedia .3333333 literal. 1:1 fix #4/#11
+        rslopecmu=rslopecmu, rslopecd=rslopec ** c.DMC,
+    )
+
+
+def rebuild_aux_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    sea_mask: torch.Tensor,
+    *,
+    params: CoordinatorParams,
+    qcr_carry: torch.Tensor,
+    entry_pre: PreambleOutputs,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud-slope gate (threaded to preamble)
+):
+    """Re-run preamble_torch + build_default_aux_torch on a working (post-melt/
+    post-freeze) state. Returns (PreambleOutputs, CoordinatorAuxDiagnostics) —
+    BOTH refreshed together (rebuilding aux but keeping a stale preamble is the
+    806× over-deposition class). qcr is carried (sea_mask-derived). Mirrors C++
+    rebuild_aux.
+
+    THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
+    recomputes GEOMETRY (rslope*/n0*/ProgB/work2/supcol) but NOT the saturation/
+    latent-heat thermo — cpm/xl are fixed at kdm62D call entry; qs1/qs2/rh/sw
+    are staged at the current subcycle entry and the rate loop reads them
+    (supsat=q-qs at :1695/:1822 uses entry qs; q=qv is melt/freeze-invariant). So
+    splice the entry thermo from `entry_pre`; recompute work1=diffac(xl,p,t,den,qs)
+    with ENTRY xl/qs + the POST-FREEZE t (Fortran :1679-1680).
+    """
+    pre = preamble_torch(state, forcing, sea_mask, params=params, ncmin_tensor=ncmin_tensor)
+    pre = pre._replace(
+        cpm=entry_pre.cpm, xl=entry_pre.xl, qs1=entry_pre.qs1, qs2=entry_pre.qs2,
+        rh_w=entry_pre.rh_w, rh_ice=entry_pre.rh_ice, supsat=entry_pre.supsat,
+        supsat_ice=entry_pre.supsat_ice,
+    )
+    aux = build_default_aux_torch(state, forcing, pre.rslopec, thermo_params=params.thermo)
+    xls_t = torch.full_like(state.t, params.thermo.xls)
+    work1_water = _thermo.compute_diffac(
+        entry_pre.xl, forcing.p, state.t, forcing.den, entry_pre.qs1, params=params.thermo)
+    work1_ice = _thermo.compute_diffac(
+        xls_t, forcing.p, state.t, forcing.den, entry_pre.qs2, params=params.thermo)
+    aux = aux._replace(
+        qcr=qcr_carry, work1_water=work1_water, work1_ice=work1_ice, work1_r=work1_water)
+    return pre, aux
+
+
+def apply_satadj_step_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    xl: torch.Tensor,
+    cpm: torch.Tensor,
+    satadj_params,
+    thermo_params,
+    *,
+    dtcld: float,
+    nccn: "torch.Tensor | None" = None,
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
+) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
+    """F1g+ — saturation adjustment on the POST-state-update + POST-reclass state
+    (Fortran module_mp_kdm6.F:2922-2943). Mirrors C++ apply_satadj_step.
+
+    pcond is DEFERRED out of state_update_torch so condensation fires on the
+    proper post-mass-balance, post-reclassification state — matching Fortran's
+    :2922-2943 sequence (mass balance → Picons/rain-cloud reclass → satadj), NOT
+    before it (which was the C++↔Python divergence Codex flagged).
+
+    With nccn supplied, this step also runs pcact/ncact activation and the
+    complete-evaporation NC→NCCN transfer, returning (state, nccn). Without it,
+    only saturation adjustment runs and the return value is CoordinatorState.
+    qs1 is recomputed from post-update t (Fortran :2922-2926). Derivatives follow
+    the selected activation, evaporation and saturation branches.
+    """
+    cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
+
+    if nccn is None:
+        # No CCN activation (nccn not threaded) — satadj only. Backward-compatible path used
+        # by the component tests; returns a bare CoordinatorState as before.
+        qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+        pcond = _satadj.saturation_adjustment_torch(
+            state.t, state.qv, state.qc, qs1, xl, cpm_safe, params=satadj_params, dtcld=dtcld)
+        new_state = state._replace(
+            qv=torch.clamp(state.qv - pcond * dtcld, min=0.0),
+            qc=torch.clamp(state.qc + pcond * dtcld, min=0.0),
+            t=state.t + pcond * xl / cpm_safe * dtcld,
+        )
+        if diagnostic_trace is not None:
+            diagnostic_trace.record_stage(
+                "satadj", diagnostic_step, dtcld, state, new_state, None,
+                branch=(pcond != 0), operands={"pcact": torch.zeros_like(pcond), "pcond": pcond,
+                                               "xl": xl, "cpm": cpm_safe},
+                metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
+                          "branch_scope": "pcond nonzero only; not all satadj branches"},)
+        return new_state
+
+    # ── CCN activation + satadj + complete-evap NC→NCCN ──────────────────────────
+    # 1:1 mirror of C++ apply_satadj_step (coordinator.cpp:1301-1361 / Fortran :2905-2939).
+    # Returns (new_state, nccn_out) — the driver carries nccn across sub-cycles. AD-safe.
+    qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+    qs1_safe = torch.clamp(qs1, min=c.QCRMIN)
+    sw_percent = (state.qv / qs1_safe - 1.0) * 100.0          # Fortran sw in PERCENT (:918/2848)
+    sw_ratio = torch.clamp(sw_percent / 0.48, min=0.0)        # 0.48% activation cutoff (SATMAX)
+    # pow(x, ACTK<1) has grad 0.6·x^-0.4 → ∞ at x=0; at exactly rh_w=1 (sw_ratio=0) that NaNs
+    # the autograd. Clamp the base ≥ EPS for a finite one-sided subgradient (forward unchanged
+    # where sw_ratio≫EPS, and ncact is gated to 0 at supsat≤0 so the value is unaffected).
+    activated_fraction = torch.minimum(
+        torch.ones_like(sw_ratio), torch.pow(torch.clamp(sw_ratio, min=c.EPS), c.ACTK))
+    # Fortran F:2935-2936 ((nci3+nci1)*frac - nci1): strict IEEE two-rounding in
+    # plain source order — mul rounds, subtract rounds (C++ fma_acc computes the
+    # same since the IEEE transition; was an addcmul mirror of the
+    # -ffp-contract=fast fmsub before it).
+    ncact_raw = torch.clamp((nccn + state.nc) * activated_fraction - state.nc, min=0.0) / dtcld
+    ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
+    # CCN gate on the DIVISION form sw_percent>0 (Fortran F:3051 `sw>0`), NOT qv-qs1 —
+    # they flip oppositely in f32 near saturation, toggling activation (qc/nc residual).
+    activation_gate = sw_percent > 0.0
+    ncact = torch.where(activation_gate, ncact, torch.zeros_like(ncact))
+    # SEED#3 (Fortran module_mp_kdm6.F:2908): build the pcact mass constant
+    #   K = 4.*pi*denr*(actr*1.E-6)**3
+    # with float32 stepwise rounding (gfortran REAL(4) left-to-right, cube = x*x*x),
+    # held as a Python float of the exact float32 value, so it bit-matches the C++
+    # port (static_cast<float>) and gfortran (K=0x293f0123). Mirror of the C++ fix —
+    # keeps C++↔Python parity (both use the identical constant 4.2411505487031584e-14).
+    # Each _f32() rounds to float32; operands are exactly-representable float32 values,
+    # so _f32(a*b) reproduces the C++ float32 multiply operation-by-operation.
+    _f32 = lambda v: _struct.unpack('f', _struct.pack('f', v))[0]
+    _ax_f  = _f32(_f32(c.ACTR) * _f32(1.0e-6))          # f32(actr) *f32 f32(1e-6)
+    _ax3_f = _f32(_f32(_ax_f * _ax_f) * _ax_f)          # (ax*ax)*ax, float32 x*x*x
+    _pi_f  = _f32(math.pi)                               # == static_cast<float>(PI)
+    _PCACT_MASS_CONST = _f32(_f32(_f32(4.0 * _pi_f) * _f32(c.DENR)) * _ax3_f)  # 4.2411505487031584e-14
+    pcact_raw = _PCACT_MASS_CONST * ncact / (3.0 * forcing.dend)
+    pcact = torch.minimum(pcact_raw, torch.clamp(state.qv, min=0.0) / dtcld)
+
+    # apply pcact + ncact (pre-satadj snapshot)
+    qv_pp = torch.clamp(state.qv - pcact * dtcld, min=0.0)
+    qc_pp = torch.clamp(state.qc + pcact * dtcld, min=0.0)
+    t_pp = state.t + pcact * xl / cpm_safe * dtcld
+    nc_pp = torch.clamp(state.nc + ncact * dtcld, min=0.0)
+    nccn_pp = torch.clamp(nccn - ncact * dtcld, min=0.0)
+
+    # satadj on the post-pcact snapshot (qs1 recomputed from t_pp)
+    qs1_pp = _thermo.compute_qs_water(t_pp, forcing.p, params=thermo_params)
+    pcond = _satadj.saturation_adjustment_torch(
+        t_pp, qv_pp, qc_pp, qs1_pp, xl, cpm_safe, params=satadj_params, dtcld=dtcld)
+    # complete-evap NC → NCCN: Fortran F:2966 is a BARE equality gate
+    # `if(pcond.eq.-qci(i,k,1)/dtcld)` — no qc>0 conjunct. At qc==0 with pcond==0
+    # it fires (0.0 == -0.0), transferring nc → nccn (the step-46 nn seed when the
+    # old qc>0 gate blocked it). Mirrors the C++ satadj.cpp fix.
+    cloud_complete_evap = (pcond == (-qc_pp / dtcld))
+    nc_evap = nc_pp * cloud_complete_evap.to(state.qc.dtype)
+    nc_final = torch.clamp(nc_pp - nc_evap, min=0.0)
+    nccn_final = torch.clamp(nccn_pp + nc_evap, min=c.NCCN_MIN, max=c.NCCN_MAX)
+
+    # apply pcond
+    qv_final = torch.clamp(qv_pp - pcond * dtcld, min=0.0)
+    qc_final = torch.clamp(qc_pp + pcond * dtcld, min=0.0)
+    t_final = t_pp + pcond * xl / cpm_safe * dtcld
+
+    new_state = state._replace(qv=qv_final, qc=qc_final, t=t_final, nc=nc_final)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "satadj", diagnostic_step, dtcld, state, new_state, None,
+            branch=torch.stack((pcond != 0, activation_gate, cloud_complete_evap), dim=0),
+            operands={"pcact": pcact, "pcond": pcond,
+                                           "xl": xl, "cpm": cpm_safe},
+            metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
+                      "includes_pcact": True,
+                      "branch_labels": ["pcond_nonzero", "ccn_activation_sw_positive",
+                                        "cloud_complete_evaporation"],
+                      "branch_scope": "pcond nonzero, CCN activation and complete evaporation; not all satadj branches"},)
+    return new_state, nccn_final
+
+
+def apply_homogeneous_freeze_supercold_torch(
+    state: CoordinatorState,
+    thermo_params,
+    *,
+    supcol_threshold: float = 40.0,
+) -> CoordinatorState:
+    """Fortran module_mp_kdm6.F:1409-1419 — at supcol > 40 (T < t0c-40 ≈ 233K) with qc>0,
+    instantaneously freeze ALL cloud water to ice + release fusion latent heat:
+      qi += qc; ni += nc; t += xlf/cpm·qc; qc = 0; nc = 0   (xlf = xls - xl(T)).
+    Runs between D1 melt and the post-melt re-slope (Fortran order), so D2-D4 see
+    the post-homog qc (=0 in homog cells). 1:1 mirror of C++
+    apply_homogeneous_freeze_supercold. AD-safe (multiplicative mask). cpm uses qv
+    (melt/freeze-invariant) and xl uses t — both == entry values in homog cells
+    (D1 melt is warm-gated ⇒ inactive where supcol>40), matching Fortran's entry-
+    fixed cpm/xl (:835-836).
+    """
+    dtype = state.qc.dtype
+    supcol = thermo_params.t0c - state.t
+    mask = ((supcol > supcol_threshold) & (state.qc > 0.0)).to(dtype)
+    inv = 1.0 - mask
+    xl = _thermo.compute_xl(state.t, params=thermo_params)
+    cpm = _thermo.compute_cpm(state.qv, params=thermo_params)
+    xlf = thermo_params.xls - xl
+    cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
+    dT = xlf / cpm_safe * state.qc
+    return state._replace(
+        qc=state.qc * inv,
+        qi=state.qi + state.qc * mask,
+        nc=state.nc * inv,
+        ni=state.ni + state.nc * mask,
+        t=state.t + dT * mask,
+    )
+
+
+def kdm62d_one_step_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    aux: CoordinatorAuxDiagnostics,
+    sea_mask: torch.Tensor,
+    *,
+    full_params: CoordinatorParams,
+    warm_params: WarmPhaseParams,
+    cold_params: ColdPhaseParams,
+    mf_params: MeltFreezePhaseParams,
+    dtcld: float,
+    ncmin_tensor=None,   # per-cell floor for number budgets and slope/DSD gates;
+                         # None → scalar c.NCMIN fallback. Built from xland by the driver.
+    nccn=None,           # CCN reservoir for activation in apply_satadj_step (Task #74);
+                         # None → no activation (returns bare state). Threaded by the driver.
+    controls=None,       # [DA §5.2] ProcessControls (fp64 DA path only). None → ZERO
+                         # added ops (byte-identical oracle); see process_controls.py.
+    budget=None,         # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
+    diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
+    diagnostic_step: int = 0,
+    entry_cpm=None,     # kdm62d-call entry coefficient; None for a standalone one-step call
+    entry_xl=None,
+) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
+    """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
+
+    Order: preamble → warm → cold → melt/freeze → state_update.
+    When ``nccn`` is given, apply_satadj_step runs CCN activation and this returns
+    ``(new_state, nccn_out)``; otherwise it returns a bare ``CoordinatorState``.
+    """
+    pre = preamble_torch(state, forcing, sea_mask, params=full_params, ncmin_tensor=ncmin_tensor)
+    if entry_cpm is not None or entry_xl is not None:
+        pre = pre._replace(
+            cpm=entry_cpm if entry_cpm is not None else pre.cpm,
+            xl=entry_xl if entry_xl is not None else pre.xl,
+        )
+    # BRS density re-clamp #1 (Fortran ProgB_param INTENT(INOUT) brs=qg/rhox, L1084/L3376):
+    # adopt the entry-state ProgB-reclamped graupel volume so downstream brs accumulation
+    # starts from the density-[100,900]-capped base. progb.bg is already computed (dead
+    # output before this fix); functional ._replace, autograd-safe (where+clamp+divide).
+    state = state._replace(brs=pre.progb.bg)
+
+    # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
+    # Mirror of C++ kdm62d_one_step. Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) →
+    # [homog freeze :1410-1420] → re-slope (:1422-1480) → D2-D4 freeze (:1485-1561) →
+    # re-slope (:1596-1683) → warm/cold rate loop (:1818). We mirror it stage-by-stage:
+    #   1. D1 melt from the ENTRY state (warm cells); apply inline → working1.
+    #   2. rebuild_aux_torch(working1) → pre1/aux1 (post-melt re-slope).
+    #   3. D2-D4 freeze from working1 + pre1/aux1 (cold cells); apply inline → working.
+    #   4. rebuild_aux_torch(working) → pre2/aux2 (post-freeze re-slope).
+    #   5. warm/cold/D5 read `working` + pre2/aux2.
+    # `midpoint_trace` is an oracle-only counterfactual applied at each port ProgB
+    # evaluation (`pre`, the extra split-stage `pre1`, `pre2`, final `progb4`, and
+    # sedimentation reslopes). The post-D1 `pre1` has no one-to-one host ProgB call;
+    # this flag does not claim native seven-call source-order parity. Derivatives
+    # are local to the selected masks; qg=0 and the original active-gate edges are
+    # nonsmooth.
+    # STEP 3 (this split) is bit-identical to the prior STEP-2 single-apply modulo
+    # float reassociation (melt warm / freeze cold are per-cell mutually exclusive,
+    # so D2-D4-on-post-melt ≡ D2-D4-on-entry). Hosts the (disabled) homog freeze
+    # between melt and the freeze re-slope (Stage H2).
+    # SEED#2: cloud-number lamda-snap constant (Cohard-Pinty modified gamma), same
+    # pidnc as apply_dsd_number_limiters_torch. Used to back-mutate the prognostic
+    # cloud number at each intra-substep re-slope (mirror of the C++ port).
+    pidnc_snap = _fc.PIDNC   # f32-stepwise (kdm6init F:3205; step-45 seed class)
+
+    # 1. D1 melt → working1.
+    mf_d1 = melt_freeze_d1_torch(
+        state, forcing, pre, aux.n0so, aux.n0go, params=mf_params, dtcld=dtcld,
+        midpoint_trace=full_params.midpoint_trace)
+    working1 = apply_melt_freeze_inline_torch(
+        state, mf_d1, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d1_melt", diagnostic_step, dtcld, state, working1, mf_d1,
+            branch=(pre.supcol < 0), metadata={"kind": "applied_transfer"})
+
+    # 1b. Homogeneous freeze (Fortran :1410-1420): supcol>40 ⇒ all qc→qi, between
+    # D1 melt and the post-melt re-slope (so the re-slope + D2-D4 see post-homog qc).
+    # Now safe (rebuild below re-slopes n0i on the post-homog ice). Mirror of C++.
+    working1b = apply_homogeneous_freeze_supercold_torch(working1, full_params.thermo)
+
+    # 2. rebuild on the post-melt+homog state (re-slope; entry thermo spliced).
+    pre1, aux1 = rebuild_aux_torch(
+        working1b, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
+        ncmin_tensor=ncmin_tensor)
+    # BRS density re-clamp #2 (Fortran ProgB_param L1392 post-melt re-slope): adopt the
+    # post-melt ProgB-reclamped graupel volume so the D2-D4 freeze inline (which adds
+    # pfrzdtr/denr at density 1000) accumulates onto the [100,900]-capped base.
+    working1b = working1b._replace(brs=pre1.progb.bg)
+    # SEED#2 (post-melt re-slope, Fortran module_mp_kdm6.F:1453-1466): clamp-rewrite the
+    # prognostic cloud number before D2-D4 reads it (ninuc/nfrzdtc caps min() against it,
+    # F:1500-1501/1524-1531). Inert in unclamped cells; gated qc≥qmin & nc≥ncmin (F:1638).
+    _nc_orig1 = working1b.nc
+    _nc_snap1 = _limit_number_for_lamda(
+        working1b.qc, _nc_orig1, forcing.dend,
+        pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
+        q_thresh=c.EPS, n_thresh=c.NCMIN)
+    # Fortran F:1638 gates on the PER-CELL ncmin (10/100), not scalar NCMIN — restore
+    # cells below the per-cell floor (Codex stop-review). ncmin_tensor=None ⇒ scalar gate.
+    working1b = working1b._replace(nc=(
+        torch.where(_nc_orig1 >= ncmin_tensor, _nc_snap1, _nc_orig1)
+        if ncmin_tensor is not None else _nc_snap1))
+    # Rebuild n0c from the snap's OWN lamda for active cloud (Fortran F:1640-1649):
+    #   lamdc = clamp((pidnc·nci_raw/(den·qci))^(1/dmc), lamdacmin, lamdacmax)
+    #   n0c   = (muc+1)·nci_final·lamdc^(muc+1)
+    # NOT from the slope rslopec (the ≤ncmin slope gate vs the ≥ncmin snap gate disagree
+    # at nci==ncmin — Codex stop-review). nci_raw=_nc_orig1; nci_final=snapped working1b.nc.
+    _active1 = (working1b.qc >= c.EPS) & (
+        (_nc_orig1 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig1 >= c.NCMIN))
+    _lamdc1 = _lamda_from_qn(working1b.qc, _nc_orig1, forcing.dend,
+                             pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
+    _n0c1 = (c.MUC + 1.0) * working1b.nc * (_lamdc1 ** (c.MUC + 1.0))
+    aux1 = aux1._replace(n0c=torch.where(_active1, _n0c1, aux1.n0c))
+
+    # STEP-79 SEED (block-A ice P3, F:1499-1512): qi>=1e-14 (qi-ONLY gate) — the fresh
+    # f32 lamdi snapping to [lamdaimin, lamdaimax] REWRITES the prognostic nci2 =
+    # (den*qi)*powf(bound,3)/pidni and n0i = DBLE(nci2_new)*bound (mui=0, g1pmi=1).
+    # Without it, lamdai<lamdaimin cells keep raw ni and the final re-slope clamp makes
+    # Picons fire by construction (avedia at the bound >= 200um) — catastrophic qi wipe.
+    _ni_orig1 = working1b.ni
+    working1b = working1b._replace(ni=_limit_number_for_lamda(
+        working1b.qi, _ni_orig1, forcing.dend,
+        pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
+        q_thresh=1.0e-14, n_thresh=0.0))
+    _lamdi1 = _lamda_from_qn(working1b.qi, _ni_orig1, forcing.dend,
+                             pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
+    aux1 = aux1._replace(n0i=torch.where(working1b.qi >= 1.0e-14,
+                                         working1b.ni * _lamdi1, aux1.n0i))
+
+    # §1C POST-MELT rain-number clamp rewrite + n0r (Fortran F:1483-1494) — MIRROR of C++
+    # coordinator.cpp aux1 block (L694-715) and the post-freeze aux2 rewrite below. The post-melt
+    # re-slope snaps nrs to the lamdr bound (nrs=den·qr·lamdr_bound^dmr/pidnr) then
+    # n0r=(1/g1pmr)·nrs·lamdr^(mur+1); the SNAPPED nr feeds the D2-D4 freeze (pfrzdtr/nfrzdtr) AND
+    # aux1.n0r. Was missing here (only post-freeze aux2 had it) → oracle≠C++≠Fortran at the post-melt
+    # re-slope (Codex stop-review: active n0r change not mirrored). mur=1 ⇒ exponent 2, g1pmr=Γ(2)=1.
+    _nr_orig1 = working1b.nr
+    working1b = working1b._replace(nr=_limit_number_for_lamda(
+        working1b.qr, _nr_orig1, forcing.dend,
+        pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
+        q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
+    _lamdr1 = _lamda_from_qn(working1b.qr, _nr_orig1, forcing.dend,
+                             pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
+    _active_r1 = (working1b.qr >= c.QCRMIN) & (_nr_orig1 >= c.NRMIN)
+    aux1 = aux1._replace(n0r=torch.where(
+        _active_r1, working1b.nr * (_lamdr1 * _lamdr1), aux1.n0r))  # §44 x**2.0=MULT (gfortran), not powf
+
+    # 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog zeroed
+    # qc in supcol>40 cells, so D2/D3 inactive there — Fortran-exact.)
+    mf_d234_raw = melt_freeze_d2_d4_torch(
+        working1b, forcing, pre1,
+        aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
+        params=mf_params, dtcld=dtcld)
+    # [DA §5.2] no-op when None; caps the scaled D2+D3 draw against the qc/nc
+    # reservoirs the clamp-free inline applier is about to debit (Codex fix).
+    mf_d234 = apply_freeze_controls(mf_d234_raw, controls, working1b.qc, working1b.nc)
+    working = apply_melt_freeze_inline_torch(
+        working1b, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d2_d4_freeze", diagnostic_step, dtcld, working1b, working, mf_d234,
+            branch=(pre1.supcol >= 0),
+            operands={
+                "pre_control_pinuc": mf_d234_raw.pinuc,
+                "pre_control_pfrzdtc": mf_d234_raw.pfrzdtc,
+                "pre_control_ninuc": mf_d234_raw.ninuc,
+                "pre_control_nfrzdtc": mf_d234_raw.nfrzdtc,
+                "consumed_cpm": pre.cpm,
+                "consumed_xlf": full_params.thermo.xls - pre.xl,
+            },
+            metadata={"kind": "applied_transfer",
+                      "pre_control_scope": "producer outputs after per-process caps; before optional DA group control"})
+
+    # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
+    pre2, aux2 = rebuild_aux_torch(
+        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
+        ncmin_tensor=ncmin_tensor)
+    # BRS density re-clamp #3 (Fortran ProgB_param L1587 post-freeze re-slope): adopt the
+    # post-freeze ProgB-reclamped graupel volume so state_update_torch (L1245) accumulates
+    # the cold/warm dbrs (Fortran L2643/L2751) onto the [100,900]-capped base — this is the
+    # site that fixes newly-frozen-rain graupel (pfrzdtr/denr density 1000 → reclamp 900).
+    working = working._replace(brs=pre2.progb.bg)
+    # SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): clamp-rewrite the
+    # prognostic cloud number BEFORE the warm loop. The rewritten nci(1) is what warm
+    # praut/nraut (F:1706-1716) AND the CCN activation ncact (F:2905, reads nci1 twice)
+    # AND state_update consume — the frame-3 QNCLOUD seed. Gate supcol-independent (F:1638).
+    _nc_orig2 = working.nc
+    _nc_snap2 = _limit_number_for_lamda(
+        working.qc, _nc_orig2, forcing.dend,
+        pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
+        q_thresh=c.EPS, n_thresh=c.NCMIN)
+    # Per-cell ncmin gate (Fortran F:1638, ncmin_sea/land=10/100), not scalar NCMIN.
+    working = working._replace(nc=(
+        torch.where(_nc_orig2 >= ncmin_tensor, _nc_snap2, _nc_orig2)
+        if ncmin_tensor is not None else _nc_snap2))
+    # n0c from the snap's lamda for active cloud (Fortran F:1640-1649), not rslopec
+    # (boundary mismatch at nci==ncmin — Codex stop-review). cold_phase riming reads aux2.n0c.
+    _active2 = (working.qc >= c.EPS) & (
+        (_nc_orig2 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig2 >= c.NCMIN))
+    _lamdc2 = _lamda_from_qn(working.qc, _nc_orig2, forcing.dend,
+                             pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
+    _n0c2 = (c.MUC + 1.0) * working.nc * (_lamdc2 ** (c.MUC + 1.0))
+    aux2 = aux2._replace(n0c=torch.where(_active2, _n0c2, aux2.n0c))
+
+    # §1C POST-FREEZE rain-number clamp rewrite + n0r (Fortran F:1696-1704) — MIRROR of C++
+    # coordinator.cpp aux2 block. Fortran rewrites nrs (=den·qrs·lamdr_bound^dmr/pidnr) in out-of-range-
+    # lamdr cells then n0r=(1/g1pmr)·nrs·lamdr^(mur+1); the rewritten nr feeds warm/cold/state_update.
+    # Fixes the post-freeze n0r → warm prevp (F:1851). mur=1 ⇒ g1pmr=Γ(2)=1.
+    _nr_orig2 = working.nr
+    working = working._replace(nr=_limit_number_for_lamda(
+        working.qr, _nr_orig2, forcing.dend,
+        pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
+        q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
+    _lamdr2 = _lamda_from_qn(working.qr, _nr_orig2, forcing.dend,
+                             pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
+    _active_r2 = (working.qr >= c.QCRMIN) & (_nr_orig2 >= c.NRMIN)
+    aux2 = aux2._replace(n0r=torch.where(
+        _active_r2, working.nr * (_lamdr2 * _lamdr2), aux2.n0r))  # §44 x**2.0=MULT (gfortran), not powf
+
+    # STEP-79 SEED (block-B ice P3, F:1684-1697) — same rewrite as block-A above.
+    _ni_orig2 = working.ni
+    working = working._replace(ni=_limit_number_for_lamda(
+        working.qi, _ni_orig2, forcing.dend,
+        pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
+        q_thresh=1.0e-14, n_thresh=0.0))
+    _lamdi2 = _lamda_from_qn(working.qi, _ni_orig2, forcing.dend,
+                             pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
+    aux2 = aux2._replace(n0i=torch.where(working.qi >= 1.0e-14,
+                                         working.ni * _lamdi2, aux2.n0i))
+
+    warm_out = warm_phase_torch(
+        working, forcing, pre2,
+        aux2.n0r, aux2.work1_r, aux2.qcr,
+        params=warm_params, dtcld=dtcld,
+    )
+
+    warm_out = apply_warm_controls(warm_out, controls)   # [DA §5.2] no-op when None
+
+    # F1b/F1c boundary: complete rain evaporation transfers the paired rain
+    # number to CCN and zeroes the rain-number reservoir before any C1-C6
+    # producer reads it (Fortran F:1795-1796; C++ coordinator.cpp:1066-1076).
+    # Keep the transfer amount separately for the CCN reservoir; the updated
+    # ``working.nr`` is what cold rates, D5, conservation and state_update see.
+    # The component path has no threaded CCN reservoir, so it retains its
+    # established nccn=None behavior.
+    if nccn is not None:
+        rce_amount = working.nr * warm_out.rain_complete_evap.to(working.nr.dtype)
+        nccn = nccn + rce_amount
+        working = working._replace(
+            nr=torch.where(warm_out.rain_complete_evap,
+                           torch.zeros_like(working.nr), working.nr))
+
+    cold_out = cold_phase_torch(
+        working, forcing, pre2, warm_out.prevp,
+        aux2.n0i, aux2.n0r, aux2.n0so, aux2.n0go, aux2.n0c,
+        aux2.rslopecmu, aux2.rslopecd,
+        aux2.avedia_i, aux2.work1_ice, aux2.work1_water,
+        params=cold_params, dtcld=dtcld,
+    )
+
+    cold_out = apply_cold_controls(cold_out, controls)   # [DA §5.2] no-op when None
+
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "warm", diagnostic_step, dtcld, working, working, warm_out,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "rate_generation",
+                "upstream_to_cold": "warm.prevp",
+                "controls_applied": controls is not None,
+            })
+        diagnostic_trace.record_stage(
+            "cold", diagnostic_step, dtcld, working, working, cold_out,
+            branch=(pre2.supcol >= 0), metadata={
+                "kind": "rate_generation",
+                "upstream_from_warm": "warm.prevp",
+                "controls_applied": controls is not None,
+            })
+
+    mf5 = melt_freeze_d5_torch(
+        working, forcing, pre2, cold_out,
+        aux2.n0so, aux2.n0go, params=mf_params, dtcld=dtcld,
+    )
+    mf5 = apply_melt_controls(mf5, controls)             # [DA §5.2] no-op when None
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d5_melt", diagnostic_step, dtcld, working, working, mf5,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "rate_generation",
+                "upstream_from_cold": "cold.paacw_adj/psacr_adj/pgacr_adj",
+                "controls_applied": controls is not None,
+            })
+
+    # F1d2: group conservation limiters bound warm/cold/D5 sinks against the
+    # WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly
+    # Fortran's combined budget+mass-balance loop (:2449-2756, gate `t.le.t0c`).
+    # D1-D4 are already committed to `working`. The limiter rescales warm,
+    # cold and D5 rates; within melt/freeze only the uncommitted D5 fields
+    # (pseml/pgeml/nseml/ngeml) remain. Mirrors C++ group-budget ordering.
+    warm_out, cold_out, mf5 = scale_rates_for_conservation_torch(
+        working, pre2.supcol, warm_out, cold_out, mf5, dtcld=dtcld,
+        # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The driver
+        # (runtime._kdm6_pure) now builds this from xland + ncmin_land/ncmin_sea (mirroring
+        # the C++ WRF path) and threads it here; None → scalar c.NCMIN fallback (no xland).
+        # The runtime also supplies this tensor to the connected rate-gate
+        # parameter bundles; slope and DSD consumers receive it directly.
+        ncmin_tensor=ncmin_tensor,
+        budget_trace=diagnostic_trace,
+        diagnostic_step=diagnostic_step,
+    )
+    if diagnostic_trace is not None:
+        # Keep the rate-generation records above and add the rates that actually
+        # reach state_update after the shared reservoir/number limits.  The two
+        # records are intentionally separate: a raw process rate is not an
+        # applied transfer when a conservation cap binds.
+        diagnostic_trace.record_stage(
+            "warm_limited", diagnostic_step, dtcld, working, working, warm_out,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "applied_rate",
+                "upstream_to_cold": "warm.prevp",
+                "source_stage": "warm",
+                "conservation_limited": True,
+            })
+        diagnostic_trace.record_stage(
+            "cold_limited", diagnostic_step, dtcld, working, working, cold_out,
+            branch=(pre2.supcol >= 0), metadata={
+                "kind": "applied_rate",
+                "upstream_from_warm": "warm.prevp",
+                "source_stage": "cold",
+                "conservation_limited": True,
+            })
+        diagnostic_trace.record_stage(
+            "d5_limited", diagnostic_step, dtcld, working, working, mf5,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "applied_rate",
+                "source_stage": "d5_melt",
+                "conservation_limited": True,
+            })
+
+    # F1e: state update on the WORKING base. HYBRID pre (Fortran-exact):
+    #   xl/cpm = ENTRY (module_mp_kdm6.F:835-836 set once, reused through mass balance),
+    #   supcol/rhox = POST-FREEZE (mass-balance arm gates on t.le.t0c :2456; brs
+    #   rhox is post re-slope, :2643/2734). delta_src=None ⇒ delta2/delta3 track
+    #   working qr/qs (Fortran :2452-2455). mf5 carries D5 only (D1-D4 in working).
+    pre_su = pre._replace(
+        supcol=pre2.supcol, progb=pre.progb._replace(rhox=pre2.progb.rhox))
+    new_state = state_update_torch(
+        working, pre_su, warm_out, cold_out, mf5,
+        dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
+        midpoint_trace=full_params.midpoint_trace,
+    )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "state_update", diagnostic_step, dtcld, working, new_state, None,
+            branch=(pre2.supcol >= 0),
+            operands={"cpm": pre_su.cpm, "xl": pre_su.xl, "supcol": pre_su.supcol},
+            metadata={
+                "kind": "applied_transfer",
+                "rates_are_conservation_limited": True,
+                "operands": "pre.cpm/pre.xl/pre.supcol captured for local thermal identity",
+            })
+    # BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = the LAST ProgB of the
+    # sub-cycle, AFTER the cold/warm graupel-volume adds at L2643/L2751). This is the
+    # reclamp that produces the OUTPUT bg (L406 bg=brs, no post-L2863 brs mod). It caps
+    # newly-formed COLD-PHASE graupel (psaut/pgaut/pgaci snow→graupel sets brs at density
+    # 1000) to [100,900] — sites #1-#3 are all BEFORE state_update so they miss it.
+    # Keep ProgB's active low-qg result. The default output convention clears
+    # volume at exactly zero qg, including f64-only derivative residue absent
+    # from the measured f32/C++ output.
+    _bg4 = _progb.progb_param_torch(
+        new_state.qg, new_state.brs, params=full_params.progb,
+        midpoint_trace=full_params.midpoint_trace).bg
+    if full_params.midpoint_trace:
+        new_state = new_state._replace(brs=_bg4)
+    else:
+        new_state = new_state._replace(
+            brs=torch.where(new_state.qg > 0.0, _bg4, torch.zeros_like(_bg4)))
+    # Complete-rain-evap NR→NCCN was transferred immediately after B4 above;
+    # state_update therefore sees nr=0 in those cells, matching the C++/Fortran
+    # owning boundary without a second post-update subtraction.
+    # review5#4 + review7#1: Picons (Fortran 2807-2813) qi→qs.
+    new_state = reclassify_large_ice_to_snow_torch(
+        new_state, forcing.dend, diagnostic_trace=diagnostic_trace,
+        diagnostic_step=diagnostic_step, diagnostic_dtcld=dtcld)
+    # review8#3: rain→cloud reclassification (Fortran 2883-2892) when avedia_r ≤ 82μm.
+    new_state = reclassify_small_rain_to_cloud_torch(new_state, forcing.dend)
+    # F1g+: satadj/pcond on the post-update + post-reclass state (Fortran
+    # :2922-2943). Mirrors C++ apply_satadj_step; pcond was deferred OUT of
+    # state_update_torch so condensation fires on the proper post-mass-balance,
+    # post-reclass state (the C++↔Python parity fix Codex flagged).
+    _activate = nccn is not None
+    sat_result = apply_satadj_step_torch(
+        new_state, forcing, pre.xl, pre.cpm,
+        warm_params.satadj, full_params.thermo, dtcld=dtcld, nccn=nccn,
+        diagnostic_trace=diagnostic_trace, diagnostic_step=diagnostic_step,
+    )
+    if _activate:
+        new_state, nccn = sat_result   # nccn updated by CCN activation — carried out
+    else:
+        new_state = sat_result
+    # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
+    # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
+    # [P0-4] measure the cleanup sink at the exact boundary (None → no diagnostic)
+    _wb_pre_clean = new_state
+    new_state = apply_threshold_cleanup_torch(new_state)
+    if budget is not None:
+        budget.add_cleanup(_wb_pre_clean, new_state, forcing)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "cleanup", diagnostic_step, dtcld, _wb_pre_clean if _wb_pre_clean is not None else new_state,
+            new_state, None, metadata={"kind": "applied_transfer"})
+    # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
+    new_state = apply_dsd_number_limiters_torch(
+        new_state, forcing.dend, ncmin_tensor=ncmin_tensor,
+        diagnostic_trace=diagnostic_trace, diagnostic_step=diagnostic_step,
+        diagnostic_dtcld=dtcld)
+    return (new_state, nccn) if _activate else new_state
+
+
+def compute_loops_max(delt: float, dtcldcr: float = c.DTCLDCR) -> int:
+    """Fortran kdm62D 진입 시: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
+
+    정수 연산 — 미분 불가 영역 (caller가 결정).  The public helper mirrors
+    the C++ boundary: both elapsed time and the subcycle denominator must be
+    finite, the denominator must be positive, and the rounded result must fit
+    the C++ ``int`` loop bound.  Non-positive elapsed time retains the
+    established identity result of one loop.
+    """
+    if not math.isfinite(delt):
+        raise ValueError(f"delt must be finite (got {delt!r})")
+    if not (math.isfinite(dtcldcr) and dtcldcr > 0.0):
+        raise ValueError(
+            f"dtcldcr must be finite and > 0 (got {dtcldcr!r})")
+    if delt <= 0.0:
+        return 1
+
+    quotient = delt / dtcldcr
+    rounded = quotient + 0.5
+    # C++ casts to a signed 32-bit int after this check.  For positive delt
+    # the lower bound is already guaranteed; checking the quotient before the
+    # cast also rejects Python values that would become an implementation-
+    # dependent C++ conversion.
+    if (not math.isfinite(quotient) or not math.isfinite(rounded)
+            or rounded > 2_147_483_647.0):
+        raise ValueError(
+            "delt/dtcldcr is outside the representable subcycle range: "
+            f"{quotient!r}")
+    loops = int(rounded)
+    return loops if loops > 1 else 1
+
+
+def kdm62d_step_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    aux: CoordinatorAuxDiagnostics,
+    sea_mask: torch.Tensor,
+    *,
+    full_params: CoordinatorParams,
+    warm_params: WarmPhaseParams,
+    cold_params: ColdPhaseParams,
+    mf_params: MeltFreezePhaseParams,
+    delt: float,
+    dtcldcr: float = c.DTCLDCR,
+) -> CoordinatorState:
+    """F2 — sub-cycling wrapper.
+
+    Outer timestep `delt`를 `dtcldcr` 단위로 분할 (loops_max sub-cycles), 매
+    sub-cycle마다 F1 chain 호출. state는 sequential하게 갱신.
+
+    Note: sedimentation은 본 함수 *밖*에서 호출 (sedimentation module 별도 사용).
+    향후 F2b로 통합 가능.
+    """
+    # codex stop-hook fix: delt<=0 → no-op. delt=0이면 dtcld=0이 되고 kdm62d_one_step
+    # 내부의 mass/dtcld 분할 등에서 NaN 발생. 물리적으로도 zero 시간 elapsed → state
+    # 불변이 옳음. 이 가드는 wrapper 책임이고 caller validation은 권장이지만 강제 아님.
+    if delt <= 0.0:
+        return state
+
+    loops_max = compute_loops_max(delt, dtcldcr)
+    dtcld = delt / float(loops_max)
+    entry_cpm = _thermo.compute_cpm(state.qv, params=full_params.thermo)
+    entry_xl = _thermo.compute_xl(state.t, params=full_params.thermo)
+
+    cur_state = state
+    for _ in range(loops_max):
+        cur_state = kdm62d_one_step_torch(
+            cur_state, forcing, aux, sea_mask,
+            full_params=full_params,
+            warm_params=warm_params,
+            cold_params=cold_params,
+            mf_params=mf_params,
+            dtcld=dtcld,
+            entry_cpm=entry_cpm,
+            entry_xl=entry_xl,
+        )
+    return cur_state
+
+
+# ─── Step F2b: Sedimentation chain integration ───────────────────────────────
+
+
+class SedimentationOutputs(NamedTuple):
+    """sedimentation 결과: 갱신된 state + 표면 누적."""
+    state: CoordinatorState
+    rain_increment: torch.Tensor       # (B,) [mm]
+    snow_increment: torch.Tensor
+    graupel_increment: torch.Tensor
+
+
+def sedimentation_chain_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    work1_qr: torch.Tensor,    # already work1(:,:,1)/delz (E1 normalized)
+    workn_qr: torch.Tensor,
+    work1_qs: torch.Tensor,
+    work1_qg: torch.Tensor,
+    work1_qi: torch.Tensor,
+    workn_qi: torch.Tensor,
+    *,
+    mstep_main: int,           # rain/snow/graupel/brs loop bound (= mstepmax over columns)
+    mstep_ice: int,            # ice (qi/ni) loop bound (= mstepmax over columns)
+    dtcld: float,
+    params: _sed.SubstepAdvectionParams,
+    reslope_params: "CoordinatorParams | None" = None,  # 1:1 fix #9: per-substep re-slope
+    sea_mask: "torch.Tensor | None" = None,             # (B,K) bool for preamble_torch (qcr only; not vt)
+    mstep_col_main: "torch.Tensor | None" = None,       # (B,) per-column mstep (1:1 fix #10);
+    mstep_col_ice: "torch.Tensor | None" = None,        # None → scalar mstep_main/mstep_ice (legacy)
+    ledger=None,   # [P0-4b] duck-typed SedimentationLedger; threading only, None → byte-identical
+    substep_fn=None,       # [P0-4b.1] main-substep override (None → legacy _sed.substep_advection_torch)
+    ice_substep_fn=None,   # [P0-4b.1] ice-substep override (None → legacy); analysis-only injection
+    normalize_ice_handoff: bool = False,
+) -> SedimentationOutputs:
+    """F2b — sedimentation 통합 chain.
+
+    Order:
+      1. rain/snow/graupel/brs substepping (mstep_main times)
+      2. ice (qi/ni) substepping (mstep_ice times)
+      3. surface accumulation (bottom layer)
+
+    1:1 fix #9: when `reslope_params` is given, fall speeds are re-derived from the
+    post-substep state INSIDE the loop (Fortran F:1189-1205/1244-1269 ProgB+slope_kdm6
+    re-call) and used for the next substep; otherwise the passed-in work1 is reused for
+    every substep (identical when mstep==1). sea_mask only feeds preamble's qcr (which
+    sedimentation does not use), so any mask gives the same vt.
+    """
+    K = state.qr.shape[-1]
+    dz = torch.clamp(forcing.delz, min=1.0e-9)
+    fall_qr_init = torch.zeros_like(state.qr)
+    fall_nr_init = torch.zeros_like(state.qr)
+    fall_qs_init = torch.zeros_like(state.qr)
+    fall_qg_init = torch.zeros_like(state.qr)
+    fall_brs_init = torch.zeros_like(state.qr)
+
+    # ── Rain/snow/graupel/brs substepping ─────────────────────────────
+    adv_state = _sed.SubstepAdvectionState(
+        qr=state.qr, nr=state.nr, qs=state.qs, qg=state.qg, brs=state.brs,
+    )
+    fall_qr = fall_qr_init
+    fall_nr = fall_nr_init
+    fall_qs = fall_qs_init
+    fall_qg = fall_qg_init
+    fall_brs = fall_brs_init
+    # Mutable per-substep work1 (#9): re-derived from the post-substep state when
+    # reslope_params is set (Fortran F:1189-1205 after EVERY main substep). w1_qi/wn_qi are
+    # ALSO updated by the main re-slope — Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
+    # each main substep and the ice loop below consumes the post-main value (main→ice handoff,
+    # F:1194→F:1215). Fortran leaves work1(4)/workn(2) RAW (F:1198-1205 normalizes only
+    # 1,2,3/workn1). The normalized opt-in divides the first ice handoff by dz,
+    # matching the mstep selector and later ice reslopes; older paths keep raw vt.
+    w1_qr, wn_qr, w1_qs, w1_qg = work1_qr, workn_qr, work1_qs, work1_qg
+    w1_qi, wn_qi = work1_qi, workn_qi
+    _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
+    for n in range(1, mstep_main + 1):
+        out = (substep_fn if substep_fn is not None else _sed.substep_advection_torch)(
+            adv_state,
+            fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
+            w1_qr, wn_qr, w1_qs, w1_qg,
+            forcing.delz, forcing.dend,
+            mstep=mstep_main, mstep_col=mstep_col_main, n_current=n, dtcld=dtcld, params=params,
+            ledger=ledger,
+        )
+        adv_state = out.state
+        fall_qr = out.fall_qr
+        fall_nr = out.fall_nr
+        fall_qs = out.fall_qs
+        fall_qg = out.fall_qg
+        fall_brs = out.fall_brs
+        # Re-slope after EVERY main substep (F:1189-1205, unconditional incl. the last);
+        # ORIGINAL qi/ni kept (ice substepped below). rain/snow/graupel work1 feeds the next
+        # main substep; the ICE work1 (vt_i/vtn_i) is the handoff the ice loop consumes.
+        if reslope_params is not None:
+            rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
+                                qg=adv_state.qg, brs=adv_state.brs)
+            pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
+            # ProgB has already applied its qg-or-brs activation gate. Its
+            # inactive branch keeps the incoming volume, including trace brs.
+            adv_state = adv_state._replace(brs=pre.progb.bg)
+            w1_qr = pre.slope.vt_r / dz   # F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
+            wn_qr = pre.slope.vtn_r / dz
+            w1_qs = pre.slope.vt_s / dz
+            w1_qg = pre.slope.vt_g / dz
+            # The normalized opt-in matches its first ice consumer to the
+            # mstep selector; older paths retain Fortran's raw handoff.
+            w1_qi = pre.slope.vt_i / dz if normalize_ice_handoff else pre.slope.vt_i
+            wn_qi = pre.slope.vtn_i / dz if normalize_ice_handoff else pre.slope.vtn_i
+
+    # ── Ice substepping ──────────────────────────────────────────────
+    ice_state = _sed.IceSubstepState(qi=state.qi, ni=state.ni)
+    fall_qi = torch.zeros_like(state.qr)
+    fall_ni = torch.zeros_like(state.qr)
+    # w1_qi/wn_qi carry the main-loop handoff (or the passed-in initial if reslope is off).
+    for n in range(1, mstep_ice + 1):
+        out_i = (ice_substep_fn if ice_substep_fn is not None else _sed.ice_substep_advection_torch)(
+            ice_state, fall_qi, fall_ni,
+            w1_qi, wn_qi, forcing.delz, forcing.dend,
+            mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
+            ledger=ledger,
+        )
+        ice_state = out_i.state
+        fall_qi = out_i.fall_qi
+        fall_ni = out_i.fall_ni
+        # Re-slope ice from the post-substep ice state (F:1244-1269).
+        if reslope_params is not None and n < mstep_ice:
+            rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
+                                qg=adv_state.qg, brs=adv_state.brs,
+                                qi=ice_state.qi, ni=ice_state.ni)
+            pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
+            w1_qi = pre.slope.vt_i / dz
+            wn_qi = pre.slope.vtn_i / dz
+
+    # ── Surface accumulation (bottom = K-1 in tensor) ─────────────────
+    bottom = K - 1
+    surface = _sed.surface_accumulation_torch(
+        fall_qr[:, bottom], fall_qs[:, bottom],
+        fall_qg[:, bottom], fall_qi[:, bottom],
+        forcing.delz[:, bottom], dtcld=dtcld,
+    )
+
+    new_state = state._replace(
+        qr=adv_state.qr, nr=adv_state.nr,
+        qs=adv_state.qs, qg=adv_state.qg, brs=adv_state.brs,
+        qi=ice_state.qi, ni=ice_state.ni,
+    )
+    return SedimentationOutputs(
+        state=new_state,
+        rain_increment=surface.rain_increment,
+        snow_increment=surface.snow_increment,
+        graupel_increment=surface.graupel_increment,
+    )
+
+
+__all__ = [
+    "CoordinatorState",
+    "CoordinatorForcing",
+    "CoordinatorParams",
+    "PreambleOutputs",
+    "WarmPhaseParams",
+    "WarmPhaseOutputs",
+    "ColdPhaseParams",
+    "ColdPhaseOutputs",
+    "MeltFreezePhaseParams",
+    "MeltFreezePhaseOutputs",
+    "CoordinatorAuxDiagnostics",
+    "SedimentationOutputs",
+    "default_coordinator_params",
+    "default_warm_phase_params",
+    "default_cold_phase_params",
+    "default_melt_freeze_phase_params",
+    "preamble_torch",
+    "warm_phase_torch",
+    "cold_phase_torch",
+    "melt_freeze_phase_torch",
+    "state_update_torch",
+    "kdm62d_one_step_torch",
+    "reclassify_large_ice_to_snow_torch",
+    "reclassify_small_rain_to_cloud_torch",
+    "apply_threshold_cleanup_torch",
+    "apply_dsd_number_limiters_torch",
+    "kdm62d_step_torch",
+    "compute_loops_max",
+    "sedimentation_chain_torch",
+]
