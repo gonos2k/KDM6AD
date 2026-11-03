@@ -49,6 +49,11 @@ Thus this is a **fixed-operand conditional chain**, not the executed host's
 full QI/NI Jacobian. Baseline C3 NI is recovered at all 39 levels; derivative
 claims concern only the causal support at native levels 20–23.
 
+A later [same-call D1 QI capture](../native_qnice_d1_qi_2026-11-03/README.md)
+attributes the level-15 **baseline** zero to complete D1 ice melt. This
+historical conditional replay still uses its declared splice and does not
+claim the D1 producer derivative.
+
 ## Selected directions
 
 Each seed is a unit relative change in one recorded input: QI at native 21,

@@ -68,6 +68,8 @@ A later [snap-A local replay and derivative packet](../native_qnice_snap_a_ad_20
 independently checks the 39-level snap-A output formula and the selected
 branch's conditional JVP/VJP. The stage delta above remains a numerical
 coordinate quantity.
+The [same-call D1 QI follow-up](../native_qnice_d1_qi_2026-11-03/README.md)
+records the ice-mass handoff that the original NI inventory did not include.
 
 ## Build and interpretation limits
 

@@ -1,0 +1,46 @@
+{
+  "archive_sha256": "22f2412e5b39aba041752c8179d2894521dcc3cd5b16fd2de8125bab8ee65918",
+  "cmake_cache_selected": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_COMPILER": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+    "CMAKE_LIBRARY_PATH": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib",
+    "CMAKE_PREFIX_PATH": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch",
+    "KDM6_NATIVE_SCALAR_CAPTURE": "ON",
+    "Torch_DIR": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/share/cmake/Torch"
+  },
+  "cxx_flags": "-O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+  "execution_scope": "same copied attempt5 host executable, new isolated C++ DSO; source and object hashes are build records; binary bytes remain private",
+  "link_command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -dynamiclib -Wl,-headerpad_max_install_names -Wl,-exported_symbols_list,/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_d1_20261103/build/kdm6_c_capture.exports -compatibility_version 2.0.0 -current_version 2.0.0 -o libkdm6_c.2.0.0.dylib -install_name @rpath/libkdm6_c.2.dylib CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o  -Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib libkdm6.a /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+  "new_dso_sha256": "1536ea4df328e1a5c14d85f6e77d3b5f34e41612254896ee1a608e67b25e556d",
+  "new_executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "object_sha256": {
+    "cloud_dsd.cpp.o": "8ffbf2cbd479efe86f35783381229c81a3fce7ee1d8b5ff2dfc27e7887473614",
+    "cold.cpp.o": "f0a4cb66bf1a66fb3044b04f49a273d97af074d36813242bdbc9654b66fbf66c",
+    "coordinator.cpp.o": "42b5feddd809f6c91303f5e0c9cd1db86a16955f2909ff120ea9210bde0be4f4",
+    "kdm6_c_api.cpp.o": "7ddf9b2129dde89f6181639085af98cd0ce5db7d085be6f8e0a72890fc1617bd",
+    "melt_freeze.cpp.o": "efff4e61fd5a152806a7f3e873efaf64ada3216ae6afea474564c31edd831c85",
+    "ops.cpp.o": "0d787fbd98310cf2d6eac72b5eec05ffb3c1bc1643cf4ab8f91ef8a49af3ee49",
+    "progb.cpp.o": "6ff21144e692277fc39eb780576e235676c2e2e70206998e0f433977b2ff33cb",
+    "runtime.cpp.o": "caa55995e9af2cacbc965319b25b5007b8edde15c7f5c4af622f07ccfa82807c",
+    "satadj.cpp.o": "ac7561f8b18f0742389853f268e9422209cb3a7616826c2ff06536dbdb079233",
+    "sedimentation.cpp.o": "3c054b5e2be306c2fa99d7156988d3ad926b79c2e5a7ec6b7d3837797a66ae1d",
+    "sedimentation_conservative.cpp.o": "2ffab50d02afe6b4c51356966b48a2ab7f0f46359bfd681d03f7d728f47b1090",
+    "slope.cpp.o": "39afa6df50055e7ecb9441fd252b4220f9b24f52c207f0ab10e61e5ff0fe0165",
+    "state.cpp.o": "266f63463fb5516b5a5f2c7e6c604c5ef7ec140247e479acd30f4659484e7fbe",
+    "thermo.cpp.o": "d0df2336fc2a6002fdab0d1723f6db843fe09bc609a626a3cb764b2e649ef837",
+    "warm.cpp.o": "29e40e2366d804891163bc69b047476af69965bbedda5776c39418825f4215d6"
+  },
+  "only_source_changes_vs_parent_attempt4": [
+    "src/coordinator.cpp",
+    "src/runtime.cpp"
+  ],
+  "parent_39_applied_dso_sha256": "976b4110b81f64e8e63cb7162642b2b00002af0e9b074520c92eeb2cd9126422",
+  "parent_39_applied_executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "producer_runner_sha256": "c3a5aefabf4804b92caa002786e733dd89f95370ac1fc9a2ca86395a7cde36a4",
+  "schema": "kdm6.native_d1_qi_cpp_build.v1",
+  "source_snapshots_sha256": {
+    "coordinator.cpp": "8663f8de6616111e0fb228efa0af01b4793ab544901074ec31f2c556640053b4",
+    "melt_freeze.cpp": "049e3327a277f0342d80767ea5bb48b0f56fa7e1fbdd412b4f508db976d9d4da",
+    "runtime.cpp": "5fd679246a5bac02bec7d0ed784a43cad7d4a6cfbb190387bb7103b152e23a59"
+  }
+}

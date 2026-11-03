@@ -1,0 +1,32 @@
+{
+  "call": {
+    "b_zero": 22617,
+    "levels": 39,
+    "native_ij_1based": [
+      164,
+      242
+    ],
+    "one_step_call": 2,
+    "runtime_call": 2
+  },
+  "d1_melt_native_levels": [
+    15
+  ],
+  "homogeneous_freeze_native_levels": [],
+  "level15": {
+    "d1_applied_pimlt_qi": 6.109135817357022e-11,
+    "d1_first_store_qi": 0.0,
+    "d1_output_qi": 0.0,
+    "d1_temperature_K": 275.62344271948496,
+    "homogeneous_freeze_mask": 0,
+    "post_sed_qi": 6.109135817357022e-11,
+    "snap_a_input_qi": 0.0
+  },
+  "new_rows": 702,
+  "off_on_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "parent_rows_raw_bit_equal": 2769,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_qi_same_call_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "shared_host_rows": 39
+}
