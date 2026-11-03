@@ -87,6 +87,16 @@ class NativeD1ConditionalAD(unittest.TestCase):
             replay.replay(
                 capture_override=bad, capture_sha=hashlib.sha256(bad).hexdigest()
             )
+
+    def test_rehashed_qv_rounding_collision_has_the_same_numeric_result(self) -> None:
+        adjacent = changed("c3_pre_mf_d1", "qv_before", 24, "3f74e7fd20000001")
+        self.assertEqual(
+            replay.replay(
+                capture_override=adjacent,
+                capture_sha=hashlib.sha256(adjacent).hexdigest(),
+            ),
+            replay.replay(),
+        )
         raw = (HERE / replay.CAPTURE_NAME).read_text()
         bad = raw.replace(
             ",22617,24,32248,39,c3_pre_mf_d1,qc_before,",
