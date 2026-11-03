@@ -104,3 +104,8 @@ does **not** establish a full native host JVP/VJP, operating f32 behavior,
 RTTOV sensitivity, a physical QNICE unit, or particle conservation.
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`
 remain.
+
+A later [D1 conditional AD packet](../native_qnice_d1_ad_2026-11-03/README.md)
+removes the level-15 QI splice in a new fixed-speed **baseline** chain and
+checks local QC/T melt tangents. The fixed-intermediate-producer derivative
+scope of this historical packet remains unchanged.

@@ -1,0 +1,15 @@
+    if (std::strcmp(checkpoint_phase, "d1") == 0) {
+        capture_native_tensor(checkpoint.c_str(), "qc_before", s.qc);
+        capture_native_tensor(checkpoint.c_str(), "nc_before", s.nc);
+        capture_native_tensor(checkpoint.c_str(), "qv_before", s.qv);
+        capture_native_tensor(checkpoint.c_str(), "pre_cpm", pre.cpm);
+        capture_native_tensor(checkpoint.c_str(), "cpm_safe", cpm_safe);
+        capture_native_tensor(checkpoint.c_str(), "psmlt_capped", mf.psmlt_capped);
+        capture_native_tensor(checkpoint.c_str(), "pgmlt_capped", mf.pgmlt_capped);
+        capture_native_tensor(checkpoint.c_str(), "qc_after_store1", qc1);
+        capture_native_tensor(checkpoint.c_str(), "qc_after_store2", out.qc);
+        capture_native_tensor(checkpoint.c_str(), "nc_after_store1", nc1);
+        capture_native_tensor(checkpoint.c_str(), "nc_after_store2", out.nc);
+        capture_native_tensor(checkpoint.c_str(), "t_after_melt", t_d1);
+        capture_native_tensor(checkpoint.c_str(), "t_after_d1", out.t);
+    }
