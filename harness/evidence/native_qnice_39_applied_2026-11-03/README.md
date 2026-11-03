@@ -64,6 +64,11 @@ before/after stage delta. The packet does not independently replay the snap A
 coefficient formula or treat the delta as physical particle creation. Final
 DSD number rewrite has no NI change in the recorded 39 levels.
 
+A later [snap-A local replay and derivative packet](../native_qnice_snap_a_ad_2026-11-03/README.md)
+independently checks the 39-level snap-A output formula and the selected
+branch's conditional JVP/VJP. The stage delta above remains a numerical
+coordinate quantity.
+
 ## Build and interpretation limits
 
 The same attempt5 `wrf.exe` and DSO were used for capture-off and capture-on.
