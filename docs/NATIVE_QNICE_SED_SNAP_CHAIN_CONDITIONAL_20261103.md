@@ -55,3 +55,8 @@ NI20 변화로 연결한다. NI23 방향은 23층의 잔여량과 22층 유입�
 이 결과는 QNICE의 물리 단위나 전체 호스트 JVP/VJP, 운영 f32,
 RTTOV 민감도를 확정하지 않는다. `scientific_status: INCONCLUSIVE`,
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [얼음 침강 속도 생산 미분](NATIVE_QNICE_ICE_SPEED_PRODUCER_AD_20261103.md)은
+선택 층의 QI·NI로부터 `work1_qi`·`workn_qi`를 다시 계산해 고정 속도
+결과와 비교한다. 그 계산에서도 15층 QI와 중간 과정률, 밀도·기하 및
+호스트 전체 경로는 고정된 조건으로 남는다.
