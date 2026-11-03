@@ -15,9 +15,14 @@ python -O -m unittest discover -s harness/evidence/native_qnice_d1_ad_2026-11-03
 ```
 
 The capture contains **3,978** rows. All **3,471** parent rows retain their
-dtype and raw word; **507** rows are new. The verifier rejects a wrong call,
-tile, level, dtype, row order, missing field, changed parent word, or altered
-new operand even when a mutation is supplied with its recomputed SHA-256.
+dtype and raw word; **507** rows are new. The normal CLI authenticates the
+original capture with a fixed SHA-256. For test-only rehashed overrides, the
+verifier rejects wrong call/tile/level/dtype/order, missing fields, changed
+parent words, and selected source-order arithmetic contradictions. It does
+not certify the original bits of every new operand: changing level-15
+`qv_before` by one f64 step can round to the same `pre_cpm` and pass an
+override replay with identical results. This numerical collision is a
+documented limit of the override check, not of the fixed-hash CLI.
 It reconstructs the sole added C++ capture block on top of the pinned parent
 source and checks the resulting source hash against the isolated build
 receipt. It also checks the private run/session receipts and loaded DSO path.
