@@ -62,3 +62,8 @@ QI·밀도·기울기 선택이 같은 하한 분기 안에 있으면
 운영 f32, 호스트 전체 JVP/VJP와 RTTOV 밝기온도 미분은 포함하지
 않는다. `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [고정 피연산자 침강→재작성 A·B→C3 연결](NATIVE_QNICE_SED_SNAP_CHAIN_CONDITIONAL_20261103.md)은
+침강에서 전달되는 QI·NI의 선택 방향을 검사한다. 속도·중간 과정률을
+고정하고 QI 15층의 미확인 차이를 따로 남긴 조건부 계산이므로,
+위 전체 호스트 미분 제한을 해소한 결과는 아니다.
