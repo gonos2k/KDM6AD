@@ -88,3 +88,8 @@ The QNICE producer/restart basis, speed/reslope and intermediate-rate
 sensitivities, native full-process JVP/VJP, operational f32, and RTTOV response
 remain open. The conditional map is a source-ordered test at actual captured
 values, not evidence that a perturbed host trajectory would follow it.
+
+A later [ice-speed producer derivative packet](../native_qnice_ice_speed_ad_2026-11-03/README.md)
+recomputes `work1_qi` and `workn_qi` for selected QI/NI directions and
+reports the added producer path separately. Its other frozen assumptions
+and physical-unit limits remain in force.
