@@ -89,9 +89,7 @@ class NativeD1ConditionalAD(unittest.TestCase):
             )
 
     def test_rehashed_qv_rounding_collision_has_the_same_numeric_result(self) -> None:
-        adjacent = changed(
-            "c3_pre_mf_d1", "qv_before", 24, "3f74e7fd20000001"
-        )
+        adjacent = changed("c3_pre_mf_d1", "qv_before", 24, "3f74e7fd20000001")
         self.assertEqual(
             replay.replay(
                 capture_override=adjacent,

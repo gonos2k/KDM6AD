@@ -86,6 +86,10 @@ upstream sedimentation speed, or later process-rate producers as QI/NI change.
 The new no-splice chain is checked at the recorded baseline; its full
 JVP/VJP through later processes is not certified here.
 
+A later [conditional speed→D1 chain replay](../native_qnice_d1_chain_ad_2026-11-04/README.md)
+checks selected QI16 and QI23 directions through the combined map. It
+preserves this packet's fixed-cpm and fixed-other-rate interpretation.
+
 Both capture-off and capture-on endpoints hash to
 `225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070`,
 also the PR #528 endpoint hash. `scientific_status: INCONCLUSIVE` and

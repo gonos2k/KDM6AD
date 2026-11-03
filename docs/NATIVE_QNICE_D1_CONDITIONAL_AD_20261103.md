@@ -46,3 +46,7 @@ QV→열용량과 다른 융해 과정률의 생산 **미분**, 밀도·속도·
 이후 미세물리와 호스트·RTTOV의 전체 미분은 포함하지 않는다.
 `scientific_status: INCONCLUSIVE`, `physical_unit_status: INCONCLUSIVE`를
 유지한다.
+
+후속 [속도→D1 조건부 연쇄](NATIVE_QNICE_D1_SPEED_CHAIN_AD_20261104.md)는
+QI16·QI23 선택 방향을 같은 계산에 연결한다. 이 문서의 D1 국소 계약은
+그대로 유지된다.
