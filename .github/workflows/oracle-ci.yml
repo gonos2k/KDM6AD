@@ -108,6 +108,7 @@ jobs:
           python -m unittest discover -s harness/evidence/native_qnice_snap_a_ad_2026-11-03 -v
           python -m unittest discover -s harness/evidence/native_qnice_sed_snap_chain_2026-11-03 -v
           python -m unittest discover -s harness/evidence/native_qnice_ice_speed_ad_2026-11-03 -v
+          python -m unittest discover -s harness/evidence/native_qnice_d1_qi_2026-11-03 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -121,3 +122,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_qnice_snap_a_ad_2026-11-03 -v
           python -O -m unittest discover -s harness/evidence/native_qnice_sed_snap_chain_2026-11-03 -v
           python -O -m unittest discover -s harness/evidence/native_qnice_ice_speed_ad_2026-11-03 -v
+          python -O -m unittest discover -s harness/evidence/native_qnice_d1_qi_2026-11-03 -v

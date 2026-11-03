@@ -70,3 +70,7 @@ NI의 JVP다. 고정 속도 결과와 재계산 속도 결과를 같은 포착 �
 전체의 미분이나 운영 f32, QNICE 물리 단위, RTTOV 민감도에 대한
 판정으로 확대할 수 없다. `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [D1 QI 같은 호출 기록](NATIVE_QNICE_D1_QI_SAME_CALL_20261103.md)은
+15층의 **기준값**이 D1 완전 융해로 0이 되는 경로를 확인했다. 이 문서의
+조건부 미분은 여전히 중간 과정의 생산 반응을 포함하지 않는다.
