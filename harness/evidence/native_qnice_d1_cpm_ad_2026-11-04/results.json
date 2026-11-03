@@ -1,0 +1,268 @@
+{
+  "adjacent_qv_has_same_rounded_cpm": true,
+  "baseline_cpm_raw_bit_matches": 39,
+  "baseline_cpm_safe_raw_bit_matches": 39,
+  "baseline_no_splice_raw_bit_matches_per_field": 39,
+  "baseline_outputs": [
+    3.209940036037264e-07,
+    0.0,
+    0.0,
+    0.0,
+    275.62344269828947,
+    0.0,
+    0.7932710418717757,
+    25462.70690950683,
+    116548.15443662195
+  ],
+  "baseline_runtime_to_D1_qv_raw_bit_matches": 39,
+  "cpm15": 1008.7971032572444,
+  "cpm_relative_jvp": 4.297103257244453,
+  "direction": "relative_D1_input_QV15",
+  "finite_differences": {
+    "0.01": {
+      "fd": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        8.810729923425207e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fd_minus_jvp": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -2.177775412274715e-12,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_difference": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.7621459846850485e-12,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_ulp": [
+        5.293955920339377e-23,
+        5e-324,
+        5e-324,
+        5e-324,
+        5.684341886080802e-14,
+        5e-324,
+        1.1102230246251565e-16,
+        3.637978807091713e-12,
+        1.4551915228366852e-11
+      ],
+      "represented_relative_input_gap": 0.02000000000000008,
+      "temperature_acceptance_bound": 5.684342541350166e-12,
+      "temperature_signal_ulps": 31.0
+    },
+    "0.05": {
+      "fd": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        9.038103598868469e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fd_minus_jvp": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        9.596134215790279e-14,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_difference": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        9.038103598868474e-12,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_ulp": [
+        5.293955920339377e-23,
+        5e-324,
+        5e-324,
+        5e-324,
+        5.684341886080802e-14,
+        5e-324,
+        1.1102230246251565e-16,
+        3.637978807091713e-12,
+        1.4551915228366852e-11
+      ],
+      "represented_relative_input_gap": 0.10000000000000006,
+      "temperature_acceptance_bound": 1.1368847589508415e-12,
+      "temperature_signal_ulps": 159.0
+    },
+    "0.1": {
+      "fd": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        9.009681889438073e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fd_minus_jvp": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.8825575214605973e-13,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_difference": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.801936377887614e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_ulp": [
+        5.293955920339377e-23,
+        5e-324,
+        5e-324,
+        5e-324,
+        5.684341886080802e-14,
+        5e-324,
+        1.1102230246251565e-16,
+        3.637978807091713e-12,
+        1.4551915228366852e-11
+      ],
+      "represented_relative_input_gap": 0.19999999999999996,
+      "temperature_acceptance_bound": 5.684997155468076e-13,
+      "temperature_signal_ulps": 317.0
+    },
+    "0.25": {
+      "fd": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        9.026734915096313e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fd_minus_jvp": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.772549556366154e-14,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_difference": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.5133674575481564e-11,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "output_ulp": [
+        5.293955920339377e-23,
+        5e-324,
+        5e-324,
+        5e-324,
+        5.684341886080802e-14,
+        5e-324,
+        1.1102230246251565e-16,
+        3.637978807091713e-12,
+        1.4551915228366852e-11
+      ],
+      "represented_relative_input_gap": 0.5,
+      "temperature_acceptance_bound": 2.27783218810278e-13,
+      "temperature_signal_ulps": 794.0
+    }
+  },
+  "fixed_operands": [
+    "sedimentation entry QI/NI and ice-speed source inputs",
+    "density, depth, timing and one-substep gates",
+    "D1 entry T/QC/NC and ice-melt amount",
+    "D1 capped snow/graupel amounts and other rates",
+    "homogeneous mask and D2-D4 applied amounts"
+  ],
+  "independent_cpm_relative_jvp": 4.297103257244453,
+  "independent_jvp": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    9.028507464652678e-11,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "jvp": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    9.028507464652679e-11,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "native_full_process_derivative_certified": false,
+  "output_order": [
+    "D1_QC15",
+    "D1_QI15",
+    "D1_NC15",
+    "D1_NI15",
+    "D1_T15",
+    "C3_NI15",
+    "C3_NI16",
+    "C3_NI22",
+    "C3_NI23"
+  ],
+  "parent_chain_result_sha256": "7be5905393872125c5ada6d823e466d44c2b732164e157be18b4fd9c19ba6de2",
+  "physical_unit_status": "INCONCLUSIVE",
+  "qv15": 0.005104054231196642,
+  "schema": "kdm6.native_d1_qv_cpm_conditional_ad.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "weighted_jvp_contraction": 9.931358211117946e-10,
+  "weighted_vjp_contraction": 9.931358211117946e-10
+}
