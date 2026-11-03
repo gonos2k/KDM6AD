@@ -72,3 +72,8 @@ perturbed branch behavior separately.
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
 This is one f64 native call. It does not certify operational f32 behavior,
 the QNICE production/restart unit, host-wide JVP/VJP, or RTTOV sensitivity.
+
+The later [D1 conditional AD packet](../native_qnice_d1_ad_2026-11-03/README.md)
+records QC/NC/T stores, replaces the level-15 splice in a **new** fixed-speed
+baseline chain, and tests local D1 melt tangents. This historical packet's
+baseline QI replay is unchanged.

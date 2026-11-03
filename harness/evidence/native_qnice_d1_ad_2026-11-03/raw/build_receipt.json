@@ -1,0 +1,48 @@
+{
+  "archive_sha256": "280298e8abb6fe97ef2c92c5a6b283abd1f2c273c05383f28c1ae4ba281db971",
+  "capture_block_sha256": "4088c4369cccf4403b1c41e194fe644cfd18dad0e4f695a7d1b6e087eb94778d",
+  "cmake_cache_sha256": "fa31840494808c0770090afc056756dc60a1d012777f1f0f8290d52d0132806a",
+  "cxx_flags": "-O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+  "executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "link_command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -dynamiclib -Wl,-headerpad_max_install_names -Wl,-exported_symbols_list,/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_d1_ad_20261103/build/kdm6_c_capture.exports -compatibility_version 2.0.0 -current_version 2.0.0 -o libkdm6_c.2.0.0.dylib -install_name @rpath/libkdm6_c.2.dylib CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o  -Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib libkdm6.a /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+  "new_dso_sha256": "2d077132dfd4bdd88412a92f74967faea3ed637ed91879f7c46c96d465380656",
+  "object_sha256": {
+    "cloud_dsd.cpp.o": "8ffbf2cbd479efe86f35783381229c81a3fce7ee1d8b5ff2dfc27e7887473614",
+    "cold.cpp.o": "f0a4cb66bf1a66fb3044b04f49a273d97af074d36813242bdbc9654b66fbf66c",
+    "coordinator.cpp.o": "8b397e9be781902cd8c6b3f76306a528c69ad5acffc521550b14fdbc3cb12f5f",
+    "kdm6_c_api.cpp.o": "c7232e2cc4eee0c3f5912f368fb54052c2c777becb94b95b7530db3215af0d4b",
+    "melt_freeze.cpp.o": "56b37f9ee1a1995b9a83b644c2cfc49357d6aac8f92be1a180510a6232999caf",
+    "ops.cpp.o": "836ad5d132cae9b2448aef4f2f979d07bad40587cd27519c27986bbd476359f3",
+    "progb.cpp.o": "cd69605e484a0c335f8fefebbe128b078f62de0a8f6b7937d217e8ce4eba18b4",
+    "runtime.cpp.o": "fc4b3db3e725ccf81d21f44f555f963361caada5d173626fda7953e000b87bf8",
+    "satadj.cpp.o": "ac7561f8b18f0742389853f268e9422209cb3a7616826c2ff06536dbdb079233",
+    "sedimentation.cpp.o": "2effbb95650642b0e3a9252dbcdcce67d8ff5be4e38b0455afea703108af80f9",
+    "sedimentation_conservative.cpp.o": "84c1edf48307b55c70aba3966f5ac989cec410e18dc9f2c87622907f198be16f",
+    "slope.cpp.o": "39afa6df50055e7ecb9441fd252b4220f9b24f52c207f0ab10e61e5ff0fe0165",
+    "state.cpp.o": "50e2065c1a8de20acd196b7bec8fe70c588a7f61d605dca40a4f6efc16cfa5bb",
+    "thermo.cpp.o": "d0df2336fc2a6002fdab0d1723f6db843fe09bc609a626a3cb764b2e649ef837",
+    "warm.cpp.o": "29e40e2366d804891163bc69b047476af69965bbedda5776c39418825f4215d6"
+  },
+  "only_source_changes_vs_parent": [
+    "src/coordinator.cpp"
+  ],
+  "parent_build_receipt_sha256": "3c51e5f03a2ca4099fa2bad6f783a99095c41f6cbce833d44e01ea333f4b5a73",
+  "parent_dso_sha256": "1536ea4df328e1a5c14d85f6e77d3b5f34e41612254896ee1a608e67b25e556d",
+  "producer_runner_sha256": "c3a5aefabf4804b92caa002786e733dd89f95370ac1fc9a2ca86395a7cde36a4",
+  "producer_source_sha256": {
+    "ops.cpp": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014",
+    "thermo.cpp": "f4c887ba754244f781a27cd94dc42341e7559be7680947f74ea27d06507dbe4b"
+  },
+  "schema": "kdm6.native_d1_ad_cpp_build.v1",
+  "scope": "isolated same host executable, changed capture-only C++ coordinator; private binary/object bytes attested by hashes and run records",
+  "source_headers_sha256": {
+    "constants.h.txt": "f9e41a49e36414f9247f1a645051ba78b4dc7847bdc084669e4a96516a2a3f74",
+    "melt_freeze.h.txt": "a8e562d644ea7aa88a8221f4ef30aea5b48cdd80a7173f3d71cf8c5678808292",
+    "ops.h.txt": "4a11cca456b9a0095917e96c4fea1ec7347e4c0050416925d837bbdc002d8b5d"
+  },
+  "source_sha256": {
+    "coordinator.cpp": "535b6f9fc3a43d0e4cc62e52b775fb04a33ae14d8e04ccf75c4df50fc1938413",
+    "melt_freeze.cpp": "049e3327a277f0342d80767ea5bb48b0f56fa7e1fbdd412b4f508db976d9d4da",
+    "runtime.cpp": "5fd679246a5bac02bec7d0ed784a43cad7d4a6cfbb190387bb7103b152e23a59"
+  }
+}

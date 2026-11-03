@@ -41,3 +41,7 @@
 원시 QNICE의 생산·restart 단위, 운영 f32, 호스트 전체 미분과 RTTOV
 민감도는 별도 검증 대상이다. `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [D1 조건부 미분 패킷](NATIVE_QNICE_D1_CONDITIONAL_AD_20261103.md)은
+QC·NC·온도 저장을 기록하고 새 재생에서 15층 QI 고정값을 D1 계산으로
+바꿨다. 이 문서의 기준값 귀속과 과거 재생의 범위는 그대로 보존한다.
