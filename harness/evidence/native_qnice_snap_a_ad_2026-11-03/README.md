@@ -24,6 +24,10 @@ The CLI ends with `NATIVE_QNICE_SNAP_A_LOCAL_AD_REPLAY_PASSED`. The saved
 margins, represented finite-difference endpoints, JVP, VJP, and signal size.
 Its numerical finite-difference diagnostics are checked within explicit
 bounds rather than as cross-platform raw bits.
+The saved JSON is authenticated by SHA-256. The replay directly compares its
+fixed baseline fields with fresh calculations; fresh JVP, VJP, and difference
+values are checked against the independent formula and stated bounds, rather
+than comparing every stored diagnostic number one by one.
 
 ## Source-order baseline
 
@@ -86,3 +90,8 @@ f32 derivative, a full host/RTTOV JVP or VJP, the physical QNICE number
 basis, or a unique derivative at gate and slope ties. The parent packet's
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`
 remain in force.
+
+A later [fixed-operand sedimentation-to-C3 replay](../native_qnice_sed_snap_chain_2026-11-03/README.md)
+tests selected QI/NI transfer into snap A and B. It freezes recorded
+speeds and intervening NI process rates, so it does not convert this local
+map into a full host derivative.
