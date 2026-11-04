@@ -47,8 +47,9 @@ not reconstruct. The inactive `precg2`/other coefficient words match the
 fresh oracle outputs here, but that numerical equality alone does not
 certify the earlier persistent-PR history. Entry inputs and the D1 handoffs
 of `work2`, `precg2`, `rhox`, `cpm`, and reclamped BRS are checked in raw
-bits. The other captured producer outputs and active gate are compared with
-independent calculations; they have no separate D1-consumer word check here.
+bits. The other captured producer outputs are checked against independent
+calculations, and the active gate is derived from captured inputs. They have
+no separate D1-consumer word check here.
 The selected entry BRS before and after reclamp happens to be bit-identical;
 the stages are kept separate.
 
