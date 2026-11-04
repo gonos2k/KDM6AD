@@ -1,0 +1,20 @@
+{
+  "build_metadata/CMakeCache.txt": "948d884465c4d0479cad10d751a8ff84626169caf833e138a0b39b9e971c9ab9",
+  "build_metadata/flags.make": "688fa35a22b8df5d218a5e924fcada9d344c86808313afdcc8d0ab15e46d2591",
+  "build_metadata/link.txt": "b804a64a24c03419b8ab5739aff7c464802cfa42f7fab52f5e1c94bc5346c054",
+  "cpp/CMakeLists.txt": "dfb8954474d1edcdbc0d225df50cc937be3f3129a86b9b7c9f790fcd9a3c9c6f",
+  "cpp/main.cpp": "953b4ff36511f85acfce3d350791fcd2e99c33c3fc3fa58e5a54b0506206b6d9",
+  "executed_cpp/coordinator.cpp": "8cb30a0c32b03b313a1dbefa6fc01b6c68acce72368901804b476a8fe60029ef",
+  "producer/entry_fields.txt": "955d79cb87040369cdc8cc56fba1364ccac8a8a1c7910b1ec171a691d0e8d777",
+  "producer/producer_fields.txt": "068d699769783abcf7ea2897cfd2bf790b9732b57a66538d14bf541269293529",
+  "producer/run.py.txt": "2415d089e79aefaab44507b5b80adea469f9250d8e9eb99a8b2b4fc157723b81",
+  "raw/cpp_build_receipt.json": "449fbd70ed6c86929e9e763a15ec24c9dbf114b5f239b3dd804613e7f3d7a11d",
+  "raw/cpp_result.json": "025afa17f75425eaa0b1d522592fe0baf8a0210e571ec6c7d0653103339e1cf7",
+  "raw/native_build_receipt.json": "696890d3b76c2dd79402aaf1a06df90d53441efc833b3e219b31e6cc5ba93d80",
+  "raw/native_qnice_applied_42336_runtime2.csv": "d21069d03e69a6056a342cd6114c0e3c61902b81523d3a042dbd19d777c34af9",
+  "raw/off_live_session.json": "4a554e8fdd3236b279cf2d5db6d771b2ff3301d2ddc402ac7a5762f6cab06c2a",
+  "raw/off_run_result.json": "43158d7f40f8695ba4a1d8e3c05d85b178ac0921da9eb8565222634b596add40",
+  "raw/on_live_session.json": "7ec750cc78a46ad514d5e44b9df2b265b77b4b1eba114fbbe619a82b21a3158e",
+  "raw/on_run_result.json": "591d682f4df3aafb5c46f5a94b3c9605d843e4265543776f1e993cddd53a4be4",
+  "results.json": "6c6a5e930e48ad8577096a0232c152175a067932c4034ea6d5fdbb27c0bd938f"
+}

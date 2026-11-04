@@ -119,3 +119,9 @@ store; no captured value is detached into the AD graph. Test-target
 assertions are enabled, and `-ffp-contract=off` is recorded.
 
 `scientific_status: INCONCLUSIVE`; `physical_unit_status: INCONCLUSIVE`.
+
+The [entry-producer C++ continuation](../native_d1_upstream_cpp_ad_2026-11-04/README.md)
+subsequently recomputes `work2` from the captured P/T/DEN and both
+`precg2` and D1-entry `rhox` from the **same pre-D1 ProgB call** before
+executing D1 and postmelt ProgB. This packet's fixed-producer numerical
+contract and original results remain unchanged.

@@ -68,3 +68,8 @@ QG 상대 반보폭 `10⁻⁴`의 양의 끝점은 실제 C++에서도 밀도 �
 않는다. 운영 f32, QNICE 물리 단위, 전체 호스트·RTTOV 미분도 남아
 있어 `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [진입 생산자 연결](NATIVE_D1_UPSTREAM_WORK2_PRECG2_AD_20261104.md)은
+같은 호출의 `work2`와 진입 ProgB `precg2`·`rhox`를 실제 C++ 생산
+계산에서 함께 만들고 D1에 연결한다. 이 문서의 고정 생산자 조건부
+결과와 원본 실행 증거는 그대로 유지한다.
