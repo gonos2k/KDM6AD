@@ -1,0 +1,27 @@
+    if (postmelt_capture && native_capture_active()) {
+        auto record = [&](const char* name, const torch::Tensor& x) { capture_native_tensor("d1_postmelt_progb", name, x); };
+        record("qg", qg);
+        record("bg", bg);
+        record("active", active);
+        record("trace", trace);
+        record("produced", produced);
+        record("bg_den", bg_den);
+        record("zero_den", zero_den);
+        record("density_divisor", density_divisor);
+        record("rhox_op", rhox_op);
+        record("rhox_c", rhox_c);
+        record("bg_new_op", bg_new_op);
+        record("rhox", rhox);
+        record("bg_new", bg_new);
+        record("qcrmin", torch::full_like(qg, params.qcrmin));
+        record("brs_min", torch::full_like(qg, BRS_MIN));
+        record("rho_min", torch::full_like(qg, RHO_MIN));
+        record("rho_max", torch::full_like(qg, RHO_MAX));
+        record("idx_left", idx_left.to(torch::kFloat64));
+        record("idx_right", idx_right.to(torch::kFloat64));
+        record("avtg", avtg);
+        record("bvtg", bvtg);
+        record("op_f32", torch::full_like(active, op_f32));
+        record("midpoint_trace", torch::full_like(active, midpoint_trace));
+    }
+

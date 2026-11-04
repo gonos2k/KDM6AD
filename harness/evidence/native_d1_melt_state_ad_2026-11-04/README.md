@@ -121,3 +121,8 @@ checked against independent formulas and stated numerical criteria rather
 than demanded to reproduce every saved reduction bit across platforms.
 
 `scientific_status: INCONCLUSIVE`; `physical_unit_status: INCONCLUSIVE`.
+
+The [postmelt ProgB packet](../native_d1_progb_ad_2026-11-04/README.md)
+subsequently records the same-call QG/BRS ratio, `[100,900]` density
+selection, returned BRS, and selected branch-local derivatives. This
+packet's D1 inline-store scope and original results remain unchanged.

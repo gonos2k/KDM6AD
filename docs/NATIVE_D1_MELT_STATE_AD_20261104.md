@@ -85,3 +85,7 @@ QV는 열용량과 눈 융해 뒤 온도를 거쳐 싸락눈 융해율, QR·NR·
 미분, 실제 교란 호스트 호출, QNICE 물리 단위와 전체 호스트·RTTOV
 민감도는 남아 있다. `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [postmelt ProgB 검증](NATIVE_D1_POSTMELT_PROGB_AD_20261104.md)은
+같은 호출의 QG/BRS 비율·밀도 제한·BRS 반환과 선택 분기의 미분을
+추가한다. 이 문서의 D1 내부 저장 범위와 수치는 유지된다.
