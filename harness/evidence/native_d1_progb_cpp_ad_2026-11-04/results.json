@@ -1,0 +1,28 @@
+{
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_progb_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "source_and_build": {
+    "cpp_executable_sha256": "f48d52c5b841e6160bb637196604ff823ca1a9a5a2398c249774a60b8d723832",
+    "cpp_output_sha256": "f68fe356e3d66bbd44a3580f273b1bbcd452355dca7fb36c4cb0e377aa0702f5",
+    "input_capture_sha256": "98bfe8ca7deb80590d4c739421fa9f6d90b17da0e7b2e05bec02c05e7685bc16",
+    "parent_native_archive_sha256": "93575a832a92c786ac7ecfb75154daa42ebdca84a6a400cd2871fa2a406bb8ae",
+    "parent_native_dso_sha256": "cd6dde0222431a9f6a21d717e002d332d13c3931cd3e78cff40c27d9d81a60f3",
+    "torch_version": "2.13.0"
+  },
+  "verified": {
+    "baseline_raw_bit_equal_outputs": 10,
+    "directions": [
+      "relative_qv16",
+      "absolute_t16",
+      "relative_qg16",
+      "relative_rhox16"
+    ],
+    "max_abs_analytic_jvp_error": 5.684341886080802e-14,
+    "max_normalized_fd_jvp_error": 2.539004969644758e-08,
+    "qg_crossing_lower_raw_ratio": 899.8046267641537,
+    "qg_crossing_upper_raw_ratio": 900.0372380515089,
+    "qg_crossing_upper_selected_rhox": 900.0,
+    "qg_upper_cap_critical_relative_step": 6.798259282050436e-05
+  }
+}

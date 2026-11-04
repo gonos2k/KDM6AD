@@ -121,3 +121,9 @@ SHA-pinned; each new computation is checked against independent formulas
 and branch/numerical criteria rather than every saved reduction bit.
 
 `scientific_status: INCONCLUSIVE`; `physical_unit_status: INCONCLUSIVE`.
+
+The [isolated C++ graph packet](../native_d1_progb_cpp_ad_2026-11-04/README.md)
+subsequently executes the captured D1-entry conditional map with the
+same static C++ archive linked into the native variant and checks C++
+autograd JVP/VJP. This packet's own derivatives remain the documented
+Torch re-expression, and neither packet establishes whole-host AD.
