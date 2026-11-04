@@ -102,3 +102,9 @@ original capture by SHA-256. The mutation tests claim rejection only for the
 named source-order intermediates, caps, parameters, identity and parent rows.
 
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
+
+The [same-call D1 state packet](../native_d1_melt_state_ad_2026-11-04/README.md)
+subsequently records the QS/QG/QR/NR/BRS stores, including sequential QR/NR
+intermediates and the f64 BRS quotient. This packet's original selected
+mass-rate/temperature derivative and its documented `rhox` exclusion remain
+the claims made by this replay.
