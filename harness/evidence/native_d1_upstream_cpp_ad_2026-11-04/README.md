@@ -103,8 +103,10 @@ independently evaluated by Python producer and source-order D1/ProgB
 functions; **all 16 endpoint words agree in raw f64 bits on the producing
 runtime**. Cross-runtime oracle differences are bounded and reported
 separately: at most **1 f64 ULP** is accepted for work2-dependent D1 and
-postmelt outputs, while independent entry ProgB outputs and the selected
-C++ baseline remain exact. [The Linux Torch 2.8 diagnostic run](https://github.com/gonos2k/KDM6AD/actions/runs/41852528875/job/126652329931)
+postmelt outputs and for the entry `precg2` at perturbed endpoints, whose
+gamma/exponential producer can round differently across Torch backends.
+Other entry ProgB outputs and the selected C++ baseline remain exact.
+[The Linux Torch 2.8 diagnostic run](https://github.com/gonos2k/KDM6AD/actions/runs/41852528875/job/126652329931)
 measured a maximum of 1 ULP across all archived FD endpoints. Each local
 endpoint retains the warm D1 melt/cap gates and both entry/postmelt
 active interior `800–900` ProgB segments. The largest C++–Python JVP

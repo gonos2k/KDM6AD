@@ -142,6 +142,8 @@ class NativeD1UpstreamCppAD(unittest.TestCase):
 
     def test_measured_portable_ulp_limits_keep_exact_handoffs(self) -> None:
         base = self.result["upstream_baseline"]["native16"]["work2"]
+        self.assertIn("entry_precg2", replay.ENDPOINT_PORTABLE_ULPS)
+        self.assertNotIn("entry_rhox", replay.ENDPOINT_PORTABLE_ULPS)
         candidate = base
         with patch.object(replay, "same_reference_runtime", return_value=False):
             for _ in range(4):

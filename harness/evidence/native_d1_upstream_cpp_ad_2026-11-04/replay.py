@@ -48,6 +48,7 @@ TARGET = 23
 WORK2_PORTABLE_ULPS = 4
 ENDPOINT_PORTABLE_ULPS = {
     "work2",
+    "entry_precg2",
     "ps",
     "pg",
     "qg_d1",
