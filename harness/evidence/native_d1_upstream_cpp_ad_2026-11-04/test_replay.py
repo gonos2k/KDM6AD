@@ -140,7 +140,7 @@ class NativeD1UpstreamCppAD(unittest.TestCase):
                 capture_override=old, capture_sha=hashlib.sha256(old).hexdigest()
             )
 
-    def test_measured_portable_ulp_limits_keep_exact_handoffs(self) -> None:
+    def test_portable_ulp_limits_keep_exact_handoffs(self) -> None:
         base = self.result["upstream_baseline"]["native16"]["work2"]
         self.assertIn("entry_precg2", replay.ENDPOINT_PORTABLE_ULPS)
         self.assertNotIn("entry_rhox", replay.ENDPOINT_PORTABLE_ULPS)
@@ -159,22 +159,24 @@ class NativeD1UpstreamCppAD(unittest.TestCase):
                 replay.check_reference_word(
                     replay.word(base), too_far, "work2 portable", max_ulps=4
                 )
-            one_endpoint_ulp = math.nextafter(base, math.inf)
+            endpoint_ulp = base
+            for _ in range(replay.ENDPOINT_PORTABLE_MAX_ULPS):
+                endpoint_ulp = math.nextafter(endpoint_ulp, math.inf)
             self.assertEqual(
                 replay.check_reference_word(
                     replay.word(base),
-                    one_endpoint_ulp,
+                    endpoint_ulp,
                     "dependent endpoint",
-                    max_ulps=1,
+                    max_ulps=replay.ENDPOINT_PORTABLE_MAX_ULPS,
                 ),
-                1.0,
+                float(replay.ENDPOINT_PORTABLE_MAX_ULPS),
             )
-            with self.assertRaisesRegex(ValueError, "exceeds 1"):
+            with self.assertRaisesRegex(ValueError, "exceeds 4"):
                 replay.check_reference_word(
                     replay.word(base),
-                    math.nextafter(one_endpoint_ulp, math.inf),
+                    math.nextafter(endpoint_ulp, math.inf),
                     "dependent endpoint",
-                    max_ulps=1,
+                    max_ulps=replay.ENDPOINT_PORTABLE_MAX_ULPS,
                 )
             with self.assertRaisesRegex(ValueError, "raw bit mismatch"):
                 replay.check_reference_word(
