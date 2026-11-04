@@ -1,0 +1,50 @@
+{
+  "parent_cpp_baseline_raw_equal": 16,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_slope_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "slope39": {
+    "levels": 39,
+    "max_oracle_ulp_by_field": {
+      "n0sfac": 0.0,
+      "rslope2_g": 0.0,
+      "rslope2_s": 0.0,
+      "rslope_g": 0.0,
+      "rslope_s": 0.0,
+      "rslopeb_g": 0.0,
+      "rslopeb_s": 0.0,
+      "rslopemu_g": 0.0,
+      "rslopemu_s": 0.0
+    }
+  },
+  "source_and_runs": {
+    "cpp_executable_sha256": "c103b27137c0b7660430329cccd1b105944dde1eb06b8e146113817f7b781ba0",
+    "cpp_output_sha256": "6131cbef647e97373f7a78055a9bbf2dabb4ee81cf377a1ee8c7430f97aeb39d",
+    "native_archive_sha256": "10da3704da17c9e5ed61d510d4450d00bfa73975517842bcb0412e2f93dc6f2f",
+    "native_slope_object_sha256": "39afa6df50055e7ecb9441fd252b4220f9b24f52c207f0ab10e61e5ff0fe0165"
+  },
+  "verified_cpp": {
+    "baseline_raw_equal": 25,
+    "directions": [
+      "relative_qv16",
+      "absolute_t16",
+      "relative_qg16",
+      "relative_brs_pre16",
+      "relative_p16",
+      "relative_qs16"
+    ],
+    "endpoint_ulp": 0.0,
+    "fd_normalized": 3.7456787825829214e-05,
+    "jvp_abs": 2.2026824808563106e-13,
+    "qg_crossing": {
+      "high": {
+        "entry_rhox": 900.0,
+        "post_rhox": 900.0
+      },
+      "low": {
+        "entry_rhox": 899.8309403145905,
+        "post_rhox": 899.8309403145906
+      }
+    }
+  }
+}
