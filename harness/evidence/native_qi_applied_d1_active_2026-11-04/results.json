@@ -1,0 +1,106 @@
+{
+  "call": {
+    "B": 32248,
+    "K": 39,
+    "b_zero": 27945,
+    "ice_substep": 1,
+    "native_ij_1based": [
+      203,
+      149
+    ],
+    "one_step_call": 2,
+    "runtime_call": 2
+  },
+  "capture_rows": 4485,
+  "d1": {
+    "level16": {
+      "cpm_safe": 1010.6636319199112,
+      "ni_before": 11.436346752203006,
+      "pgmlt_capped": -1.2225833390863422e-05,
+      "pimlt_qi": 1.5404807243815997e-10,
+      "psmlt_capped": -0.00013202611149878743,
+      "qc_after_store2": 0.000545479336667674,
+      "qc_before": 0.0005454791826196015,
+      "qi_before": 1.5404807243815997e-10,
+      "t_after_d1": 274.6303629975879,
+      "t_before": 274.6803185248609
+    },
+    "nonzero_graupel_melt_native_levels": [
+      15,
+      16
+    ],
+    "nonzero_ice_melt_native_levels": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "nonzero_snow_melt_native_levels": [
+      14,
+      15,
+      16
+    ],
+    "raw_bit_replayed_levels": 39
+  },
+  "native16_D1_applied_graupel_melt": -1.2225833390863422e-05,
+  "native16_D1_applied_ice_melt": 1.5404807243815997e-10,
+  "native16_D1_applied_snow_melt": -0.00013202611149878743,
+  "native16_actual_in_qi": 1.5404679459033794e-10,
+  "native16_post_sed_qi": 1.5404807243815997e-10,
+  "native17_actual_out_qi": 1.524431280686188e-10,
+  "physical_unit_status": "INCONCLUSIVE",
+  "runtime_to_d1_qv_raw_bit_matches": 39,
+  "schema": "kdm6.native_qi_applied_d1_active_same_call.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "sedimentation": {
+    "arithmetic_closure_residual": 2.5494162813814027e-21,
+    "attributed_applied_change": 3.776902496188416e-23,
+    "bottom_actual_departure_mass": 0.0,
+    "capped_departure_native_levels": [],
+    "mass_coordinate_after": 0.00018281178553905593,
+    "mass_coordinate_before": 0.00018281178553905593,
+    "mass_coordinate_change": 2.587185306343287e-21,
+    "max_abs_interface_mass_difference": 3.6187187960401106e-23,
+    "nonzero_actual_departure_native_levels": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+    ],
+    "raw_bit_replayed_levels": 39
+  },
+  "source_and_run": {
+    "capture_sha256": "a6dd4d18025b5d5b3223b1f382dbc0b7ec1c3b21cfb7c6f01a6892e529a40bec",
+    "dso_sha256": "293f1d726a1e40c35f4bdaa99c96fc80d8a5f7fbaf2fdec4d73d5e96326a42d6",
+    "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17"
+  }
+}

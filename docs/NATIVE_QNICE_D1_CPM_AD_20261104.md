@@ -35,3 +35,7 @@ QV 교란은 D1 입력에 가한 조건부 방향이다. 밀도·압력·온도�
 운영 f32, 물리 QNICE 단위, 전체 호스트·RTTOV 민감도의 판정도 남는다.
 `scientific_status: INCONCLUSIVE`와 `physical_unit_status: INCONCLUSIVE`를
 유지한다.
+
+후속 [실제 QI 적용량·활성 D1 기록](NATIVE_QI_APPLIED_D1_ACTIVE_20261104.md)은
+같은 모델 호출의 다른 열에서 비영 눈·싸락눈 융해를 확보했다. 이 문서의
+QV→열용량 국소 미분 범위는 그대로다.
