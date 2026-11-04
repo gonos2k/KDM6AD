@@ -1,0 +1,78 @@
+{
+  "native_rows": 9516,
+  "parent_rows_raw_bit_equal": 8892,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_upstream_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "source_and_runs": {
+    "capture_sha256": "d21069d03e69a6056a342cd6114c0e3c61902b81523d3a042dbd19d777c34af9",
+    "cpp_executable_sha256": "47f2a47048d04273ff1bd3f25222674957491321220f13b0d03002ebfb1be9e0",
+    "cpp_output_sha256": "025afa17f75425eaa0b1d522592fe0baf8a0210e571ec6c7d0653103339e1cf7",
+    "native_archive_sha256": "10da3704da17c9e5ed61d510d4450d00bfa73975517842bcb0412e2f93dc6f2f",
+    "native_dso_sha256": "29e6a4870c84496306a00c798d801db6102fbde43b8600b534a2c87eaac3e6d9",
+    "native_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "torch_version": "2.13.0"
+  },
+  "upstream_baseline": {
+    "active_rhox_native_levels": [
+      23,
+      22,
+      21,
+      20,
+      19,
+      18,
+      17,
+      16,
+      15
+    ],
+    "levels_thermo_progb_reference_checked": 39,
+    "max_reference_ulp_by_field": {
+      "avtg": 0.0,
+      "bg": 0.0,
+      "bvtg": 0.0,
+      "cpm": 0.0,
+      "precg2": 0.0,
+      "rhox": 0.0,
+      "work2": 0.0,
+      "xl": 0.0
+    },
+    "native16": {
+      "active_gate": 1.0,
+      "avtg": 146.03613488313994,
+      "bg": 6.004757288472314e-08,
+      "bvtg": 0.5258006325407374,
+      "cpm": 1010.6636319199112,
+      "precg2": 24.35783384950257,
+      "rhox": 899.9209324078313,
+      "work2": 200.29441022254784,
+      "xl": 2496413.545505136
+    },
+    "native16_input": {
+      "brs": 6.004757288472314e-08,
+      "den": 0.7350409626960754,
+      "dend": 0.7350409626960754,
+      "p": 58627.9765625,
+      "qg": 5.4038067779247255e-05,
+      "qv": 0.007321097422391176,
+      "t": 274.6803185248609
+    },
+    "same_runtime_exact_oracle_reference": true
+  },
+  "verified_cpp": {
+    "cpp_baseline_raw_bit_equal_outputs": 16,
+    "directions": [
+      "relative_qv16",
+      "absolute_t16",
+      "relative_qg16",
+      "relative_brs_pre16",
+      "relative_p16"
+    ],
+    "max_abs_cpp_python_jvp_error": 1.1368683772161603e-13,
+    "max_cpp_python_baseline_ulps": 0.0,
+    "max_cpp_python_endpoint_ulps": 0.0,
+    "max_normalized_cpp_fd_jvp_error": 1.8718900719759824e-05,
+    "qg_crossing_entry_rhox_high": 900.0,
+    "qg_crossing_postmelt_rhox_high": 900.0,
+    "qg_entry_upper_cap_critical_relative_step": 8.786059899409143e-05
+  }
+}
