@@ -50,3 +50,7 @@ C++ 진입·단계 값과 비공개 입력·실행 파일의 해시는 보존했
 QNICE의 원래 생산·restart 단위와 전체 호스트·RTTOV 미분은 별도
 검증이 필요하다. `scientific_status: INCONCLUSIVE`와
 `physical_unit_status: INCONCLUSIVE`를 유지한다.
+
+후속 [활성 D1 생산식·조건부 미분](NATIVE_D1_MELT_PRODUCER_AD_20261104.md)은
+이 호출의 눈·싸락눈 원래율과 순차 온도 `t1`을 기록해 생산값과 국소
+JVP/VJP를 확인했다. 이 문서의 QI 계면 적용량 근거는 그대로 보존한다.
