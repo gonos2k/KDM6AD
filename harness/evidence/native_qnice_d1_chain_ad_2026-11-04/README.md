@@ -95,3 +95,7 @@ QV→cpm and the other melt/freeze rates; operating f32, QNICE units,
 host-wide JVP/VJP, and RTTOV sensitivity remain open.
 
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
+
+A later [QV→cpm packet](../native_qnice_d1_cpm_ad_2026-11-04/README.md)
+checks the fixed coefficient's baseline production and its isolated D1
+temperature tangent. Other QV-dependent producers remain outside that test.

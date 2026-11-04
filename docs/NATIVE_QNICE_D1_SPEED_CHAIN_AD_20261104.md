@@ -46,3 +46,7 @@ C3 입력 NI22·NI23 JVP는 각각 `+57.10582274001688`,
 `scientific_status: INCONCLUSIVE`와 `physical_unit_status: INCONCLUSIVE`를
 유지한다. 다음 검증 대상은 QV→열용량과 나머지 융해·동결 과정률의
 생산 반응, 운영 f32와 호스트·관측 전체 경로다.
+
+후속 [QV→열용량 조건부 미분](NATIVE_QNICE_D1_CPM_AD_20261104.md)은
+같은 호출의 QV와 D1 열항을 연결한다. 이 문서의 속도·침강·D1 선택 방향
+검증 범위는 그대로 유지한다.
