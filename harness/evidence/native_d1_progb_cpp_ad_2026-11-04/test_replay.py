@@ -83,7 +83,7 @@ class NativeD1ProgBCppAD(unittest.TestCase):
             return raw, hashlib.sha256(raw).hexdigest()
 
         bad, digest = altered(lambda d: d["baseline"]["raw_hex"].__setitem__(5, "0"))
-        with self.assertRaisesRegex(ValueError, "C\+\+ baseline"):
+        with self.assertRaisesRegex(ValueError, r"C\+\+ baseline"):
             replay.replay(output_override=bad, output_sha=digest)
 
         qv_bad, qv_digest = altered(
