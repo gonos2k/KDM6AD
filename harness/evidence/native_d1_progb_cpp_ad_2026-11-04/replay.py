@@ -306,7 +306,26 @@ def verify_output(raw: bytes, fields, state_parent, producer, parent) -> dict:
             and math.isfinite(jvp_dot),
             "finite C++ VJP/JVP dot",
         )
-        scale = sum(abs(w * j) for w, j in zip(WEIGHTS, jvp))
+        products = [weight * tangent for weight, tangent in zip(WEIGHTS, jvp)]
+        need(
+            all(math.isfinite(term) for term in products),
+            "finite weighted C++ JVP products: " + name,
+        )
+        expected_dot = math.fsum(products)
+        scale = math.fsum(abs(term) for term in products)
+        eps = 2.0**-53
+        gamma = (len(products) * eps) / (1.0 - len(products) * eps)
+        sum_tol = gamma * scale + 2.0 * math.ulp(expected_dot)
+        need(
+            abs(jvp_dot - expected_dot) <= sum_tol,
+            "saved C++ JVP dot versus verified JVP vector: " + name,
+        )
+        # For VJP this is a fixed-packet consistency gate, not a general
+        # rounding bound for the full reverse-mode tape.
+        need(
+            abs(vjp_dot - expected_dot) <= sum_tol,
+            "saved C++ VJP dot versus verified JVP vector: " + name,
+        )
         need(
             abs(vjp_dot - jvp_dot) <= 2e-10 * scale + 1e-14,
             "actual C++ VJP/JVP transpose: " + name,

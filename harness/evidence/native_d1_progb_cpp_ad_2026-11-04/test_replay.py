@@ -94,6 +94,24 @@ class NativeD1ProgBCppAD(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "independent analytic JVP"):
             replay.replay(output_override=qv_bad, output_sha=qv_digest)
 
+        both_dots_bad, both_dots_digest = altered(
+            lambda d: d["directions"]["relative_qg16"].update(jvp_dot=0.0, vjp_dot=0.0)
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"saved C\+\+ JVP dot versus verified JVP vector"
+        ):
+            replay.replay(output_override=both_dots_bad, output_sha=both_dots_digest)
+
+        vjp_only_bad, vjp_only_digest = altered(
+            lambda d: d["directions"]["relative_qg16"].__setitem__(
+                "vjp_dot", d["directions"]["relative_qg16"]["vjp_dot"] + 1e-7
+            )
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"saved C\+\+ VJP dot versus verified JVP vector"
+        ):
+            replay.replay(output_override=vjp_only_bad, output_sha=vjp_only_digest)
+
         cases = (
             lambda d: d["directions"]["relative_qg16"]["jvp"].__setitem__(5, 0.0),
             lambda d: d["directions"]["relative_qg16"]["finite_differences"]["1e-05"][

@@ -61,6 +61,17 @@ tangents from the parent D1/ProgB source equations. A mixed ten-output
 VJP seed gives the expected transpose contraction. Each finite-difference
 endpoint is evaluated by the C++ stage functions and independently
 replayed by the scalar D1→ProgB formulas in **all ten raw f64 output words**.
+The public verifier now recomputes `math.fsum(weight × validated_JVP)`
+from the ten checked JVP components and separately compares each archived
+`jvp_dot` and `vjp_dot` with that reference under a bound scaled by the
+sum of absolute weighted terms. It retains the C++ VJP/JVP transpose
+comparison. A rehashed test output with **both stored dot products set to
+zero** is rejected. This checks the archived contractions' consistency;
+it is not an independent oracle for every VJP component.
+The JVP-dot allowance follows the ten-term reduction of rounded products.
+Applying that same numerical gate to the archived VJP dot is a consistency
+check for this fixed fixture; it is not a general bound on rounding through
+the entire reverse-mode graph.
 The largest absolute C++–analytic JVP difference among the ten outputs
 and four directions is `5.684341886080802e−14`; the largest FD–JVP
 residual normalized by `max(1,|JVP|)` is `2.539004969644758e−8`.
