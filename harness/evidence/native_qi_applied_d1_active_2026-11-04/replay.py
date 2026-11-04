@@ -201,6 +201,11 @@ def check(fields: dict, stage: str, name: str, k: int, value: float, why: str) -
 
 
 def provenance(p39, d1_ad) -> dict:
+    parent_result = d1_ad.replay()
+    need(
+        parent_result["scientific_status"] == "INCONCLUSIVE",
+        "verified D1 parent replay",
+    )
     receipt = json.loads(pinned("raw/build_receipt.json"))
     need(
         receipt["schema"] == "kdm6.native_qi_applied_d1_active_cpp_build.v1",

@@ -23,6 +23,8 @@ selected CSV rows bind each stage/field/level to the same runtime, one-step
 call and tile. The verifier checks complete inventory/order/dtype, frozen
 source and capture hashes, the source-to-parent capture-only C++ diff,
 object/build receipts, loaded DSO path, and off/on endpoint equality.
+The standalone CLI also runs the pinned parent D1 replay, which rehashes
+the parent's executed source snapshots before checking this new source.
 Private executable, DSO, object and full checkpoint bytes are identified by
 receipts; public CI does not independently rebuild or rehash them.
 
@@ -98,3 +100,8 @@ are directly captured. The physical basis of QNICE and a full host/RTTOV
 derivative remain unresolved.
 
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
+
+The later [active D1 producer packet](../native_d1_melt_producer_ad_2026-11-04/README.md)
+records and replays snow/graupel raw rates, the snow-heated graupel input
+temperature, open caps and two local producer derivatives. This original
+applied-amount packet remains the same-call value reference.
