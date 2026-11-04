@@ -85,3 +85,8 @@ C++ AD 호출을 새로 수행한 결과는 아니다. 운영 f32의 원시 분�
 호스트·RTTOV 미분, QNICE 물리 단위는 미확정이다.
 `scientific_status: INCONCLUSIVE`와 `physical_unit_status: INCONCLUSIVE`를
 유지한다.
+
+후속 [격리 C++ 그래프 미분 검증](NATIVE_D1_PROGB_CPP_LOCAL_AD_20261104.md)은
+같은 정적 라이브러리와 선택 호출 입력으로 D1→ProgB 단계 함수를 직접
+실행하고 JVP/VJP를 대조한다. 이 문서의 native 캡처 기준값과 조건부
+Torch 재표현 결과는 그대로 유지한다.

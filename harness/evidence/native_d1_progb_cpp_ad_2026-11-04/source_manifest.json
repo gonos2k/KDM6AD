@@ -1,0 +1,10 @@
+{
+  "build_metadata/CMakeCache.txt": "d4831a85df7561c526c83385a2ebf96c24c05a07ec1fcd711979fe8d4bb8c12e",
+  "build_metadata/flags.make": "f02210943fd7d7789abd51798986c394640bc5f34be8e7fcb958af3f678590aa",
+  "build_metadata/link.txt": "6f52f95d7f2d5ba7f97b29e3fd69d9739cee938c15bc22692f7959cf49fb1d28",
+  "cpp/CMakeLists.txt": "1eba1fba49b232fae50cc0c2c91280c496149a8f9f56d89337d8b66e0c7e16ca",
+  "cpp/main.cpp": "b6866dffa010eaa2575d5985446e0443dbcbc1bf0d80d4abc491ccd6ed495790",
+  "raw/build_receipt.json": "ffac8505ab0b57e14c9dcc1451de33dc6e5fbf5329b9a4da1fd395f21cc35451",
+  "raw/cpp_result.json": "f68fe356e3d66bbd44a3580f273b1bbcd452355dca7fb36c4cb0e377aa0702f5",
+  "results.json": "db33522b0f3232cdea46a87dd9ce5e331b041c3d65a83d25c755a8d4ec58dfc2"
+}
