@@ -33,7 +33,12 @@ The public verifier first replays the native packet. On the producing
 macOS/Torch 2.13.0 runtime, independent Python thermo/ProgB functions
 reproduce `work2`, `cpm`, `xl`, `precg2`, BRS, `avtg`, and `bvtg` in raw
 f64 bits at **39/39 levels**. On other Torch/CPU backends the independent
-Python reference is checked with a separately reported ULP envelope;
+Python reference checks `work2` within **4 f64 ULP** (the maximum measured
+across all 39 levels in Linux/Torch 2.8 CI); `cpm`, `xl`, `precg2`, BRS,
+`avtg`, `bvtg`, and active `rhox` remain exact raw-bit checks. A
+rehashed one-ULP change to captured `work2` can pass the portable oracle
+envelope but still fails its exact D1-consumer handoff. The portable
+differences are reported separately;
 the recorded native producer-to-D1 handoff and archived C++ baseline
 remain exact raw-bit checks. Entry `rhox` is
 replayed where its gate is active: native levels 15–23. Inactive merged
@@ -97,7 +102,10 @@ using represented input gaps. Both C++ finite-difference endpoints are
 independently evaluated by Python producer and source-order D1/ProgB
 functions; **all 16 endpoint words agree in raw f64 bits on the producing
 runtime**. Cross-runtime oracle differences are bounded and reported
-separately. Each local
+separately: at most **1 f64 ULP** is accepted for work2-dependent D1 and
+postmelt outputs, while independent entry ProgB outputs and the selected
+C++ baseline remain exact. [The Linux Torch 2.8 diagnostic run](https://github.com/gonos2k/KDM6AD/actions/runs/41852528875/job/126652329931)
+measured a maximum of 1 ULP across all archived FD endpoints. Each local
 endpoint retains the warm D1 melt/cap gates and both entry/postmelt
 active interior `800–900` ProgB segments. The largest C++–Python JVP
 absolute difference is `1.1368683772161603e−13`; the largest FD–JVP

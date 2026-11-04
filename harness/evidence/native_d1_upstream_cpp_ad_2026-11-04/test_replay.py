@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
@@ -138,6 +139,62 @@ class NativeD1UpstreamCppAD(unittest.TestCase):
             replay.replay(
                 capture_override=old, capture_sha=hashlib.sha256(old).hexdigest()
             )
+
+    def test_measured_portable_ulp_limits_keep_exact_handoffs(self) -> None:
+        base = self.result["upstream_baseline"]["native16"]["work2"]
+        candidate = base
+        with patch.object(replay, "same_reference_runtime", return_value=False):
+            for _ in range(4):
+                candidate = math.nextafter(candidate, math.inf)
+            self.assertEqual(
+                replay.check_reference_word(
+                    replay.word(base), candidate, "work2 portable", max_ulps=4
+                ),
+                4.0,
+            )
+            too_far = math.nextafter(candidate, math.inf)
+            with self.assertRaisesRegex(ValueError, "exceeds 4"):
+                replay.check_reference_word(
+                    replay.word(base), too_far, "work2 portable", max_ulps=4
+                )
+            one_endpoint_ulp = math.nextafter(base, math.inf)
+            self.assertEqual(
+                replay.check_reference_word(
+                    replay.word(base),
+                    one_endpoint_ulp,
+                    "dependent endpoint",
+                    max_ulps=1,
+                ),
+                1.0,
+            )
+            with self.assertRaisesRegex(ValueError, "exceeds 1"):
+                replay.check_reference_word(
+                    replay.word(base),
+                    math.nextafter(one_endpoint_ulp, math.inf),
+                    "dependent endpoint",
+                    max_ulps=1,
+                )
+            with self.assertRaisesRegex(ValueError, "raw bit mismatch"):
+                replay.check_reference_word(
+                    replay.word(base),
+                    math.nextafter(base, math.inf),
+                    "unaffected producer",
+                    max_ulps=0,
+                )
+            one_ulp = replay.word(math.nextafter(base, math.inf))
+            bad = changed(replay.PRODUCER, "work2", replay.TARGET, one_ulp)
+            with self.assertRaisesRegex(ValueError, "upstream-to-D1 consumed input"):
+                replay.replay(
+                    capture_override=bad, capture_sha=hashlib.sha256(bad).hexdigest()
+                )
+        with patch.object(replay, "same_reference_runtime", return_value=True):
+            with self.assertRaisesRegex(ValueError, "raw bit mismatch"):
+                replay.check_reference_word(
+                    replay.word(base),
+                    math.nextafter(base, math.inf),
+                    "same runtime",
+                    max_ulps=4,
+                )
 
     def test_rehashed_cpp_jvp_dots_and_endpoint_mutations_fail(self) -> None:
         def altered(mutate):

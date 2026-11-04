@@ -45,7 +45,20 @@ MANIFEST_SHA = "d65f0e48ebef95d4ade29f4496d5ba2c07e4d90de268e1f01bef193b60cd5dca
 ORDER_SHA = "e8733cea1825d78a4aa6da37c1686b9b833ef981d07ca110701591d6681440ab"
 K = 39
 TARGET = 23
-REFERENCE_MAX_ULPS = 128
+WORK2_PORTABLE_ULPS = 4
+ENDPOINT_PORTABLE_ULPS = {
+    "work2",
+    "ps",
+    "pg",
+    "qg_d1",
+    "brs_d1",
+    "nr_d1",
+    "rhox",
+    "brs_reclamped",
+    "avtg",
+    "bvtg",
+    "t_d1",
+}
 ENTRY = "d1_upstream_entry"
 PRODUCER = "d1_upstream_producer"
 ENTRY_FIELDS = ("qg", "brs", "t", "qv", "p", "den", "dend")
@@ -321,17 +334,19 @@ def same_reference_runtime() -> bool:
     )
 
 
-def check_reference_word(raw_hex: str, expected: float, why: str) -> float:
+def check_reference_word(
+    raw_hex: str, expected: float, why: str, *, max_ulps: int = 0
+) -> float:
     """Keep local raw identity; bound cross-library oracle math in f64 ULPs."""
     recorded = f64(raw_hex)
-    if same_reference_runtime():
-        need(raw_hex == word(expected), why + ": same-runtime raw bit mismatch")
+    if same_reference_runtime() or max_ulps == 0:
+        need(raw_hex == word(expected), why + ": raw bit mismatch")
         return 0.0
     unit = max(math.ulp(recorded), math.ulp(expected))
     ulps = abs(recorded - expected) / unit
     need(
-        ulps <= REFERENCE_MAX_ULPS,
-        why + f": {ulps:.3g} ULP exceeds {REFERENCE_MAX_ULPS}",
+        ulps <= max_ulps,
+        why + f": {ulps:.3g} ULP exceeds {max_ulps}",
     )
     return ulps
 
@@ -572,6 +587,7 @@ def upstream_baseline(fields: dict, parent) -> dict:
                 fields[(PRODUCER, name, k)]["raw_hex"],
                 got,
                 "independent upstream Python producer: " + name,
+                max_ulps=WORK2_PORTABLE_ULPS if name == "work2" else 0,
             )
             reference_ulps[name] = max(reference_ulps[name], ulps)
         active = (
@@ -585,6 +601,7 @@ def upstream_baseline(fields: dict, parent) -> dict:
                 fields[(PRODUCER, "rhox", k)]["raw_hex"],
                 entry.rhox[0, k].item(),
                 "active upstream rhox",
+                max_ulps=0,
             )
             reference_ulps["rhox"] = max(reference_ulps["rhox"], ulps)
         for name in ("work2", "precg2", "rhox", "cpm"):
@@ -920,6 +937,7 @@ def verify_cpp_output(raw: bytes, fields: dict, parent, state_parent, producer) 
                             + name
                             + "/"
                             + output,
+                            max_ulps=1 if output in ENDPOINT_PORTABLE_ULPS else 0,
                         ),
                     )
             for i, output in enumerate(OUTPUT_ORDER):
@@ -952,6 +970,7 @@ def verify_cpp_output(raw: bytes, fields: dict, parent, state_parent, producer) 
                     word(got[i]),
                     scalar[i],
                     "upstream C++ cross-cap endpoint scalar replay: " + output,
+                    max_ulps=1 if output in ENDPOINT_PORTABLE_ULPS else 0,
                 ),
             )
     need(
