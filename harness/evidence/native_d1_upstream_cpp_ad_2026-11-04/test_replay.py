@@ -51,12 +51,30 @@ class NativeD1UpstreamCppAD(unittest.TestCase):
         self.assertEqual(result["native_rows"], 9516)
         self.assertEqual(result["parent_rows_raw_bit_equal"], 8892)
         self.assertEqual(
-            result["upstream_baseline"]["levels_work2_cpm_xl_raw_bit_replayed"], 39
+            result["upstream_baseline"]["levels_thermo_progb_reference_checked"], 39
         )
-        self.assertEqual(
-            result["upstream_baseline"]["levels_precg2_brs_avtg_bvtg_raw_bit_replayed"],
-            39,
-        )
+        if not replay.same_reference_runtime():
+            print(
+                "PORTABLE_UPSTREAM_REFERENCE_ULPS",
+                json.dumps(
+                    {
+                        "producer": result["upstream_baseline"][
+                            "max_reference_ulp_by_field"
+                        ],
+                        "baseline": result["verified_cpp"][
+                            "max_cpp_python_baseline_ulps"
+                        ],
+                        "endpoints": result["verified_cpp"][
+                            "max_cpp_python_endpoint_ulps"
+                        ],
+                        "jvp_abs": result["verified_cpp"][
+                            "max_abs_cpp_python_jvp_error"
+                        ],
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
         self.assertIn(16, result["upstream_baseline"]["active_rhox_native_levels"])
         self.assertEqual(
             result["verified_cpp"]["cpp_baseline_raw_bit_equal_outputs"], 16

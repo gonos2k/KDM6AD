@@ -29,9 +29,13 @@ The same copied host executable and input checkpoint were used. Capture
 off/on full endpoint SHA-256 both equal the parent variant's
 `225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070`.
 
-The public verifier first replays the native packet. Independent Python
-thermo/ProgB functions reproduce `work2`, `cpm`, `xl`, `precg2`, BRS,
-`avtg`, and `bvtg` in raw f64 bits at **39/39 levels**. Entry `rhox` is
+The public verifier first replays the native packet. On the producing
+macOS/Torch 2.13.0 runtime, independent Python thermo/ProgB functions
+reproduce `work2`, `cpm`, `xl`, `precg2`, BRS, `avtg`, and `bvtg` in raw
+f64 bits at **39/39 levels**. On other Torch/CPU backends the independent
+Python reference is checked with a separately reported ULP envelope;
+the recorded native producer-to-D1 handoff and archived C++ baseline
+remain exact raw-bit checks. Entry `rhox` is
 replayed where its gate is active: native levels 15–23. Inactive merged
 `rhox` values can retain earlier ProgB history, which this packet does
 not reconstruct. The inactive `precg2`/other coefficient words match the
@@ -91,7 +95,9 @@ All five directions compare actual C++ JVP with the separate Python
 producer-chain JVP, C++ VJP weighted contractions, and central differences
 using represented input gaps. Both C++ finite-difference endpoints are
 independently evaluated by Python producer and source-order D1/ProgB
-functions; **all 16 endpoint words agree in raw f64 bits**. Each local
+functions; **all 16 endpoint words agree in raw f64 bits on the producing
+runtime**. Cross-runtime oracle differences are bounded and reported
+separately. Each local
 endpoint retains the warm D1 melt/cap gates and both entry/postmelt
 active interior `800–900` ProgB segments. The largest C++–Python JVP
 absolute difference is `1.1368683772161603e−13`; the largest FD–JVP

@@ -25,8 +25,17 @@
       16,
       15
     ],
-    "levels_precg2_brs_avtg_bvtg_raw_bit_replayed": 39,
-    "levels_work2_cpm_xl_raw_bit_replayed": 39,
+    "levels_thermo_progb_reference_checked": 39,
+    "max_reference_ulp_by_field": {
+      "avtg": 0.0,
+      "bg": 0.0,
+      "bvtg": 0.0,
+      "cpm": 0.0,
+      "precg2": 0.0,
+      "rhox": 0.0,
+      "work2": 0.0,
+      "xl": 0.0
+    },
     "native16": {
       "active_gate": 1.0,
       "avtg": 146.03613488313994,
@@ -46,7 +55,8 @@
       "qg": 5.4038067779247255e-05,
       "qv": 0.007321097422391176,
       "t": 274.6803185248609
-    }
+    },
+    "same_runtime_exact_oracle_reference": true
   },
   "verified_cpp": {
     "cpp_baseline_raw_bit_equal_outputs": 16,
@@ -58,6 +68,8 @@
       "relative_p16"
     ],
     "max_abs_cpp_python_jvp_error": 1.1368683772161603e-13,
+    "max_cpp_python_baseline_ulps": 0.0,
+    "max_cpp_python_endpoint_ulps": 0.0,
     "max_normalized_cpp_fd_jvp_error": 1.8718900719759824e-05,
     "qg_crossing_entry_rhox_high": 900.0,
     "qg_crossing_postmelt_rhox_high": 900.0,
