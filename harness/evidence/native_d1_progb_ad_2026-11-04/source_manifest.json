@@ -1,0 +1,21 @@
+{
+  "executed_cpp/coordinator.cpp": "bb596e1851c4386d25833dbbb132b637b032dfab1a2265c36b7199aea35758be",
+  "executed_cpp/parent_progb.cpp": "fbe6bfb88ff166f1b6f9dd0ab8ec8bf67d535fdd3c377b2092d9a2ef5606bafe",
+  "executed_cpp/progb.cpp": "00c2527db1e6801d691ca267bb49495e20c1b6710515933a938262f8a6d4ec97",
+  "executed_cpp/progb.h": "76b8510077233b84304b159df103107c324be4ed0d7824dc63e3d0d9f878c6dd",
+  "producer/coordinator_decl.txt": "bbe82ff743e8c235f9967925570307e7a085b27c395c70f462d0bf023d85d87f",
+  "producer/coordinator_merge.txt": "77659e4f35b21232650736ee7770f753b15a83bd74d5222c24f9d351f7dcdb5d",
+  "producer/coordinator_off.txt": "c86e15aa93d82ec82a67a1e121eb33a0da9d93b8e0914dba8567203d0508b48b",
+  "producer/coordinator_on.txt": "d34cc98961082df5b6616419283f765a89a5a0dc1fdf4a5db1fa44e779c70faa",
+  "producer/progb_fields.txt": "d8409da928b8e5e4b6cb5493e8a17bafa882554103f2b0af5586fc81adb8fb9a",
+  "producer/progb_flag.txt": "905852d09a436a67df5eaf2f7f03f090b00be4325e7a53f2ae60e30d4618d6e1",
+  "producer/progb_include.txt": "493d753b1da3ebc54351631272b211072f706f15c0971e360c8df8d11ce39342",
+  "producer/run.py.txt": "bf2c6b7284fe9db8902fb2e6c35494396c4f1518fb6e7e3f0c4c5f0efb2dd270",
+  "raw/build_receipt.json": "d45f16ee1df08665296c42ca6290c837988c73636001a1b553d0682e88257acb",
+  "raw/native_qnice_applied_67313_runtime2.csv": "98bfe8ca7deb80590d4c739421fa9f6d90b17da0e7b2e05bec02c05e7685bc16",
+  "raw/off_live_session.json": "53ca215b08d46bac183459f5d261cf5b6bb02097f04bdcf30709e48b89173d1a",
+  "raw/off_run_result.json": "489c9f12ffcb27eef9906df3209a61e48cb31e15cacd0df7259368eae86b1101",
+  "raw/on_live_session.json": "e2b93d47831685e2f5efa5b0342976fb9bb2c605d49b0c097bb0dd5ca2520bdc",
+  "raw/on_run_result.json": "7978f32a794cb431157c7c5a5a4caece569d10abfd62dedeccf409428166601d",
+  "results.json": "ef95d60214ac3313531591a6fb7b6da068a5d6df0be910028c4fd2cfc5415b3c"
+}
