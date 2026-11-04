@@ -96,6 +96,11 @@ host-wide JVP/VJP, and RTTOV sensitivity remain open.
 
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
 
+The later [active native QI transfer packet](../native_qi_applied_d1_active_2026-11-04/README.md)
+directly captures applied QI departure/arrival in another column. This
+historical conditional derivative still uses its stated reconstructed QI
+interface amount.
+
 A later [QV→cpm packet](../native_qnice_d1_cpm_ad_2026-11-04/README.md)
 checks the fixed coefficient's baseline production and its isolated D1
 temperature tangent. Other QV-dependent producers remain outside that test.

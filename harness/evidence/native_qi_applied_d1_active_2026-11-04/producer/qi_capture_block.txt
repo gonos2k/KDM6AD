@@ -1,0 +1,27 @@
+        if (native_capture) {
+            capture_native_ice_scalar(native_ice_stage.c_str(), "qi_before", qi_before_k, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "falk_stored_qi", falk_qi, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "out_attempt_qi", dqi_out_attempt, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "applied_out_qi", dqi_out, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "applied_in_qi", dqi_in, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "fall_qi_before", fall_qi_before_k, k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "qi_after", qi_cols[k], k, static_cast<unsigned long>(n));
+            capture_native_ice_scalar(native_ice_stage.c_str(), "fall_qi_after", fall_qi_cols[k], k, static_cast<unsigned long>(n));
+            const auto b = native_capture_column();
+            const auto qi_before_b = qi_before_k.select(0, b);
+            const auto qi_attempt_b = dqi_out_attempt.select(0, b);
+            capture_native_ice_selected_scalar(native_ice_stage.c_str(), "departure_cap_active_qi",
+                (qi_attempt_b > qi_before_b).to(torch::kFloat64), k, static_cast<unsigned long>(n));
+            capture_native_ice_selected_scalar(native_ice_stage.c_str(), "departure_tie_active_qi",
+                (qi_attempt_b == qi_before_b).to(torch::kFloat64), k, static_cast<unsigned long>(n));
+            const auto expected_after = k == 0
+                ? qi_before_b - dqi_out.select(0, b)
+                : qi_before_b - dqi_out.select(0, b) + dqi_in.select(0, b);
+            capture_native_ice_selected_scalar(native_ice_stage.c_str(), "state_roundoff_residual_qi",
+                qi_cols[k].select(0, b) - expected_after, k, static_cast<unsigned long>(n));
+            capture_native_ice_selected_scalar(native_ice_stage.c_str(), "realized_delta_qi",
+                qi_cols[k].select(0, b) - qi_before_b, k, static_cast<unsigned long>(n));
+            const auto previous = k == 0 ? torch::zeros_like(qi_before_b) : prev_out_qi.select(0, b);
+            capture_native_ice_selected_scalar(native_ice_stage.c_str(), "previous_actual_out_qi",
+                previous, k, static_cast<unsigned long>(n));
+        }

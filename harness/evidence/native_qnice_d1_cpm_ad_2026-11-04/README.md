@@ -77,3 +77,8 @@ QV→cpm→D1 thermal path on one f64 native numerical state; it does not
 certify operational f32 or a host-to-RTTOV QV derivative.
 
 `scientific_status: INCONCLUSIVE` and `physical_unit_status: INCONCLUSIVE`.
+
+A later [active native D1 and QI interface packet](../native_qi_applied_d1_active_2026-11-04/README.md)
+records nonzero snow/graupel melt and actual QI applied transfer in a
+different column of the same model call. Their producer derivatives remain
+to be tested.
