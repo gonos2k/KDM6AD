@@ -45,9 +45,13 @@ replayed where its gate is active: native levels 15–23. Inactive merged
 `rhox` values can retain earlier ProgB history, which this packet does
 not reconstruct. The inactive `precg2`/other coefficient words match the
 fresh oracle outputs here, but that numerical equality alone does not
-certify the earlier persistent-PR history. Every captured upstream value is joined in raw bits to
-the value actually consumed at D1. The selected entry BRS before and
-after reclamp happens to be bit-identical; the stages are kept separate.
+certify the earlier persistent-PR history. Entry inputs and the D1 handoffs
+of `work2`, `precg2`, `rhox`, `cpm`, and reclamped BRS are checked in raw
+bits. The other captured producer outputs are checked against independent
+calculations, and the active gate is derived from captured inputs. They have
+no separate D1-consumer word check here.
+The selected entry BRS before and after reclamp happens to be bit-identical;
+the stages are kept separate.
 
 | Native 16 entry value | Captured f64 value |
 | --- | ---: |
