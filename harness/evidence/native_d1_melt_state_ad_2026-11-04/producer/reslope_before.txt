@@ -1,0 +1,1 @@
+    capture_native_tensor("d1_brs_reslope", "brs_before", working1b.brs);

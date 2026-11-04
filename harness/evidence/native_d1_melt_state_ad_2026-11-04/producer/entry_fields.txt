@@ -1,0 +1,3 @@
+    capture_native_tensor("d1_state_entry", "qr", state_pre.qr);
+    capture_native_tensor("d1_state_entry", "nr", state_pre.nr);
+    capture_native_tensor("d1_state_entry", "brs", state_pre.brs);
