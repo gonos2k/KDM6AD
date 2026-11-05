@@ -5,12 +5,20 @@ import torch
 from oracle.kdm6.coordinator import (
     CoordinatorForcing,
     CoordinatorState,
+    default_coordinator_params,
     sedimentation_chain_torch,
 )
 from oracle.kdm6.sedimentation import default_substep_advection_params
 
 
-def _case(*, species: str, columns: int, dtype: torch.dtype):
+def _case(
+    *,
+    species: str,
+    columns: int,
+    dtype: torch.dtype,
+    target_mstep: float = 1.0,
+    reslope: bool = False,
+):
     levels = 2
 
     def full(value):
@@ -36,7 +44,7 @@ def _case(*, species: str, columns: int, dtype: torch.dtype):
     )
     work = full(0.001)
     main = torch.tensor(
-        [1.0]
+        [target_mstep if species == "rain" else 1.0]
         + (
             [5.0]
             if columns == 2 and species == "rain"
@@ -47,7 +55,7 @@ def _case(*, species: str, columns: int, dtype: torch.dtype):
         dtype=dtype,
     )
     ice = torch.tensor(
-        [1.0]
+        [target_mstep if species == "ice" else 1.0]
         + (
             [5.0]
             if columns == 2 and species == "ice"
@@ -66,10 +74,11 @@ def _case(*, species: str, columns: int, dtype: torch.dtype):
         work,
         work,
         work,
-        mstep_main=int(main.max().item()),
-        mstep_ice=int(ice.max().item()),
+        mstep_main=max(1, int(main.max().item())),
+        mstep_ice=max(1, int(ice.max().item())),
         dtcld=20.0,
         params=default_substep_advection_params(),
+        reslope_params=default_coordinator_params() if reslope else None,
         mstep_col_main=main,
         mstep_col_ice=ice,
     )
@@ -88,6 +97,42 @@ def test_skipped_main_and_ice_steps_have_identity_tangent():
             one_value, one_grad = _case(species=species, columns=1, dtype=dtype)
             two_value, two_grad = _case(species=species, columns=2, dtype=dtype)
             if not torch.equal(one_value, two_value):
-                raise AssertionError("skipped-column forward differs from one-column value")
+                raise AssertionError(
+                    "skipped-column forward differs from one-column value"
+                )
             if not torch.equal(one_grad, two_grad):
-                raise AssertionError("skipped-column tangent differs from identity carry")
+                raise AssertionError(
+                    "skipped-column tangent differs from identity carry"
+                )
+
+
+def test_store_mask_uses_the_substep_helpers_clamped_schedule():
+    for dtype in (torch.float32, torch.float64):
+        for species in ("rain", "ice"):
+            normal_value, normal_grad = _case(species=species, columns=1, dtype=dtype)
+            zero_value, zero_grad = _case(
+                species=species, columns=1, dtype=dtype, target_mstep=0.0
+            )
+            if not torch.equal(normal_value, zero_value):
+                raise AssertionError("clamped-zero schedule changed the forward value")
+            if not torch.equal(normal_grad, zero_grad):
+                raise AssertionError("store gate disagrees with the helper schedule")
+
+
+def test_skipped_store_identity_with_production_reslope():
+    for dtype in (torch.float32, torch.float64):
+        for species in ("rain", "ice"):
+            one_value, one_grad = _case(
+                species=species, columns=1, dtype=dtype, reslope=True
+            )
+            two_value, two_grad = _case(
+                species=species, columns=2, dtype=dtype, reslope=True
+            )
+            if not torch.equal(one_value, two_value):
+                raise AssertionError(
+                    "unconditional reslope changed inactive-column value"
+                )
+            if not torch.equal(one_grad, two_grad):
+                raise AssertionError(
+                    "unconditional reslope changed inactive-column tangent"
+                )

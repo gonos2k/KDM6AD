@@ -1,0 +1,71 @@
+{
+  "B1_B2_jvp_raw_equal_cells": 1404,
+  "B1_B2_vjp_raw_equal_cells": 468,
+  "archive_sha256": "44099b67b14b15450796fb3b648778c96635d22eec614c8b3b5f40f59762608d",
+  "arrays_sha256": {
+    "B1": "63d0864c7b6df95a615ece1000368a2223f9c19f1950d50d78b4826490de1d67",
+    "B2": "a6ba5b5ca092a1de0b8f217d23ae8aca660e3fe535c3cea9c08c93255e368a67"
+  },
+  "baseline_raw_equal_cells": 468,
+  "calls": [
+    {
+      "command": [
+        "/opt/local/bin/python",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_20261105/probe_ad.py"
+      ],
+      "returncode": 0,
+      "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+      "stdout_sha256": "9a4b21224174a91b4588b43c84eadf2fe7a6b0945a8e24e7de7bf421d4fc17ff"
+    },
+    {
+      "command": [
+        "/opt/local/bin/python",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_20261105/probe_schedule_witness.py",
+        "0.16",
+        "--graph"
+      ],
+      "returncode": 0,
+      "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+      "stdout_sha256": "2f341b45332807e14e664a9cc2e84eddb6b47fa5d7e0b17fd36d109384a48172"
+    }
+  ],
+  "coordinator_object_sha256": "4498852fcb21c61707aeb0b8fd0344fcd6dd3b2426127f5ec88b741881500680",
+  "coordinator_source_sha256": "67d51849142ce67c98e04de2cc96919f314fded3ede4567ce2dc84107c9b347b",
+  "duality": {
+    "qg": {
+      "absolute_difference": 3.552713678800501e-14,
+      "weighted_jvp": 9.390979933533266,
+      "weighted_vjp": 9.390979933533302
+    },
+    "qs": {
+      "absolute_difference": 7.105427357601002e-15,
+      "weighted_jvp": -30.771926444302046,
+      "weighted_vjp": -30.77192644430204
+    },
+    "qv": {
+      "absolute_difference": 1.1102230246251565e-16,
+      "weighted_jvp": 0.8669978270539982,
+      "weighted_vjp": 0.8669978270539983
+    }
+  },
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_PROBE_LIB": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_mask_trial_20261105/build/libkdm6_c.2.0.0.dylib",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "input_capture_sha256": "0919ce378f47b4ace8c447bc7ddba8f9e14ea06a3b9de750f9c19be7a703ebcb",
+  "library_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_mask_trial_20261105/build/libkdm6_c.2.0.0.dylib",
+  "library_sha256": "4c7849af3cb2a36599b968b018569d9f955b94eb38cacd58749f5b5e679a5caf",
+  "probe_source_sha256": {
+    "probe_ad.py": "63949935f9e81f5612b874d19464b7b67532241c5640222572835e253b670b6e",
+    "probe_schedule_witness.py": "67fb53bfc89e48f91d1b78c30c052bf2f85e19c3212ad995599a35d2eeb8d6ba"
+  },
+  "run_at_utc": "2026-11-05T06:32:20.828879+00:00",
+  "schema": "kdm6.native_full_column_mask_ad_probe.v1",
+  "scope": "synthetic two-column schedule witness with selected native column; conditional f64 state AD, no host-attached graph",
+  "witness_vjp_nonzero_cells": 0
+}

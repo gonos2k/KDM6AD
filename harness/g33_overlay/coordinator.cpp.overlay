@@ -3401,7 +3401,7 @@ SedimentationOutputs sedimentation_chain(
         // Fortran skips the entire cell update when n>mstep(i). Select the
         // incoming tensor itself on that branch so its JVP/VJP is identity,
         // including at zero-moment min/clamp ties inside the unused candidate.
-        auto active_main = (mstep_col_main >= static_cast<double>(n)).unsqueeze(1);
+        auto active_main = (torch::clamp(mstep_col_main, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
         auto main_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
             return torch::where(active_main, candidate, before);
         };
@@ -3458,7 +3458,7 @@ SedimentationOutputs sedimentation_chain(
             forcing.delz, forcing.dend,
         };
         auto out_i = ice_substep_fn(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
-        auto active_ice = (mstep_col_ice >= static_cast<double>(n)).unsqueeze(1);
+        auto active_ice = (torch::clamp(mstep_col_ice, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
         auto ice_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
             return torch::where(active_ice, candidate, before);
         };

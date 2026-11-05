@@ -607,7 +607,7 @@ void test_skipped_column_ad_identity() {
     TEST(test_skipped_column_ad_identity) {
         for (const auto dtype : {torch::kFloat32, torch::kFloat64}) {
             for (const bool ice : {false, true}) {
-                auto run = [&](int B) {
+                auto run = [&](int B, double target_mstep, bool reslope) {
                     constexpr int K = 2;
                     const auto opts = torch::TensorOptions().dtype(dtype);
                     auto full = [&](double v) { return torch::full({B, K}, v, opts); };
@@ -629,20 +629,32 @@ void test_skipped_column_ad_identity() {
                                                  : torch::ones({B}, opts);
                     auto frozen = (B == 2 && ice) ? torch::tensor({1.0, 5.0}, opts)
                                                   : torch::ones({B}, opts);
+                    if (B == 1) {
+                        if (ice) frozen = torch::tensor({target_mstep}, opts);
+                        else main = torch::tensor({target_mstep}, opts);
+                    }
+                    auto full_params = default_coordinator_params();
                     auto out = sedimentation_chain(
                         state, forcing, work, work, work, work, work, work,
                         main, ice ? 1 : B == 2 ? 5 : 1,
                         frozen, ice && B == 2 ? 5 : 1,
-                        20.0, default_substep_advection_params(), nullptr);
+                        20.0, default_substep_advection_params(),
+                        reslope ? &full_params : nullptr);
                     auto selected = ice
                         ? out.state.qi.select(0, 0).select(0, 1)
                         : out.state.qr.select(0, 0).select(0, 1) + out.rain_increment.select(0, 0);
                     auto grad = torch::autograd::grad({selected}, {moment})[0].select(0, 0);
                     return std::make_pair(selected.detach().clone(), grad.detach().clone());
                 };
-                auto one = run(1), two = run(2);
-                assert(torch::equal(one.first, two.first));
-                assert(torch::equal(one.second, two.second));
+                for (const bool reslope : {false, true}) {
+                    auto one = run(1, 1.0, reslope);
+                    auto two = run(2, 1.0, reslope);
+                    auto zero = run(1, 0.0, reslope);
+                    assert(torch::equal(one.first, two.first));
+                    assert(torch::equal(one.second, two.second));
+                    assert(torch::equal(one.first, zero.first));
+                    assert(torch::equal(one.second, zero.second));
+                }
             }
         }
     } END_TEST();

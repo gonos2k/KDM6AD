@@ -2660,7 +2660,7 @@ def sedimentation_chain_torch(
         # Fortran's n<=mstep(i) encloses the whole cell update. A candidate
         # computed with gate=0 can retain min/clamp tie subgradients at q=0;
         # the skipped branch must pass the prior state/fall with identity AD.
-        active_main = ((mstep_col_main >= n).unsqueeze(-1)
+        active_main = ((torch.clamp(mstep_col_main, min=1.0) >= n).unsqueeze(-1)
                        if mstep_col_main is not None else None)
         def main_store(before, candidate):
             return torch.where(active_main, candidate, before) if active_main is not None else candidate
@@ -2707,7 +2707,7 @@ def sedimentation_chain_torch(
             mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
             ledger=ledger,
         )
-        active_ice = ((mstep_col_ice >= n).unsqueeze(-1)
+        active_ice = ((torch.clamp(mstep_col_ice, min=1.0) >= n).unsqueeze(-1)
                       if mstep_col_ice is not None else None)
         def ice_store(before, candidate):
             return torch.where(active_ice, candidate, before) if active_ice is not None else candidate
