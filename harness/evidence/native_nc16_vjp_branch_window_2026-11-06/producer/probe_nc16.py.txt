@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""Run an NC16-only output-seed VJP on the retained f64 KDM column."""
+
+from __future__ import annotations
+
+import csv
+import ctypes as C
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import struct
+
+for key, val in {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+}.items():
+    os.environ[key] = val
+
+import numpy as np
+import torch
+
+
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
+ROOT = Path(__file__).resolve().parent
+CAP = ROOT.parent / "native_d1_full_state_20261105/runs/on/capture/native_qnice_applied_86580_runtime2.csv"
+LIB = ROOT.parent / "native_fd_outlier_trace_20261105/build/libkdm6_c.2.0.0.dylib"
+ARCHIVE = LIB.parent / "libkdm6.a"
+SOURCE = ROOT.parent / "native_fd_outlier_trace_20261105/source/src/coordinator.cpp"
+STATE = ("th", "qv", "qc", "qr", "qi", "qs", "qg", "nccn", "nc", "ni", "nr", "bg")
+FORCING = ("rho", "pii", "p", "delz")
+CAP_SHA = "0919ce378f47b4ace8c447bc7ddba8f9e14ea06a3b9de750f9c19be7a703ebcb"
+LIB_SHA = "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b"
+ARCHIVE_SHA = "f327d123739d332c90bb5b72615e4dfdaa38ff58993a4a0b06d39f28c1a9ba35"
+SOURCE_SHA = "89eb7116949b6ad33bf4435e78b8d9ec8525374c608bac914181000de3052cbd"
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise RuntimeError(why)
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> None:
+    need(all(not os.environ.get(key) for key in (
+        "KDM6_NATIVE_CAPTURE_DIR", "KDM6_NATIVE_CAPTURE_CALL",
+        "KDM6_NATIVE_CAPTURE_B", "KDM6_NATIVE_CAPTURE_ALL_K")),
+         "value capture must remain disabled during C ABI AD")
+    need(sha(CAP) == CAP_SHA and sha(LIB) == LIB_SHA
+         and sha(ARCHIVE) == ARCHIVE_SHA and sha(SOURCE) == SOURCE_SHA,
+         "pinned capture/library/archive/source")
+    rows = list(csv.DictReader(line for line in CAP.open() if not line.startswith("#")))
+    d = {(r["stage"], r["field"], int(r["k_zero"])): r for r in rows}
+    need(len(d) == len(rows), "capture unique stage/field/level")
+
+    def f64(stage: str, field: str, k: int) -> float:
+        row = d[stage, field, k]
+        need(row["dtype"] == "f64", "capture f64: " + stage + "/" + field)
+        return struct.unpack(">d", int(row["raw_hex"], 16).to_bytes(8, "big"))[0]
+
+    def matrix(stage: str, names: tuple[str, ...]) -> np.ndarray:
+        return np.ascontiguousarray(
+            [[f64(stage, name, k) for k in range(38, -1, -1)] for name in names],
+            dtype=np.float64,
+        )
+
+    state = matrix("runtime_full_entry", STATE)
+    forcing = matrix("runtime_full_forcing", FORCING)
+    native_exit = matrix("runtime_full_exit", STATE)
+    xland_word = int(d["runtime_full_meta", "xland", 23]["raw_hex"], 16)
+    xland = np.ascontiguousarray(
+        [struct.unpack(">f", xland_word.to_bytes(4, "big"))[0]], dtype=np.float32
+    )
+    dt = f64("runtime_full_meta", "dt", 23)
+    ncmin_land = f64("runtime_full_meta", "ncmin_land", 23)
+    ncmin_sea = f64("runtime_full_meta", "ncmin_sea", 23)
+    variant = int(f64("runtime_full_meta", "physics_variant", 23))
+    need((dt, variant, float(xland[0]), ncmin_land, ncmin_sea)
+         == (20.0, 0, 2.0, 10.0, 10.0), "selected call controls")
+    need(np.isfinite(state).all() and np.isfinite(forcing).all(), "finite captured inputs")
+
+    lib = C.CDLL(str(LIB))
+    p64 = C.POINTER(C.c_double)
+    p32 = C.POINTER(C.c_float)
+    step = lib.kdm6_step_ad_variant_c
+    step.argtypes = [p64, p64, C.c_int, C.c_int, C.c_int, C.c_double, C.c_int,
+                     p64, C.POINTER(C.c_void_p), p32, C.c_double, C.c_double,
+                     C.c_uint32]
+    step.restype = C.c_int
+    jvp = lib.kdm6_handle_jvp_c
+    jvp.argtypes = [C.c_void_p, p64, p64]
+    jvp.restype = C.c_int
+    vjp = lib.kdm6_handle_vjp_c
+    vjp.argtypes = [C.c_void_p, p64, p64]
+    vjp.restype = C.c_int
+    close = lib.kdm6_handle_closep_c
+    close.argtypes = [C.POINTER(C.c_void_p)]
+    close.restype = C.c_int
+
+    def ptr(array: np.ndarray):
+        return array.ctypes.data_as(p64)
+
+    def evaluate(value_only: bool):
+        output = np.empty_like(state)
+        handle = C.c_void_p()
+        rc = step(ptr(state), ptr(forcing), 1, 39, 1, dt,
+                  int(value_only), ptr(output), C.byref(handle),
+                  xland.ctypes.data_as(p32), ncmin_land, ncmin_sea, variant)
+        need(rc == 0 and np.isfinite(output).all(), "C ABI baseline call")
+        return output, handle
+
+    value_output, no_handle = evaluate(True)
+    need(no_handle.value is None and value_output.tobytes() == native_exit.tobytes(),
+         "value-only native exit raw equality")
+    graph_output, handle = evaluate(False)
+    need(handle.value is not None and graph_output.tobytes() == value_output.tobytes(),
+         "graph/value forward raw equality")
+
+    # Field 8 is NC. Reversed capture levels 38..0 put native level 16 at array index 15.
+    seed = np.zeros_like(state)
+    seed[8, 15] = 1.0
+    gradient = np.empty_like(state)
+    vjp_rc = vjp(handle, ptr(seed), ptr(gradient))
+    need(vjp_rc == 0 and np.isfinite(gradient).all(), "NC16 C ABI VJP")
+    saved = {"state": state, "forcing": forcing, "xland": xland,
+             "value_output": value_output, "graph_output": graph_output,
+             "seed_nc16": seed, "vjp_nc16": gradient}
+    contractions = {}
+    jvp_codes = {}
+    for name, field in (("qv", 1), ("qs", 5), ("qg", 6)):
+        direction = np.zeros_like(state)
+        direction[field, 15] = state[field, 15]
+        tangent = np.empty_like(state)
+        rc = jvp(handle, ptr(direction), ptr(tangent))
+        need(rc == 0 and np.isfinite(tangent).all(), "C ABI JVP: " + name)
+        jvp_codes[name] = rc
+        lhs = math.fsum(float(a) * float(b) for a, b in zip(seed.flat, tangent.flat))
+        rhs = math.fsum(float(a) * float(b) for a, b in zip(direction.flat, gradient.flat))
+        scale = max(1.0, abs(lhs), abs(rhs))
+        need(abs(lhs - rhs) <= 5e-12 * scale, "NC16 transpose dot: " + name)
+        saved["direction_" + name] = direction
+        saved["jvp_" + name] = tangent
+        contractions[name] = {"weighted_jvp": lhs, "weighted_vjp": rhs,
+                              "max_abs_difference": abs(lhs - rhs)}
+    coordinate_jvp = np.empty_like(state)
+    unit = np.zeros_like(state)
+    tangent = np.empty_like(state)
+    for field in range(12):
+        for level in range(39):
+            unit.fill(0.0)
+            unit[field, level] = 1.0
+            rc = jvp(handle, ptr(unit), ptr(tangent))
+            need(rc == 0 and np.isfinite(tangent).all(),
+                 "NC16 unit-input JVP: " + str((field, level)))
+            coordinate_jvp[field, level] = tangent[8, 15]
+        print("unit-input JVP field", field, "complete", flush=True)
+    difference = np.abs(coordinate_jvp - gradient)
+    normalized = difference / np.maximum(1.0, np.abs(gradient))
+    worst = np.unravel_index(np.argmax(normalized), normalized.shape)
+    max_normalized = float(normalized[worst])
+    max_absolute = float(np.max(difference))
+    need(max_normalized < 5e-9,
+         "full NC16 unit-input JVP/VJP transpose map: " + str((worst, max_normalized)))
+    saved["coordinate_jvp_nc16"] = coordinate_jvp
+    close_rc = close(C.byref(handle))
+    need(close_rc == 0 and handle.value is None, "C ABI handle close")
+    output_path = ROOT / "nc16_result.npz"
+    need(not output_path.exists(), "refuse to overwrite NC16 result")
+    np.savez_compressed(output_path, **saved)
+    receipt = {
+        "schema": "kdm6.native_nc16_c_abi_vjp.v1",
+        "input_capture_sha256": sha(CAP),
+        "library_path": str(LIB.resolve()), "library_sha256": sha(LIB),
+        "archive_sha256": sha(ARCHIVE),
+        "coordinator_source_sha256": sha(SOURCE),
+        "probe_source_sha256": sha(Path(__file__)),
+        "result_sha256": sha(output_path),
+        "torch_version": torch.__version__,
+        "python_version": os.sys.version.split()[0],
+        "environment": {key: os.environ[key] for key in (
+            "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OMP_THREAD_LIMIT",
+            "KDM6_ICE_FACTORIAL_MODE", "KDM6_QR_TRANSPORT", "KDM6AD_QNC_LIVE_GUARD")},
+        "value_rc": 0, "graph_rc": 0, "vjp_rc": vjp_rc, "jvp_rc": jvp_codes,
+        "close_rc": close_rc, "seed_field": "nc", "seed_native_level": 16,
+        "contractions": contractions,
+        "coordinate_sweep": {"jvp_calls": 468, "all_return_codes_zero": True,
+                             "max_normalized_difference": max_normalized,
+                             "max_absolute_difference": max_absolute,
+                             "worst_field": int(worst[0]), "worst_level_top0": int(worst[1])},
+    }
+    receipt_path = ROOT / "receipt.json"
+    need(not receipt_path.exists(), "refuse to overwrite NC16 receipt")
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    print(json.dumps({"nc16": float(value_output[8, 15]),
+                      "vjp_qv16": float(gradient[1, 15]),
+                      "vjp_qs16": float(gradient[5, 15]),
+                      "vjp_qg16": float(gradient[6, 15]),
+                      "contractions": contractions}, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

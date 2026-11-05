@@ -1,0 +1,10 @@
+{
+  "schema": "kdm6.native_nc16_vjp_log_manifest.v1",
+  "sha256": {
+    "nc16_result.npz": "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57",
+    "probe_nc16.py": "e733f119a7c956b6b7b3e30cee89565cd9d9f241d15208ed930605ebdcef7f79",
+    "receipt.json": "266ccd946eb16f8bdb879fb978ee9fe6711a37030d12f61d7cc4ec149ab90724",
+    "run.stderr.txt": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+    "run.stdout.txt": "af6b4cb3ae66fd8f397abd6fc80ad6766d3b9988d389ec261de18f43df85f971"
+  }
+}

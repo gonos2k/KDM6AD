@@ -1,0 +1,95 @@
+{
+  "coordinate_jvp_cells": 468,
+  "coordinate_max_normalized_transpose_gap": 9.270351824068155e-16,
+  "coordinate_raw_mismatches": 13,
+  "finite_differences": [
+    {
+      "branch_crossing": false,
+      "direction": "qv",
+      "error_output_ulps": 0.6892515466692886,
+      "fd_nc16": -112.9935681819453,
+      "h": 0.0001,
+      "normalized_fd_jvp": 9.089595010477966e-07
+    },
+    {
+      "branch_crossing": false,
+      "direction": "qv",
+      "error_output_ulps": 1.6310752945144955,
+      "fd_nc16": -112.99103498387304,
+      "h": 1e-05,
+      "normalized_fd_jvp": 2.1510018991308298e-05
+    },
+    {
+      "branch_crossing": true,
+      "direction": "qv",
+      "error_output_ulps": 980011100503151.1,
+      "fd_nc16": 14603303267.364101,
+      "h": 0.001,
+      "normalized_fd_jvp": 129240246.93736784
+    },
+    {
+      "branch_crossing": false,
+      "direction": "qs",
+      "error_output_ulps": 774682.8574999799,
+      "fd_nc16": -50323461.24500167,
+      "h": 0.001,
+      "normalized_fd_jvp": 2.2938956296180725e-07
+    },
+    {
+      "branch_crossing": false,
+      "direction": "qs",
+      "error_output_ulps": 774.0915000004251,
+      "fd_nc16": -50323449.81667616,
+      "h": 0.0001,
+      "normalized_fd_jvp": 2.2921445744970524e-09
+    },
+    {
+      "branch_crossing": false,
+      "direction": "qg",
+      "error_output_ulps": 0.31786805076979013,
+      "fd_nc16": 363038.5249984018,
+      "h": 1e-06,
+      "normalized_fd_jvp": 1.3047108433705311e-08
+    },
+    {
+      "branch_crossing": false,
+      "direction": "qg",
+      "error_output_ulps": 1.6682131948617318,
+      "fd_nc16": 363038.7783181421,
+      "h": 1e-07,
+      "normalized_fd_jvp": 6.847293520436922e-07
+    },
+    {
+      "branch_crossing": true,
+      "direction": "qg",
+      "error_output_ulps": 14138364.811119433,
+      "fd_nc16": 384106.3350416738,
+      "h": 1e-05,
+      "normalized_fd_jvp": 0.05803187149872792
+    }
+  ],
+  "parent_raw_equal_arrays": 11,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_nc16_vjp_branch_window_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "seed_native_level": 16,
+  "seed_packed_offset": 327,
+  "transpose": {
+    "qg": {
+      "abs_dot_gap": 1.1641532182693481e-10,
+      "jvp_nc16": 363038.5297350049,
+      "vjp_relative_nc16": 363038.52973500476
+    },
+    "qs": {
+      "abs_dot_gap": 1.4901161193847656e-08,
+      "jvp_nc16": -50323449.70132754,
+      "vjp_relative_nc16": -50323449.701327555
+    },
+    "qv": {
+      "abs_dot_gap": 1.4210854715202004e-14,
+      "jvp_nc16": -112.9934654754613,
+      "vjp_relative_nc16": -112.99346547546132
+    }
+  },
+  "vjp_finite_cells": 468
+}
