@@ -28,6 +28,9 @@ CMAKE_SHA256 = "829b78bb0e872aadde362e3c9b65391a9d0f229fe4a459be6da798a49aae7d90
 ORACLE_SEDIMENTATION_SHA256 = (
     "0e2b866f1a71937fbc2cf9ff382ced8bd0e439c732992b494b2ea2251f806f89"
 )
+ORACLE_COORDINATOR_SHA256 = (
+    "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd"
+)
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _HISTORICAL_CPP_PATHS = MappingProxyType({
     f"libtorch/src/{name}": (name, digest)
@@ -113,6 +116,13 @@ def historical_manifest_source(relative, expected):
         path = ROOT / "oracle/kdm6/sedimentation.py"
         if digest(_regular_within(path, ROOT / "oracle")) != expected:
             raise ValueError("historical oracle sedimentation digest")
+        return path
+    if expected == ORACLE_COORDINATOR_SHA256:
+        if relative != "oracle/kdm6/coordinator.py":
+            raise ValueError("historical oracle coordinator path mismatch " + relative)
+        path = ROOT / "oracle/kdm6/coordinator.py"
+        if digest(_regular_within(path, ROOT / "oracle")) != expected:
+            raise ValueError("historical oracle coordinator digest")
         return path
     archive = ROOT / "test_sources" / expected
     if archive.is_dir():
