@@ -41,6 +41,21 @@ SLOPE_FIELDS = (
     "rslopeb_g",
     "rslopemu_g",
 )
+SLOPE_PORTABLE_ULPS = {
+    "n0sfac": 2,
+    "rslope_s": 16,
+    "rslope2_s": 32,
+    "rslopeb_s": 8,
+}
+SLOPE_ENDPOINT_PORTABLE = {
+    "rslope_s",
+    "rslope2_s",
+    "rslopeb_s",
+    "rslope_g",
+    "rslope2_g",
+    "rslopeb_g",
+}
+ENDPOINT_PORTABLE_MAX_ULPS = 4
 INPUTS = ("qv", "t", "qg", "brs", "p", "qs")
 DIRECTIONS = {
     **{
@@ -214,7 +229,7 @@ def slope39(fields: dict, parent) -> dict:
                 fields[("d1_melt_producer", name, k)]["raw_hex"],
                 out[0, k].item(),
                 "independent 39-level slope: " + name,
-                max_ulps=64,
+                max_ulps=SLOPE_PORTABLE_ULPS.get(name, 0),
             )
             maxima[name] = max(maxima[name], ulps)
     return {"levels": 39, "max_oracle_ulp_by_field": maxima}
@@ -336,7 +351,7 @@ def verify_output(
                 words[i],
                 expected,
                 "Python/C++ slope baseline: " + order[i],
-                max_ulps=64,
+                max_ulps=0,
             ),
         )
     maxima = {
@@ -446,7 +461,12 @@ def verify_output(
                         upstream.word(got[i]),
                         expected,
                         "independent slope C++ FD endpoint: " + name + "/" + order[i],
-                        max_ulps=64,
+                        max_ulps=(
+                            ENDPOINT_PORTABLE_MAX_ULPS
+                            if order[i]
+                            in upstream.ENDPOINT_PORTABLE_ULPS | SLOPE_ENDPOINT_PORTABLE
+                            else 0
+                        ),
                     )
                     maxima["endpoint_ulp"] = max(maxima["endpoint_ulp"], ulps)
             for i, out in enumerate(order):
@@ -481,7 +501,12 @@ def verify_output(
                     upstream.word(got[i]),
                     expected,
                     "slope C++ cap crossing: " + side + "/" + order[i],
-                    max_ulps=64,
+                    max_ulps=(
+                        ENDPOINT_PORTABLE_MAX_ULPS
+                        if order[i]
+                        in upstream.ENDPOINT_PORTABLE_ULPS | SLOPE_ENDPOINT_PORTABLE
+                        else 0
+                    ),
                 ),
             )
         crossing_values[side] = {"entry_rhox": got[2], "post_rhox": got[11]}

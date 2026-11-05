@@ -5,10 +5,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 import replay
 
@@ -66,6 +68,37 @@ class NativeD1SlopeCppAD(unittest.TestCase):
             set(self.result["verified_cpp"]["directions"]),
             set(replay.DIRECTIONS),
         )
+
+    def test_portable_slope_bound_and_exact_graupel_field(self) -> None:
+        parent = replay.parent_module()
+        self.assertEqual(replay.SLOPE_PORTABLE_ULPS["rslope2_s"], 32)
+        self.assertNotIn("rslope_g", replay.SLOPE_PORTABLE_ULPS)
+        self.assertNotIn("rslopemu_s", replay.SLOPE_ENDPOINT_PORTABLE)
+        base = self.raw["baseline"]["values"][18]
+        candidate = base
+        for _ in range(32):
+            candidate = math.nextafter(candidate, math.inf)
+        with patch.object(parent, "same_reference_runtime", return_value=False):
+            self.assertEqual(
+                parent.check_reference_word(
+                    parent.word(base), candidate, "snow square portable", max_ulps=32
+                ),
+                32.0,
+            )
+            with self.assertRaisesRegex(ValueError, "exceeds 32"):
+                parent.check_reference_word(
+                    parent.word(base),
+                    math.nextafter(candidate, math.inf),
+                    "snow square portable",
+                    max_ulps=32,
+                )
+            with self.assertRaisesRegex(ValueError, "raw bit mismatch"):
+                parent.check_reference_word(
+                    self.raw["baseline"]["raw_hex"][21],
+                    math.nextafter(self.raw["baseline"]["values"][21], math.inf),
+                    "exact graupel slope",
+                    max_ulps=0,
+                )
 
     def _mutated(self, transform) -> None:
         changed = copy.deepcopy(self.raw)
