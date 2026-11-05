@@ -1,0 +1,38 @@
+{
+  "cases": 11,
+  "new_stage_fields_per_case": 56,
+  "parent_rows_preserved_per_case": 11271,
+  "physical_unit_status": "INCONCLUSIVE",
+  "qg_entry_progb": {
+    "critical_relative_qg_change": -1.388135438262772e-06,
+    "jvp_nr16": -8.537285422727914,
+    "minus_one_sided_nr16": -41.48580073864176,
+    "plus_one_sided_nr16": -8.537269377434695,
+    "uncapped_qg_over_brs": {
+      "baseline": 900.0012493236287,
+      "qg_1e-05_minus": 899.9922493111354,
+      "qg_1e-05_plus": 900.010249336122,
+      "qg_1e-06_minus": 900.0003493223794,
+      "qg_1e-06_plus": 900.002149324878
+    }
+  },
+  "qv_activation": {
+    "baseline_fraction": 1.0,
+    "baseline_ncact": 5000000.0,
+    "jvp_nc16": -112.9934654754613,
+    "minus_fraction": 0.8850499829878339,
+    "minus_ncact": 3539669.6619642465,
+    "small_step_fd_error_in_output_ulps": 1.6310752945144955,
+    "sw_percent": {
+      "baseline": 0.4904546956316258,
+      "qv_1e-03_minus": 0.39161041560900056,
+      "qv_1e-03_plus": 0.5892971376236344,
+      "qv_1e-04_minus": 0.48057035034152484,
+      "qv_1e-04_plus": 0.5003390225406079
+    }
+  },
+  "rows_per_case": 13455,
+  "same_value_outputs_as_parent": 5148,
+  "schema": "kdm6.native_fd_outlier_branches_replay.v1",
+  "scientific_status": "INCONCLUSIVE"
+}
