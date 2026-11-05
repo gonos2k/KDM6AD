@@ -1,0 +1,32 @@
+{
+  "handoff": {
+    "fresh_equals_applied_levels": 39,
+    "levels_raw_bit_joined": 39,
+    "native16_entry_cpm": 1010.6636319199112,
+    "native16_outer_qv": 0.007321097422391176
+  },
+  "native_rows": 9750,
+  "parent_rows_raw_bit_equal": 9516,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_entry_cpm_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "source_and_runs": {
+    "cpp_executable_sha256": "b05d1a75788473c72882ea1ab97398717d32eb5826d7f0a5008498a668e8e45b",
+    "cpp_output_sha256": "b2c92d70ab3d8e58d03a6ed6edbdceb5b8dbed537dc2e7cbfa0f294e409e4f4b",
+    "native_dso_sha256": "13b14f9a2dd7c857732e3cd4ba33fab6f1c8ec9711f7d43f5e82d9a25ca721b7",
+    "native_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "origin_to_ready_mismatch": "WE_JUST_D01_LBC:int32:one_element"
+  },
+  "verified_cpp": {
+    "baseline_raw_bit_equal_outputs": 27,
+    "directions": [
+      "relative_qv_outer16",
+      "relative_qv_d1_16",
+      "relative_qv_joint16"
+    ],
+    "joint_first25_jvp_equals_parent": true,
+    "max_cpp_python_jvp_abs": 2.7755575615628914e-17,
+    "max_endpoint_ulps": 0.0,
+    "max_fd_normalized": 1.5429507012332255e-08
+  }
+}
