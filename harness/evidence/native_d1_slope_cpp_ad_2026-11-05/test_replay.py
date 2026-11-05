@@ -27,6 +27,19 @@ class NativeD1SlopeCppAD(unittest.TestCase):
         self.assertEqual(self.result["parent_cpp_baseline_raw_equal"], 16)
         self.assertEqual(self.result["slope39"]["levels"], 39)
         self.assertEqual(self.result["verified_cpp"]["baseline_raw_equal"], 25)
+        if not replay.parent_module().same_reference_runtime():
+            print(
+                "PORTABLE_SLOPE_REFERENCE_ULPS",
+                json.dumps(
+                    {
+                        "slope39": self.result["slope39"]["max_oracle_ulp_by_field"],
+                        "baseline": self.result["verified_cpp"]["baseline_ulp"],
+                        "endpoints": self.result["verified_cpp"]["endpoint_ulp"],
+                        "jvp_abs": self.result["verified_cpp"]["jvp_abs"],
+                    },
+                    sort_keys=True,
+                ),
+            )
         if replay.parent_module().same_reference_runtime():
             self.assertTrue(
                 all(

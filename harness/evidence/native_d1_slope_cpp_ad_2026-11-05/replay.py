@@ -29,7 +29,7 @@ from oracle.kdm6.thermo import (  # noqa: E402
 PARENT = REPO / "harness/evidence/native_d1_upstream_cpp_ad_2026-11-04"
 PARENT_REPLAY_SHA = "5d6eb02407cee56cc90db84f869253a68c0f155fafe88f1ec7e8141dddcaaafa"
 BUILD_SHA = "15221c9fa9405136f445b79ce7239f13ff28899024b4352b6d34263f03a80c67"
-RESULTS_SHA = "0373bd44faf0a4da885d5d81903d589e2a774a7385c6ba44d58f011a1bc77ccd"
+RESULTS_SHA = "877fe28891466b42c6cae411946f52663f37f65d681d03b1506dab6ef55fd830"
 SLOPE_FIELDS = (
     "n0sfac",
     "rslope_s",
@@ -339,7 +339,12 @@ def verify_output(
                 max_ulps=64,
             ),
         )
-    maxima = {"jvp_abs": 0.0, "endpoint_ulp": 0.0, "fd_normalized": 0.0}
+    maxima = {
+        "baseline_ulp": baseline_ulps,
+        "jvp_abs": 0.0,
+        "endpoint_ulp": 0.0,
+        "fd_normalized": 0.0,
+    }
     for name, (field, steps) in DIRECTIONS.items():
         section = saved["directions"][name]
         seed = 1.0 if field == "t" else x0[field]

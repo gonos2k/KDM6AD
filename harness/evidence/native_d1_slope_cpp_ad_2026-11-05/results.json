@@ -25,6 +25,7 @@
   },
   "verified_cpp": {
     "baseline_raw_equal": 25,
+    "baseline_ulp": 0.0,
     "directions": [
       "relative_qv16",
       "absolute_t16",
