@@ -203,8 +203,10 @@ def source_and_runs(upstream) -> dict:
             text.encode() == parent_sources[name].read_bytes(),
             "capture-only native source change: " + name,
         )
+    startup_by_mode = {}
     for mode in ("off", "on"):
         run = parse(pinned(f"raw/{mode}_run_result.json", RUN_SHAS[mode]))
+        startup_by_mode[mode] = run["startup_sha256"]
         old_run = parse(upstream.pinned(f"raw/{mode}_run_result.json"))
         session_raw = pinned(f"raw/{mode}_live_session.json", SESSION_SHAS[mode])
         session = parse(session_raw)
@@ -243,6 +245,7 @@ def source_and_runs(upstream) -> dict:
             and session["executable_sha256"] == native["new_executable_sha256"]
             and session["library_candidate_sha256"] == native["new_dso_sha256"]
             and session["initial_sha256"] == run["origin_sha256"]
+            and session["startup_sha256"] == run["startup_sha256"]
             and session["startup_origin_comparison"]["sha256"] == STARTUP_COMPARE_SHA
             and session["dt_seconds"] == 20
             and session["steps"] == 1,
@@ -255,6 +258,10 @@ def source_and_runs(upstream) -> dict:
                 run["captures"] == {Path(CAPTURE).name: CAPTURE_SHA},
                 "capture-on exact file",
             )
+    need(
+        startup_by_mode["off"] == startup_by_mode["on"],
+        "same READY checkpoint for capture off/on",
+    )
     need(
         cpp["schema"] == "kdm6.native_d1_entry_cpm_cpp_ad_build.v1"
         and cpp["build_type"] == "Debug"
