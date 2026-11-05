@@ -1,0 +1,47 @@
+{
+  "build_metadata_sha256": {
+    "CMakeCache.txt": "3db12584f84d29876109dd1637ab42eb83a4c15d051c7a2e99e13d73e0204bca",
+    "CMakeFiles/native_d1_slope_cpp_ad.dir/flags.make": "688fa35a22b8df5d218a5e924fcada9d344c86808313afdcc8d0ab15e46d2591",
+    "CMakeFiles/native_d1_slope_cpp_ad.dir/link.txt": "c0f19a1f0aed1fe3f876fecee5f545cf20744b6282add6a374fe2fad819a3ea9"
+  },
+  "build_type": "Debug",
+  "cxx_flags": "-g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -ffp-contract=off -Wall -Wextra -Wpedantic -std=gnu++17",
+  "executable_sha256": "c103b27137c0b7660430329cccd1b105944dde1eb06b8e146113817f7b781ba0",
+  "input_capture_sha256": "d21069d03e69a6056a342cd6114c0e3c61902b81523d3a042dbd19d777c34af9",
+  "main_object_sha256": "f97fdeb5741a3e0b67e04e52f9b95c402a06e369f8a4661032fe7d42aa9c994f",
+  "native_archive_sha256": "10da3704da17c9e5ed61d510d4450d00bfa73975517842bcb0412e2f93dc6f2f",
+  "native_slope_object_sha256": "39afa6df50055e7ecb9441fd252b4220f9b24f52c207f0ab10e61e5ff0fe0165",
+  "native_slope_source_sha256": "202f7b197ae9f12df9cbca18d92ea0920123b54c4d2b8dbd357aa89e5fc246ec",
+  "output_sha256": "6131cbef647e97373f7a78055a9bbf2dabb4ee81cf377a1ee8c7430f97aeb39d",
+  "parent_native_build_receipt_sha256": "696890d3b76c2dd79402aaf1a06df90d53441efc833b3e219b31e6cc5ba93d80",
+  "run_at_utc": "2026-11-04T22:53:03.549150+00:00",
+  "run_command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_slope_cpp_ad_20261105/build/native_d1_slope_cpp_ad",
+    "/private/tmp/KDM6AD-native-d1-slope-cpp-ad/harness/evidence/native_d1_upstream_cpp_ad_2026-11-04/raw/native_qnice_applied_42336_runtime2.csv"
+  ],
+  "run_exit_code": 0,
+  "runtime_linked_libraries": [
+    "\t/opt/homebrew/opt/pytorch/libexec/lib/python3.14/site-packages/torch/lib/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)",
+    "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)"
+  ],
+  "schema": "kdm6.native_d1_slope_cpp_ad_build.v1",
+  "scope": "isolated macOS f64 slope producer to D1/postmelt C++ AD using pinned native archive; no perturbed host or C ABI call",
+  "source_sha256": {
+    "cpp/CMakeLists.txt": "36b78d3bd338f377243401f6c3cf13cdbbe4906855dae43b1599daaf92663f4c",
+    "cpp/main.cpp": "1bf0df6e9ac183efbdb194f003ad43715603f36a8ffdf91fb18ceb4a2437e718",
+    "executed_cpp/slope.cpp": "202f7b197ae9f12df9cbca18d92ea0920123b54c4d2b8dbd357aa89e5fc246ec",
+    "libtorch/src/slope.cpp": "202f7b197ae9f12df9cbca18d92ea0920123b54c4d2b8dbd357aa89e5fc246ec",
+    "oracle/kdm6/slope.py": "5121761c97390eb0348ad3ed1c2b8aec6ad697b839826fdcac1cd6437978e823",
+    "oracle_snapshot/slope.py": "5121761c97390eb0348ad3ed1c2b8aec6ad697b839826fdcac1cd6437978e823"
+  },
+  "torch_libraries_sha256": {
+    "libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b",
+    "libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+    "libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987"
+  },
+  "torch_version": "2.13.0"
+}
