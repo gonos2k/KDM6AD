@@ -17,7 +17,7 @@ LIB = ROOT / "build/libkdm6_c.2.0.0.dylib"
 ARCHIVE = ROOT / "build/libkdm6.a"
 PROBE = ROOT.parent / "native_d1_full_state_20261105/probe_ad.py"
 PUBLIC = Path("/private/tmp/KDM6AD-fd-forcing-capture/harness/evidence/skipped_substep_ad_2026-11-05/raw")
-LIB_SHA = "98835f9a9f2d1174b8e7118bf5fe8d1bd623e3991510b00e4c2f1a3a9306f5bb"
+LIB_SHA = "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b"
 PROBE_SHA = "63949935f9e81f5612b874d19464b7b67532241c5640222572835e253b670b6e"
 CASES = (("qv", 1e-3), ("qv", 1e-4), ("qv", 1e-5),
          ("qg", 1e-5), ("qg", 1e-6))
@@ -36,7 +36,7 @@ def main():
     check(sha(LIB) == LIB_SHA and sha(PROBE) == PROBE_SHA,
           "isolation library/probe hash")
     check(PUBLIC.is_dir(), "parent public FD packet")
-    out = ROOT / "runs/final_trace"
+    out = ROOT / "runs/final_trace_v2"
     out.mkdir(parents=True, exist_ok=False)
     rows = []
     jobs = [("baseline", None, 0.0)] + [
@@ -77,7 +77,7 @@ def main():
                   "capture completion: " + label)
             with capture.open() as stream:
                 lines = list(csv.DictReader(line for line in stream if not line.startswith("#")))
-            check(len(lines) == 13455, "capture row count: " + label)
+            check(len(lines) == 13611, "capture row count: " + label)
             parent_path = (PUBLIC / "b1_ad_result.npz" if name is None
                            else PUBLIC / "fd" / (label + ".npz"))
             with np.load(dest / "state_output.npz", allow_pickle=False) as current, \

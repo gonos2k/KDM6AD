@@ -1901,6 +1901,8 @@ CoordinatorState kdm62d_one_step(
     );
     capture_native_tensor("fd_state_update", "nc_before", working.nc);
     capture_native_tensor("fd_state_update", "nc_after", new_state.nc);
+    capture_native_tensor("fd_state_update", "nccn_before", working.nccn);
+    capture_native_tensor("fd_state_update", "nccn_after", new_state.nccn);
     capture_native_tensor("fd_state_update", "nr_before", working.nr);
     capture_native_tensor("fd_state_update", "nr_after", new_state.nr);
 #ifdef KDM6_NATIVE_SCALAR_CAPTURE
@@ -2011,6 +2013,7 @@ CoordinatorState kdm62d_one_step(
     // F1g: rain → cloud (avedia_r ≤ 82μm).
     new_state = reclassify_small_rain_to_cloud(new_state, forcing.dend);
     capture_native_tensor("fd_reclass", "nc", new_state.nc);
+    capture_native_tensor("fd_reclass", "nccn", new_state.nccn);
     capture_native_tensor("fd_reclass", "nr", new_state.nr);
 
     // F1g+: pcact activation + satadj on post-state-update + post-reclass
@@ -3082,6 +3085,7 @@ CoordinatorState apply_satadj_step(
     auto t_pp    = ops::fma_acc(state.t, pcact * xl / cpm_safe, dt_t, 1.0);
     auto nc_pp   = torch::clamp(ops::fma_acc(state.nc,   ncact, dt_t,  1.0), /*min=*/0.0);
     capture_native_tensor("fd_satadj_inner", "nc_input", state.nc);
+    capture_native_tensor("fd_satadj_inner", "nccn_input", state.nccn);
     capture_native_tensor("fd_satadj_inner", "nc_after_activation", nc_pp);
     auto nccn_pp = torch::clamp(ops::fma_acc(state.nccn, ncact, dt_t, -1.0), /*min=*/0.0);
 

@@ -63,7 +63,7 @@ class NativeFDOutlierReplay(unittest.TestCase):
         result = self.result
         self.assertEqual(result["cases"], 11)
         self.assertEqual(result["parent_rows_preserved_per_case"], 11271)
-        self.assertEqual(result["new_stage_fields_per_case"], 56)
+        self.assertEqual(result["new_stage_fields_per_case"], 60)
         self.assertEqual(result["same_value_outputs_as_parent"], 5148)
         self.assertLess(result["qv_activation"]["sw_percent"]["qv_1e-03_minus"], 0.48)
         self.assertGreater(
@@ -119,6 +119,54 @@ class NativeFDOutlierReplay(unittest.TestCase):
         self.assertEqual(changed, set(forged))
         raw = gzip.compress(("\n".join(lines) + "\n").encode("ascii"), mtime=0)
         with self.assertRaisesRegex(ValueError, "sw producer operands"):
+            replay.replay(
+                capture_override=(label, raw, hashlib.sha256(raw).hexdigest())
+            )
+
+    def test_rehashed_correlated_nc_input_and_rate_mutation_is_rejected(self) -> None:
+        label = "qv_1e-03_minus"
+        path = HERE / "raw/cases" / (label + ".csv.gz")
+        lines = gzip.decompress(path.read_bytes()).decode("ascii").splitlines()
+        after = None
+        for line in lines:
+            parts = line.split(",")
+            if (
+                len(parts) == 11
+                and parts[4] == "23"
+                and parts[7:9] == ["fd_satadj_inner", "nc_after_activation"]
+            ):
+                after = struct.unpack(">d", int(parts[10], 16).to_bytes(8, "big"))[0]
+        self.assertIsNotNone(after)
+        forged = {"nc_input": 200_000_000.0, "ncact": (after - 200_000_000.0) / 20.0}
+        changed = set()
+        for i, line in enumerate(lines):
+            parts = line.split(",")
+            if (
+                len(parts) == 11
+                and parts[4] == "23"
+                and parts[7] == "fd_satadj_inner"
+                and parts[8] in forged
+            ):
+                parts[10] = struct.pack(">d", forged[parts[8]]).hex()
+                lines[i] = ",".join(parts)
+                changed.add(parts[8])
+        self.assertEqual(changed, set(forged))
+        raw = gzip.compress(("\n".join(lines) + "\n").encode("ascii"), mtime=0)
+        with self.assertRaisesRegex(ValueError, "activation input state handoff"):
+            replay.replay(
+                capture_override=(label, raw, hashlib.sha256(raw).hexdigest())
+            )
+
+    def test_rehashed_ncact_raw_mutation_is_rejected(self) -> None:
+        label = "qv_1e-03_minus"
+        raw = changed_capture(
+            label,
+            stage="fd_satadj_inner",
+            field="ncact_raw",
+            level=23,
+            word_delta=1,
+        )
+        with self.assertRaisesRegex(ValueError, "NC activation raw producer"):
             replay.replay(
                 capture_override=(label, raw, hashlib.sha256(raw).hexdigest())
             )

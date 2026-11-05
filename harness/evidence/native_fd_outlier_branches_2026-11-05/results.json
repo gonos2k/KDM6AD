@@ -1,6 +1,6 @@
 {
   "cases": 11,
-  "new_stage_fields_per_case": 56,
+  "new_stage_fields_per_case": 60,
   "parent_rows_preserved_per_case": 11271,
   "physical_unit_status": "INCONCLUSIVE",
   "qg_entry_progb": {
@@ -31,7 +31,7 @@
       "qv_1e-04_plus": 0.5003390225406079
     }
   },
-  "rows_per_case": 13455,
+  "rows_per_case": 13611,
   "same_value_outputs_as_parent": 5148,
   "schema": "kdm6.native_fd_outlier_branches_replay.v1",
   "scientific_status": "INCONCLUSIVE"

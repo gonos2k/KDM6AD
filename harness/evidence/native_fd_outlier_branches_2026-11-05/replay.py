@@ -18,7 +18,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 PARENT = HERE.parent / "skipped_substep_ad_2026-11-05"
-MANIFEST_SHA = "3a815c615af339dae940c32b48b93f3b02c6d5ad986ae538cc5a7fb62f7b13c6"
+MANIFEST_SHA = "9ab429bafd9e0772fa4394b4105cc78522a2289af787f0e7d9f73bcbb726bc7a"
 PARENT_REPLAY_SHA = "eed4fa99513a465fe634addf611831be7f5d3623e6b3e8648bb517463cbadb55"
 LABELS = ("baseline",) + tuple(
     f"{name}_{h:.0e}_{side}"
@@ -109,7 +109,7 @@ def case_data(
         if overridden
         else (HERE / "raw/cases" / (label + ".csv.gz")).read_bytes()
     )
-    new, new_rows, raw = parent.csv_capture(gz, expected_rows=13455)
+    new, new_rows, raw = parent.csv_capture(gz, expected_rows=13611)
     if not overridden:
         need(sha(raw) == row["capture_sha256"], "executed capture SHA: " + label)
     old_path = (
@@ -209,7 +209,7 @@ def replay(*, capture_override: tuple[str, bytes, str] | None = None) -> dict:
     stage_fields = set(
         re.findall(rb'capture_native_tensor\("(fd_[^"]+)", "([^"]+)"', source)
     )
-    need(len(stage_fields) == 56, "instrumented stage/field inventory")
+    need(len(stage_fields) == 60, "instrumented stage/field inventory")
     cmake_cache = gzip.decompress(
         (HERE / "build_metadata/CMakeCache.txt.gz").read_bytes()
     )
@@ -269,7 +269,7 @@ def replay(*, capture_override: tuple[str, bytes, str] | None = None) -> dict:
         }
         need(
             new_keys == {(s, f, k) for s, f in stage_fields for k in range(39)},
-            "new 56x39 trace inventory: " + label,
+            "new 60x39 trace inventory: " + label,
         )
         for s, f, k in rows:
             if not s.startswith("fd_"):
@@ -360,7 +360,30 @@ def replay(*, capture_override: tuple[str, bytes, str] | None = None) -> dict:
             "activation and evaporation gates: " + label,
         )
         nc0 = value(rows, "fd_satadj_inner", "nc_input")
+        nccn0 = value(rows, "fd_satadj_inner", "nccn_input")
+        need(
+            all(
+                bits_equal(rows, a, fa, 23, b, fb, 23)
+                for a, fa, b, fb in (
+                    ("fd_state_update", "nc_after", "fd_reclass", "nc"),
+                    ("fd_reclass", "nc", "fd_satadj_inner", "nc_input"),
+                    ("fd_state_update", "nccn_after", "fd_reclass", "nccn"),
+                    ("fd_reclass", "nccn", "fd_satadj_inner", "nccn_input"),
+                )
+            ),
+            "activation input state handoff: " + label,
+        )
+        ncact_raw = value(rows, "fd_satadj_inner", "ncact_raw")
+        expected_raw = max(0.0, -nc0 + (nccn0 + nc0) * frac) / 20.0
+        need(
+            ncact_raw.hex() == expected_raw.hex(),
+            "NC activation raw producer: " + label,
+        )
         ncact = value(rows, "fd_satadj_inner", "ncact")
+        expected_ncact = min(ncact_raw, max(nccn0, 0.0) / 20.0)
+        need(
+            ncact.hex() == expected_ncact.hex(), "NC activation cap producer: " + label
+        )
         nc1 = value(rows, "fd_satadj_inner", "nc_after_activation")
         need(
             abs((nc0 + 20.0 * ncact) - nc1) <= math.ulp(nc1),
@@ -463,9 +486,9 @@ def replay(*, capture_override: tuple[str, bytes, str] | None = None) -> dict:
         "scientific_status": "INCONCLUSIVE",
         "physical_unit_status": "INCONCLUSIVE",
         "cases": len(LABELS),
-        "rows_per_case": 13455,
+        "rows_per_case": 13611,
         "parent_rows_preserved_per_case": 11271,
-        "new_stage_fields_per_case": 56,
+        "new_stage_fields_per_case": 60,
         "same_value_outputs_as_parent": len(LABELS) * 468,
         "qv_activation": {
             "sw_percent": sw,
