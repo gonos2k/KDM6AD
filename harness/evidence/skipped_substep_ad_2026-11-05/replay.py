@@ -128,6 +128,10 @@ def f64(raw_hex: str) -> float:
 
 
 def matrix(rows: dict, stage: str, names: tuple[str, ...]) -> np.ndarray:
+    need(
+        all(rows[stage, name, k]["dtype"] == "f64" for name in names for k in range(39)),
+        "capture numeric dtype: " + stage,
+    )
     values = np.ascontiguousarray(
         [
             [f64(rows[stage, name, k]["raw_hex"]) for k in range(38, -1, -1)]
@@ -247,6 +251,7 @@ def replay(
     native_sha: str | None = None,
     b2_override: bytes | None = None,
     b2_sha: str | None = None,
+    fd_capture_override: tuple[str, bytes, str] | None = None,
     fd_npz_override: tuple[str, bytes, str] | None = None,
 ) -> dict:
     files = manifest()["files"]
@@ -258,8 +263,10 @@ def replay(
         )
     if b2_override is not None:
         need(b2_sha is not None and sha(b2_override) == b2_sha, "test B2 AD result SHA")
-    if fd_npz_override is not None:
-        fd_label, fd_raw, fd_sha = fd_npz_override
+    for override in (fd_capture_override, fd_npz_override):
+        if override is None:
+            continue
+        fd_label, fd_raw, fd_sha = override
         need(
             fd_label in {
                 f"{name}_{h:.0e}_{side}"
@@ -268,7 +275,7 @@ def replay(
                 for side in ("minus", "plus")
             }
             and sha(fd_raw) == fd_sha,
-            "test FD array SHA/label",
+            "test FD endpoint SHA/label",
         )
     native, native_rows, native_raw = csv_capture(
         native_override
@@ -468,10 +475,18 @@ def replay(
             for sign, suffix in ((-1, "minus"), (1, "plus")):
                 label = f"{name}_{h:.0e}_{suffix}"
                 case = case_map[label]
-                gz = (HERE / "raw/fd" / (label + ".csv.gz")).read_bytes()
+                overridden_capture = (
+                    fd_capture_override is not None
+                    and fd_capture_override[0] == label
+                )
+                gz = (
+                    fd_capture_override[1]
+                    if overridden_capture
+                    else (HERE / "raw/fd" / (label + ".csv.gz")).read_bytes()
+                )
                 rows, _, raw = csv_capture(gz, expected_rows=11271)
                 need(
-                    sha(raw) == case["capture_sha256"]
+                    (overridden_capture or sha(raw) == case["capture_sha256"])
                     and case["relative_step"] == sign * h,
                     "FD case capture/step: " + label,
                 )
@@ -500,6 +515,11 @@ def replay(
                     "FD input capture: " + label,
                 )
                 exact(arrays["forcing"], b1["forcing"], "FD fixed forcing: " + label)
+                exact(
+                    arrays["forcing"],
+                    matrix(rows, "runtime_full_forcing", FORCING),
+                    "FD forcing capture: " + label,
+                )
                 need(
                     arrays["xland"].view(np.uint32).tobytes()
                     == b1["xland"].view(np.uint32).tobytes(),

@@ -90,6 +90,50 @@ class SkippedSubstepADReplay(unittest.TestCase):
                 fd_npz_override=(label, raw, hashlib.sha256(raw).hexdigest())
             )
 
+    def test_rehashed_fd_capture_forcing_mutation_is_rejected(self) -> None:
+        label = "qv_1e-04_plus"
+        lines = gzip.decompress((HERE / "raw/fd" / (label + ".csv.gz")).read_bytes())
+        rows = lines.decode("ascii").splitlines()
+        changed = 0
+        for i, line in enumerate(rows):
+            parts = line.split(",")
+            if (
+                len(parts) == 11
+                and parts[4] == "23"
+                and parts[7:9] == ["runtime_full_forcing", "rho"]
+            ):
+                parts[10] = format(int(parts[10], 16) + 1, "x")
+                rows[i] = ",".join(parts)
+                changed += 1
+        self.assertEqual(changed, 1)
+        raw = gzip.compress(("\n".join(rows) + "\n").encode("ascii"), mtime=0)
+        with self.assertRaisesRegex(ValueError, "FD forcing capture"):
+            replay.replay(
+                fd_capture_override=(label, raw, hashlib.sha256(raw).hexdigest())
+            )
+
+    def test_rehashed_fd_capture_dtype_mutation_is_rejected(self) -> None:
+        label = "qv_1e-04_plus"
+        lines = gzip.decompress((HERE / "raw/fd" / (label + ".csv.gz")).read_bytes())
+        rows = lines.decode("ascii").splitlines()
+        changed = 0
+        for i, line in enumerate(rows):
+            parts = line.split(",")
+            if (
+                len(parts) == 11
+                and parts[4] == "23"
+                and parts[7:9] == ["runtime_full_entry", "qv"]
+            ):
+                parts[9] = "f32"
+                rows[i] = ",".join(parts)
+                changed += 1
+        self.assertEqual(changed, 1)
+        raw = gzip.compress(("\n".join(rows) + "\n").encode("ascii"), mtime=0)
+        with self.assertRaisesRegex(ValueError, "capture numeric dtype"):
+            replay.replay(
+                fd_capture_override=(label, raw, hashlib.sha256(raw).hexdigest())
+            )
+
     def test_cli(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(HERE / "replay.py")],
