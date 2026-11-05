@@ -3085,12 +3085,25 @@ SedimentationOutputs sedimentation_chain(
             forcing.delz, forcing.dend,
         };
         auto out = main_substep_fn(sin, mstep_col_main, mstepmax_main, n, dtcld, params);
-        adv_state = out.state;
-        fall_qr = out.fall_qr;
-        fall_nr = out.fall_nr;
-        fall_qs = out.fall_qs;
-        fall_qg = out.fall_qg;
-        fall_brs = out.fall_brs;
+        // Fortran skips the entire cell update when n>mstep(i). Select the
+        // incoming tensor itself on that branch so its JVP/VJP is identity,
+        // including at zero-moment min/clamp ties inside the unused candidate.
+        auto active_main = (torch::clamp(mstep_col_main, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
+        auto main_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
+            return torch::where(active_main, candidate, before);
+        };
+        adv_state = sed::SubstepAdvectionState{
+            main_store(adv_state.qr, out.state.qr),
+            main_store(adv_state.nr, out.state.nr),
+            main_store(adv_state.qs, out.state.qs),
+            main_store(adv_state.qg, out.state.qg),
+            main_store(adv_state.brs, out.state.brs),
+        };
+        fall_qr = main_store(fall_qr, out.fall_qr);
+        fall_nr = main_store(fall_nr, out.fall_nr);
+        fall_qs = main_store(fall_qs, out.fall_qs);
+        fall_qg = main_store(fall_qg, out.fall_qg);
+        fall_brs = main_store(fall_brs, out.fall_brs);
 
         // Re-slope from the post-substep state after EVERY main substep (Fortran F:1189-1205
         // is unconditional within the n-loop, incl. the last): rebuild state (updated
@@ -3132,9 +3145,16 @@ SedimentationOutputs sedimentation_chain(
             forcing.delz, forcing.dend,
         };
         auto out_i = ice_substep_fn(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
-        ice_state = out_i.state;
-        fall_qi = out_i.fall_qi;
-        fall_ni = out_i.fall_ni;
+        auto active_ice = (torch::clamp(mstep_col_ice, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
+        auto ice_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
+            return torch::where(active_ice, candidate, before);
+        };
+        ice_state = sed::IceSubstepState{
+            ice_store(ice_state.qi, out_i.state.qi),
+            ice_store(ice_state.ni, out_i.state.ni),
+        };
+        fall_qi = ice_store(fall_qi, out_i.fall_qi);
+        fall_ni = ice_store(fall_ni, out_i.fall_ni);
 
         // Re-slope ice fall speeds from the post-substep ice state (F:1244-1269). Other
         // species are the final post-main values; vt_i/vtn_i depend only on qi/ni so that

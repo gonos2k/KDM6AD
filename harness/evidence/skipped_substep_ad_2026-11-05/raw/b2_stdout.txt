@@ -1,0 +1,7 @@
+factor 0.16 graph True rc 0 handle 33270940064
+target_native_raw_equal True target_baseline_mismatches 0
+jvp qv rc 0 max_abs 0.0 raw_equal True witness_nonzero 0
+jvp qs rc 0 max_abs 0.0 raw_equal True witness_nonzero 0
+jvp qg rc 0 max_abs 0.0 raw_equal True witness_nonzero 0
+vjp_rc 0 target_raw_equal True witness_nonzero 0 target_max_abs 0.0 target_mismatch_count 0
+close_rc 0

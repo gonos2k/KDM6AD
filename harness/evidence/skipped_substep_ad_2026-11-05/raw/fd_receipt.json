@@ -1,0 +1,142 @@
+{
+  "archive_sha256": "44099b67b14b15450796fb3b648778c96635d22eec614c8b3b5f40f59762608d",
+  "cases": [
+    {
+      "arrays_sha256": "0c12b08c488575b2d38ec9e8230cdca7750f221993ecf97e1259dbe2c6d2a2aa",
+      "capture_file": "native_qnice_applied_3756_runtime1.csv",
+      "capture_sha256": "8e21d0d4b231bdbb882289f0b53209ec9731432e58346b1e81179a29c7604282",
+      "direction": "qv",
+      "label": "qv_1e-03_minus",
+      "relative_step": -0.001
+    },
+    {
+      "arrays_sha256": "ae7ff9112d43a745534f404ca463360a77b8ae55f8fe4d38ecb69ca562c010ce",
+      "capture_file": "native_qnice_applied_3757_runtime1.csv",
+      "capture_sha256": "b11fd166ffb1a02cd8469479714c3e75ec289331baf6a1e518049698a0d09dd5",
+      "direction": "qv",
+      "label": "qv_1e-03_plus",
+      "relative_step": 0.001
+    },
+    {
+      "arrays_sha256": "dc494a722a4f92eed8613e6946b605d5e162f013db61d5634a1da52a3f1d2e47",
+      "capture_file": "native_qnice_applied_3760_runtime1.csv",
+      "capture_sha256": "8fdbe198b91d27b4de687277db21ba57db845479a86655b3151680630f2dcb41",
+      "direction": "qv",
+      "label": "qv_1e-04_minus",
+      "relative_step": -0.0001
+    },
+    {
+      "arrays_sha256": "8ba328a691205ff8a1bcc3beb6dab058f0f1687fb6543e1f1489a573a9e69cd9",
+      "capture_file": "native_qnice_applied_3761_runtime1.csv",
+      "capture_sha256": "b0f8fa6cdbe2d2fa73731c6fcc49fab1f95de4fab6f1a79b42033dda67c07a96",
+      "direction": "qv",
+      "label": "qv_1e-04_plus",
+      "relative_step": 0.0001
+    },
+    {
+      "arrays_sha256": "1d33fcb47f8f1e756d092f22c8391c82d6fca57fe23f8b52a2e57194334c42c0",
+      "capture_file": "native_qnice_applied_3764_runtime1.csv",
+      "capture_sha256": "fd382fb17b59030fabfec8c578311504b83feaccaabd7fee2f93bb94f93d9c90",
+      "direction": "qv",
+      "label": "qv_1e-05_minus",
+      "relative_step": -1e-05
+    },
+    {
+      "arrays_sha256": "43edd4d6c1a00bf9f18f8e0a20bd40148cc15d4355e0d10e6f4aa73fa86f7017",
+      "capture_file": "native_qnice_applied_3767_runtime1.csv",
+      "capture_sha256": "b37bf681501bc510c232eaa637342bb54717ca82fbf512fefac228907eb39a13",
+      "direction": "qv",
+      "label": "qv_1e-05_plus",
+      "relative_step": 1e-05
+    },
+    {
+      "arrays_sha256": "2f4cad56e8b08ff78a4dbd5fd48b2f4dff61ed3194e5539e158910d7ed59c6db",
+      "capture_file": "native_qnice_applied_3770_runtime1.csv",
+      "capture_sha256": "a9b12885e8bed9fbad474ecce5909cac20d1aa9add5d08758e17a69c56e43d1d",
+      "direction": "qs",
+      "label": "qs_1e-03_minus",
+      "relative_step": -0.001
+    },
+    {
+      "arrays_sha256": "3bdde9ceabf6bee938575ed63ff6d7caa6718c57c472033687aa4e2a201bc6fd",
+      "capture_file": "native_qnice_applied_3773_runtime1.csv",
+      "capture_sha256": "bbdd4b02454cd7045605c0a802b60c3bffc006027ce52d4d5a7e7be47ec8ba41",
+      "direction": "qs",
+      "label": "qs_1e-03_plus",
+      "relative_step": 0.001
+    },
+    {
+      "arrays_sha256": "940537b675d5ca65b2dbfacac504c0b42ea9bd8e92b460b788709ff56d92c27b",
+      "capture_file": "native_qnice_applied_3774_runtime1.csv",
+      "capture_sha256": "81531e21d2eb83f18719d0c0bf3ba9e47be4edeb4801aa16cc0023f22c7603cc",
+      "direction": "qs",
+      "label": "qs_1e-04_minus",
+      "relative_step": -0.0001
+    },
+    {
+      "arrays_sha256": "17cd22d6fd816c3c811662b8b5d7ebfe35463f839fe036c8cf752eceece307b5",
+      "capture_file": "native_qnice_applied_3777_runtime1.csv",
+      "capture_sha256": "71e2dc8008342e1eaf708f28a6ac4549a790192720463de0307d34eeee8c771e",
+      "direction": "qs",
+      "label": "qs_1e-04_plus",
+      "relative_step": 0.0001
+    },
+    {
+      "arrays_sha256": "6733c3bb60650eacc0fb24ef0d5faa8a48dd48b3a6918310762f3ef50d6ee517",
+      "capture_file": "native_qnice_applied_3778_runtime1.csv",
+      "capture_sha256": "aad01534b8843c60aa2cf88b44ae6bcc7b3deb81f6e563cf190c6136d308b613",
+      "direction": "qg",
+      "label": "qg_1e-05_minus",
+      "relative_step": -1e-05
+    },
+    {
+      "arrays_sha256": "68fca27ded175c2a2e6c88b223256191490a5e7e9583995df6b7f532a2eb215b",
+      "capture_file": "native_qnice_applied_3779_runtime1.csv",
+      "capture_sha256": "b011a8f09cf63088cc1740ec45a1f230f1fc74f29b0494816d18514d4f1569eb",
+      "direction": "qg",
+      "label": "qg_1e-05_plus",
+      "relative_step": 1e-05
+    },
+    {
+      "arrays_sha256": "2462a9578cd76a2a9031059239bcf65817aabee39f4768ecb61de69de3da0ed0",
+      "capture_file": "native_qnice_applied_3782_runtime1.csv",
+      "capture_sha256": "9e4f57a07f141e2b78fb1e417c2552f718452a7da030dcd88461a53ec246a065",
+      "direction": "qg",
+      "label": "qg_1e-06_minus",
+      "relative_step": -1e-06
+    },
+    {
+      "arrays_sha256": "17f26c356e1fc79da2fe9de32ce5005ebc6c2ef2cbb18c3038b25a15c9e92395",
+      "capture_file": "native_qnice_applied_3783_runtime1.csv",
+      "capture_sha256": "21f96683414ec9225ec8524b9936e16153c0b747d1d453d02b71018eeadda2bb",
+      "direction": "qg",
+      "label": "qg_1e-06_plus",
+      "relative_step": 1e-06
+    },
+    {
+      "arrays_sha256": "401c091408b2021548aa644764c3a10ac7d0effddc66fe851a379f8da0aa934d",
+      "capture_file": "native_qnice_applied_3786_runtime1.csv",
+      "capture_sha256": "05fc5a62af6b142d3dbdfc1b0b4a780e75a7f612a40b0ffbd01ea8c705eafc7e",
+      "direction": "qg",
+      "label": "qg_1e-07_minus",
+      "relative_step": -1e-07
+    },
+    {
+      "arrays_sha256": "f9b2b1bd9d5b8d393dc7a391dde092ff08a62c95c1078409d8a89fc718cc519d",
+      "capture_file": "native_qnice_applied_3793_runtime1.csv",
+      "capture_sha256": "4ecec983d7ffb89fdfb7b9f10c6da9d2cd9dbf7c7e5715b758c3f052872bd23c",
+      "direction": "qg",
+      "label": "qg_1e-07_plus",
+      "relative_step": 1e-07
+    }
+  ],
+  "environment": {
+    "KDM6_FD_OUTDIR": "fd_captures_final_pinned",
+    "KDM6_PROBE_LIB": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_mask_trial_20261105/build/libkdm6_c.2.0.0.dylib"
+  },
+  "library_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_full_state_mask_trial_20261105/build/libkdm6_c.2.0.0.dylib",
+  "library_sha256": "4c7849af3cb2a36599b968b018569d9f955b94eb38cacd58749f5b5e679a5caf",
+  "probe_source_sha256": "63949935f9e81f5612b874d19464b7b67532241c5640222572835e253b670b6e",
+  "producer_source_sha256": "246cde53dd4db7d19fd52cfb4fdf537dfd27fc190c875749792dde2d05700649",
+  "schema": "kdm6.selected_column_fd_capture.v2"
+}

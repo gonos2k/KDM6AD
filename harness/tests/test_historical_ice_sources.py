@@ -21,6 +21,9 @@ def test_snapshot_and_actual_qr_observer_match_original_pins():
     oracle = historical.historical_manifest_source(
         "oracle/kdm6/sedimentation.py", historical.ORACLE_SEDIMENTATION_SHA256)
     assert historical.digest(oracle) == historical.ORACLE_SEDIMENTATION_SHA256
+    coordinator_oracle = historical.historical_manifest_source(
+        "oracle/kdm6/coordinator.py", historical.ORACLE_COORDINATOR_SHA256)
+    assert historical.digest(coordinator_oracle) == historical.ORACLE_COORDINATOR_SHA256
 
 
 def test_corrupted_historical_cpp_snapshot_is_rejected(tmp_path, monkeypatch):
@@ -107,6 +110,10 @@ def test_wrong_historical_test_and_oracle_paths_are_rejected():
         historical.historical_manifest_source(
             "oracle/kdm6/alias/sedimentation.py",
             historical.ORACLE_SEDIMENTATION_SHA256)
+    with pytest.raises(ValueError, match="historical oracle coordinator path mismatch"):
+        historical.historical_manifest_source(
+            "oracle/kdm6/alias/coordinator.py",
+            historical.ORACLE_COORDINATOR_SHA256)
 
 
 def test_source_path_symlink_cannot_escape_repo(tmp_path, monkeypatch):

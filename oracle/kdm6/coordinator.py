@@ -2657,12 +2657,25 @@ def sedimentation_chain_torch(
             mstep=mstep_main, mstep_col=mstep_col_main, n_current=n, dtcld=dtcld, params=params,
             ledger=ledger,
         )
-        adv_state = out.state
-        fall_qr = out.fall_qr
-        fall_nr = out.fall_nr
-        fall_qs = out.fall_qs
-        fall_qg = out.fall_qg
-        fall_brs = out.fall_brs
+        # Fortran's n<=mstep(i) encloses the whole cell update. A candidate
+        # computed with gate=0 can retain min/clamp tie subgradients at q=0;
+        # the skipped branch must pass the prior state/fall with identity AD.
+        active_main = ((torch.clamp(mstep_col_main, min=1.0) >= n).unsqueeze(-1)
+                       if mstep_col_main is not None else None)
+        def main_store(before, candidate):
+            return torch.where(active_main, candidate, before) if active_main is not None else candidate
+        adv_state = _sed.SubstepAdvectionState(
+            qr=main_store(adv_state.qr, out.state.qr),
+            nr=main_store(adv_state.nr, out.state.nr),
+            qs=main_store(adv_state.qs, out.state.qs),
+            qg=main_store(adv_state.qg, out.state.qg),
+            brs=main_store(adv_state.brs, out.state.brs),
+        )
+        fall_qr = main_store(fall_qr, out.fall_qr)
+        fall_nr = main_store(fall_nr, out.fall_nr)
+        fall_qs = main_store(fall_qs, out.fall_qs)
+        fall_qg = main_store(fall_qg, out.fall_qg)
+        fall_brs = main_store(fall_brs, out.fall_brs)
         # Re-slope after EVERY main substep (F:1189-1205, unconditional incl. the last);
         # ORIGINAL qi/ni kept (ice substepped below). rain/snow/graupel work1 feeds the next
         # main substep; the ICE work1 (vt_i/vtn_i) is the handoff the ice loop consumes.
@@ -2694,9 +2707,16 @@ def sedimentation_chain_torch(
             mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
             ledger=ledger,
         )
-        ice_state = out_i.state
-        fall_qi = out_i.fall_qi
-        fall_ni = out_i.fall_ni
+        active_ice = ((torch.clamp(mstep_col_ice, min=1.0) >= n).unsqueeze(-1)
+                      if mstep_col_ice is not None else None)
+        def ice_store(before, candidate):
+            return torch.where(active_ice, candidate, before) if active_ice is not None else candidate
+        ice_state = _sed.IceSubstepState(
+            qi=ice_store(ice_state.qi, out_i.state.qi),
+            ni=ice_store(ice_state.ni, out_i.state.ni),
+        )
+        fall_qi = ice_store(fall_qi, out_i.fall_qi)
+        fall_ni = ice_store(fall_ni, out_i.fall_ni)
         # Re-slope ice from the post-substep ice state (F:1244-1269).
         if reslope_params is not None and n < mstep_ice:
             rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,

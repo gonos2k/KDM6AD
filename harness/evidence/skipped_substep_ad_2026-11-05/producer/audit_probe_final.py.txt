@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Independent saved-column/FD audit from raw native and one-column captures."""
+import csv,hashlib,json,math,struct
+from pathlib import Path
+import numpy as np
+R=Path(__file__).resolve().parent
+S=('th','qv','qc','qr','qi','qs','qg','nccn','nc','ni','nr','bg')
+F=('rho','pii','p','delz')
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def rows(p):return {(r['stage'],r['field'],int(r['k_zero'])):r for r in csv.DictReader(x for x in p.open() if not x.startswith('#'))}
+def word(x):return struct.pack('>d',float(x)).hex()
+def matrix(d,stage,names):return np.ascontiguousarray([[struct.unpack('>d',int(d[stage,n,k]['raw_hex'],16).to_bytes(8,'big'))[0] for k in range(38,-1,-1)] for n in names],dtype=np.float64)
+native_p=next((R.parent/'native_d1_full_state_mask_trial_20261105/runs/on_final/capture').glob('native_qnice_applied_*.csv'))
+base_p=next((R/'schedule_witness_final_capture').glob('native_qnice_applied_*.csv'))
+local_p=next((R/'probe_baseline_final_capture').glob('native_qnice_applied_*.csv'))
+native,base=rows(native_p),rows(base_p)
+local=rows(local_p)
+assert set(native)==set(base)
+not_equal=[(stage,field,k) for (stage,field,k) in native if (native[stage,field,k]['dtype'],native[stage,field,k]['raw_hex'])!=(base[stage,field,k]['dtype'],base[stage,field,k]['raw_hex'])]
+assert not not_equal
+local_differences=[key for key in native if (native[key]['dtype'],native[key]['raw_hex'])!=(local[key]['dtype'],local[key]['raw_hex'])]
+assert len(local_differences)==39 and {(key[0],key[1]) for key in local_differences}=={('runtime_full_schedule','mstepmax_main')}
+ad=np.load(R/'probe_ad_result.npz',allow_pickle=False)
+assert np.array_equal(ad['state'].view('u8'),matrix(native,'runtime_full_entry',S).view('u8'))
+assert np.array_equal(ad['forcing'].view('u8'),matrix(native,'runtime_full_forcing',F).view('u8'))
+assert np.array_equal(ad['value_output'].view('u8'),matrix(native,'runtime_full_exit',S).view('u8'))
+assert np.array_equal(ad['graph_output'].view('u8'),ad['value_output'].view('u8'))
+assert np.array_equal(ad['value_output'].view('u8'),matrix(base,'runtime_full_exit',S).view('u8'))
+branch={k:v['raw_hex'] for k,v in local.items() if v['dtype']=='bool'}
+schedule={k:v['raw_hex'] for k,v in local.items() if k[0]=='runtime_full_schedule'}
+receipt=json.loads((R/'fd_captures_final_pinned/receipt.json').read_text())
+bylabel={x['label']:x for x in receipt['cases']}
+cases=[]
+for direction,hs in {'qv':(1e-3,1e-4,1e-5),'qs':(1e-3,1e-4),'qg':(1e-5,1e-6,1e-7)}.items():
+ for h in hs:
+  arrays=[];recs=[]
+  for suffix in ('minus','plus'):
+   label=f'{direction}_{h:.0e}_{suffix}';rec=bylabel[label];p=R/'fd_captures_final_pinned'/label/rec['capture_file'];d=rows(p)
+   assert sha(p)==rec['capture_sha256']
+   npz=R/'fd_captures_final_pinned'/label/'state_output.npz';assert sha(npz)==rec['arrays_sha256']
+   a=np.load(npz,allow_pickle=False)
+   assert np.array_equal(a['state'].view('u8'),matrix(d,'runtime_full_entry',S).view('u8'))
+   assert np.array_equal(a['forcing'].view('u8'),matrix(d,'runtime_full_forcing',F).view('u8'))
+   assert np.array_equal(a['output'].view('u8'),matrix(d,'runtime_full_exit',S).view('u8'))
+   bdiff=sum(d[k]['raw_hex']!=v for k,v in branch.items())
+   sdiff=sum(d[k]['raw_hex']!=v for k,v in schedule.items())
+   arrays.append(a);recs.append((label,bdiff,sdiff))
+  lo,hi=arrays;field={'qv':1,'qs':5,'qg':6}[direction]
+  gap=(hi['state'][field,15]-lo['state'][field,15])/ad['state'][field,15]
+  fd=(hi['output']-lo['output'])/gap;j=ad['jvp_'+direction]
+  err=np.abs(fd-j)/np.maximum(1.,np.abs(j));idx=np.unravel_index(np.argmax(err),err.shape)
+  cases.append({'direction':direction,'h':h,'gap':float(gap),'max_normalized_error':float(err[idx]),'worst_field':S[idx[0]],'worst_native_level':int(idx[1])+1,
+                'captures':[{'label':r[0],'bool_changed':r[1],'schedule_changed':r[2]} for r in recs]})
+u=ad['u'];duality={}
+for name in ('qv','qs','qg'):
+ v=ad['direction_'+name];j=ad['jvp_'+name]
+ lhs=math.fsum(float(x)*float(y) for x,y in zip(u.ravel(),j.ravel()))
+ rhs=math.fsum(float(x)*float(y) for x,y in zip(v.ravel(),ad['vjp'].ravel()))
+ duality[name]={'weighted_jvp':lhs,'weighted_vjp':rhs,'absolute_difference':abs(lhs-rhs)}
+result={'schema':'kdm6.selected_full_column_ad_audit.v2','native_rows':len(native),'split_rows':len(base),'split_raw_mismatches':len(not_equal),'split_mismatch_field':None,'one_column_global_schedule_mismatches':len(local_differences),'native_full_state_raw_equal':12*39,'graph_value_raw_equal':12*39,'directions':duality,'finite_differences':cases,
+        'source_sha256':{'native_capture':sha(native_p),'split_capture':sha(base_p),'one_column_capture':sha(local_p),'ad_arrays':sha(R/'probe_ad_result.npz'),'fd_receipt':sha(R/'fd_captures_final_pinned/receipt.json'),'probe_source':sha(R/'probe_ad.py')}}
+(R/'audit_probe_final.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+print(json.dumps(result,indent=2,sort_keys=True))
