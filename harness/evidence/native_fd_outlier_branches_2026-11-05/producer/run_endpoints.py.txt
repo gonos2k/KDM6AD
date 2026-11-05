@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Run retained f64 column directions with an isolated value-only trace DSO."""
+
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parent
+LIB = ROOT / "build/libkdm6_c.2.0.0.dylib"
+ARCHIVE = ROOT / "build/libkdm6.a"
+PROBE = ROOT.parent / "native_d1_full_state_20261105/probe_ad.py"
+PUBLIC = Path("/private/tmp/KDM6AD-fd-forcing-capture/harness/evidence/skipped_substep_ad_2026-11-05/raw")
+LIB_SHA = "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b"
+PROBE_SHA = "63949935f9e81f5612b874d19464b7b67532241c5640222572835e253b670b6e"
+CASES = (("qv", 1e-3), ("qv", 1e-4), ("qv", 1e-5),
+         ("qg", 1e-5), ("qg", 1e-6))
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def check(ok, why):
+    if not ok:
+        raise RuntimeError(why)
+
+
+def main():
+    check(sha(LIB) == LIB_SHA and sha(PROBE) == PROBE_SHA,
+          "isolation library/probe hash")
+    check(PUBLIC.is_dir(), "parent public FD packet")
+    out = ROOT / "runs/final_trace_v2"
+    out.mkdir(parents=True, exist_ok=False)
+    rows = []
+    jobs = [("baseline", None, 0.0)] + [
+        (f"{name}_{h:.0e}_{side}", name, sign * h)
+        for name, h in CASES
+        for sign, side in ((-1, "minus"), (1, "plus"))
+    ]
+    for label, name, step in jobs:
+            dest = out / label
+            dest.mkdir()
+            env = dict(os.environ)
+            env.update({
+                "KDM6_PROBE_LIB": str(LIB),
+                "KDM6_NATIVE_CAPTURE_DIR": str(dest),
+                "KDM6_NATIVE_CAPTURE_CALL": "1",
+                "KDM6_NATIVE_CAPTURE_B": "0",
+                "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+                "KDM6_NATIVE_CAPTURE_MAX_ROWS": "16000",
+                "KDM6_NATIVE_CAPTURE_MAX_BYTES": "6291456",
+                "KDM6_NATIVE_CAPTURE_LEGACY_SCALAR": "0",
+                "KDM6_PROBE_VALUE_ONLY": "1",
+                "KDM6_PROBE_OUTPUT": str(dest / "state_output.npz"),
+            })
+            env.pop("KDM6_PROBE_DIRECTION", None)
+            env.pop("KDM6_PROBE_STEP", None)
+            if name is not None:
+                env["KDM6_PROBE_DIRECTION"] = name
+                env["KDM6_PROBE_STEP"] = repr(step)
+            proc = subprocess.run((sys.executable, str(PROBE)), env=env,
+                                  text=True, capture_output=True)
+            (dest / "stdout.txt").write_text(proc.stdout)
+            (dest / "stderr.txt").write_text(proc.stderr)
+            check(proc.returncode == 0, "probe failed: " + label)
+            captures = list(dest.glob("native_qnice_applied_*.csv"))
+            check(len(captures) == 1, "capture count: " + label)
+            capture = captures[0]
+            check(capture.read_bytes().endswith(b"status=complete\n"),
+                  "capture completion: " + label)
+            with capture.open() as stream:
+                lines = list(csv.DictReader(line for line in stream if not line.startswith("#")))
+            check(len(lines) == 13611, "capture row count: " + label)
+            parent_path = (PUBLIC / "b1_ad_result.npz" if name is None
+                           else PUBLIC / "fd" / (label + ".npz"))
+            with np.load(dest / "state_output.npz", allow_pickle=False) as current, \
+                 np.load(parent_path, allow_pickle=False) as prior:
+                mapping = ({"state": "state", "forcing": "forcing",
+                            "output": "value_output", "xland": "xland"}
+                           if name is None else {key: key for key in current.files})
+                check(set(current.files) == set(mapping), "NPZ field inventory: " + label)
+                for field, parent_field in mapping.items():
+                    check(current[field].dtype == prior[parent_field].dtype
+                          and current[field].shape == prior[parent_field].shape
+                          and current[field].tobytes() == prior[parent_field].tobytes(),
+                          "instrumentation changed " + field + ": " + label)
+            rows.append({
+                "label": label,
+                "direction": name,
+                "relative_step": step,
+                "capture": capture.name,
+                "capture_sha256": sha(capture),
+                "arrays_sha256": sha(dest / "state_output.npz"),
+                "parent_arrays_sha256": sha(parent_path),
+                "stdout_sha256": sha(dest / "stdout.txt"),
+                "stderr_sha256": sha(dest / "stderr.txt"),
+                "returncode": proc.returncode,
+            })
+            print(label, "raw arrays match", flush=True)
+    receipt = {
+        "schema": "kdm6.native_fd_outlier_trace.v1",
+        "library": str(LIB),
+        "library_sha256": sha(LIB),
+        "archive_sha256": sha(ARCHIVE),
+        "coordinator_source_sha256": sha(ROOT / "source/src/coordinator.cpp"),
+        "parent_coordinator_source_sha256": sha(ROOT.parent / "native_d1_full_state_mask_trial_20261105/source/src/coordinator.cpp"),
+        "runtime_source_sha256": sha(ROOT / "source/src/runtime.cpp"),
+        "cmake_cache_sha256": sha(ROOT / "build/CMakeCache.txt"),
+        "probe_source_sha256": sha(PROBE),
+        "producer_source_sha256": sha(Path(__file__)),
+        "cases": rows,
+    }
+    (out / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+
+
+if __name__ == "__main__":
+    main()
