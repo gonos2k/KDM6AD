@@ -411,7 +411,17 @@ def replay(*, capture_override: tuple[str, bytes, str] | None = None) -> dict:
     need(
         value(qv_minus, "fd_satadj_inner", "activated_fraction") < 1.0
         and value(base, "fd_satadj_inner", "activated_fraction") == 1.0
-        and value(qv_plus, "fd_satadj_inner", "activated_fraction") == 1.0,
+        and value(qv_plus, "fd_satadj_inner", "activated_fraction") == 1.0
+        and all(
+            value(traces[label], "fd_satadj_inner", "activated_fraction") == 1.0
+            and value(traces[label], "fd_satadj_inner", "sw_percent") > 0.48
+            for label in (
+                "qv_1e-04_minus",
+                "qv_1e-04_plus",
+                "qv_1e-05_minus",
+                "qv_1e-05_plus",
+            )
+        ),
         "QV activation cap selection",
     )
     qg_ratios = {
