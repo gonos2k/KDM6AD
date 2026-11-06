@@ -1,0 +1,25 @@
+{
+  "observed_utc": "2026-11-05T22:52:42.490829+00:00",
+  "paths": {
+    "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/libkdm6.a",
+    "bridge_flags": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/CMakeFiles/kdm6_c.dir/flags.make",
+    "bridge_header": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/source/bridge/kdm6_c_api.h",
+    "bridge_object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o",
+    "bridge_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/source/bridge/kdm6_c_api.cpp",
+    "dso": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/libkdm6_c.2.0.0.dylib",
+    "link_command": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/CMakeFiles/kdm6_c.dir/link.txt",
+    "state_header": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/source/include/kdm6/state.h"
+  },
+  "role": "post-run hash attestation of the same isolated DSO; no independent binary rebuild",
+  "schema": "kdm6.native_nc16_bridge_attestation.v1",
+  "sha256": {
+    "archive": "f327d123739d332c90bb5b72615e4dfdaa38ff58993a4a0b06d39f28c1a9ba35",
+    "bridge_flags": "9f871ce394ad7059998370727d83b7de85b765df90b3a8856ecab64cd8f8e0fe",
+    "bridge_header": "de9ca99da4a77af741a875fd4c69de39c68525dbcd781e900144585bb1fd9481",
+    "bridge_object": "e9124f204153468cd0d2cb248ca692c28a0356cfe2cebda6779ef7bc39f87bed",
+    "bridge_source": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049",
+    "dso": "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b",
+    "link_command": "7076132f681c3c6895e1ce9ad7a5d442963a9d2158800fae0b5800a6ba98c9e8",
+    "state_header": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d"
+  }
+}

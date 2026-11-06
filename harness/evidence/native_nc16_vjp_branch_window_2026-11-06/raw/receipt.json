@@ -1,0 +1,56 @@
+{
+  "archive_sha256": "f327d123739d332c90bb5b72615e4dfdaa38ff58993a4a0b06d39f28c1a9ba35",
+  "close_rc": 0,
+  "contractions": {
+    "qg": {
+      "max_abs_difference": 1.1641532182693481e-10,
+      "weighted_jvp": 363038.5297350049,
+      "weighted_vjp": 363038.52973500476
+    },
+    "qs": {
+      "max_abs_difference": 1.4901161193847656e-08,
+      "weighted_jvp": -50323449.70132754,
+      "weighted_vjp": -50323449.701327555
+    },
+    "qv": {
+      "max_abs_difference": 1.4210854715202004e-14,
+      "weighted_jvp": -112.9934654754613,
+      "weighted_vjp": -112.99346547546132
+    }
+  },
+  "coordinate_sweep": {
+    "all_return_codes_zero": true,
+    "jvp_calls": 468,
+    "max_absolute_difference": 0.00048828125,
+    "max_normalized_difference": 9.270351824068155e-16,
+    "worst_field": 0,
+    "worst_level_top0": 16
+  },
+  "coordinator_source_sha256": "89eb7116949b6ad33bf4435e78b8d9ec8525374c608bac914181000de3052cbd",
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "graph_rc": 0,
+  "input_capture_sha256": "0919ce378f47b4ace8c447bc7ddba8f9e14ea06a3b9de750f9c19be7a703ebcb",
+  "jvp_rc": {
+    "qg": 0,
+    "qs": 0,
+    "qv": 0
+  },
+  "library_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_fd_outlier_trace_20261105/build/libkdm6_c.2.0.0.dylib",
+  "library_sha256": "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b",
+  "probe_source_sha256": "e733f119a7c956b6b7b3e30cee89565cd9d9f241d15208ed930605ebdcef7f79",
+  "python_version": "3.10.11",
+  "result_sha256": "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57",
+  "schema": "kdm6.native_nc16_c_abi_vjp.v1",
+  "seed_field": "nc",
+  "seed_native_level": 16,
+  "torch_version": "2.13.0",
+  "value_rc": 0,
+  "vjp_rc": 0
+}
