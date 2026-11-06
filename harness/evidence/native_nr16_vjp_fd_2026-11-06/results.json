@@ -1,0 +1,713 @@
+{
+  "captured_cap_crossings": 5,
+  "comparisons": [
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "nc16_rel",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -1.9677812901128617,
+      "normalized_error": 2.040635022071413e-09,
+      "observed_nr16_gap": -0.003935564620860532,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.0019690941653607297,
+          "vjp_predicted_gap": 0.001967781290112755
+        },
+        "plus": {
+          "observed_nr16_gap": -0.0019664704554998025,
+          "vjp_predicted_gap": -0.001967781290112755
+        }
+      },
+      "output_error_ulps": 8974.807739257812,
+      "output_signal_ulps": 17308796250.0,
+      "signal_relative_error": 5.185113747732637e-07,
+      "vjp_predicted_gap": -0.00393556258022551
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "nc16_rel",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -1.9677812901128617,
+      "normalized_error": 1.928304738108011e-12,
+      "observed_nr16_gap": -0.00039355625995085575,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.00019679124852700625,
+          "vjp_predicted_gap": 0.0001967781290112755
+        },
+        "plus": {
+          "observed_nr16_gap": -0.0001967650114238495,
+          "vjp_predicted_gap": -0.0001967781290112755
+        }
+      },
+      "output_error_ulps": 8.48077392578125,
+      "output_signal_ulps": 1730878736.0,
+      "signal_relative_error": 4.899692710640158e-09,
+      "vjp_predicted_gap": -0.000393556258022551
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "nc16_rel",
+      "family": "new",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -0.0006981524209899711,
+      "nominal_vjp": -1.9677812901128617,
+      "normalized_error": 5.65332625005778e-14,
+      "observed_nr16_gap": -3.935562585866137e-05,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 1.9677944010254578e-05,
+          "vjp_predicted_gap": 1.9677812900905313e-05
+        },
+        "plus": {
+          "observed_nr16_gap": -1.967768184840679e-05,
+          "vjp_predicted_gap": -1.9677812901222794e-05
+        }
+      },
+      "output_error_ulps": 0.2486359179019928,
+      "output_signal_ulps": 173087873.0,
+      "signal_relative_error": 1.4364722010420267e-09,
+      "vjp_predicted_gap": -3.935562580212811e-05
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qc16_rel",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -0.00045801948474677966,
+      "nominal_vjp": 1.047905306310447,
+      "normalized_error": 2.3412387937637308e-08,
+      "observed_nr16_gap": 0.002095787200232735,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.0010259840557864663,
+          "vjp_predicted_gap": -0.0010479053063104404
+        },
+        "plus": {
+          "observed_nr16_gap": 0.0010698031444462686,
+          "vjp_predicted_gap": 0.0010479053063102322
+        }
+      },
+      "output_error_ulps": 102968.77108573914,
+      "output_signal_ulps": 9217369584.0,
+      "signal_relative_error": 1.117104179006025e-05,
+      "vjp_predicted_gap": 0.0020958106126206725
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qc16_rel",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 1.047905306310447,
+      "normalized_error": 2.3482516576861165e-11,
+      "observed_nr16_gap": 0.0002095810377795715,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.00010457142366249172,
+          "vjp_predicted_gap": -0.00010479053063104403
+        },
+        "plus": {
+          "observed_nr16_gap": 0.00010500961411707976,
+          "vjp_predicted_gap": 0.00010479053063104403
+        }
+      },
+      "output_error_ulps": 103.27720010280609,
+      "output_signal_ulps": 921747152.0,
+      "signal_relative_error": 1.1204503133751909e-07,
+      "vjp_predicted_gap": 0.00020958106126208807
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qc16_rel",
+      "family": "new",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": 0.00045801948474677966,
+      "nominal_vjp": 1.047905306310447,
+      "normalized_error": 1.1994798329497541e-13,
+      "observed_nr16_gap": 2.0958106006219168e-05,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -1.047686214405985e-05,
+          "vjp_predicted_gap": -1.0479053062979433e-05
+        },
+        "plus": {
+          "observed_nr16_gap": 1.0481243862159317e-05,
+          "vjp_predicted_gap": 1.0479053063187717e-05
+        }
+      },
+      "output_error_ulps": 0.5275368094444275,
+      "output_signal_ulps": 92174725.0,
+      "signal_relative_error": 5.723226257796972e-09,
+      "vjp_predicted_gap": 2.095810612616715e-05
+    },
+    {
+      "cap_status": "captured_crossing",
+      "captured_cap_crossing": true,
+      "direction": "th16_abs",
+      "family": "new",
+      "h": 0.01,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 320.359892612979,
+      "normalized_error": 2.7617643509239474e-07,
+      "observed_nr16_gap": 6.407199621770815,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -3.2042501674247887,
+          "vjp_predicted_gap": -3.2035989261268765
+        },
+        "plus": {
+          "observed_nr16_gap": 3.202949454346026,
+          "vjp_predicted_gap": 3.2035989261268765
+        }
+      },
+      "output_error_ulps": 7782418.33984375,
+      "output_signal_ulps": 28179161942476.0,
+      "signal_relative_error": 2.761763588189925e-07,
+      "vjp_predicted_gap": 6.407197852253753
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "th16_abs",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 320.359892612979,
+      "normalized_error": 1.7619881109709468e-09,
+      "observed_nr16_gap": 0.6407197869727952,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.32036639703346736,
+          "vjp_predicted_gap": -0.32035989260540354
+        },
+        "plus": {
+          "observed_nr16_gap": 0.3203533899393278,
+          "vjp_predicted_gap": 0.32035989260540354
+        }
+      },
+      "output_error_ulps": 7749.3056640625,
+      "output_signal_ulps": 2817915423691.0,
+      "signal_relative_error": 2.7500135734777304e-09,
+      "vjp_predicted_gap": 0.6407197852108071
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "th16_abs",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 320.359892612979,
+      "normalized_error": 2.6125823726630415e-11,
+      "observed_nr16_gap": 0.06407197853263824,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.032036054300988326,
+          "vjp_predicted_gap": -0.03203598925325621
+        },
+        "plus": {
+          "observed_nr16_gap": 0.032035924231649915,
+          "vjp_predicted_gap": 0.03203598925325621
+        }
+      },
+      "output_error_ulps": 114.902587890625,
+      "output_signal_ulps": 281791541645.0,
+      "signal_relative_error": 4.077574054205604e-10,
+      "vjp_predicted_gap": 0.06407197850651242
+    },
+    {
+      "cap_status": "captured_crossing",
+      "captured_cap_crossing": true,
+      "direction": "qg17_rel",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": 0.03770100517535241,
+      "nominal_vjp": -146.7930056063696,
+      "normalized_error": 0.10476295355011533,
+      "observed_nr16_gap": -0.18882305766260288,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.14688526941245073,
+          "vjp_predicted_gap": 0.14679300560636768
+        },
+        "plus": {
+          "observed_nr16_gap": -0.04193778825015215,
+          "vjp_predicted_gap": -0.14679300560635053
+        }
+      },
+      "output_error_ulps": 460752342354.03516,
+      "output_signal_ulps": 830452589969.0,
+      "signal_relative_error": 0.3568390507346386,
+      "vjp_predicted_gap": -0.2935860112127182
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg17_rel",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -146.7930056063696,
+      "normalized_error": 1.011174199927467e-10,
+      "observed_nr16_gap": -0.029358601222384095,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.014680222748665983,
+          "vjp_predicted_gap": 0.014679300560633338
+        },
+        "plus": {
+          "observed_nr16_gap": -0.014678378473718112,
+          "vjp_predicted_gap": -0.014679300560633338
+        }
+      },
+      "output_error_ulps": 444.7191162109375,
+      "output_signal_ulps": 129120493677.0,
+      "signal_relative_error": 3.444217904892928e-09,
+      "vjp_predicted_gap": -0.029358601121266675
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg17_rel",
+      "family": "new",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -0.03770100517535241,
+      "nominal_vjp": -146.7930056063696,
+      "normalized_error": 2.9637967427498246e-13,
+      "observed_nr16_gap": -0.0029358601118474326,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.0014679392770631239,
+          "vjp_predicted_gap": 0.0014679300560633338
+        },
+        "plus": {
+          "observed_nr16_gap": -0.0014679208347843087,
+          "vjp_predicted_gap": -0.0014679300560804783
+        }
+      },
+      "output_error_ulps": 1.3034915924072266,
+      "output_signal_ulps": 12912049322.0,
+      "signal_relative_error": 1.00951565454037e-10,
+      "vjp_predicted_gap": -0.0029358601121438122
+    },
+    {
+      "cap_status": "captured_crossing",
+      "captured_cap_crossing": true,
+      "direction": "bg17_rel",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 119.00004185123267,
+      "normalized_error": 0.10486469955412914,
+      "observed_nr16_gap": 0.13313538414831783,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.01415662712156518,
+          "vjp_predicted_gap": -0.11900004185122348
+        },
+        "plus": {
+          "observed_nr16_gap": 0.11897875702675265,
+          "vjp_predicted_gap": 0.11900004185122348
+        }
+      },
+      "output_error_ulps": 461199826012.00684,
+      "output_signal_ulps": 585535611758.0,
+      "signal_relative_error": 0.4406078263620837,
+      "vjp_predicted_gap": 0.23800008370244696
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "bg17_rel",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 119.00004185123267,
+      "normalized_error": 2.932616302575575e-11,
+      "observed_nr16_gap": 0.023800008399575745,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.011900217195261575,
+          "vjp_predicted_gap": -0.011900004185124791
+        },
+        "plus": {
+          "observed_nr16_gap": 0.01189979120431417,
+          "vjp_predicted_gap": 0.011900004185124791
+        }
+      },
+      "output_error_ulps": 128.9778289794922,
+      "output_signal_ulps": 104673543906.0,
+      "signal_relative_error": 1.2321912889021715e-09,
+      "vjp_predicted_gap": 0.023800008370249582
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "bg17_rel",
+      "family": "new",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 119.00004185123267,
+      "normalized_error": 6.095276193496257e-13,
+      "observed_nr16_gap": 0.002380000836410545,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.0011900025481281773,
+          "vjp_predicted_gap": -0.0011900004185100364
+        },
+        "plus": {
+          "observed_nr16_gap": 0.0011899982882823679,
+          "vjp_predicted_gap": 0.0011900004185100364
+        }
+      },
+      "output_error_ulps": 2.6807308197021484,
+      "output_signal_ulps": 10467354375.0,
+      "signal_relative_error": 2.561039516745704e-10,
+      "vjp_predicted_gap": 0.0023800008370200728
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg_bg17_rel",
+      "family": "new",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": 0.03770100517535241,
+      "nominal_vjp": -27.792963755136938,
+      "normalized_error": 1.6745155262398725e-08,
+      "observed_nr16_gap": -0.05558594425542651,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.027807115462110232,
+          "vjp_predicted_gap": 0.0277929637551442
+        },
+        "plus": {
+          "observed_nr16_gap": -0.02777882879331628,
+          "vjp_predicted_gap": -0.027792963755127048
+        }
+      },
+      "output_error_ulps": 73645.9716796875,
+      "output_signal_ulps": 244469568199.0,
+      "signal_relative_error": 3.0124801308496256e-07,
+      "vjp_predicted_gap": -0.05558592751027125
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg_bg17_rel",
+      "family": "new",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -27.792963755136938,
+      "normalized_error": 1.8358443237831423e-11,
+      "observed_nr16_gap": -0.005558592769375537,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.0027794378177077306,
+          "vjp_predicted_gap": 0.0027792963755085467
+        },
+        "plus": {
+          "observed_nr16_gap": -0.002779154951667806,
+          "vjp_predicted_gap": -0.0027792963755085467
+        }
+      },
+      "output_error_ulps": 80.74128723144531,
+      "output_signal_ulps": 24446949536.0,
+      "signal_relative_error": 3.302714193954857e-09,
+      "vjp_predicted_gap": -0.005558592751017093
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg_bg17_rel",
+      "family": "new",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -0.03770100517535241,
+      "nominal_vjp": -27.792963755136938,
+      "normalized_error": 3.1314794507464327e-13,
+      "observed_nr16_gap": -0.0005558592754368874,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.00027793105255113915,
+          "vjp_predicted_gap": 0.0002779296375532974
+        },
+        "plus": {
+          "observed_nr16_gap": -0.00027792822288574826,
+          "vjp_predicted_gap": -0.00027792963757044186
+        }
+      },
+      "output_error_ulps": 1.3772392272949219,
+      "output_signal_ulps": 2444694947.0,
+      "signal_relative_error": 5.633583155170328e-10,
+      "vjp_predicted_gap": -0.0005558592751237395
+    },
+    {
+      "cap_status": "captured_crossing",
+      "captured_cap_crossing": true,
+      "direction": "qv16_rel",
+      "family": "old",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -1.2123762645236563e-05,
+      "nominal_vjp": 0.04653540832796939,
+      "normalized_error": 1.937394377414005e-12,
+      "observed_nr16_gap": 9.307081859333266e-05,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -4.653568907997396e-05,
+          "vjp_predicted_gap": -4.65354083279719e-05
+        },
+        "plus": {
+          "observed_nr16_gap": 4.65351295133587e-05,
+          "vjp_predicted_gap": 4.6535408327966384e-05
+        }
+      },
+      "output_error_ulps": 8.52075058221817,
+      "output_signal_ulps": 409329789.0,
+      "signal_relative_error": 2.081634616194076e-08,
+      "vjp_predicted_gap": 9.307081665593828e-05
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qv16_rel",
+      "family": "old",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 0.04653540832796939,
+      "normalized_error": 3.42150586122691e-12,
+      "observed_nr16_gap": 9.307078244091826e-06,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -4.653538553611725e-06,
+          "vjp_predicted_gap": -4.653540832798844e-06
+        },
+        "plus": {
+          "observed_nr16_gap": 4.653539690480102e-06,
+          "vjp_predicted_gap": 4.653540832798844e-06
+        }
+      },
+      "output_error_ulps": 15.047941915690899,
+      "output_signal_ulps": 40932963.0,
+      "signal_relative_error": 3.6762392167181935e-07,
+      "vjp_predicted_gap": 9.307081665597688e-06
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qv16_rel",
+      "family": "old",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": 1.2123762645236563e-05,
+      "nominal_vjp": 0.04653540832796939,
+      "normalized_error": 2.456731281039851e-12,
+      "observed_nr16_gap": 9.30705709834001e-07,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -4.6534819375665393e-07,
+          "vjp_predicted_gap": -4.6535408327988436e-07
+        },
+        "plus": {
+          "observed_nr16_gap": 4.653575160773471e-07,
+          "vjp_predicted_gap": 4.6535408328539765e-07
+        }
+      },
+      "output_error_ulps": 10.804818439297378,
+      "output_signal_ulps": 4093287.0,
+      "signal_relative_error": 2.63963653623698e-06,
+      "vjp_predicted_gap": 9.307081665652821e-07
+    },
+    {
+      "cap_status": "masks_only_unverified",
+      "captured_cap_crossing": null,
+      "direction": "qs16_rel",
+      "family": "old",
+      "h": 0.001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 27.97296661952669,
+      "normalized_error": 5.2922290716406195e-09,
+      "observed_nr16_gap": 0.05594592794682285,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.027924682315187965,
+          "vjp_predicted_gap": -0.02797296661952596
+        },
+        "plus": {
+          "observed_nr16_gap": 0.028021245631634883,
+          "vjp_predicted_gap": 0.02797296661952596
+        }
+      },
+      "output_error_ulps": 23275.469604492188,
+      "output_signal_ulps": 246052793217.0,
+      "signal_relative_error": 9.459542035034795e-08,
+      "vjp_predicted_gap": 0.05594593323905192
+    },
+    {
+      "cap_status": "masks_only_unverified",
+      "captured_cap_crossing": null,
+      "direction": "qs16_rel",
+      "family": "old",
+      "h": 0.0001,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": 27.97296661952669,
+      "normalized_error": 1.1200681007683677e-11,
+      "observed_nr16_gap": 0.00559459331270773,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": -0.002796813837676382,
+          "vjp_predicted_gap": -0.0027972966619542053
+        },
+        "plus": {
+          "observed_nr16_gap": 0.002797779475031348,
+          "vjp_predicted_gap": 0.0027972966619542053
+        }
+      },
+      "output_error_ulps": 49.26111602783203,
+      "output_signal_ulps": 24605281600.0,
+      "signal_relative_error": 2.002054547882459e-09,
+      "vjp_predicted_gap": 0.005594593323908411
+    },
+    {
+      "cap_status": "captured_crossing",
+      "captured_cap_crossing": true,
+      "direction": "qg16_rel",
+      "family": "old",
+      "h": 1e-05,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -8.537285422727939,
+      "normalized_error": 0.0003294849927081215,
+      "observed_nr16_gap": -0.0005002307011636731,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 0.0004148580073888297,
+          "vjp_predicted_gap": 8.537285422777579e-05
+        },
+        "plus": {
+          "observed_nr16_gap": -8.537269377484336e-05,
+          "vjp_predicted_gap": -8.537285422777579e-05
+        }
+      },
+      "output_error_ulps": 1449090322.6410806,
+      "output_signal_ulps": 2200037890.0,
+      "signal_relative_error": 0.6586660753561298,
+      "vjp_predicted_gap": -0.00017074570845555158
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg16_rel",
+      "family": "old",
+      "h": 1e-06,
+      "midpoint_input_ulps": 0.0,
+      "midpoint_vjp_output_ulps": 0.0,
+      "nominal_vjp": -8.537285422727939,
+      "normalized_error": 6.076607926151951e-14,
+      "observed_nr16_gap": -1.707457090560638e-05,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 8.53728693073208e-06,
+          "vjp_predicted_gap": 8.53728542242015e-06
+        },
+        "plus": {
+          "observed_nr16_gap": -8.537283974874299e-06,
+          "vjp_predicted_gap": -8.53728542242015e-06
+        }
+      },
+      "output_error_ulps": 0.26725204288959503,
+      "output_signal_ulps": 75094757.0,
+      "signal_relative_error": 3.558864207917938e-09,
+      "vjp_predicted_gap": -1.70745708448403e-05
+    },
+    {
+      "cap_status": "recorded_cap_unchanged",
+      "captured_cap_crossing": false,
+      "direction": "qg16_rel",
+      "family": "old",
+      "h": 1e-07,
+      "midpoint_input_ulps": 0.5,
+      "midpoint_vjp_output_ulps": -0.00392997412117908,
+      "nominal_vjp": -8.537285422727939,
+      "normalized_error": 3.804586402849909e-13,
+      "observed_nr16_gap": -1.7074567040253896e-06,
+      "one_sided": {
+        "minus": {
+          "observed_nr16_gap": 8.537283520126948e-07,
+          "vjp_predicted_gap": 8.537285413484423e-07
+        },
+        "plus": {
+          "observed_nr16_gap": -8.537283520126948e-07,
+          "vjp_predicted_gap": -8.537285431355876e-07
+        }
+      },
+      "output_error_ulps": 1.673274795524776,
+      "output_signal_ulps": 7509474.0,
+      "signal_relative_error": 2.2282178787524857e-07,
+      "vjp_predicted_gap": -1.70745708448403e-06
+    }
+  ],
+  "coordinate_jvp_cells": 468,
+  "coordinate_max_normalized_transpose_gap": 4.7343058913090375e-15,
+  "coordinate_raw_mismatches": 15,
+  "masks_only_pairs": 2,
+  "max_numerical_agreement_true_relative_error": 1.117104179006025e-05,
+  "nr16_output_ulp": 2.2737367544323206e-13,
+  "numerical_agreement_pairs": 21,
+  "parent_raw_equal_arrays": 11,
+  "physical_unit_status": "INCONCLUSIVE",
+  "recorded_cap_unchanged_pairs": 19,
+  "schema": "kdm6.native_nr16_vjp_fd_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "seed_native_level": 16,
+  "seed_packed_offset": 405,
+  "transpose": {
+    "qg": {
+      "abs_dot_gap": 2.4868995751603507e-14,
+      "jvp_nr16": -8.537285422727914,
+      "vjp_relative_nr16": -8.537285422727939
+    },
+    "qs": {
+      "abs_dot_gap": 3.552713678800501e-15,
+      "jvp_nr16": 27.972966619526687,
+      "vjp_relative_nr16": 27.97296661952669
+    },
+    "qv": {
+      "abs_dot_gap": 2.7755575615628914e-17,
+      "jvp_nr16": 0.04653540832796936,
+      "vjp_relative_nr16": 0.04653540832796939
+    }
+  },
+  "vjp_finite_cells": 468
+}
