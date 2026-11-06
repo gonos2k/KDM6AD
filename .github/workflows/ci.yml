@@ -263,9 +263,9 @@ jobs:
     name: build + symbol surface + smoke (macOS arm64, libtorch CPU)
     needs: detect
     if: needs.detect.outputs.port == 'true'
-    runs-on: macos-14
+    runs-on: macos-15
     # Bound both CMake builds to two concurrent jobs: libtorch translation
-    # units are memory-heavy on the standard macos-14 runner (3 cores, 7 GB).
+    # units are memory-heavy on the standard macos-15 arm64 runner (3 cores, 7 GB).
     # Retain the timeout until bounded-build timings are measured in CI.
     timeout-minutes: 90
     steps:
