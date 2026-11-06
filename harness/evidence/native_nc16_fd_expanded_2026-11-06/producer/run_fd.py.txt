@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Prespecified NC16 value-only f64 FD sweep with full-column branch captures."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+
+ROOT = Path(__file__).resolve().parent
+EVALUATE = ROOT / "evaluate.py"
+LIB = ROOT.parent / "native_fd_outlier_trace_20261105/build/libkdm6_c.2.0.0.dylib"
+ARCHIVE = LIB.parent / "libkdm6.a"
+SOURCE = ROOT.parent / "native_fd_outlier_trace_20261105/source/src/coordinator.cpp"
+PARENT = Path("/private/tmp/KDM6AD-nc16-fd-expanded/harness/evidence/native_nc16_vjp_branch_window_2026-11-06/raw/nc16_result.npz")
+LIB_SHA = "6b986bf09d4b004cdd4534ffca5c55debee3ea619529dcab3f5f429296f69e2b"
+PARENT_SHA = "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57"
+PLAN = {
+    "nc16_rel": (1e-3, 1e-4, 1e-5),
+    "qc16_rel": (1e-3, 1e-4, 1e-5),
+    "th16_abs": (1e-2, 1e-3, 1e-4),
+    "qg17_rel": (1e-3, 1e-4, 1e-5),
+    "bg17_rel": (1e-3, 1e-4, 1e-5),
+    "qg_bg17_rel": (1e-3, 1e-4, 1e-5),
+}
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise RuntimeError(why)
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> None:
+    need(sha(LIB) == LIB_SHA and sha(PARENT) == PARENT_SHA,
+         "pinned DSO and parent NC16 arrays")
+    out = ROOT / "runs/fd_prespecified"
+    out.mkdir(parents=True, exist_ok=False)
+    cases = [("baseline", "baseline", 0.0)]
+    for direction, steps in PLAN.items():
+        for h in steps:
+            for sign, side in ((-1, "minus"), (1, "plus")):
+                cases.append((f"{direction}_{h:.0e}_{side}", direction, sign * h))
+    records = []
+    for label, direction, signed_h in cases:
+        dest = out / label
+        dest.mkdir()
+        env = dict(os.environ)
+        env.update({
+            "KDM6_FD_LIB": str(LIB.resolve()),
+            "KDM6_NC16_PARENT_NPZ": str(PARENT.resolve()),
+            "KDM6_FD_OUTPUT": str((dest / "state_output.npz").resolve()),
+            "KDM6_FD_DIRECTION": direction,
+            "KDM6_FD_STEP": repr(signed_h),
+            "KDM6_NATIVE_CAPTURE_DIR": str(dest.resolve()),
+            "KDM6_NATIVE_CAPTURE_CALL": "1",
+            "KDM6_NATIVE_CAPTURE_B": "0",
+            "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+            "KDM6_NATIVE_CAPTURE_MAX_ROWS": "16000",
+            "KDM6_NATIVE_CAPTURE_MAX_BYTES": "6291456",
+            "KDM6_NATIVE_CAPTURE_LEGACY_SCALAR": "0",
+        })
+        proc = subprocess.run((sys.executable, str(EVALUATE)),
+                              text=True, capture_output=True, env=env)
+        (dest / "stdout.txt").write_text(proc.stdout)
+        (dest / "stderr.txt").write_text(proc.stderr)
+        need(proc.returncode == 0, "endpoint process failed: " + label + ": " + proc.stderr)
+        captures = list(dest.glob("native_qnice_applied_*.csv"))
+        need(len(captures) == 1, "capture count: " + label)
+        capture = captures[0]
+        raw = capture.read_bytes()
+        need(raw.endswith(b"status=complete\n"), "capture completion: " + label)
+        with capture.open() as stream:
+            rows = list(csv.DictReader(line for line in stream if not line.startswith("#")))
+        need(len(rows) == 13611, "capture row count: " + label)
+        records.append({"label":label,"direction":direction,"nominal_step":signed_h,
+                        "capture_file":capture.name,"capture_sha256":sha(capture),
+                        "arrays_sha256":sha(dest/"state_output.npz"),
+                        "stdout_sha256":sha(dest/"stdout.txt"),
+                        "stderr_sha256":sha(dest/"stderr.txt"),
+                        "returncode":proc.returncode,"capture_rows":len(rows)})
+        print(label,"captured",len(rows),flush=True)
+    receipt = {"schema":"kdm6.native_nc16_fd_prespecified.v1",
+               "library_path":str(LIB.resolve()),"library_sha256":sha(LIB),
+               "archive_sha256":sha(ARCHIVE),"coordinator_source_sha256":sha(SOURCE),
+               "parent_npz_sha256":sha(PARENT),
+               "evaluate_source_sha256":sha(EVALUATE),
+               "runner_source_sha256":sha(Path(__file__)),
+               "environment":{"OMP_NUM_THREADS":"1","MKL_NUM_THREADS":"1",
+                              "OMP_THREAD_LIMIT":"1","KDM6_ICE_FACTORIAL_MODE":"norm_actual",
+                              "KDM6_QR_TRANSPORT":"actual_departure",
+                              "KDM6AD_QNC_LIVE_GUARD":"1"},
+               "plan":{key:list(val) for key,val in PLAN.items()},"cases":records}
+    (out/"receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -46,6 +46,7 @@ on:
       - 'harness/evidence/skipped_substep_ad_2026-11-05/**'
       - 'harness/evidence/native_fd_outlier_branches_2026-11-05/**'
       - 'harness/evidence/native_nc16_vjp_branch_window_2026-11-06/**'
+      - 'harness/evidence/native_nc16_fd_expanded_2026-11-06/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -138,6 +139,7 @@ jobs:
           python -m unittest discover -s harness/evidence/skipped_substep_ad_2026-11-05 -v
           python -m unittest discover -s harness/evidence/native_fd_outlier_branches_2026-11-05 -v
           python -m unittest discover -s harness/evidence/native_nc16_vjp_branch_window_2026-11-06 -v
+          python -m unittest discover -s harness/evidence/native_nc16_fd_expanded_2026-11-06 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -166,3 +168,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/skipped_substep_ad_2026-11-05 -v
           python -O -m unittest discover -s harness/evidence/native_fd_outlier_branches_2026-11-05 -v
           python -O -m unittest discover -s harness/evidence/native_nc16_vjp_branch_window_2026-11-06 -v
+          python -O -m unittest discover -s harness/evidence/native_nc16_fd_expanded_2026-11-06 -v
