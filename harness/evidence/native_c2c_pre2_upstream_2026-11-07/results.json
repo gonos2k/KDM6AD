@@ -1,0 +1,172 @@
+{
+  "branch_counts_by_call": {
+    "baseline": {
+      "d234_brs_changed": 1,
+      "d234_qg_changed": 1,
+      "progb_active": 8,
+      "slope_unmasked": 7
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "d234_brs_changed": 1,
+      "d234_qg_changed": 1,
+      "progb_active": 8,
+      "slope_unmasked": 7
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "d234_brs_changed": 1,
+      "d234_qg_changed": 1,
+      "progb_active": 8,
+      "slope_unmasked": 7
+    }
+  },
+  "calls": 3,
+  "levels_per_call": 39,
+  "max_python_ulp_by_call": {
+    "baseline": {
+      "g3pbg": 7,
+      "pidn0g": 1,
+      "rslope2_g": 0,
+      "rslope3_g": 0,
+      "rslope_g": 0,
+      "rslopeb_g": 0,
+      "rslopegbmax": 0
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "g3pbg": 6,
+      "pidn0g": 1,
+      "rslope2_g": 0,
+      "rslope3_g": 0,
+      "rslope_g": 0,
+      "rslopeb_g": 0,
+      "rslopegbmax": 0
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "g3pbg": 5,
+      "pidn0g": 1,
+      "rslope2_g": 0,
+      "rslope3_g": 0,
+      "rslope_g": 0,
+      "rslopeb_g": 0,
+      "rslopegbmax": 0
+    }
+  },
+  "native16": {
+    "baseline": {
+      "c2c": {
+        "brs": 4.646212004038053e-08,
+        "qg": 4.1812234388383836e-05
+      },
+      "d234": {
+        "brs_after": 4.646212004038053e-08,
+        "brs_before": 4.646212004038053e-08,
+        "qg_after": 4.1812234388383836e-05,
+        "qg_before": 4.1812234388383836e-05
+      },
+      "density_raw": 899.9209324078314,
+      "pre2": {
+        "avtg": 146.03613488313994,
+        "bg": 4.646212004038053e-08,
+        "brs_input": 4.646212004038053e-08,
+        "bvtg": 0.5258006325407374,
+        "den_input": 0.7350409626960754,
+        "dend_input": 0.7350409626960754,
+        "g3pbg": 3.4196745580733396,
+        "graupel_slope_mask": 0,
+        "pidn0g": 11308739960.256481,
+        "progb_active": 1,
+        "qg_input": 4.1812234388383836e-05,
+        "rhox": 899.9209324078314,
+        "rslope2_g": 5.213151550655714e-08,
+        "rslope3_g": 1.1902838077163257e-11,
+        "rslope_g": 0.000228323269743925,
+        "rslopeb_g": 0.012170919186215816,
+        "rslopegbmax": 0.0017249415863110702,
+        "rslopemu_g": 1.0
+      },
+      "rho_upper_margin": 0.07906759216859882,
+      "table_interval": [
+        7,
+        8
+      ]
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "c2c": {
+        "brs": 4.641921128503633e-08,
+        "qg": 4.1773620988021945e-05
+      },
+      "d234": {
+        "brs_after": 4.641921128503633e-08,
+        "brs_before": 4.641921128503633e-08,
+        "qg_after": 4.1773620988021945e-05,
+        "qg_before": 4.1773620988021945e-05
+      },
+      "density_raw": 899.9209558196019,
+      "pre2": {
+        "avtg": 146.03613667901004,
+        "bg": 4.641921128503633e-08,
+        "brs_input": 4.641921128503633e-08,
+        "bvtg": 0.5258006323534432,
+        "den_input": 0.7350409626960754,
+        "dend_input": 0.7350409626960754,
+        "g3pbg": 3.419674557361348,
+        "graupel_slope_mask": 0,
+        "pidn0g": 11308740254.457464,
+        "progb_active": 1,
+        "qg_input": 4.1773620988021945e-05,
+        "rhox": 899.9209558196019,
+        "rslope2_g": 5.2107437664897373e-08,
+        "rslope3_g": 1.1894592732106105e-11,
+        "rslope_g": 0.00022827053612960516,
+        "rslopeb_g": 0.012169441099154838,
+        "rslopegbmax": 0.0017249415902204656,
+        "rslopemu_g": 1.0
+      },
+      "rho_upper_margin": 0.0790441803981139,
+      "table_interval": [
+        7,
+        8
+      ]
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "c2c": {
+        "brs": 4.650503655538133e-08,
+        "qg": 4.185085477148888e-05
+      },
+      "d234": {
+        "brs_after": 4.650503655538133e-08,
+        "brs_before": 4.650503655538133e-08,
+        "qg_after": 4.185085477148888e-05,
+        "qg_before": 4.185085477148888e-05
+      },
+      "density_raw": 899.9209090320801,
+      "pre2": {
+        "avtg": 146.03613309003282,
+        "bg": 4.650503655538133e-08,
+        "brs_input": 4.650503655538133e-08,
+        "bvtg": 0.5258006327277434,
+        "den_input": 0.7350409626960754,
+        "dend_input": 0.7350409626960754,
+        "g3pbg": 3.419674558784236,
+        "graupel_slope_mask": 0,
+        "pidn0g": 11308739666.508127,
+        "progb_active": 1,
+        "qg_input": 4.185085477148888e-05,
+        "rhox": 899.9209090320801,
+        "rslope2_g": 5.215558658382564e-08,
+        "rslope3_g": 1.1911083009331149e-11,
+        "rslope_g": 0.00022837597637191535,
+        "rslopeb_g": 0.0121723963551336,
+        "rslopegbmax": 0.0017249415824076907,
+        "rslopemu_g": 1.0
+      },
+      "rho_upper_margin": 0.07909096791991033,
+      "table_interval": [
+        7,
+        8
+      ]
+    }
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_c2c_pre2_upstream_results.v1",
+  "scientific_status": "INCONCLUSIVE"
+}
