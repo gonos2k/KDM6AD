@@ -1,0 +1,32 @@
+{
+  "build_command": "cmake --build host/research_evidence/native_nc_rate_producers_20261107/build --target kdm6_c -j 2",
+  "configure_command": "cmake -S host/research_evidence/native_nc_rate_producers_20261107/source -B host/research_evidence/native_nc_rate_producers_20261107/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DKDM6_NATIVE_SCALAR_CAPTURE=ON -DKDM6_ENABLE_TEST_HOOKS=OFF",
+  "paths": {
+    "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/libkdm6.a",
+    "cmake_cache": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/CMakeCache.txt",
+    "cmake_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/source/CMakeLists.txt",
+    "coordinator_object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/CMakeFiles/kdm6.dir/src/coordinator.cpp.o",
+    "dso": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/libkdm6_c.2.0.0.dylib",
+    "instrumentation_patch": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/instrumentation.patch",
+    "instrumented_coordinator_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/source/src/coordinator.cpp",
+    "kdm6_flags": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/CMakeFiles/kdm6.dir/flags.make",
+    "parent_coordinator_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_budget_terms_20261107/source/src/coordinator.cpp",
+    "runtime_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/source/src/runtime.cpp"
+  },
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "schema": "kdm6.native_nc_rate_producers_build.v1",
+  "sha256": {
+    "archive": "50f43060fe20c16aa7f74cd12c5699d3ac36bfbf1e53a41d164741e2b53b6579",
+    "cmake_cache": "4951c5f789f099421cefa3dc12fc0b1d921e18a0da6aa691f9ec9fcab842aab6",
+    "cmake_source": "4584bef636bce249782077c13a78b9d39a110d7ba927bb6f930da509b1c8cb4f",
+    "coordinator_object": "8a115b4b4b9dfa0a92ca51f7f810971ffb08b6c79ded4fda5a118b345c88085d",
+    "dso": "46134d4b6eeda89f89f5eac8f53a5688cab05dac9a1a4c949ada95d3a8f282b0",
+    "instrumentation_patch": "30e790618ebd322fd253d139b253acc3ef40621e8a81bec1cb79c5ad964cef49",
+    "instrumented_coordinator_source": "3673080dbe5b39fd1703869c1714c2ca444f8202b1d755febde9f664e5691cf5",
+    "kdm6_flags": "eb9d92fd362597ecdbb21744f15f1631c8e917d96df22a74866e3dad034ef54f",
+    "parent_coordinator_source": "cc6e15c4db3650f540d497065ffa854f9877430cd69057b2c688e9ad2e52f218",
+    "runtime_source": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10"
+  },
+  "torch": "2.13.0"
+}
