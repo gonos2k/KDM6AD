@@ -1,0 +1,92 @@
+{
+  "calls": 3,
+  "joint_endpoint_difference": {
+    "applied_rate_contributions": {
+      "naacw": 2570.3059427789412,
+      "nccol": 0.0,
+      "niacw": 0.0,
+      "nracw": -205.37712793331593,
+      "nraut": 0.0002676741216622869
+    },
+    "nc_after_gap": 2364.9290825128555,
+    "nc_before_gap": 0.0,
+    "stored_roundoff_residual": -6.891443637968564e-09
+  },
+  "levels_per_call": 39,
+  "native16": {
+    "baseline": {
+      "cold_mask": 0.0,
+      "dnc_amount": 0.0,
+      "dnc_rate_sum": -1531796.6798384518,
+      "dtcld": 20.0,
+      "fd_reclass.nc": 154080925.8395777,
+      "fd_satadj_inner.nc_input": 154080925.8395777,
+      "fd_warm.nc": 184716859.43634674,
+      "naacw": 483349.01202199335,
+      "nc_base": 184716859.43634674,
+      "nc_before": 184716859.43634674,
+      "nc_clamped": 154080925.8395777,
+      "nc_unclamped": 154080925.8395777,
+      "nccol": 3037.4650046281895,
+      "nfrzdtc": 0.0,
+      "niacw": 0.0,
+      "ninuc": 0.0,
+      "nracw": 562060.8956226252,
+      "nraut": 0.2951672117915714,
+      "pimlt_ni": 0.0,
+      "runtime_full_exit.nc": 254080925.8395777
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "cold_mask": 0.0,
+      "dnc_amount": 0.0,
+      "dnc_rate_sum": -1531855.8013510178,
+      "dtcld": 20.0,
+      "fd_reclass.nc": 154079743.40932637,
+      "fd_satadj_inner.nc_input": 154079743.40932637,
+      "fd_warm.nc": 184716859.43634674,
+      "naacw": 483381.1401947831,
+      "nc_base": 184716859.43634674,
+      "nc_before": 184716859.43634674,
+      "nc_clamped": 154079743.40932637,
+      "nc_unclamped": 154079743.40932637,
+      "nccol": 3037.4650046281895,
+      "nfrzdtc": 0.0,
+      "niacw": 0.0,
+      "ninuc": 0.0,
+      "nracw": 562055.7607829178,
+      "nraut": 0.2951739056201259,
+      "pimlt_ni": 0.0,
+      "runtime_full_exit.nc": 254079743.40932637
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "cold_mask": 0.0,
+      "dnc_amount": 0.0,
+      "dnc_rate_sum": -1531737.554896892,
+      "dtcld": 20.0,
+      "fd_reclass.nc": 154082108.3384089,
+      "fd_satadj_inner.nc_input": 154082108.3384089,
+      "fd_warm.nc": 184716859.43634674,
+      "naacw": 483316.88254621363,
+      "nc_base": 184716859.43634674,
+      "nc_before": 184716859.43634674,
+      "nc_clamped": 154082108.3384089,
+      "nc_unclamped": 154082108.3384089,
+      "nccol": 3037.4650046281895,
+      "nfrzdtc": 0.0,
+      "niacw": 0.0,
+      "ninuc": 0.0,
+      "nracw": 562066.0296393145,
+      "nraut": 0.2951605219140428,
+      "pimlt_ni": 0.0,
+      "runtime_full_exit.nc": 254082108.3384089
+    }
+  },
+  "negative_preclamp_levels_by_call": {
+    "baseline": 0,
+    "qg_bg17_rel_1e-03_minus": 0,
+    "qg_bg17_rel_1e-03_plus": 0
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_nc_budget_terms_results.v1",
+  "scientific_status": "INCONCLUSIVE"
+}

@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Paired capture-off/on NC state-update budget terms at joint f64 endpoints."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parent
+EVALUATE = ROOT / "evaluate.py"
+LIB = ROOT / "build/libkdm6_c.2.0.0.dylib"
+ARCHIVE = ROOT / "build/libkdm6.a"
+SOURCE = ROOT / "source/src/coordinator.cpp"
+PARENT_SHA = "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57"
+PLAN = {
+    "qg_bg17_rel": (1e-3,),
+}
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise RuntimeError(why)
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> None:
+    parent = Path(os.environ["KDM6_NC16_PARENT_NPZ"])
+    need(parent.is_absolute() and sha(parent) == PARENT_SHA, "pinned parent state")
+    out = ROOT / "runs/paired_ledger"
+    out.mkdir(parents=True, exist_ok=False)
+    jobs = [("baseline", "baseline", 0.0)]
+    for direction, steps in PLAN.items():
+        for h in steps:
+            for sign, side in ((-1, "minus"), (1, "plus")):
+                jobs.append((f"{direction}_{h:.0e}_{side}", direction, sign*h))
+    records = []
+    for label, direction, step in jobs:
+        case = out / label
+        case.mkdir()
+        runs = {}
+        for mode in ("off", "on"):
+            dest = case / mode
+            dest.mkdir()
+            env = dict(os.environ)
+            env.update({
+                "KDM6_FD_LIB": str(LIB.resolve()),
+                "KDM6_NC16_PARENT_NPZ": str(parent),
+                "KDM6_FD_OUTPUT": str((dest / "state_output.npz").resolve()),
+                "KDM6_FD_DIRECTION": direction,
+                "KDM6_FD_STEP": repr(step),
+                "KDM6_NATIVE_CAPTURE_CALL": "1",
+                "KDM6_NATIVE_CAPTURE_B": "0",
+                "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+                "KDM6_NATIVE_CAPTURE_MAX_ROWS": "16000",
+                "KDM6_NATIVE_CAPTURE_MAX_BYTES": "6291456",
+                "KDM6_NATIVE_CAPTURE_LEGACY_SCALAR": "0",
+            })
+            env.pop("KDM6_NATIVE_CAPTURE_DIR", None)
+            if mode == "off":
+                env["KDM6_NO_CAPTURE"] = "1"
+            else:
+                env.pop("KDM6_NO_CAPTURE", None)
+                env["KDM6_NATIVE_CAPTURE_DIR"] = str(dest.resolve())
+            proc = subprocess.run((sys.executable, str(EVALUATE)),
+                                  text=True, capture_output=True, env=env)
+            (dest / "stdout.txt").write_text(proc.stdout)
+            (dest / "stderr.txt").write_text(proc.stderr)
+            need(proc.returncode == 0, label + "/" + mode + ": " + proc.stderr)
+            rec = {"arrays_sha256":sha(dest/"state_output.npz"),
+                   "stdout_sha256":sha(dest/"stdout.txt"),
+                   "stderr_sha256":sha(dest/"stderr.txt"),
+                   "returncode":proc.returncode}
+            if mode == "on":
+                caps=list(dest.glob("native_qnice_applied_*.csv"))
+                need(len(caps)==1, "capture count: "+label)
+                cap=caps[0]
+                need(cap.read_bytes().endswith(b"status=complete\n"),
+                     "capture complete: "+label)
+                with cap.open() as stream:
+                    rows=list(csv.DictReader(line for line in stream if not line.startswith("#")))
+                need(len(rows)==14781, "capture rows: "+label)
+                rec.update({"capture_file":cap.name,"capture_sha256":sha(cap),
+                            "capture_rows":len(rows)})
+            else:
+                need(not list(dest.glob("native_qnice_applied_*.csv")),
+                     "capture-off wrote trace: "+label)
+            runs[mode]=rec
+        with np.load(case/"off/state_output.npz",allow_pickle=False) as off, \
+             np.load(case/"on/state_output.npz",allow_pickle=False) as on:
+            need(set(off.files)==set(on.files), "paired array inventory: "+label)
+            for field in off.files:
+                need(off[field].dtype==on[field].dtype
+                     and off[field].shape==on[field].shape
+                     and off[field].tobytes()==on[field].tobytes(),
+                     "capture changed value array "+field+": "+label)
+        records.append({"label":label,"direction":direction,"nominal_step":step,
+                        "runs":runs})
+        print(label,"capture-off/on raw arrays equal",flush=True)
+    receipt={"schema":"kdm6.native_nc_budget_terms_paired.v1",
+             "library_path":str(LIB.resolve()),"library_sha256":sha(LIB),
+             "archive_sha256":sha(ARCHIVE),"coordinator_source_sha256":sha(SOURCE),
+             "parent_npz_sha256":sha(parent),"evaluate_source_sha256":sha(EVALUATE),
+             "runner_source_sha256":sha(Path(__file__)),
+             "environment":{"OMP_NUM_THREADS":"1","MKL_NUM_THREADS":"1",
+                            "OMP_THREAD_LIMIT":"1","KDM6_ICE_FACTORIAL_MODE":"norm_actual",
+                            "KDM6_QR_TRANSPORT":"actual_departure",
+                            "KDM6AD_QNC_LIVE_GUARD":"1"},
+             "plan":{name:list(steps) for name,steps in PLAN.items()},"cases":records}
+    (out/"receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+
+
+if __name__=="__main__":
+    main()

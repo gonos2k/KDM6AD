@@ -1,0 +1,91 @@
+{
+  "archive_sha256": "bdf5ea2300f85ebbe55b50938cc6cdd96f3e7300d519bf58dc4c2fcbdca9e3de",
+  "cases": [
+    {
+      "direction": "baseline",
+      "label": "baseline",
+      "nominal_step": 0.0,
+      "runs": {
+        "off": {
+          "arrays_sha256": "124eae7323d7815638cd2874cd9c1143f09a8386d43a48e9019e81679f9ecc13",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "7d61e25a5e7ae92e6d5042aa2865fff01ecea4f0c51ec06dc125439f3621ea1d"
+        },
+        "on": {
+          "arrays_sha256": "124eae7323d7815638cd2874cd9c1143f09a8386d43a48e9019e81679f9ecc13",
+          "capture_file": "native_qnice_applied_42711_runtime1.csv",
+          "capture_rows": 14781,
+          "capture_sha256": "fe6171421def3ced66523ab3fa92394705779703393bd69a3810c8f5d7f2d1bf",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "7d61e25a5e7ae92e6d5042aa2865fff01ecea4f0c51ec06dc125439f3621ea1d"
+        }
+      }
+    },
+    {
+      "direction": "qg_bg17_rel",
+      "label": "qg_bg17_rel_1e-03_minus",
+      "nominal_step": -0.001,
+      "runs": {
+        "off": {
+          "arrays_sha256": "7b6fc28713c914580cae8cd44f85c303a410e8a7586a019758332469a1840e42",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "35a1d6d288785fefbfd2a9e139754639944f712365296d25f9d7fa56ac7497b5"
+        },
+        "on": {
+          "arrays_sha256": "7b6fc28713c914580cae8cd44f85c303a410e8a7586a019758332469a1840e42",
+          "capture_file": "native_qnice_applied_42714_runtime1.csv",
+          "capture_rows": 14781,
+          "capture_sha256": "c8866d899fffb15d1b741683f99196ddf07bd479d8463051468f0179e1dfc68a",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "35a1d6d288785fefbfd2a9e139754639944f712365296d25f9d7fa56ac7497b5"
+        }
+      }
+    },
+    {
+      "direction": "qg_bg17_rel",
+      "label": "qg_bg17_rel_1e-03_plus",
+      "nominal_step": 0.001,
+      "runs": {
+        "off": {
+          "arrays_sha256": "b3356fcd16735df61b0bb130d82baf7e2939ed0357346b2ebb35627b1c35f11b",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "e20121db59f70f7d253e459ca480e858a9594ddef6d2d7e7891d3df0b9200eec"
+        },
+        "on": {
+          "arrays_sha256": "b3356fcd16735df61b0bb130d82baf7e2939ed0357346b2ebb35627b1c35f11b",
+          "capture_file": "native_qnice_applied_42731_runtime1.csv",
+          "capture_rows": 14781,
+          "capture_sha256": "8713d8d3090cebc5b790fd0a559624474ebfef31a7ccf3b50ffc780c4fa6c864",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "e20121db59f70f7d253e459ca480e858a9594ddef6d2d7e7891d3df0b9200eec"
+        }
+      }
+    }
+  ],
+  "coordinator_source_sha256": "cc6e15c4db3650f540d497065ffa854f9877430cd69057b2c688e9ad2e52f218",
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "evaluate_source_sha256": "f6625c17ac8479e296fb67062f176da0f843260f51ccc5dc6261135b224032f3",
+  "library_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_budget_terms_20261107/build/libkdm6_c.2.0.0.dylib",
+  "library_sha256": "4c8d3fcfbdd2487a3218595b2c71f9a9fc34d6dc1cda1642376ed26bc39f217a",
+  "parent_npz_sha256": "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57",
+  "plan": {
+    "qg_bg17_rel": [
+      0.001
+    ]
+  },
+  "runner_source_sha256": "b5481c073f8c7081f0016896e4fb14c63d91394251308b61deb91feba9d55a3b",
+  "schema": "kdm6.native_nc_budget_terms_paired.v1"
+}
