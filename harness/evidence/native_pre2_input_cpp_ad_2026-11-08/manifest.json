@@ -1,0 +1,18 @@
+{
+  "files": {
+    "cpp/CMakeLists.txt": "737dbe35a7d59aa6edcfce9daaf847d3d4a71a40813caa52b741fa24973dbe42",
+    "cpp/main.cpp": "b2c6960f31a18efd73d5af832f08a5ce2440093dd0a8aceed2fd24dbcc9215c5",
+    "executed_cpp/coordinator.cpp": "18f90d206c80ff651963451df33728047f3516f7b73e396f113ebfba29bde2af",
+    "executed_cpp/instrumentation.patch.gz": "80a90a571eb8253910eaea064d88337976265aeb70a973cc48d79ac4ecd033f7",
+    "producer/export_input.py.txt": "8fe74885ae5b94acbc3461e95e7a15823dfecf4e387d620201ba706e4d9d00c4",
+    "raw/build_receipt.json": "c91a5cdbcd45b0281344ceac65335baa22826accf8651ef72e6a44cae68cf520",
+    "raw/core_flags.make.gz": "2c05a1477b580b2da6a338b6b6874d794927147d3abf67604c40958161175a1a",
+    "raw/cpp_result.json": "5f56cc58d53b87d4d04e11bebc280e0d4261ea24ddc7bf0a0081017cd2c41af6",
+    "raw/input.bin": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+    "raw/library_flags.make.gz": "77420ae2e9b7cdbc016653c5f501209bb5e2d776662b60ea9994999a2c16ab54",
+    "raw/run_receipt.json": "81ddba3c10fa3e685c4ea7132d88b3187e5e0418264821ee886c2c2f6a1be5d4",
+    "raw/runner_cache.txt.gz": "a968285c4887d5272af73ab99be37ceb11a18307422302aa95efbe11f49175f0",
+    "raw/runner_flags.make.gz": "d4b2448993039e86ca60bb7be52019b1b3f6fdff86cdaa2ca82896371f40edba"
+  },
+  "schema": "kdm6.native_pre2_input_cpp_ad_packet.v1"
+}
