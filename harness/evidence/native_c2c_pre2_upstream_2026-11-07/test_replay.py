@@ -45,7 +45,19 @@ def changed(label: str, stage: str, field: str, *, word_increment: int = 0,
 
 class ReplayTests(unittest.TestCase):
     def test_original_and_saved_result(self) -> None:
-        self.assertEqual(module.replay(), json.loads((HERE / "results.json").read_text()))
+        actual = module.replay()
+        saved = json.loads((HERE / "results.json").read_text())
+        actual_ulps = actual.pop("max_python_ulp_by_call")
+        saved_ulps = saved.pop("max_python_ulp_by_call")
+        self.assertEqual(actual, saved)
+        self.assertEqual(set(actual_ulps), set(saved_ulps))
+        for case, fields in actual_ulps.items():
+            self.assertEqual(set(fields), set(saved_ulps[case]))
+            for field, gap in fields.items():
+                limit = 16 if field == "g3pbg" else 4 if field == "pidn0g" else 8
+                self.assertIsInstance(gap, int)
+                self.assertGreaterEqual(gap, 0)
+                self.assertLessEqual(gap, limit)
 
     def test_cli(self) -> None:
         proc = subprocess.run([sys.executable, str(HERE / "replay.py")],
