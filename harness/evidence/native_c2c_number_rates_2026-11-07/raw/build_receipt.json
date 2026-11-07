@@ -1,0 +1,38 @@
+{
+  "build_command": "cmake --build host/research_evidence/native_c2c_number_rates_20261107/build --target kdm6_c -j 2",
+  "configure_command": "cmake -S host/research_evidence/native_c2c_number_rates_20261107/source -B host/research_evidence/native_c2c_number_rates_20261107/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DKDM6_NATIVE_SCALAR_CAPTURE=ON -DKDM6_ENABLE_TEST_HOOKS=OFF",
+  "paths": {
+    "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/libkdm6.a",
+    "cmake_cache": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/CMakeCache.txt",
+    "cmake_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/source/CMakeLists.txt",
+    "cold_header": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/source/include/kdm6/cold.h",
+    "cold_object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/CMakeFiles/kdm6.dir/src/cold.cpp.o",
+    "cold_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/source/src/cold.cpp",
+    "coordinator_object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/CMakeFiles/kdm6.dir/src/coordinator.cpp.o",
+    "dso": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/libkdm6_c.2.0.0.dylib",
+    "instrumentation_patch": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/instrumentation.patch",
+    "instrumented_coordinator_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/source/src/coordinator.cpp",
+    "kdm6_flags": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/build/CMakeFiles/kdm6.dir/flags.make",
+    "parent_coordinator_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/source/src/coordinator.cpp",
+    "runtime_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_number_rates_20261107/source/src/runtime.cpp"
+  },
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "schema": "kdm6.native_c2c_number_rates_build.v1",
+  "sha256": {
+    "archive": "8b4be0a750f98672857683ab3e75f03a8b9f0ab0ef18a0e7b1581b278fdd29f0",
+    "cmake_cache": "a93cc3b9821febdc875bb4fe0739c28deb7d980c50515d5cb4c3a1227a45d890",
+    "cmake_source": "4584bef636bce249782077c13a78b9d39a110d7ba927bb6f930da509b1c8cb4f",
+    "cold_header": "97016e73c21f3d6329ea9ff7c4723f4ab0129ae2fab69d17e24235005f07962a",
+    "cold_object": "f0a4cb66bf1a66fb3044b04f49a273d97af074d36813242bdbc9654b66fbf66c",
+    "cold_source": "7b8890b3f64b0d794c523b9375e04e891c88a10a0a1fa8c690e3f18f29556834",
+    "coordinator_object": "2d683a456a33fb64cba167c95a7bc6bc26021226f69f2b7acf4a45477b9a6d8a",
+    "dso": "a516e2239a9f4080b5fd6f7c6403ac13adac77bf48ab7183404eb82fcc213093",
+    "instrumentation_patch": "66c0e9fc3dffc9a6a769c1a3ca8da6086d36fdfab10020932d4973bf57e3d0af",
+    "instrumented_coordinator_source": "c0b3668b95dde4bcc92068589c9f429f4664307164fa7b292db43d9f6f55367c",
+    "kdm6_flags": "71797b7f2e1f1fd47ef5e16815b21312f8f0e796a3a383e9a98292890e37895c",
+    "parent_coordinator_source": "3673080dbe5b39fd1703869c1714c2ca444f8202b1d755febde9f664e5691cf5",
+    "runtime_source": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10"
+  },
+  "torch": "2.13.0"
+}
