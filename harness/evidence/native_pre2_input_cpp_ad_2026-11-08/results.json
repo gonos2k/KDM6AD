@@ -1,0 +1,66 @@
+{
+  "baseline_final_values_raw_equal": 468,
+  "baseline_pre2_inputs_raw_equal": 78,
+  "captured_cap_crossing_pairs": 2,
+  "captured_no_cap_pairs": 7,
+  "directions": {
+    "brs17_relative": {
+      "jvp": [
+        -1.7297525833058086e-05,
+        1.5090862845999102e-08
+      ],
+      "max_captured_no_cap_signal_error": 9.550122596145137e-09,
+      "max_one_sided_error": 9.270738260086621e-05,
+      "max_uncaptured_small_step_signal_error": 9.657116898426655e-10,
+      "recorded_cap_crossing_steps": [
+        "0.001"
+      ]
+    },
+    "joint17_relative": {
+      "jvp": [
+        3.861689270573165e-05,
+        4.291263625296025e-08
+      ],
+      "max_captured_no_cap_signal_error": 2.5178104899621986e-08,
+      "max_one_sided_error": 9.043743521110901e-05,
+      "max_uncaptured_small_step_signal_error": 7.342325775852703e-10,
+      "recorded_cap_crossing_steps": []
+    },
+    "qg17_relative": {
+      "jvp": [
+        5.591441853878974e-05,
+        2.782177340696114e-08
+      ],
+      "max_captured_no_cap_signal_error": 4.1104562867384555e-10,
+      "max_one_sided_error": 3.785120352323361e-05,
+      "max_uncaptured_small_step_signal_error": 7.477609646219178e-11,
+      "recorded_cap_crossing_steps": [
+        "0.001"
+      ]
+    }
+  },
+  "extra_small_step_pairs_without_cap_capture": 3,
+  "parent_fd_endpoints_raw_equal": 18,
+  "partial_pre2_mediated_chain": {
+    "brs17_relative": {
+      "naacw": 14397.531498126194,
+      "nc_budget": -575901.2599250479,
+      "ngacw": -302.3574952795929
+    },
+    "joint17_relative": {
+      "naacw": -32128.825415796855,
+      "nc_budget": 1285153.0166318745,
+      "ngacw": 866.2861123300246
+    },
+    "qg17_relative": {
+      "naacw": -46526.35691392305,
+      "nc_budget": 1861054.2765569224,
+      "ngacw": 1168.6436076096177
+    }
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_pre2_input_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "vjp_components_recorded_per_output": 468,
+  "vjp_coordinates_independently_fd_checked": 2
+}
