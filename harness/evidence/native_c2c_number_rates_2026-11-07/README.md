@@ -28,7 +28,7 @@ At native level 16 (`k_zero=23`), both endpoints pass the snow and graupel stric
 | Graupel Wilt factor | `0.005864724785212811` | `0.005886431000744751` |
 | C2c input QG | `4.1773620988021945e-5` | `4.185085477148888e-5` |
 
-The recorded C2c inputs also change in `avtg`, `g3pbg` and the three graupel slopes; the snow operands used by this number-rate chain remain equal. This identifies the changed inputs consumed by the graupel formula, **without assigning a counterfactual causal share to each input**. A constant returned `nsacw` is not evidence of a zero derivative in an arbitrary direction.
+At native level 16, the recorded C2c inputs that change between endpoints are `QG`, `avtg`, `g3pbg`, `rslope3_g` and `rslopeb_g`. The third graupel slope input, `rslopemu_g`, is raw-equal to `1.0` at all 39 levels in all three recorded calls. The snow operands used by this number-rate chain remain equal at native level 16. This identifies the changed inputs consumed by the graupel formula, **without assigning a counterfactual causal share to each input**. A constant returned `nsacw` is not evidence of a zero derivative in an arbitrary direction.
 
 Across each 39-level call, the snow and graupel gates are each active at six levels. Neither species has a cap-active gated level in these records. Gate ties, an active cap, negative/NaN operands and operational f32's raw Wilt-division path therefore remain untested by this packet. Separate caps do not establish a combined NC number budget.
 
