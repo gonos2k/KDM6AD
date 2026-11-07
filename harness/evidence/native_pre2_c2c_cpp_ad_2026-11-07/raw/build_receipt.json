@@ -1,0 +1,31 @@
+{
+  "build_command": "cmake --build host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build -j 2",
+  "configure_command": "cmake -S host/research_evidence/native_pre2_c2c_cpp_ad_20261107/cpp -B host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DKDM6_CAPTURE_ROOT=/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_pre2_producers_20261107",
+  "otool_L": "host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/native_pre2_c2c_cpp_ad:\n\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)\n",
+  "paths": {
+    "c10_library": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+    "cmake_cache": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/CMakeCache.txt",
+    "cmake_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/cpp/CMakeLists.txt",
+    "compile_flags": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/CMakeFiles/native_pre2_c2c_cpp_ad.dir/flags.make",
+    "linked_archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_pre2_producers_20261107/build/libkdm6.a",
+    "main_source": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/cpp/main.cpp",
+    "runner_executable": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/native_pre2_c2c_cpp_ad",
+    "runner_object": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/CMakeFiles/native_pre2_c2c_cpp_ad.dir/main.cpp.o",
+    "torch_library": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib"
+  },
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "schema": "kdm6.native_pre2_c2c_cpp_ad_build.v1",
+  "sha256": {
+    "c10_library": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b",
+    "cmake_cache": "410bf4b1ff644a45060ff52bbf189bb4478911ec58f01862d82fe028c06af77a",
+    "cmake_source": "56e96729df657839349c3d15b22a1389b59b17b5f7a9aab1ec614a617240c24b",
+    "compile_flags": "09d7de53e8cb42b2372e579b1fd312770a8c5aef328cfc7905ead29d8f583973",
+    "linked_archive": "6b796cf7048ad0391648673602bd6371ee326e0de104f1dfeee841519cac4c7c",
+    "main_source": "edc7b7d2db74900b289eb987ecea9ddb3cac0a524451ee2beda0db539f75e24d",
+    "runner_executable": "066fe2e4ee05660edce6e8c812963c68f45910a58062b26654066ae209d9a077",
+    "runner_object": "5fda343a479104bf17fb3b0c07a5014d9cc68e2e8fea21b8922f92e28b8b2ffc",
+    "torch_library": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910"
+  },
+  "torch": "2.13.0"
+}

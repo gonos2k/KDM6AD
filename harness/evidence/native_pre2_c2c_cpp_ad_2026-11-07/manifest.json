@@ -1,0 +1,12 @@
+{
+  "files": {
+    "cpp/CMakeLists.txt": "56e96729df657839349c3d15b22a1389b59b17b5f7a9aab1ec614a617240c24b",
+    "cpp/main.cpp": "edc7b7d2db74900b289eb987ecea9ddb3cac0a524451ee2beda0db539f75e24d",
+    "raw/CMakeCache.txt.gz": "f9bdedeb376ead25913e736499806abafdcb2e95f1b7624c158c7c3b3504bbe9",
+    "raw/build_receipt.json": "ca6e29cc7190a34717adc39c54d10991dbbe899cded16ae0276eb96cd60bb82d",
+    "raw/compile_flags.make.gz": "f5787f79eb53776d6eb01963b1f9e05a9697434da7bd99dadce1930ad8978b19",
+    "raw/cpp_result.json": "e8714b776afd9b21da03f20fe640dafc1640d4d07e97705e1a13fdbee46c83bb",
+    "raw/run_receipt.json": "94d1f0a5757f9c3e99a69048bb3c1aadb68837a8ce87b5ed8c1d5aaf69a9bee4"
+  },
+  "schema": "kdm6.native_pre2_c2c_cpp_ad_packet.v1"
+}

@@ -1,0 +1,169 @@
+{
+  "baseline_outputs_raw_equal": 12,
+  "branch_windows": {
+    "0.0001": {
+      "brs_relative": {
+        "max_normalized_residual": 0.06074700003148439,
+        "upper_cap_high": false,
+        "upper_cap_low": true
+      },
+      "qg_relative": {
+        "max_normalized_residual": 0.06069700503061993,
+        "upper_cap_high": true,
+        "upper_cap_low": false
+      }
+    },
+    "0.001": {
+      "joint_relative": {
+        "max_normalized_residual": 2.7640000243020747e-07,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      }
+    },
+    "1e-05": {
+      "brs_relative": {
+        "max_normalized_residual": 5.049025720953171e-09,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "joint_relative": {
+        "max_normalized_residual": 5.068141035735607e-07,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "qg_relative": {
+        "max_normalized_residual": 2.380867273215784e-10,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      }
+    },
+    "1e-06": {
+      "brs_relative": {
+        "max_normalized_residual": 8.435784605792876e-09,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "joint_relative": {
+        "max_normalized_residual": 3.4552067518234253e-07,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "qg_relative": {
+        "max_normalized_residual": 2.427942896796207e-09,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      }
+    },
+    "1e-07": {
+      "brs_relative": {
+        "max_normalized_residual": 5.116895555407281e-09,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "joint_relative": {
+        "max_normalized_residual": 5.529236659640446e-07,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      },
+      "qg_relative": {
+        "max_normalized_residual": 6.410754649355255e-09,
+        "upper_cap_high": false,
+        "upper_cap_low": false
+      }
+    }
+  },
+  "direction_names": [
+    "qg_relative",
+    "brs_relative",
+    "joint_relative"
+  ],
+  "input_order": [
+    "postfreeze_pre2_qg16",
+    "postfreeze_pre2_brs16"
+  ],
+  "output_order": [
+    "rho",
+    "brs",
+    "avtg",
+    "bvtg",
+    "g3pbg",
+    "pidn0g",
+    "rslope3_g",
+    "rslopeb_g",
+    "nsacw",
+    "ngacw",
+    "naacw",
+    "nc_budget"
+  ],
+  "physical_unit_status": "INCONCLUSIVE",
+  "portable_diagnostics": {
+    "brs_relative": {
+      "max_all_resolved_signal_relative_fd_residual_h1e5": 7.539129771853303e-07,
+      "max_fixed_branch_normalized_fd_residual": 8.435784605792876e-09,
+      "max_key_signal_relative_fd_residual_h1e5": 7.539129771853303e-07,
+      "max_transpose_fraction_of_roundoff_bound": 0.125,
+      "resolved_outputs_h1e5": [
+        "rho",
+        "brs",
+        "avtg",
+        "bvtg",
+        "g3pbg",
+        "pidn0g",
+        "rslope3_g",
+        "rslopeb_g",
+        "ngacw",
+        "naacw",
+        "nc_budget"
+      ],
+      "unresolved_outputs_h1e5": [
+        "nsacw"
+      ]
+    },
+    "joint_relative": {
+      "max_all_resolved_signal_relative_fd_residual_h1e5": 4.1956878766137333e-10,
+      "max_fixed_branch_normalized_fd_residual": 5.529236659640446e-07,
+      "max_key_signal_relative_fd_residual_h1e5": 4.1956878766137333e-10,
+      "max_transpose_fraction_of_roundoff_bound": 0.130481537185421,
+      "resolved_outputs_h1e5": [
+        "brs",
+        "rslope3_g",
+        "rslopeb_g",
+        "ngacw",
+        "naacw",
+        "nc_budget"
+      ],
+      "unresolved_outputs_h1e5": [
+        "rho",
+        "avtg",
+        "bvtg",
+        "g3pbg",
+        "pidn0g",
+        "nsacw"
+      ]
+    },
+    "qg_relative": {
+      "max_all_resolved_signal_relative_fd_residual_h1e5": 4.989781285734059e-10,
+      "max_fixed_branch_normalized_fd_residual": 6.410754649355255e-09,
+      "max_key_signal_relative_fd_residual_h1e5": 2.380867272648931e-10,
+      "max_transpose_fraction_of_roundoff_bound": 0.1712629120548202,
+      "resolved_outputs_h1e5": [
+        "rho",
+        "avtg",
+        "bvtg",
+        "g3pbg",
+        "pidn0g",
+        "rslopeb_g",
+        "ngacw",
+        "naacw",
+        "nc_budget"
+      ],
+      "unresolved_outputs_h1e5": [
+        "brs",
+        "rslope3_g",
+        "nsacw"
+      ]
+    }
+  },
+  "schema": "kdm6.native_pre2_c2c_cpp_ad_results.v1",
+  "scientific_status": "INCONCLUSIVE"
+}
