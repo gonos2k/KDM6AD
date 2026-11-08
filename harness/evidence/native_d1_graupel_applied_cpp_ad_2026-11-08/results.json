@@ -1,0 +1,37 @@
+{
+  "directional_applied_terms": {
+    "brs17_relative": {
+      "dgfac_melt": 7205496.935439144,
+      "dpgmlt_capped": -1.7898151793239176e-06,
+      "nr_from_amount": 32.252816869428095,
+      "nr_from_gfac": 88.09320503105594,
+      "qr_from_amount": 1.7898151793239176e-06
+    },
+    "joint17_relative": {
+      "dgfac_melt": -11292516.499487367,
+      "dpgmlt_capped": -6.53482972707316e-06,
+      "nr_from_amount": 117.75889985456494,
+      "nr_from_gfac": -138.06042528630877,
+      "qr_from_amount": 6.53482972707316e-06
+    },
+    "qg17_relative": {
+      "dgfac_melt": -18498013.43492651,
+      "dpgmlt_capped": -4.745014547749241e-06,
+      "nr_from_amount": 85.50608298513683,
+      "nr_from_gfac": -226.1536303173647,
+      "qr_from_amount": 4.745014547749241e-06
+    }
+  },
+  "max_captured_no_cap_signal_error": 4.448330536612838e-07,
+  "max_one_sided_error": 0.0006653791445852358,
+  "max_uncaptured_small_step_signal_error": 1.3584590610177782e-08,
+  "minimum_uncapped_amount_margin": 1.2219298037253818e-05,
+  "native_amount_and_factor_handoffs_raw_equal": 6,
+  "native_d1_applied_words_raw_equal": 78,
+  "new_stage_fields": 26,
+  "numeric_stage_tangents_per_direction": 226,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_graupel_applied_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "selected_cases": 25
+}

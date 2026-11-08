@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "ea0e08b6ea76e005edfe7a5965d620c50325f7a67cac9e37128c68db2f11852f",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_graupel_applied_ad_20261108/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_graupel_applied_ad_20261108/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "32a12c7d68101d72f634d1f148c8471505f44156827f9766ddb565672feca7c2",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "4fe29e684db0ccd5fc989e2541b502f6dd7a8e73446f1a639c1dc670f0ddaa3a",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_graupel_applied_cpp_ad_run.v1"
+}
