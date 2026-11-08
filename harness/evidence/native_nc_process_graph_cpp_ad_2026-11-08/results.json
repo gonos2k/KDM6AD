@@ -1,0 +1,66 @@
+{
+  "baseline_stage_words_raw_equal": 127,
+  "captured_no_cap_pairs": 7,
+  "directions": {
+    "brs17_relative": {
+      "budget_terms": {
+        "inline_amount": 0.0,
+        "naacw_twice": -575901.2599250478,
+        "nc_before": 0.0,
+        "nccol": -0.0,
+        "niacw_masked": -0.0,
+        "nracw": -28131.038149428932,
+        "nraut": -0.4589256081097294
+      },
+      "final_jvp": [
+        -604032.7570000849,
+        0.0
+      ],
+      "max_unflagged_signal_error": 7.544023622123557e-07
+    },
+    "joint17_relative": {
+      "budget_terms": {
+        "inline_amount": 0.0,
+        "naacw_twice": 1285153.0166318745,
+        "nc_before": 0.0,
+        "nccol": -0.0,
+        "niacw_masked": -0.0,
+        "nracw": -102688.56216510313,
+        "nraut": 0.13383704227885468
+      },
+      "final_jvp": [
+        1182464.5883038137,
+        0.0
+      ],
+      "max_unflagged_signal_error": 3.67697601556693e-07
+    },
+    "qg17_relative": {
+      "budget_terms": {
+        "inline_amount": 0.0,
+        "naacw_twice": 1861054.2765569224,
+        "nc_before": 0.0,
+        "nccol": -0.0,
+        "niacw_masked": -0.0,
+        "nracw": -74557.52401567428,
+        "nraut": 0.5927626503885841
+      },
+      "final_jvp": [
+        1786497.3453038982,
+        0.0
+      ],
+      "max_unflagged_signal_error": 1.7900610761565518e-07
+    }
+  },
+  "extra_small_step_pairs_without_cap_capture": 3,
+  "final_vjp_components_per_seed": 468,
+  "joint_endpoint_stage_words_raw_equal": 254,
+  "max_captured_no_cap_signal_error": 3.67697601556693e-07,
+  "max_one_sided_error": 0.0009588797861305197,
+  "max_uncaptured_small_step_signal_error": 7.544023622123557e-07,
+  "numeric_stage_tangents_per_direction": 119,
+  "parent_full_state_endpoints_raw_equal": 24,
+  "physical_unit_status": "INCONCLUSIVE",
+  "recorded_cap_crossing_pairs": 2,
+  "schema": "kdm6.native_nc_process_graph_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE"
+}
