@@ -1,0 +1,32 @@
+{
+  "f32_reciprocal_dmr": 0.3333333432674408,
+  "joint_b2_nested_terms": {
+    "direct_nr": -7608.19731748275,
+    "slope_via_nr": 7608.150439759804,
+    "slope_via_qr": 5134.474985978099
+  },
+  "max_captured_no_cap_signal_error": 2.1474366629680811e-07,
+  "max_one_sided_error": 0.0004250828519680638,
+  "max_python_ulp_by_field": {
+    "avedia_r": 2,
+    "rslope2_r": 2,
+    "rslope3_r": 4,
+    "rslope_r": 1
+  },
+  "max_uncaptured_small_step_signal_error": 3.840825635880064e-08,
+  "minimum_branch_margins": {
+    "den_positive": 0.7350409626960754,
+    "lambda_minus_min": 2336.099444837137,
+    "max_minus_lambda": 31702.75506419834,
+    "nr_minus_nrmin": 1499.7447713463478,
+    "qr_minus_qcrmin": 0.0007153430366603521,
+    "rslope_cap_margin": 0.0006967031123171367
+  },
+  "native_d1_and_snap_words_raw_equal": 99,
+  "new_stage_fields": 51,
+  "numeric_stage_tangents_per_direction": 200,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_rain_slope_upstream_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "selected_cases": 25
+}

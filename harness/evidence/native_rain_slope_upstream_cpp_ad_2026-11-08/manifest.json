@@ -1,0 +1,14 @@
+{
+  "files": {
+    "executed_cpp/coordinator.cpp": "a13d8c8f93a95118aa8dec63a14d33774c86521f6c7e11746ac0501d98f08092",
+    "executed_cpp/instrumentation.patch.gz": "56e1e0b55b4d4aaabf135752d2c018f5e47b1ae35c0c31f7abb5a50181d9ad80",
+    "raw/bridge_flags.make.gz": "0e523b2eb14b51af2b2f5319c3c8b61db898948e9d2666a48b50c5d8372d6036",
+    "raw/build_receipt.json": "4aef4c67b9c9ee1deb003050c73138afb072f5cb9867e0d965539dee78eb0b32",
+    "raw/core_flags.make.gz": "f4d1a340d9d9e2ab5642f36d2d6334d1cc469c519dc91ef426ac11f3504df253",
+    "raw/cpp_result.json": "695efc8a3824d8e6fdeed4216a4fc2f656a49aae6172f3ca1becd678accafc01",
+    "raw/run_receipt.json": "d48885de311427bb8865a6319211fd7f957bdff0446aed3c267a4d5558e99efa",
+    "raw/runner_cache.txt.gz": "22a5bd4eb88be2b0efe879b6fa137fc0a92b571b46b592c5c553194dae4c919d",
+    "raw/runner_flags.make.gz": "3a49e589618ecb89914f6745206bb7df9f7d1c230a6f4b9c303070ae1860f8a0"
+  },
+  "schema": "kdm6.native_rain_slope_upstream_cpp_ad_packet.v1"
+}
