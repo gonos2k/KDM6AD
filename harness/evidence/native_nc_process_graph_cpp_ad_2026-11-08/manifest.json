@@ -1,0 +1,16 @@
+{
+  "files": {
+    "cpp/CMakeLists.txt": "018a1e7758ff033865f735a8bccc54385da5cfc2fb034aa2046b01c6922137eb",
+    "cpp/main.cpp": "f610e1f0a1ad939fae3e6b94563d3ff2008e4183b5eaddedcf9e72a186169aaa",
+    "executed_cpp/coordinator.cpp": "d72e0f2e4dba41d266bf84c0902a3c73baf7a641857b8b74495af374cc7c5f42",
+    "executed_cpp/instrumentation.patch.gz": "241c82247b70be5adcddec9502a0b1f5c941cda8fba171a6ba25fdc5e250c0d4",
+    "raw/bridge_flags.make.gz": "651b0097dd8bec66108751f562185a2786a6aec47fa0389a5f69d0a1e21f4518",
+    "raw/build_receipt.json": "3cda6d6dafada378be6a814fb1263604e4d34285796495735f7380d381b14210",
+    "raw/core_flags.make.gz": "48b3d4d41890e9e318d445cfc65e7be5d7a75e5a8c233193a69e14e0e007403b",
+    "raw/cpp_result.json": "032956bac918e7f326bc3f379bec77f47435435bda7893b5c40b4777aef3aaf1",
+    "raw/run_receipt.json": "57adb7240f5630d23b945b18bb54939f5acdaed4cad4799a83aaeecc1485ff51",
+    "raw/runner_cache.txt.gz": "0212ec7b0a8ff0eb3d3f0ac8d7284192f5ca5181bb7286bc9f51ae9df43612fd",
+    "raw/runner_flags.make.gz": "66cf0f568f06eae2563975eec6432c739376dd95f084b2d0cd3288a4b15e9621"
+  },
+  "schema": "kdm6.native_nc_process_graph_cpp_ad_packet.v1"
+}
