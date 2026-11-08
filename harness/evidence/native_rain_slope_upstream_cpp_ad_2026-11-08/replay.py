@@ -65,6 +65,8 @@ VALUE_LINKS = (
     ("pre2_rain_producer.avedia_r", "nracw_producer.avedia_r"),
 )
 IDENTITY_LINKS = (
+    ("d1_melt_consumer.qr2", "d1_melt_consumer.qr_after"),
+    ("d1_melt_consumer.nr2", "d1_melt_consumer.nr_after"),
     ("fd_snap_a.nr_before", "fd_snap_a.nr_after"),
     ("d234_rain.qr_before", "d234_rain.qr_after"),
     ("d234_rain.nr_before", "d234_rain.nr_after"),
@@ -312,6 +314,9 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
     max_ulps = {key: 0 for key in ("rslope_r", "rslope2_r", "rslope3_r", "avedia_r")}
     for label, values in all_cases:
         need(set(values) == set(base["stage_scalars"]), "rain case stage inventory: " + label)
+        need(values["d1_melt_consumer.pfrzdtr"] == 0.0
+             and values["d1_melt_consumer.nfrzdtr"] == 0.0,
+             "D1 post-graupel freeze terms inactive: " + label)
         for first, second in VALUE_LINKS + IDENTITY_LINKS:
             exact(values[first], values[second], "rain value handoff: " + label + "/" + first)
         exact(values["pre2_rain_producer.dend_input"], values["pre2_producer.dend_input"],
@@ -329,6 +334,9 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
         need(all(jvp[name][field] == 0.0 for name in DIRECTIONS), "D1 pre-graupel zero JVP: " + field)
     for name in DIRECTIONS:
         tangent = jvp[name]
+        need(tangent["d1_melt_consumer.pfrzdtr"] == 0.0
+             and tangent["d1_melt_consumer.nfrzdtr"] == 0.0,
+             "D1 post-graupel freeze tangents inactive: " + name)
         for first, second in VALUE_LINKS + IDENTITY_LINKS:
             exact(tangent[first], tangent[second], "rain tangent handoff: " + name + "/" + first)
         need(tangent["pre2_rain_producer.dend_input"] == 0.0,
@@ -408,6 +416,8 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
     return {
         "schema": "kdm6.native_rain_slope_upstream_cpp_ad_replay.v1",
         "selected_cases": len(all_cases),
+        "d1_postgraupel_value_links_checked": 2 * len(all_cases),
+        "d1_postgraupel_tangent_links_checked": 2 * len(DIRECTIONS),
         "native_d1_and_snap_words_raw_equal": native_words,
         "new_stage_fields": len(new_keys),
         "numeric_stage_tangents_per_direction": len(order),

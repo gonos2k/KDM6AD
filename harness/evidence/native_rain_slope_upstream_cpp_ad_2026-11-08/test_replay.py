@@ -31,11 +31,14 @@ class ReplayTests(unittest.TestCase):
         actual = module.replay()
         saved = json.loads((HERE / "results.json").read_text())
         for key in ("schema", "selected_cases", "native_d1_and_snap_words_raw_equal",
+                    "d1_postgraupel_value_links_checked", "d1_postgraupel_tangent_links_checked",
                     "new_stage_fields", "numeric_stage_tangents_per_direction",
                     "joint_b2_nested_terms", "f32_reciprocal_dmr",
                     "scientific_status", "physical_unit_status"):
             self.assertEqual(actual[key], saved[key])
         self.assertEqual(actual["selected_cases"], 25)
+        self.assertEqual(actual["d1_postgraupel_value_links_checked"], 50)
+        self.assertEqual(actual["d1_postgraupel_tangent_links_checked"], 6)
         self.assertEqual(actual["native_d1_and_snap_words_raw_equal"], 99)
         self.assertEqual(actual["new_stage_fields"], 51)
         self.assertEqual(actual["numeric_stage_tangents_per_direction"], 200)
@@ -60,6 +63,31 @@ class ReplayTests(unittest.TestCase):
             pair["high_stages"]["d234_rain.qr_after"] += 1e-6
         with self.assertRaisesRegex(ValueError, "rain value handoff"):
             module.replay(output_override=altered(change))
+
+    def test_rehashed_postgraupel_qr2_endpoint_handoff_is_rejected(self) -> None:
+        def change(data):
+            pair = data["directions"]["qg17_relative"]["finite_differences"]["0.0001"]
+            pair["high_stages"]["d1_melt_consumer.qr2"] += 2e-16
+        with self.assertRaisesRegex(ValueError, "rain value handoff"):
+            module.replay(output_override=altered(change))
+
+    def test_rehashed_postgraupel_nr2_tangent_handoff_is_rejected(self) -> None:
+        def change(data):
+            index = data["stage_numeric_order"].index("d1_melt_consumer.nr2")
+            # Preserve the joint=sum(single) check while breaking the D1 handoff.
+            for name in ("qg17_relative", "joint17_relative"):
+                data["directions"][name]["stage_jvp"][index] += 1e-5
+        with self.assertRaisesRegex(ValueError, "rain tangent handoff"):
+            module.replay(output_override=altered(change))
+
+    def test_uncaptured_snow_intermediate_override_is_outside_arithmetic_scope(self) -> None:
+        # Non-joint FD endpoints lack an independent qr1 capture. This packet
+        # checks the post-graupel-to-final handoff, not the full D1 melt budget.
+        def change(data):
+            pair = data["directions"]["qg17_relative"]["finite_differences"]["0.0001"]
+            pair["high_stages"]["d1_melt_consumer.qr1"] = 1.0
+        result = module.replay(output_override=altered(change))
+        self.assertEqual(result["d1_postgraupel_value_links_checked"], 50)
 
     def test_rehashed_rain_parameter_is_rejected(self) -> None:
         def change(data):
