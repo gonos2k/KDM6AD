@@ -14,6 +14,8 @@ At the selected baseline, the warm cloud-number limiter is active as a gate but 
 
 The table gives **per unit relative initial-state direction** in saved numerical coordinates. Each number comes from one live C++ graph; the terms are budget contributions of the total rate tangents at this baseline, not independent process-off counterfactuals.
 
+For all 119 numeric stage outputs, public replay also checks that the stored **joint-direction JVP equals the sum of the two single-direction JVPs** within the existing term-magnitude/ULP roundoff bound. This binds the individual `nracw` and `nraut` joint tangents to independently checked single-direction tangents; the budget sum alone would allow equal-and-opposite errors in these two terms.
+
 | Initial direction | `-40 d(naacw)` | `-20 d(nracw)` | `-20 d(nraut)` | final `d(NC16)` |
 | --- | ---: | ---: | ---: | ---: |
 | QG17 | `+1,861,054.2766` | `-74,557.5240` | `+0.5928` | `+1,786,497.3453` |
@@ -32,6 +34,6 @@ The runner evaluates independent high/low values at four relative half-steps per
 
 ## Public replay and remaining limits
 
-Run `python -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v`, then `PYTHONOPTIMIZE=1 python -O -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v`. Public replay calls the pinned #556 parent replay, validates source restoration and core/bridge/runner flags, checks captured baseline and joint endpoints, verifies the raw parent states and VJPs, reconstructs the selected value budget and branch choices, and tests the selected tangents and differences. Rehashed regression cases target source words, parent captures, rate tangents, a shared intermediate endpoint offset, reservoir gating and the NC VJP.
+Run `python -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v`, then `PYTHONOPTIMIZE=1 python -O -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v`. Public replay calls the pinned #556 parent replay, validates source restoration and core/bridge/runner flags, checks captured baseline and joint endpoints, verifies the raw parent states and VJPs, reconstructs the selected value budget and branch choices, and tests the selected tangents and differences. Rehashed regression cases target source words, parent captures, individual and cancelling joint rate tangent changes, a shared intermediate endpoint offset, reservoir gating and the NC VJP.
 
 Only six selected stage signals have independent directional-difference checks, and only the two chosen initial coordinates have been independently perturbed. Other numeric stage tangents are recorded and compared where a parent or source-order identity exists, without claiming an independent FD test for every one. Most intermediate endpoints lack a second independent capture. This single-column f64 result does not certify all state/forcing coordinates, operational f32 AD, physical units or process budgets, the full host adjoint, or GK2A–RTTOV cost sensitivity. `scientific_status` and `physical_unit_status` remain `INCONCLUSIVE`.

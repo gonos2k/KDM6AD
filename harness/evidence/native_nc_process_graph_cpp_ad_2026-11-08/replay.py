@@ -281,6 +281,11 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
     jvp_by_name = {name: dict(zip(numeric_order, finite_vector(data["directions"][name]["stage_jvp"],
                                                          119, "stage JVP " + name)))
                    for name in DIRECTIONS}
+    for key in numeric_order:
+        qg_tangent = jvp_by_name["qg17_relative"][key]
+        brs_tangent = jvp_by_name["brs17_relative"][key]
+        near_roundoff(jvp_by_name["joint17_relative"][key], qg_tangent + brs_tangent,
+                      (qg_tangent, brs_tangent), "joint stage JVP linearity: " + key)
     qg0 = data["directions"]["qg17_relative"]["seed_qg17"]
     brs0 = data["directions"]["brs17_relative"]["seed_brs17"]
     need(qg0 > 0 and brs0 > 0, "positive native17 input seeds")
@@ -398,6 +403,7 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
         "joint_endpoint_stage_words_raw_equal": joint_stage_capture_words,
         "parent_full_state_endpoints_raw_equal": parent_raw_endpoints,
         "numeric_stage_tangents_per_direction": len(numeric_order),
+        "joint_stage_linearity_components": len(numeric_order),
         "final_vjp_components_per_seed": 468,
         "recorded_cap_crossing_pairs": 2,
         "captured_no_cap_pairs": 7,
