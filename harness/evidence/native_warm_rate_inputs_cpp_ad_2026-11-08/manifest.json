@@ -1,0 +1,14 @@
+{
+  "files": {
+    "executed_cpp/coordinator.cpp": "478c4715ee63d76ca49dc1ced10307d18cea11052d94dcd366143faa8785aa2c",
+    "executed_cpp/instrumentation.patch.gz": "23ff117268ef00eb6166ca5f48d21fdb890d963f419a7034f2637c32c851434c",
+    "raw/bridge_flags.make.gz": "bdc082f17043c0a9345a461ec58e0445c1b4dbba5f139d8b1927ed567204f806",
+    "raw/build_receipt.json": "a183a689177065e207e7751c35f6c7fec44f010a6b7e8586ddfc4471ba2b7ccb",
+    "raw/core_flags.make.gz": "b4ea49bfb1e5a43a121c0a896f9cdffa7e780cc05c8a5a99ed807b2e0a08944e",
+    "raw/cpp_result.json": "91972000f5284e53ca54c92bb477f988de3f1f7eaba989362dcd1141df1e9bb3",
+    "raw/run_receipt.json": "e97a796553014724c47a4fe93cac2d8ad4da505e08b69554d04d817c7110bad7",
+    "raw/runner_cache.txt.gz": "96761a4010455281191d9cbd94c77e7b3aa249a538e6fe6d41546fd544778c62",
+    "raw/runner_flags.make.gz": "e789b0eaff1413fead5e691a000fdf401d485bef17bcfa661da0f2988b115e6b"
+  },
+  "schema": "kdm6.native_warm_rate_inputs_cpp_ad_packet.v1"
+}
