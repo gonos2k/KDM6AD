@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "4821dceb5a722fd12743342b7bb9ed723710138b0dea5635d722a417420dfb17",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_warm_rate_inputs_20261108/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_warm_rate_inputs_20261108/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "6807f50e805f40512026e0df2e2e9a2ce81a680204d4ea3d62771f3b01eb844d",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "91972000f5284e53ca54c92bb477f988de3f1f7eaba989362dcd1141df1e9bb3",
+  "returncode": 0,
+  "schema": "kdm6.native_warm_rate_inputs_cpp_ad_run.v1"
+}
