@@ -32,13 +32,15 @@ class ReplayTests(unittest.TestCase):
         saved = json.loads((HERE / "results.json").read_text())
         for key in ("schema", "baseline_stage_words_raw_equal",
                     "joint_endpoint_stage_words_raw_equal", "parent_full_state_endpoints_raw_equal",
-                    "numeric_stage_tangents_per_direction", "final_vjp_components_per_seed",
+                    "numeric_stage_tangents_per_direction", "joint_stage_linearity_components",
+                    "final_vjp_components_per_seed",
                     "captured_no_cap_pairs", "extra_small_step_pairs_without_cap_capture",
                     "recorded_cap_crossing_pairs", "scientific_status", "physical_unit_status"):
             self.assertEqual(actual[key], saved[key])
         self.assertEqual(actual["baseline_stage_words_raw_equal"], 127)
         self.assertEqual(actual["joint_endpoint_stage_words_raw_equal"], 254)
         self.assertEqual(actual["parent_full_state_endpoints_raw_equal"], 24)
+        self.assertEqual(actual["joint_stage_linearity_components"], 119)
         self.assertLess(actual["max_captured_no_cap_signal_error"], 1e-6)
         self.assertLess(actual["max_uncaptured_small_step_signal_error"], 1e-6)
         self.assertEqual(actual["directions"]["joint17_relative"]["final_jvp"][1], 0.0)
@@ -67,8 +69,19 @@ class ReplayTests(unittest.TestCase):
         def change(data):
             order = data["stage_numeric_order"]
             i = order.index("nc_budget.nracw")
-            data["directions"]["joint17_relative"]["stage_jvp"][i] += 100.0
+            # Preserve joint linearity so the NC budget check remains an independent gate.
+            for name in ("qg17_relative", "joint17_relative"):
+                data["directions"][name]["stage_jvp"][i] += 100.0
         with self.assertRaisesRegex(ValueError, "full NC budget derivative"):
+            module.replay(output_override=altered(change))
+
+    def test_rehashed_canceling_joint_rate_tangents_are_rejected(self) -> None:
+        def change(data):
+            order = data["stage_numeric_order"]
+            joint = data["directions"]["joint17_relative"]["stage_jvp"]
+            joint[order.index("nc_budget.nracw")] += 100.0
+            joint[order.index("nc_budget.nraut")] -= 100.0
+        with self.assertRaisesRegex(ValueError, "joint stage JVP linearity"):
             module.replay(output_override=altered(change))
 
     def test_rehashed_shared_intermediate_offset_is_rejected(self) -> None:

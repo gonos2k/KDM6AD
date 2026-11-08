@@ -54,6 +54,7 @@
   "extra_small_step_pairs_without_cap_capture": 3,
   "final_vjp_components_per_seed": 468,
   "joint_endpoint_stage_words_raw_equal": 254,
+  "joint_stage_linearity_components": 119,
   "max_captured_no_cap_signal_error": 3.67697601556693e-07,
   "max_one_sided_error": 0.0009588797861305197,
   "max_uncaptured_small_step_signal_error": 7.544023622123557e-07,
