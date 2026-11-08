@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "0b91ad1bdb96ceb554d552ac96e21dfeeaa68ac77956c1cf504301b1496f4612",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_rain_slope_upstream_20261108/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_rain_slope_upstream_20261108/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "58f9a49c63a7b1bbee1b85a74afe2816506edf8bcfee226383c05d2b0503357a",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "695efc8a3824d8e6fdeed4216a4fc2f656a49aae6172f3ca1becd678accafc01",
+  "returncode": 0,
+  "schema": "kdm6.native_rain_slope_upstream_cpp_ad_run.v1"
+}

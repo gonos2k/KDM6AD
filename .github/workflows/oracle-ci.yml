@@ -57,6 +57,7 @@ on:
       - 'harness/evidence/native_pre2_input_cpp_ad_2026-11-08/**'
       - 'harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08/**'
       - 'harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08/**'
+      - 'harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -160,6 +161,7 @@ jobs:
           python -m unittest discover -s harness/evidence/native_pre2_input_cpp_ad_2026-11-08 -v
           python -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v
           python -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
+          python -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -199,3 +201,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_pre2_input_cpp_ad_2026-11-08 -v
           python -O -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v
           python -O -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
+          python -O -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
