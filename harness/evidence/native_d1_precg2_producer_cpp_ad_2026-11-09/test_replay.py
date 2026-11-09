@@ -33,6 +33,12 @@ def endpoint(data: dict, direction: str = "joint17_relative", h: str = "0.0001",
     return data["directions"][direction]["finite_differences"][h][side + "_stages"]
 
 
+def shifted_ulps(value: float, count: int, toward: float = math.inf) -> float:
+    for _ in range(count):
+        value = math.nextafter(value, toward)
+    return value
+
+
 class ReplayTests(unittest.TestCase):
     def assert_saved_contract(self, actual: dict, saved: dict) -> None:
         stable_keys = (
@@ -181,30 +187,114 @@ class ReplayTests(unittest.TestCase):
         def change(data):
             key = module.PRECG2_STAGE + ".precg2"
             stages = endpoint(data, direction="joint17_relative", h="0.0001", side="high")
-            stages[key] = math.nextafter(stages[key], math.inf)
+            captured = stages[key]
+            expected = module.source_order_precg2(
+                stages[module.PRECG2_STAGE + ".avtg"],
+                stages[module.PRECG2_STAGE + ".g5pbgo2"],
+            )
+            # Move toward the independent value so the 8-ULP arithmetic gate
+            # cannot preempt the exact producer-to-consumer handoff check.
+            stages[key] = math.nextafter(captured, expected if expected != captured else math.inf)
+            self.assertEqual(module.ulp_distance(stages[key], captured), 1)
+            self.assertLessEqual(module.ulp_distance(stages[key], expected), 8)
         with self.assertRaisesRegex(ValueError, "parent D1 melt precg2 value handoff"):
             module.replay(output_override=altered(change))
 
-    def test_g5_gamma_portable_one_ulp_candidate(self) -> None:
+    def test_g5_gamma_portable_one_and_sixteen_ulp_candidates(self) -> None:
         original = module.source_order_g5pbgo2
+        baseline = json.loads((HERE / "raw/cpp_result.json").read_text())["baseline"]["stage_scalars"]
+        baseline_input = baseline[module.PRECG2_STAGE + ".bvtg2"]
+        baseline_captured = baseline[module.PRECG2_STAGE + ".g5pbgo2"]
 
-        def one_ulp(value: float) -> float:
-            return math.nextafter(original(value), math.inf)
+        for distance in (1, 16):
+            with self.subTest(gamma_ulp_distance=distance):
+                def portable_candidate(value: float) -> float:
+                    if value == baseline_input:
+                        return shifted_ulps(baseline_captured, distance)
+                    return original(value)
 
-        with mock.patch.object(module, "source_order_g5pbgo2", side_effect=one_ulp):
-            result = module.replay()
-        self.assertLessEqual(result["precg2_source_order_g5_max_ulp_distance"], 16)
-        saved = json.loads((HERE / "results.json").read_text())
-        self.assert_saved_contract(result, saved)
+                with mock.patch.object(module, "source_order_g5pbgo2",
+                                       side_effect=portable_candidate):
+                    result = module.replay()
+                row = next(row for row in result["precg2_source_order_checks"]
+                           if row["case"] == "baseline")
+                self.assertEqual(row["g5pbgo2_ulp_distance"], distance)
+                saved = json.loads((HERE / "results.json").read_text())
+                self.assert_saved_contract(result, saved)
 
     def test_g5_outside_portable_bound_is_rejected(self) -> None:
         def change(data):
             values = data["baseline"]["stage_scalars"]
             key = module.PRECG2_STAGE + ".g5pbgo2"
-            for _ in range(20):
-                values[key] = math.nextafter(values[key], math.inf)
+            expected = module.source_order_g5pbgo2(values[module.PRECG2_STAGE + ".bvtg2"])
+            values[key] = shifted_ulps(expected, 17)
+            self.assertEqual(module.ulp_distance(values[key], expected), 17)
         with self.assertRaisesRegex(ValueError, "g5pbgo2 gamma within 16 ULP"):
             module.replay(output_override=altered(change))
+
+    def test_precg2_formula_portable_eight_ulp_boundary(self) -> None:
+        original = module.source_order_precg2
+        baseline = json.loads((HERE / "raw/cpp_result.json").read_text())["baseline"]["stage_scalars"]
+        baseline_avtg = baseline[module.PRECG2_STAGE + ".avtg"]
+        baseline_g5 = baseline[module.PRECG2_STAGE + ".g5pbgo2"]
+        baseline_captured = baseline[module.PRECG2_STAGE + ".precg2"]
+
+        def candidate(avtg: float, g5: float, distance: int) -> float:
+            if avtg == baseline_avtg and g5 == baseline_g5:
+                return shifted_ulps(baseline_captured, distance)
+            return original(avtg, g5)
+
+        with mock.patch.object(module, "source_order_precg2",
+                               side_effect=lambda avtg, g5: candidate(avtg, g5, 8)):
+            result = module.replay()
+        row = next(row for row in result["precg2_source_order_checks"]
+                   if row["case"] == "baseline")
+        self.assertEqual(row["precg2_ulp_distance"], 8)
+        self.assert_saved_contract(result, json.loads((HERE / "results.json").read_text()))
+
+        with mock.patch.object(module, "source_order_precg2",
+                               side_effect=lambda avtg, g5: candidate(avtg, g5, 9)):
+            with self.assertRaisesRegex(ValueError, "precg2 pow/product within 8 ULP"):
+                module.replay()
+
+    def test_regressions_remain_targeted_at_permitted_libm_offsets(self) -> None:
+        baseline = json.loads((HERE / "raw/cpp_result.json").read_text())["baseline"]["stage_scalars"]
+        saved = json.loads((HERE / "results.json").read_text())
+        gamma_input = baseline[module.PRECG2_STAGE + ".bvtg2"]
+        gamma_captured = baseline[module.PRECG2_STAGE + ".g5pbgo2"]
+        original_gamma = module.source_order_g5pbgo2
+
+        for distance, regression in (
+            (4, self.test_g5_outside_portable_bound_is_rejected),
+            (16, self.test_g5_gamma_portable_one_and_sixteen_ulp_candidates),
+        ):
+            with self.subTest(gamma_environment_ulp=distance):
+                def gamma_environment(value: float) -> float:
+                    if value == gamma_input:
+                        return shifted_ulps(gamma_captured, distance)
+                    return original_gamma(value)
+
+                with mock.patch.object(module, "source_order_g5pbgo2",
+                                       side_effect=gamma_environment):
+                    self.assert_saved_contract(module.replay(), saved)
+                    regression()
+
+        stages = endpoint(json.loads((HERE / "raw/cpp_result.json").read_text()),
+                          direction="joint17_relative", h="0.0001", side="high")
+        precg_avtg = stages[module.PRECG2_STAGE + ".avtg"]
+        precg_g5 = stages[module.PRECG2_STAGE + ".g5pbgo2"]
+        precg_captured = stages[module.PRECG2_STAGE + ".precg2"]
+        original_precg2 = module.source_order_precg2
+
+        def precg2_environment(avtg: float, g5: float) -> float:
+            if avtg == precg_avtg and g5 == precg_g5:
+                return shifted_ulps(precg_captured, 8, -math.inf)
+            return original_precg2(avtg, g5)
+
+        with mock.patch.object(module, "source_order_precg2",
+                               side_effect=precg2_environment):
+            self.assert_saved_contract(module.replay(), saved)
+            self.test_one_ulp_precg2_parent_handoff_is_rejected()
 
     def test_precg2_jvp_chain_mutation_is_rejected(self) -> None:
         def change(data):
