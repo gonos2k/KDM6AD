@@ -1,0 +1,23 @@
+# Full-call native D1 graupel melt amount production (2026-11-09)
+
+This packet follows the saved `(203,149)` native column, 39 levels, 20-second f64 call and initial QG17/BRS17 directions through [#566](../native_d1_progb_pid_cpp_ad_2026-11-09/README.md). A test-only live hook retains the executed D1 `melting_torch` producer tensors that were previously available only through value-only native capture. The **separate #553 native capture** identifies its matching producer rows as `runtime_call=1`, `one_step_call=1`, `substep=0`, native-16 `k_zero=23`; the standalone C++ runner records one hook-enabled full-call evaluation without WRF call counters. The hook records original tensors before the existing capture logger's value-only detach. Parent full-call outputs, JVPs and VJPs are checked for noninterference.
+
+## Signed source-order chain
+
+Snow melt changes the temperature consumed by graupel melt: `t1=t+(xlf/cpm)*psmlt_capped_g`. Graupel producer terms and `xka(t1,den)` form the raw signed rate `P=pgmlt_raw`; its 20-second candidate is `B=P*dt`. The executed amount is `A=where(warm && qg>0, min(max(B,-qg),0),0)`, and the separately stored applied rate is `A/dt`. The source-order replay checks the captured operands and intermediate f64 words, including the distinction between `den` in `xka` and the `mass_den` used by the graupel rate. It binds `A` by raw value and JVP to the previously verified D1 QR/NR consumer.
+
+The baseline and joint `h=10^-3` endpoints are anchored to existing native D1 producer rows by raw word and dtype. The other saved high/low values are isolated C++ evaluations without a second independent native-host intermediate capture. Independent represented-gap differences, output ULPs, baseline-anchored one-sided differences and observed branch sides are reported separately from same-graph JVP linearity. Two large single-direction pairs with previously captured upstream native-17 density-cap crossings are excluded from local derivative acceptance; three extra small-step pairs lack an independent cap capture.
+
+The scalar source-order replay checks **25 derived producer fields (three branch bits and 22 f64 values) at all 25 saved cases** by raw words. The remaining captured fields are inputs or outputs preserved and anchored where the prior native capture is available; this packet does not independently reconstruct every earlier source of those inputs.
+
+All **62 producer fields** at the baseline and joint `±10^-3` endpoints match the separate #553 native capture by raw word and dtype (**186 comparisons**). The new stage adds 59 numeric fields, raising the full-call per-direction numeric JVP inventory from 247 to **306**. Seven newly checked source nodes over ten accepted high/low pairs yield **70 resolved differences**; their maximum signal-relative errors are `4.079e-8` for captured noncrossing pairs and `3.034e-9` for the extra small-step pairs, both under the declared `10^-6` limit. The parent A difference is retained and not counted as a new independent signal.
+
+All 25 selected cases are strictly inside the graupel amount cap: the minimum margins to `-QG` and zero are `4.175634e-5` and `1.221930e-5` in the stored amount coordinate. The warm temperature exceeds its threshold by at least `1.530319 K`; the earlier snow amount and the graupel square-root and mass-denominator floors are likewise inactive in these cases. These separate numerical margins support this selected interior-branch interpretation, not derivatives at the boundaries.
+
+At the selected baseline, `t1=274.634596943946 K`, `P=-6.112916695431711e-7`, and `B=A=-1.2225833390863422e-5`. In the joint initial QG17+BRS17 relative direction, `d(t1)=d(xka_val_g)=0`; the two graupel bracket terms have tangents `+0.3090090364` and `+1.1685223382`, giving `d(pgmlt_sum)=+1.4775313746`. The full C++ graph reports `d(P)=-3.2674148635e-7` and `d(A)=-6.5348297271e-6`. These values identify the selected numerical chain, not a process-off attribution.
+
+## Limits
+
+This is a selected active, uncapped f64 execution branch. Retaining the producer intermediates does not by itself certify every upstream rate input's source derivative or an active melt-limit boundary. The signed amount and its numerical QR/NR effects do not establish physical particle-number conservation. Operational f32, other native columns and decompositions, host AD and GK2A–RTTOV cost derivatives remain separate work. `scientific_status` and `physical_unit_status` remain `INCONCLUSIVE`.
+
+Run `python -m unittest discover -s harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09 -v` and repeat with `PYTHONOPTIMIZE=1 python -O`.

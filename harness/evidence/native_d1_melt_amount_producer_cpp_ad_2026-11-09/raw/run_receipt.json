@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "a4c940cba82c17a981567c3ea77fef5a13de0c717aa50f031815fe0a33b0773a",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_melt_amount_producer_ad_20261109/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_melt_amount_producer_ad_20261109/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "bdc3acb4204be5f6a1b789023eed4a73b2100e21af1fce213c6680f4fe8e2f0a",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "2f35b6e1c340f555b58e81d45b2d9e9a6b3eebbcad9143a3cc70974cfaf57b6f",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_melt_amount_producer_cpp_ad_run.v1"
+}
