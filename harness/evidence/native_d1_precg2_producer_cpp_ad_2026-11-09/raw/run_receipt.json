@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "4071ac4e7e4fde2bac17dc1ecec7519d07842c6fcf201a5f34815297c9d59df4",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_precg2_producer_ad_20261109/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_precg2_producer_ad_20261109/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "8a641059a573021967b80d1ac61fea6ad24b138bace9929ede9fdc5470cdfdb4",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "99de13b5bfa37389d4686dd3705f9c9162f699a0632dece1ef1f6fc203053c3f",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_precg2_producer_cpp_ad_run.v1"
+}
