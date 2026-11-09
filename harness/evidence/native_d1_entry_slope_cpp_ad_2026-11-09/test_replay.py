@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 
 HERE = Path(__file__).resolve().parent
@@ -32,9 +34,7 @@ def baseline(data: dict, field: str) -> float:
 
 
 class ReplayTests(unittest.TestCase):
-    def test_original_and_saved_contract(self) -> None:
-        actual = module.replay()
-        saved = json.loads((HERE / "results.json").read_text())
+    def assert_saved_contract(self, actual: dict, saved: dict) -> None:
         for key in (
             "schema", "selected_cases", "parent_stage_fields", "parent_gfac_stage_fields",
             "new_entry_slope_stage_fields", "native_d1_entry_anchor_words_raw_equal",
@@ -42,10 +42,49 @@ class ReplayTests(unittest.TestCase):
             "numeric_stage_tangents_per_direction", "fd_branch_classifications",
             "entry_fd_resolved_signal_count", "entry_fd_rounding_floor_cases",
             "entry_one_sided_rounding_floor_cases", "directional_applied_terms",
-            "entry_slope_branch_checks", "minimum_accepted_rhox_upper_margin",
+            "minimum_accepted_rhox_upper_margin",
             "scientific_status", "physical_unit_status",
         ):
             self.assertEqual(actual[key], saved[key])
+
+        # Independent Python libm can move these two diagnostics within the
+        # declared 8-ULP envelope. All other case fields remain exact.
+        cpp = json.loads((HERE / "raw/cpp_result.json").read_text())
+        cases = {"baseline": cpp["baseline"]["stage_scalars"]}
+        for direction in module.DIRECTIONS:
+            for h, pair in cpp["directions"][direction]["finite_differences"].items():
+                for side in ("low", "high"):
+                    cases[f"{direction}/{h}/{side}"] = pair[f"{side}_stages"]
+        self.assertEqual(len(cases), 25)
+        actual_rows = actual["entry_slope_branch_checks"]
+        saved_rows = saved["entry_slope_branch_checks"]
+        portable = {"expected_rslope_g", "rslope_g_ulp_distance"}
+        for summary, rows in ((actual, actual_rows), (saved, saved_rows)):
+            self.assertEqual(len(rows), len(cases))
+            self.assertEqual({row["case"] for row in rows}, set(cases))
+            distances = []
+            for row in rows:
+                expected = row["expected_rslope_g"]
+                distance = row["rslope_g_ulp_distance"]
+                self.assertIs(type(distance), int)
+                self.assertIsInstance(expected, (int, float))
+                self.assertTrue(math.isfinite(expected) and expected > 0)
+                captured = cases[row["case"]]["d1_entry_slope_inputs.rslope_g"]
+                self.assertEqual(distance, module.ulp_distance(expected, captured))
+                self.assertLessEqual(distance, 8)
+                distances.append(distance)
+            self.assertEqual(summary["maximum_entry_slope_formula_ulp_distance"], max(distances))
+        self.assertEqual(
+            [{key: value for key, value in row.items() if key not in portable}
+             for row in actual_rows],
+            [{key: value for key, value in row.items() if key not in portable}
+             for row in saved_rows],
+        )
+
+    def test_original_and_saved_contract(self) -> None:
+        actual = module.replay()
+        saved = json.loads((HERE / "results.json").read_text())
+        self.assert_saved_contract(actual, saved)
         self.assertEqual(actual["selected_cases"], 25)
         self.assertEqual(actual["parent_stage_fields"], 26)
         self.assertEqual(actual["parent_gfac_stage_fields"], 7)
@@ -66,6 +105,38 @@ class ReplayTests(unittest.TestCase):
                  if row["h"] == "1e-06"]
         self.assertTrue(all(row["classification"] == "small_step_no_independent_cap_capture"
                             for row in small))
+
+    def test_permitted_libm_ulp_diagnostic_is_portable(self) -> None:
+        saved = json.loads((HERE / "results.json").read_text())
+        cpp = json.loads((HERE / "raw/cpp_result.json").read_text())
+        baseline_stages = cpp["baseline"]["stage_scalars"]
+        prefix = "d1_entry_slope_inputs."
+        baseline_inputs = tuple(baseline_stages[prefix + field]
+                                for field in ("qg", "dend", "pidn0g"))
+        captured = baseline_stages[prefix + "rslope_g"]
+        source_order = module.source_order_rslope
+
+        def one_ulp_result(qg: float, dend: float, pidn0g: float):
+            expected, denominator, ratio = source_order(qg, dend, pidn0g)
+            if (qg, dend, pidn0g) == baseline_inputs:
+                expected = math.nextafter(captured, math.inf)
+            return expected, denominator, ratio
+
+        with mock.patch.object(module, "source_order_rslope", side_effect=one_ulp_result):
+            actual = module.replay()
+        self.assertEqual(actual["entry_slope_branch_checks"][0]["rslope_g_ulp_distance"], 1)
+        self.assertNotEqual(actual["entry_slope_branch_checks"][0]["expected_rslope_g"],
+                            saved["entry_slope_branch_checks"][0]["expected_rslope_g"])
+        self.assert_saved_contract(actual, saved)
+
+        wrong_distance = copy.deepcopy(saved)
+        wrong_distance["entry_slope_branch_checks"][0]["rslope_g_ulp_distance"] = 2
+        with self.assertRaises(AssertionError):
+            self.assert_saved_contract(actual, wrong_distance)
+        wrong_branch = copy.deepcopy(saved)
+        wrong_branch["entry_slope_branch_checks"][0]["rhox_branch"] = "upper_cap"
+        with self.assertRaises(AssertionError):
+            self.assert_saved_contract(actual, wrong_branch)
 
     def test_cli(self) -> None:
         proc = subprocess.run([sys.executable, str(HERE / "replay.py")],
