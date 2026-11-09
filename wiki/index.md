@@ -146,3 +146,5 @@ date_modified: 2026-10-26
 - [[sources/pr411-v4-actual-integration-2026-10-12]] — One real V4 spawn/RTTOV/analysis/audit/checkpoint path on retained Jul19 inputs; no native rerun/new date or convergence claim.
 
 - [[sources/east-optical-coordinate-factor-2026-10-31|East optical coordinate-factor replay]] — Offline reconstruction of 140 saved GG/PP coordinate factors and BTs using separately supplied SHA-pinned RTTOV coefficients.
+
+- [[sources/native-d1-entry-precg2-2026-11-09]] — Entry ProgB precg2 production, D1 handoff and selected f64 derivative evidence, with explicit rounding-floor and capture limits.
