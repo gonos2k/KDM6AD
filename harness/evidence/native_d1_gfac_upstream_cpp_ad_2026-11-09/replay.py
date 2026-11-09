@@ -35,6 +35,11 @@ NEW_FIELDS = {
 }
 GFAC_STAGE = "d1_gfac_inputs"
 GFAC_FIELDS = ("qg", "t", "rslope_g", "n0go", "qcrmin", "t0c", "gfac_melt")
+NATIVE_CAPTURE_SHA256 = {
+    "baseline": "be33f81ef06b578bc8b3048be34f8df40c02232578acc6f89b292d80522486ad",
+    "qg_bg17_rel_1e-03_minus": "547b01323c206ce76ecd614301474221b7e2a0520933df3833e0e83198d70246",
+    "qg_bg17_rel_1e-03_plus": "9ca747c116af3f8b0224c71ab403c1d173255dff39fe640d90e69e1da537a346",
+}
 CAP_CROSS = {("qg17_relative", "0.001"), ("brs17_relative", "0.001")}
 SIGNALS = (
     "c3_pre_mf_d1.pgmlt_capped", "d1_melt_consumer.gfac_melt",
@@ -178,7 +183,11 @@ def provenance(original: bytes) -> None:
 
 
 def capture(label: str) -> dict[str, dict[str, str]]:
-    raw = gzip.decompress((PRE2 / "raw/cases" / (label + ".csv.gz")).read_bytes()).decode()
+    need(label in NATIVE_CAPTURE_SHA256, "native producer capture role")
+    capture_path = PRE2 / "raw/cases" / (label + ".csv.gz")
+    compressed = capture_path.read_bytes()
+    need(sha(compressed) == NATIVE_CAPTURE_SHA256[label], "native producer capture SHA: " + label)
+    raw = gzip.decompress(compressed).decode()
     need(raw.endswith("status=complete\n"), "complete native capture: " + label)
     rows = csv.DictReader(line for line in io.StringIO(raw) if not line.startswith("#"))
     return {r["stage"] + "." + r["field"]: r for r in rows if r["k_zero"] == "23"}
@@ -300,12 +309,18 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
                   for name in DIRECTIONS for h, pair in data["directions"][name]["finite_differences"].items()
                   for side in ("low", "high")]
     native_words = producer_words = native_gfac_words = 0
+    native_capture_receipts = []
     for label, values in (("baseline", base["stage_scalars"]),
                           ("qg_bg17_rel_1e-03_minus",
                            data["directions"]["joint17_relative"]["finite_differences"]["0.001"]["low_stages"]),
                           ("qg_bg17_rel_1e-03_plus",
                            data["directions"]["joint17_relative"]["finite_differences"]["0.001"]["high_stages"])):
         rows = capture(label)
+        native_capture_receipts.append({
+            "packet": "native_c2c_pre2_upstream_2026-11-07",
+            "file": "raw/cases/" + label + ".csv.gz",
+            "sha256": NATIVE_CAPTURE_SHA256[label],
+        })
         for field in NEW_FIELDS:
             key = NEW_STAGE + "." + field
             need(rows[key]["dtype"] == "f64" and word(values[key]) == rows[key]["raw_hex"].zfill(16),
@@ -442,6 +457,8 @@ def replay(*, output_override: tuple[bytes, str] | None = None) -> dict:
         "new_gfac_stage_fields": len(GFAC_FIELDS),
         "native_d1_applied_words_raw_equal": native_words,
         "native_d1_gfac_words_raw_equal": native_gfac_words,
+        "native_d1_gfac_capture_receipts": native_capture_receipts,
+        "d1_gfac_source_expression": "(rslope_g * n0go) / max(qg, qcrmin); checked branch has qg > qcrmin",
         "native_amount_and_factor_handoffs_raw_equal": producer_words,
         "numeric_stage_tangents_per_direction": len(order),
         "minimum_uncapped_amount_margin": minimum_amount_margin,

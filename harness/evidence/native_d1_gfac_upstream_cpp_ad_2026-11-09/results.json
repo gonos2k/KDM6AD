@@ -1,4 +1,5 @@
 {
+  "d1_gfac_source_expression": "(rslope_g * n0go) / max(qg, qcrmin); checked branch has qg > qcrmin",
   "directional_applied_terms": {
     "brs17_relative": {
       "dgfac_from_n0go": 0.0,
@@ -41,6 +42,23 @@
   "minimum_uncapped_amount_margin": 1.2219298037253818e-05,
   "native_amount_and_factor_handoffs_raw_equal": 6,
   "native_d1_applied_words_raw_equal": 78,
+  "native_d1_gfac_capture_receipts": [
+    {
+      "file": "raw/cases/baseline.csv.gz",
+      "packet": "native_c2c_pre2_upstream_2026-11-07",
+      "sha256": "be33f81ef06b578bc8b3048be34f8df40c02232578acc6f89b292d80522486ad"
+    },
+    {
+      "file": "raw/cases/qg_bg17_rel_1e-03_minus.csv.gz",
+      "packet": "native_c2c_pre2_upstream_2026-11-07",
+      "sha256": "547b01323c206ce76ecd614301474221b7e2a0520933df3833e0e83198d70246"
+    },
+    {
+      "file": "raw/cases/qg_bg17_rel_1e-03_plus.csv.gz",
+      "packet": "native_c2c_pre2_upstream_2026-11-07",
+      "sha256": "9ca747c116af3f8b0224c71ab403c1d173255dff39fe640d90e69e1da537a346"
+    }
+  ],
   "native_d1_gfac_words_raw_equal": 21,
   "new_gfac_stage_fields": 7,
   "numeric_stage_tangents_per_direction": 233,

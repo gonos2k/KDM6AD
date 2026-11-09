@@ -33,6 +33,7 @@ class ReplayTests(unittest.TestCase):
         for key in ("schema", "selected_cases", "parent_stage_fields", "new_gfac_stage_fields",
                     "native_d1_applied_words_raw_equal",
                     "native_d1_gfac_words_raw_equal",
+                    "native_d1_gfac_capture_receipts", "d1_gfac_source_expression",
                     "native_amount_and_factor_handoffs_raw_equal",
                     "numeric_stage_tangents_per_direction", "directional_applied_terms",
                     "scientific_status", "physical_unit_status"):
