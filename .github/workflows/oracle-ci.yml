@@ -59,6 +59,7 @@ on:
       - 'harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08/**'
       - 'harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08/**'
       - 'harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08/**'
+      - 'harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -84,7 +85,7 @@ jobs:
   oracle-pytest:
     name: oracle pytest (f64 reference)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -164,6 +165,7 @@ jobs:
           python -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
           python -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
           python -m unittest discover -s harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08 -v
+          python -m unittest discover -s harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -205,3 +207,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
           python -O -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
           python -O -m unittest discover -s harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08 -v
+          python -O -m unittest discover -s harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09 -v
