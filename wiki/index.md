@@ -154,3 +154,5 @@ date_modified: 2026-10-26
 - [[sources/native-d1-thermal-input-2026-11-10]] — Initial TH/QV to D1 thermal chain, native endpoint anchors and distinct D1/final activation branch coverage.
 
 - [[sources/native-activation-upper-boundary-2026-11-10]] — Adjacent-f64 TH/QV activation brackets and side derivatives with output-resolution and branch limits.
+
+- [[sources/native-activation-operands-2026-11-10]] — Actual fraction power and separate rate-cap operands in the selected f64 boundary sweep.

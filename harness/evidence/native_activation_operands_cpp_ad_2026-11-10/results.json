@@ -1,0 +1,134 @@
+{
+  "default_cpp_projection": {
+    "new_numeric_operand_stages": 9,
+    "old_baseline_stage_fields_projected": 336,
+    "old_numeric_stage_fields_projected": 322
+  },
+  "forward_call_ordinal_first": 1,
+  "forward_call_ordinal_last": 189,
+  "operand_bearing_forward_events": 189,
+  "operand_comparison_classifications": {
+    "ncact_raw_above_cap": 0,
+    "ncact_raw_below_cap": 104,
+    "ncact_tie": 85,
+    "pow_above_one": 85,
+    "pow_below_one": 104,
+    "pow_equal_one": 0
+  },
+  "operand_interior_ad_fd_checks": {
+    "qv16": {
+      "fraction_below_one": {
+        "activation_fraction_pow_fd_accuracy_passes_at_1e-5": [
+          "1e-07",
+          "1e-08"
+        ],
+        "activation_fraction_pow_fd_relative_errors": [
+          0.0004201014858624153,
+          4.205165716289775e-05,
+          4.219443078259074e-06,
+          2.8525655962917524e-07
+        ],
+        "ncact_cap_tie_subgradient": "not applicable: strict raw-below-cap operand ordering",
+        "ncact_min_output_fd_accuracy_passes_at_1e-6": [
+          "1e-08"
+        ],
+        "ncact_min_output_fd_relative_errors": [
+          0.0004201014902262502,
+          4.2051657539741407e-05,
+          4.219440203879873e-06,
+          2.8526320980375083e-07
+        ],
+        "ncact_min_output_unresolved_cap_side_steps": [],
+        "operand_fd_checks": 36,
+        "operand_vjp_rows": 8
+      },
+      "fraction_eq_one": {
+        "activation_fraction_pow_fd_accuracy_passes_at_1e-5": [
+          "1e-07"
+        ],
+        "activation_fraction_pow_fd_relative_errors": [
+          0.036967578290419946,
+          0.003998740899126521,
+          0.00040324934652352304,
+          4.0362252303386494e-05,
+          4.063476577779437e-06
+        ],
+        "ncact_cap_tie_subgradient": "tie observed but derivative policy not inferred; both rate/cap operand tangents are zero",
+        "ncact_min_output_fd_accuracy_passes_at_1e-6": [],
+        "ncact_min_output_fd_relative_errors": [],
+        "ncact_min_output_unresolved_cap_side_steps": [
+          "0.001",
+          "0.0001",
+          "1e-05",
+          "1e-06",
+          "1e-07"
+        ],
+        "operand_fd_checks": 45,
+        "operand_vjp_rows": 8
+      }
+    },
+    "th16": {
+      "fraction_below_one": {
+        "activation_fraction_pow_fd_accuracy_passes_at_1e-5": [
+          "1e-06",
+          "1e-07"
+        ],
+        "activation_fraction_pow_fd_relative_errors": [
+          0.00024763979836144896,
+          2.4751986724926054e-05,
+          2.412445971565326e-06,
+          1.0791169274463488e-07
+        ],
+        "ncact_cap_tie_subgradient": "not applicable: strict raw-below-cap operand ordering",
+        "ncact_min_output_fd_accuracy_passes_at_1e-6": [
+          "1e-07"
+        ],
+        "ncact_min_output_fd_relative_errors": [
+          0.0002501082648782348,
+          2.499889298343646e-05,
+          2.437148321863112e-06,
+          1.053850553104864e-07
+        ],
+        "ncact_min_output_unresolved_cap_side_steps": [],
+        "operand_fd_checks": 36,
+        "operand_vjp_rows": 8
+      },
+      "fraction_eq_one": {
+        "activation_fraction_pow_fd_accuracy_passes_at_1e-5": [
+          "1e-06"
+        ],
+        "activation_fraction_pow_fd_relative_errors": [
+          0.00024152007453571913,
+          2.414171966330924e-05,
+          2.3636550178339714e-06
+        ],
+        "ncact_cap_tie_subgradient": "tie observed but derivative policy not inferred; both rate/cap operand tangents are zero",
+        "ncact_min_output_fd_accuracy_passes_at_1e-6": [],
+        "ncact_min_output_fd_relative_errors": [],
+        "ncact_min_output_unresolved_cap_side_steps": [
+          "0.0001",
+          "1e-05",
+          "1e-06"
+        ],
+        "operand_fd_checks": 27,
+        "operand_vjp_rows": 8
+      }
+    }
+  },
+  "operand_observation_objects_verified": 197,
+  "operand_output_gaps_verified": 36,
+  "parent_projection_raw_equal": true,
+  "parent_replay_sha256": "5f5bd5f80638601961ac040ad364753f2964a6a92fb13e8dc2dbd58036d3af51",
+  "parent_schema": "kdm6.native_activation_upper_boundary_cpp_ad_replay.v1",
+  "physical_unit_status": "INCONCLUSIVE",
+  "provenance": {
+    "coordinator_source_scoped": true,
+    "manifest_files_verified": 12,
+    "recorded_core_archive_sha256": "127eafb3bc0b399d8f62d7388d48317ffa2ccf21adc355a5afa0193ceae5fbe2",
+    "recorded_runner_sha256": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d",
+    "runner_assertions_enabled": true
+  },
+  "schema": "kdm6.native_activation_operands_cpp_ad_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "unique_event_ids": 189
+}

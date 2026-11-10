@@ -1,0 +1,39 @@
+{
+  "archive_sha256": "127eafb3bc0b399d8f62d7388d48317ffa2ccf21adc355a5afa0193ceae5fbe2",
+  "boundary_event_ordinal_contract": "off 0; on 1; saved event records 1..189",
+  "commands": {
+    "activation_operands_boundary": [
+      "runner_build/native_nc_process_graph_ad",
+      "input.bin",
+      "--activation-boundary"
+    ],
+    "default_noninterference": [
+      "runner_build/native_nc_process_graph_ad",
+      "input.bin"
+    ]
+  },
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "full_call_forwards": {
+    "boundary": 190,
+    "default": 2
+  },
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": {
+    "boundary": "58a9eca3be9a245e300c6e9f452bfcbf4ba235a3b7f16bcb1bb99423cf8a70f6",
+    "default": "242b9f5e1ef9757ee5cbd804675aab8f2b21d499fc62cc6075ae0201c7f78dff"
+  },
+  "parent_projection_claim": "The public replay recomputes all old field/raw comparisons; private audit found zero differences.",
+  "returncodes": {
+    "activation_operands_boundary": 0,
+    "default_noninterference": 0
+  },
+  "runner_sha256": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d",
+  "schema": "kdm6.native_activation_operands_cpp_ad_run.v1"
+}
