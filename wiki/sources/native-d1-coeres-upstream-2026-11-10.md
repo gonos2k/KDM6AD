@@ -13,3 +13,5 @@ All 25 saved cases retain the selected branch; `rslope2_g` squares and live entr
 Masked slope caps, inactive ProgB retention, safe-power and square-root floor boundaries, other rate inputs, QV/T directions, operational f32, physical units and budgets, host AD and GK2A–RTTOV cost sensitivity remain open. Scientific and physical-unit statuses remain `INCONCLUSIVE`; public replay does not rebuild the private executable.
 
 The captured `rslopegbmax` is unused on this unmasked branch and is checked only for finiteness and positivity. A rehashed override can therefore pass; the original saved word is pinned by the manifest.
+
+The independent Python `coeres_values()` helper allows up to 4 ULP as a local diagnostic. Full replay inherits a source-order D1 melt reconstruction requiring raw-exact `coeres_g` and subsequent intermediates; a one-ULP square-root difference may pass the helper but fail full replay. The helper boundary test therefore does not establish whole-replay libm portability. C++ producer-to-consumer handoffs remain raw-exact.

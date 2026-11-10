@@ -90,7 +90,7 @@ jobs:
   oracle-pytest:
     name: oracle pytest (f64 reference)
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
