@@ -4,6 +4,7 @@
     "old_baseline_stage_fields_projected": 336,
     "old_numeric_stage_fields_projected": 322
   },
+  "distinct_full_inputs": 105,
   "forward_call_ordinal_first": 1,
   "forward_call_ordinal_last": 189,
   "operand_bearing_forward_events": 189,
@@ -128,6 +129,7 @@
     "recorded_runner_sha256": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d",
     "runner_assertions_enabled": true
   },
+  "repeated_operand_pairs_verified": 84,
   "schema": "kdm6.native_activation_operands_cpp_ad_replay.v1",
   "scientific_status": "INCONCLUSIVE",
   "unique_event_ids": 189

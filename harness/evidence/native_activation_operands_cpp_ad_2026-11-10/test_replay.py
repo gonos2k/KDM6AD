@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 import struct
 import unittest
+from unittest import mock
 
 
 HERE = Path(__file__).resolve().parent
@@ -69,6 +70,43 @@ def rehashed_default_cpp_override(change) -> tuple[bytes, str]:
     change(data)
     raw = (json.dumps(data, sort_keys=True, allow_nan=True) + "\n").encode()
     return raw, hashlib.sha256(raw).hexdigest()
+
+
+def shifted_ulps(value: float, offset: int) -> float:
+    target = math.inf if offset >= 0 else -math.inf
+    for _ in range(abs(offset)):
+        value = math.nextafter(value, target)
+    return value
+
+
+def captured_pow_by_base() -> dict[str, float]:
+    captured: dict[str, float] = {}
+    for _, row, _ in module._actual_operand_call_rows(operand_packet()):
+        op = row["operand_values"]
+        key = module.f64_word(op["safe_pow_clamped_base_diagnostic"])
+        value = float(op["activation_fraction_pow"])
+        if key in captured and module.f64_word(captured[key]) != module.f64_word(value):
+            raise ValueError("original repeated safe_pow values disagree")
+        captured[key] = value
+    return captured
+
+
+class PowOffsetMath:
+    """Place the independent pow result at a chosen ULP offset from C++ capture."""
+
+    def __init__(self, offset: int, captured: dict[str, float]) -> None:
+        self.offset = offset
+        self.captured = captured
+
+    def __getattr__(self, name: str):
+        return getattr(math, name)
+
+    def pow(self, base: float, exponent: float) -> float:
+        if exponent == module.ACTK:
+            key = module.f64_word(base)
+            if key in self.captured:
+                return shifted_ulps(self.captured[key], self.offset)
+        return math.pow(base, exponent)
 
 
 class ParentPinTests(unittest.TestCase):
@@ -159,14 +197,49 @@ class ParentPinTests(unittest.TestCase):
 
     def test_rehashed_pow_operand_outside_portable_bound_is_rejected(self) -> None:
         def change(data: dict) -> None:
-            value = data["baseline"]["operand_values"]["activation_fraction_pow"]
-            for _ in range(17):
-                value = math.nextafter(value, math.inf)
             op = data["baseline"]["operand_values"]
+            expected = module.math.pow(max(op["sw_ratio"], module.EPS), module.ACTK)
+            value = shifted_ulps(expected, 17)
             op["activation_fraction_pow"] = value
             op["activation_fraction_pow_word"] = module.f64_word(value)
 
         with self.assertRaisesRegex(ValueError, "safe_pow within portable ULP"):
+            module.replay(operand_override=rehashed_override(change))
+
+    def test_pow_ulp_boundary_is_portable_across_allowed_libm_offsets(self) -> None:
+        saved = json.loads((HERE / "results.json").read_text())
+        captured = captured_pow_by_base()
+        for offset in (-16, -1, 1, 16):
+            with self.subTest(offset=offset), mock.patch.object(
+                module, "math", PowOffsetMath(offset, captured)
+            ):
+                # The original C++ evidence remains valid throughout the
+                # diagnostic's declared library-difference interval.
+                self.assertEqual(module.replay(), saved)
+                for distance in (16, 17):
+                    def change(data: dict) -> None:
+                        op = data["baseline"]["operand_values"]
+                        expected = module.math.pow(max(op["sw_ratio"], module.EPS), module.ACTK)
+                        value = shifted_ulps(expected, distance)
+                        op["activation_fraction_pow"] = value
+                        op["activation_fraction_pow_word"] = module.f64_word(value)
+
+                    changed = rehashed_override(change)
+                    if distance == 16:
+                        module.replay(operand_override=changed)
+                    else:
+                        with self.assertRaisesRegex(ValueError, "safe_pow within portable ULP"):
+                            module.replay(operand_override=changed)
+
+    def test_rehashed_repeated_operand_drift_is_rejected(self) -> None:
+        def change(data: dict) -> None:
+            row = data["axes"]["th16"]["bisection"]["sw_percent_0p48"]["trace"][5]
+            op = row["operand_values"]
+            value = math.nextafter(op["activation_fraction_pow"], math.inf)
+            op["activation_fraction_pow"] = value
+            op["activation_fraction_pow_word"] = module.f64_word(value)
+
+        with self.assertRaisesRegex(ValueError, "repeated-input operand values"):
             module.replay(operand_override=rehashed_override(change))
 
     def test_rehashed_rate_cap_operand_is_rejected(self) -> None:

@@ -496,6 +496,28 @@ def verify_call_event_identity(boundary: dict, parent_module: object) -> dict[st
             "unique_event_ids": len(set(event_ids))}
 
 
+def verify_repeated_operand_values(boundary: dict, parent_module: object) -> dict[str, int]:
+    """Bind live operand observations from separate calls at the same full input."""
+    first_by_input: dict[tuple[str, str], tuple[str, dict]] = {}
+    comparisons = 0
+    for event_path, row, _ in _actual_operand_call_rows(boundary):
+        # The remaining state, forcing and controls are fixed by the pinned
+        # runner input; TH16 and QV16 are its only changed coordinates.
+        input_key = (f64_word(float(row["th16"])), f64_word(float(row["qv16"])))
+        if input_key in first_by_input:
+            first_path, first_row = first_by_input[input_key]
+            need(parent_module.same_recorded_tree(first_row["operand_values"],
+                                                  row["operand_values"]),
+                 "repeated-input operand values: " + first_path + " / " + event_path)
+            comparisons += 1
+        else:
+            first_by_input[input_key] = (event_path, row)
+    need(len(first_by_input) == 105 and comparisons == 84,
+         "complete repeated-input operand observation pairs")
+    return {"distinct_full_inputs": len(first_by_input),
+            "repeated_operand_pairs_verified": comparisons}
+
+
 def _signed_f64_ulp_distance(left: float, right: float) -> int:
     def ordered(value: float) -> int:
         raw = int(f64_word(value), 16)
@@ -725,6 +747,7 @@ def verify_operand_boundary(parent_boundary: dict, child_boundary: dict,
     for event_id, row in operand_rows:
         verify_operand_observation(row, "operand observation object " + event_id)
     event_identity = verify_call_event_identity(child_boundary, parent_module)
+    repeated_operands = verify_repeated_operand_values(child_boundary, parent_module)
     classifications: dict[str, int] = {
         "pow_below_one": 0, "pow_equal_one": 0, "pow_above_one": 0,
         "ncact_raw_below_cap": 0, "ncact_tie": 0, "ncact_raw_above_cap": 0,
@@ -749,6 +772,7 @@ def verify_operand_boundary(parent_boundary: dict, child_boundary: dict,
     return {
         "operand_observation_objects_verified": len(operand_rows),
         **event_identity,
+        **repeated_operands,
         "operand_output_gaps_verified": gap_count,
         "operand_comparison_classifications": classifications,
         "operand_interior_ad_fd_checks": interior_counts,
