@@ -1,0 +1,80 @@
+{
+  "schema": "kdm6.native_d1_activation_boundary_operands.private_run.v1",
+  "parent": "PR #575 / #574 private activation boundary runner",
+  "experiment_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_activation_operands_ad_20261110",
+  "source_pins": {
+    "coordinator_preinstrumentation_sha256": "8f9ddd1f0875fc980e43f3c49f8b48c836d7a7e6c28813b97b24c4cfd1fcf0c4",
+    "coordinator_instrumented_sha256": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b",
+    "runtime_capture_snapshot_sha256": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10",
+    "runner_instrumented_sha256": "5a7022e9e8ae3dad0b719e989bef87c8cd0eaf5070c3b916a29d201da8658805",
+    "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+    "parent_cpp_result_sha256": "935557ff8a7f8b2473acb9a83f935eb4937f72ced4be61cf6873effd735eba6e",
+    "parent_activation_boundary_sha256": "b80da7363594c00b700b4a4a2e12d1e41569ce1a51232100cdb0c36d4d6f90d3"
+  },
+  "build": {
+    "core_configure": "cmake -S source -B build -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DCMAKE_BUILD_TYPE=Release -DKDM6_NATIVE_SCALAR_CAPTURE=ON",
+    "core_build": [
+      "cmake --build build --target kdm6 -j4",
+      "cmake --build build --target kdm6_c -j2"
+    ],
+    "runner_configure": "cmake -S runner -B runner_build -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DKDM6_HOOK_ROOT=/Users/yhlee/KDM6AD-k/host/research_evidence/native_activation_operands_ad_20261110",
+    "runner_build": "cmake --build runner_build --target native_nc_process_graph_ad -j2",
+    "cpp_flags": "C++17, -ffp-contract=off; runner build has assertions enabled (no Release build type)",
+    "archive_sha256": "127eafb3bc0b399d8f62d7388d48317ffa2ccf21adc355a5afa0193ceae5fbe2",
+    "c_abi_dylib_sha256": "d35dbb5737485997cb19b1104ba60a542a4668b25ad53891d6f85f0723c534c0",
+    "runner_sha256": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d"
+  },
+  "run_environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "runs": {
+    "default_noninterference": {
+      "command": [
+        "runner_build/native_nc_process_graph_ad",
+        "input.bin"
+      ],
+      "returncode": 0,
+      "full_call_forwards": 2,
+      "output": "raw/cpp_result.json",
+      "output_sha256": "242b9f5e1ef9757ee5cbd804675aab8f2b21d499fc62cc6075ae0201c7f78dff",
+      "projection_against_parent": "0 differences after removing 15 new stage fields, projecting the stage order/JVP vectors back to the prior 322 names; all prior JSON fields matched parsed float bits/values."
+    },
+    "activation_operands_boundary": {
+      "command": [
+        "runner_build/native_nc_process_graph_ad",
+        "input.bin",
+        "--activation-boundary"
+      ],
+      "returncode": 0,
+      "schema": "kdm6.native_d1_activation_boundary_operands.v1",
+      "output": "raw/activation_boundary.json",
+      "output_sha256": "58a9eca3be9a245e300c6e9f452bfcbf4ba235a3b7f16bcb1bb99423cf8a70f6",
+      "full_call_forwards": 190,
+      "ordinal_convention": "zero-based, contiguous 0..189; baseline off/on 0/1; bisections, 4 interior AD calls, 16 FD calls follow",
+      "parent_projection": "0 differences against #575 after dropping only new operand fields/observability and event metadata.",
+      "finite_values": true,
+      "vjp_rows": 68,
+      "max_abs_direction_vjp_dot_minus_jvp": 3.814697265625e-06,
+      "adjacent_f64_brackets": 4
+    }
+  },
+  "instrumentation_semantics": {
+    "physics_source": "private copy of #574 source; no tracked production source edits",
+    "activation_fraction_pow": "computed exactly once by ops::safe_pow; that same live tensor is passed to torch::minimum",
+    "activation_fraction_one": "actual tensor used as first torch::minimum operand",
+    "safe_pow_clamped_base_diagnostic": "separately recomputed clamp diagnostic; not fed into safe_pow and not claimed as an internal safe_pow capture",
+    "ncact_nccn_rate_cap": "actual second torch::minimum operand; ncact_raw is first operand",
+    "tie_claim": "raw operand equality flags only; no claim about torch::minimum selector or tie derivative",
+    "branch_compatibility": "same_activation_branch preserves #575 definition; additional raw comparisons use separate same_operand_branch"
+  },
+  "limitations": [
+    "No host/RTTOV/optimizer calls.",
+    "This private trace does not certify a minimum selector at equality.",
+    "safe_pow_clamped_base_diagnostic is diagnostic reconstruction, not the internal clamp tensor."
+  ]
+}
