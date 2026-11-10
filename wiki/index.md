@@ -148,3 +148,5 @@ date_modified: 2026-10-26
 - [[sources/east-optical-coordinate-factor-2026-10-31|East optical coordinate-factor replay]] — Offline reconstruction of 140 saved GG/PP coordinate factors and BTs using separately supplied SHA-pinned RTTOV coefficients.
 
 - [[sources/native-d1-entry-precg2-2026-11-09]] — Entry ProgB precg2 production, D1 handoff and selected f64 derivative evidence, with explicit rounding-floor and capture limits.
+
+- [[sources/native-d1-coeres-upstream-2026-11-10]] — Selected D1 entry slope to coeres_g and graupel term2, with native consumer capture and difference limits.
