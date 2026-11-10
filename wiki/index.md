@@ -150,3 +150,5 @@ date_modified: 2026-10-26
 - [[sources/native-d1-entry-precg2-2026-11-09]] — Entry ProgB precg2 production, D1 handoff and selected f64 derivative evidence, with explicit rounding-floor and capture limits.
 
 - [[sources/native-d1-coeres-upstream-2026-11-10]] — Selected D1 entry slope to coeres_g and graupel term2, with native consumer capture and difference limits.
+
+- [[sources/native-d1-thermal-input-2026-11-10]] — Initial TH/QV to D1 thermal chain, native endpoint anchors and distinct D1/final activation branch coverage.

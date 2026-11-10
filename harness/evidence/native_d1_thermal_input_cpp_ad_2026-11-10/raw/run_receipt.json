@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "608c15582254db6ed0089e510aecf923fb4c12a6ba9bb7e9375487919949a82d",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_thermal_input_ad_20261110/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_thermal_input_ad_20261110/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "26f901bb32588405ee028690da25bbb7fd8f7ea9e993455c32e97f7f3806c32a",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "935557ff8a7f8b2473acb9a83f935eb4937f72ced4be61cf6873effd735eba6e",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_thermal_input_cpp_ad_run.v1"
+}
