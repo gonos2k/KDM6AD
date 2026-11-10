@@ -66,6 +66,7 @@ on:
       - 'harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09/**'
       - 'harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10/**'
       - 'harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10/**'
+      - 'harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -178,6 +179,7 @@ jobs:
           python -m unittest discover -s harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09 -v
           python -m unittest discover -s harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10 -v
           python -m unittest discover -s harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10 -v
+          python -m unittest discover -s harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -226,3 +228,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09 -v
           python -O -m unittest discover -s harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10 -v
           python -O -m unittest discover -s harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10 -v
+          python -O -m unittest discover -s harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10 -v
