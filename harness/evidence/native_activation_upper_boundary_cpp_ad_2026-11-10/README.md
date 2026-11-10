@@ -34,6 +34,8 @@ For each nominal one-sided step, the replay recomputes the source-generated endp
 
 Full replay rejects nonfinite saved values and nonfinite derived AD/FD diagnostics before accepting any side result, including side differences at scales that fail the relative-error criterion.
 
+The replay requires both TH16 and QV16 interior records, both strict sides on each axis, four validated AD points and 16 validated one-sided FD endpoints. It derives those call counts from the records it checks and binds them to the saved 190-call ledger. Each bisection summary's terminal lower/upper observations must match the reconstructed trace records field by field, preserving f64 raw bits and value types. Repeated evaluations of the same input across the two predicate traces must also agree on their recorded observations. These checks reject incomplete or internally contradictory rehashed packets without changing the original C++ results.
+
 ## Limits
 
 The branch sweep concerns one selected native f64 call and two initial state directions. D1 warm/snow/graupel caps, shared NC limiter, activation gate, `ncact` rate cap and NCCN floor are checked or explicitly identified as unobserved at each reported point. A change in any unrecorded branch limits the derivative conclusion. Operational f32, physical number/mass/volume budgets, whole host AD and GK2A–RTTOV cost sensitivity remain open. `scientific_status` and `physical_unit_status` remain `INCONCLUSIVE`. Public CI replays the saved private runner result and source hashes rather than rebuilding that private executable.

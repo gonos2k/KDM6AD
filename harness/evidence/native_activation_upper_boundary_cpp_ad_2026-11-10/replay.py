@@ -232,6 +232,22 @@ def word(value: float) -> str:
     return format(struct.unpack(">Q", struct.pack(">d", float(value)))[0], "016x")
 
 
+def same_recorded_tree(left: object, right: object) -> bool:
+    """Compare recorded observations, preserving f64 bits and JSON value types."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return (left.keys() == right.keys()
+                and all(same_recorded_tree(value, right[key])
+                        for key, value in left.items()))
+    if isinstance(left, list):
+        return (len(left) == len(right)
+                and all(same_recorded_tree(a, b) for a, b in zip(left, right)))
+    if isinstance(left, float):
+        return word(left) == word(right)
+    return left == right
+
+
 def ordered_f64_bits(value: float) -> int:
     bits = int(word(value), 16)
     sign = 1 << 63
@@ -967,6 +983,9 @@ def _verify_activation_bracket(axis: str, kind: str, bracket: dict, seed_low: fl
     need(int(str(low_row["input_word"]).zfill(16), 16) == lower_bits
          and int(str(high_row["input_word"]).zfill(16), 16) == upper_bits,
          why + " bisection trace final bracket binding")
+    need(same_recorded_tree(low_row, lower)
+         and same_recorded_tree(high_row, upper),
+         why + " terminal trace observations match bracket endpoints")
     output_gaps = bracket["output_gaps"]
     gap_fields = ("sw_percent", "activated_fraction", "ncact_raw", "ncact",
                   "nc_after_activation", "nccn_after_activation", "nccn_final",
@@ -1257,6 +1276,8 @@ def verify_activation_boundary(boundary: dict, parent: dict) -> dict[str, object
     adjacent_nc_decomposition: dict[str, object] = {}
     trace_rows = 0
     output_gap_unresolved = 0
+    interior_calls = 0
+    fd_calls = 0
     for axis in ACTIVATION_AXES:
         axis_data = boundary["axes"][axis]
         expected_kind = ("absolute potential-temperature K" if axis == "th16"
@@ -1307,8 +1328,12 @@ def verify_activation_boundary(boundary: dict, parent: dict) -> dict[str, object
                  "activation seed parent final NCCN anchor: " + axis + "/" + seed_label)
         need(set(axis_data["bisection"]) == set(ACTIVATION_BRACKETS),
              "activation bisection inventory: " + axis)
+        need("interior_points" in axis_data
+             and set(axis_data["interior_points"]) == {"fraction_eq_one", "fraction_below_one"},
+             "activation interior point inventory: " + axis)
         axis_calls = 0
         bisection_summary[axis] = {}
+        repeated_observations: dict[str, dict[str, object]] = {}
         for kind in ACTIVATION_BRACKETS:
             if axis == "th16":
                 seed_low, seed_high = (expected_seed["fraction_eq_one"],
@@ -1319,6 +1344,15 @@ def verify_activation_boundary(boundary: dict, parent: dict) -> dict[str, object
             result = _verify_activation_bracket(
                 axis, kind, axis_data["bisection"][kind], seed_low, seed_high,
                 th0, qv0, pii, baseline_d1, axis + "/" + kind)
+            for trace_row in axis_data["bisection"][kind]["trace"]:
+                input_word = str(trace_row["input_word"]).zfill(16)
+                observation = {key: value for key, value in trace_row.items()
+                               if key != "predicate"}
+                if input_word in repeated_observations:
+                    need(same_recorded_tree(observation, repeated_observations[input_word]),
+                         "activation repeated-input trace observations: " + axis)
+                else:
+                    repeated_observations[input_word] = observation
             axis_calls += result["value_only_calls"]
             trace_rows += result["value_only_calls"]
             output_gap_unresolved += sum(
@@ -1339,16 +1373,14 @@ def verify_activation_boundary(boundary: dict, parent: dict) -> dict[str, object
                 "delta_final_nccn16": float(hi["final_nccn16"]) - float(lo["final_nccn16"]),
                 "interpretation": "adjacent endpoint arithmetic; not causal attribution",
             }
-        if "interior_points" in axis_data:
-            points = axis_data["interior_points"]
-            need(set(points) == {"fraction_eq_one", "fraction_below_one"},
-                 "activation interior point inventory: " + axis)
-            interior_summary[axis] = {
-                side: _verify_activation_interior_point(
-                    axis, side, points[side], th0, qv0, pii, baseline_d1,
-                    "activation interior " + axis + "/" + side)
-                for side in ("fraction_eq_one", "fraction_below_one")
-            }
+        points = axis_data["interior_points"]
+        interior_summary[axis] = {}
+        for side in ("fraction_eq_one", "fraction_below_one"):
+            interior_summary[axis][side] = _verify_activation_interior_point(
+                axis, side, points[side], th0, qv0, pii, baseline_d1,
+                "activation interior " + axis + "/" + side)
+            interior_calls += 1
+            fd_calls += len(points[side]["one_sided_fd"]["step_scales"])
         counts_by_axis[axis] = axis_calls
 
     call_counts = boundary["call_counts"]
@@ -1359,16 +1391,16 @@ def verify_activation_boundary(boundary: dict, parent: dict) -> dict[str, object
          "activation QV bisection call ledger")
     need(call_counts["value_only_bisection_forward_calls"] == trace_rows,
          "activation bisection total call ledger")
-    interior_calls = 4 if interior_summary else 0
-    fd_calls = (sum(len(steps) for sides in ACTIVATION_INTERIOR_FD_STEPS.values()
-                     for steps in sides.values()) if interior_summary else 0)
-    if interior_summary:
-        need(call_counts["interior_ad_forward_calls"] == interior_calls,
-             "activation interior AD call ledger")
-        need(call_counts["one_sided_fd_value_only_forward_calls"] == fd_calls,
-             "activation one-sided FD call ledger")
+    need(interior_calls == 4 and fd_calls == 16,
+         "activation complete interior AD and one-sided FD inventory")
+    need(call_counts["interior_ad_forward_calls"] == interior_calls,
+         "activation interior AD call ledger")
+    need(call_counts["one_sided_fd_value_only_forward_calls"] == fd_calls,
+         "activation one-sided FD call ledger")
     need(call_counts["total_full_call_forwards"] == 2 + trace_rows + interior_calls + fd_calls,
          "activation total forward-call ledger")
+    need(call_counts["total_full_call_forwards"] == 190,
+         "activation full-call count for complete boundary sweep")
     return {
         "activation_boundary_schema": boundary["schema"],
         "activation_boundary_input": input_meta,
