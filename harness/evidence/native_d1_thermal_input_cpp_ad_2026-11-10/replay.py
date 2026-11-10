@@ -147,7 +147,7 @@ THERMAL_NATIVE_MANIFEST_SHA = {
     "native_nc_nccn_applied_2026-11-07": "a1aec8dfc95317df2294b0982091d2b915532de49203127939357a18ce96ace5",
 }
 THERMAL_NATIVE_ANCHORS_SHA = "3aeba105f09c33c3119df2af8e2381358ca0db1f4b087b92b41a59c1d3a2be89"
-THERMAL_FINAL_FD_SHA = "cb65dc174bd6a4318d8f33511e7eaa7e5b053bfc3a2f1c6f97888490670d343a"
+THERMAL_FINAL_FD_SHA = "b55229be8b655db0e1741573dc25bf0bf7cd9ebcc170af06ef004c04e6667e0d"
 PROGB_DENSITY_TABLE = (100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0)
 PROGB_AVTG_TABLE = (54.9153, 74.2262, 88.8313, 101.0411, 111.7359, 121.3625, 130.1841, 138.3714, 146.0422)
 PROGB_BVTG_TABLE = (0.5446, 0.5375, 0.5339, 0.5316, 0.5299, 0.5286, 0.5275, 0.5266, 0.5258)
@@ -183,6 +183,20 @@ def sha(raw: bytes) -> str:
 
 def word(value: float) -> str:
     return format(struct.unpack(">Q", struct.pack(">d", float(value)))[0], "016x")
+
+
+def finite_final_word(raw: object, why: str) -> float:
+    need(isinstance(raw, str) and 1 <= len(raw) <= 16
+         and all(char in "0123456789abcdefABCDEF" for char in raw),
+         why + " raw f64 word syntax")
+    try:
+        bits = int(raw, 16)
+    except ValueError as exc:
+        raise ValueError(why + " raw f64 word syntax") from exc
+    need(0 <= bits < 1 << 64, why + " raw f64 word range")
+    value = struct.unpack(">d", bits.to_bytes(8, "big"))[0]
+    need(math.isfinite(value), why + " finite final-state f64")
+    return value
 
 
 def ulp_distance(a: float, b: float) -> int:
@@ -752,6 +766,12 @@ def thermal_vjp_direction(data: dict, thermal_vjp: dict, direction_name: str,
 def verify_thermal_payload(data: dict, prior: dict, order: list[str]) -> dict[str, object]:
     thermal = data["thermal_directions"]
     need(thermal["schema"] == THERMAL_DIRECTIONS_SCHEMA, "thermal directions schema")
+    for role in ("value_final_raw", "graph_final_raw"):
+        baseline_words = data["baseline"][role]
+        need(isinstance(baseline_words, list) and len(baseline_words) == 468,
+             "thermal baseline final state inventory: " + role)
+        for index, raw_word in enumerate(baseline_words):
+            finite_final_word(raw_word, "thermal baseline " + role + "/" + str(index))
     thermal_vjp = data["thermal_vjp"]
     need(thermal_vjp["schema"] == THERMAL_VJP_SCHEMA, "thermal VJP schema")
     need(thermal_vjp["selected_k_index0"] == THERMAL_K_INDEX0,
@@ -915,8 +935,8 @@ def verify_thermal_payload(data: dict, prior: dict, order: list[str]) -> dict[st
                 need(len(final_words) == 468 and all(isinstance(x, str) for x in final_words),
                      "thermal final endpoint raw inventory: " + direction_name + "/" + hkey + "/" + side)
                 for index, raw_word in enumerate(final_words):
-                    need(len(str(raw_word)) <= 16 and int(str(raw_word), 16) >= 0,
-                         "thermal final endpoint raw word syntax: " + str(index))
+                    finite_final_word(raw_word, "thermal endpoint " + direction_name
+                                      + "/" + hkey + "/" + side + "/" + str(index))
                 selected_pre2 = finite_vector(pair[side + "_selected_pre2"], 2,
                                                "thermal endpoint selected pre2")
                 exact(selected_pre2[0], stage_values["pre2_producer.qg_input"],

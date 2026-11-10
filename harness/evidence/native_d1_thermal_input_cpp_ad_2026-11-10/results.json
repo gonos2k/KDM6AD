@@ -2653,7 +2653,7 @@
       "relative_error": 0.999536667593909
     }
   ],
-  "thermal_final_fd_helper_sha256": "cb65dc174bd6a4318d8f33511e7eaa7e5b053bfc3a2f1c6f97888490670d343a",
+  "thermal_final_fd_helper_sha256": "b55229be8b655db0e1741573dc25bf0bf7cd9ebcc170af06ef004c04e6667e0d",
   "thermal_final_fd_pairs": 4,
   "thermal_final_nc_accepted_pairs": 4,
   "thermal_final_nc_central_checks": [
