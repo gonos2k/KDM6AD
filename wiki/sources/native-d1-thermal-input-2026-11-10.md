@@ -13,3 +13,7 @@ Ten overlapping native TH/QV endpoints anchor 620 D1 producer words and 4,680 fi
 The evidence is limited to this column and selected f64 directions. Physical units and conservation, operational f32, the full host adjoint and GK2A–RTTOV cost sensitivity remain open. Scientific and physical-unit statuses remain `INCONCLUSIVE`; public CI replays saved private execution rather than rebuilding the private runner and archive.
 
 The 16 ULP `work2` allowance applies only to an independent Python partial diagnostic; it does not certify whole-replay libm portability. The ten native endpoints bind the consumed `work2` by raw bits.
+
+Public replay decodes and checks all 468 final-state words at baseline and each of 14 TH/QV endpoints for finiteness, including crossing endpoints. The final-difference helper also checks derived changes, predictions, residuals, scales and ULP diagnostics before classifying a crossing. Rehashed NaN and both signed infinities at the uncaptured mixed crossing endpoint are rejected by full replay; the helper rejects subtraction overflow from finite words. The archived results and branch classifications are unchanged.
+
+Final-state words must use one to sixteen ASCII hexadecimal digits; malformed or noncanonical strings are rejected by replay and the difference helper.

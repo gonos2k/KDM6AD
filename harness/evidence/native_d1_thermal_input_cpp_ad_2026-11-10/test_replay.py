@@ -341,6 +341,60 @@ class ReplayTests(unittest.TestCase):
             helper.check_native_thermal_anchors(data, module.EVIDENCE,
                                                 module.THERMAL_NATIVE_MANIFEST_SHA)
 
+    def test_excluded_crossing_nonfinite_final_words_fail_full_replay(self) -> None:
+        # This mixed endpoint has no separate native capture and is excluded
+        # from the local final-NC derivative gate. It still must be finite.
+        for label, index, raw_word, expected_error in (
+            ("nc_nan", 8 * 39 + 15, "7ff8000000000000", "finite final-state f64"),
+            ("nc_pos_inf", 8 * 39 + 15, "7ff0000000000000", "finite final-state f64"),
+            ("nc_neg_inf", 8 * 39 + 15, "fff0000000000000", "finite final-state f64"),
+            ("other_state_nan", 0, "7ff8000000000000", "finite final-state f64"),
+            ("malformed_word", 0, "+1", "raw f64 word syntax"),
+        ):
+            with self.subTest(label=label):
+                def change(data, position=index, word=raw_word):
+                    pair = data["thermal_directions"]["directions"][
+                        "th16_abs_qv16_rel_joint"]["finite_differences"]["0.001"]
+                    pair["low_final_raw"][position] = word
+
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    module.replay(output_override=altered(change))
+
+    def test_final_fd_helper_rejects_nonfinite_and_overflow(self) -> None:
+        helper_path = HERE / "final_fd.py"
+        spec = importlib.util.spec_from_file_location("thermal_final_fd_finite", helper_path)
+        self.assertIsNotNone(spec)
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        original = json.loads((HERE / "raw/cpp_result.json").read_text())
+
+        baseline_bad = json.loads(json.dumps(original))
+        baseline_bad["baseline"]["value_final_raw"][8 * 39 + 15] = "7ff8000000000000"
+        with self.assertRaisesRegex(ValueError, "finite f64 word"):
+            helper.check_final_thermal_differences(baseline_bad)
+
+        other_state_bad = json.loads(json.dumps(original))
+        crossing = other_state_bad["thermal_directions"]["directions"][
+            "th16_abs_qv16_rel_joint"]["finite_differences"]["0.001"]
+        crossing["low_final_raw"][0] = "7ff0000000000000"
+        with self.assertRaisesRegex(ValueError, "finite f64 word"):
+            helper.check_final_thermal_differences(other_state_bad)
+
+        malformed_bad = json.loads(json.dumps(original))
+        crossing = malformed_bad["thermal_directions"]["directions"][
+            "th16_abs_qv16_rel_joint"]["finite_differences"]["0.001"]
+        crossing["low_final_raw"][0] = "0x1"
+        with self.assertRaisesRegex(ValueError, "raw f64 word syntax"):
+            helper.check_final_thermal_differences(malformed_bad)
+
+        overflow_bad = json.loads(json.dumps(original))
+        crossing = overflow_bad["thermal_directions"]["directions"][
+            "th16_abs_qv16_rel_joint"]["finite_differences"]["0.001"]
+        crossing["high_final_raw"][8 * 39 + 15] = module.word(sys.float_info.max)
+        crossing["low_final_raw"][8 * 39 + 15] = module.word(-sys.float_info.max)
+        with self.assertRaisesRegex(ValueError, "finite .* NC16 central diagnostic"):
+            helper.check_final_thermal_differences(overflow_bad)
+
     def test_missing_parent_vjp_row_is_rejected(self) -> None:
         def change(data):
             del data["vjp"]["final_nc16"]
