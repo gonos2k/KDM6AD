@@ -15,3 +15,5 @@ This is one native column, two initial directions and selected f64 branches; unr
 The one-sided FD replay binds each nominal step to its exact f64 endpoint coordinate and word and checks distinct positive represented gaps, rejecting duplicated endpoints relabeled as different steps.
 
 Full replay rejects nonfinite boundary payload values and derived FD diagnostics before acceptance, even if another scale passes.
+
+Replay requires the actual TH/QV interior inventory of four AD points and 16 one-sided FD calls, and derives the corresponding call counts from retained data. Terminal bisection trace observations match the bracket endpoints by recorded raw f64 values; repeated evaluations at the same input word, including seeds shared by the two searches, must have matching recorded observations.

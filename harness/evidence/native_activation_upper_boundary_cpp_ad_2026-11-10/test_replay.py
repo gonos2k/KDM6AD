@@ -101,6 +101,44 @@ class ActivationBoundaryReplayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "parent final NC anchor"):
             module.verify_activation_boundary(data, parent_packet())
 
+    def test_full_replay_requires_both_interior_axes(self) -> None:
+        for axis in ("th16", "qv16"):
+            with self.subTest(axis=axis):
+                data = copy.deepcopy(boundary_packet())
+                del data["axes"][axis]["interior_points"]
+                raw = json.dumps(data, sort_keys=True).encode()
+                with self.assertRaisesRegex(ValueError, "activation interior point inventory"):
+                    module.replay(activation_override=(raw, module.sha(raw)))
+
+    def test_full_replay_requires_both_sides_per_axis(self) -> None:
+        data = copy.deepcopy(boundary_packet())
+        del data["axes"]["qv16"]["interior_points"]["fraction_below_one"]
+        raw = json.dumps(data, sort_keys=True).encode()
+        with self.assertRaisesRegex(ValueError, "activation interior point inventory"):
+            module.replay(activation_override=(raw, module.sha(raw)))
+
+    def test_full_replay_binds_terminal_trace_to_bracket_observations(self) -> None:
+        data = copy.deepcopy(boundary_packet())
+        bracket = data["axes"]["th16"]["bisection"]["sw_percent_0p48"]
+        bracket["lower"]["final_nc16"] += 1.0
+        gap = bracket["output_gaps"]["final_nc16"]
+        gap["lower"] = bracket["lower"]["final_nc16"]
+        gap["delta"] = gap["upper"] - gap["lower"]
+        gap["ulp_distance"] = module.module_ulp_distance(gap["lower"], gap["upper"])
+        gap["resolution_status"] = "resolved_above_one_output_ulp"
+        raw = json.dumps(data, sort_keys=True).encode()
+        with self.assertRaisesRegex(ValueError, "terminal trace observations match bracket endpoints"):
+            module.replay(activation_override=(raw, module.sha(raw)))
+
+    def test_full_replay_binds_repeated_trace_seed_observations(self) -> None:
+        data = copy.deepcopy(boundary_packet())
+        trace = data["axes"]["th16"]["bisection"][
+            "activated_fraction_ge_1_observed_value"]["trace"]
+        trace[0]["final_nc16"] += 1.0
+        raw = json.dumps(data, sort_keys=True).encode()
+        with self.assertRaisesRegex(ValueError, "repeated-input trace observations"):
+            module.replay(activation_override=(raw, module.sha(raw)))
+
     def test_interior_rejects_vjp_word_mutation(self) -> None:
         data = copy.deepcopy(boundary_packet())
         row = data["axes"]["qv16"]["interior_points"]["fraction_below_one"]
