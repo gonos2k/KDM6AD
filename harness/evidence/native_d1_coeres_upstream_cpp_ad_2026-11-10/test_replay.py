@@ -296,7 +296,7 @@ class ReplayTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "coeres input producer-to-melt handoff: rslopeb_g"):
                 module.replay(output_override=(raw, hashlib.sha256(raw).hexdigest()))
 
-    def test_coeres_sqrt_portable_four_ulp_boundary(self) -> None:
+    def test_coeres_partial_diagnostic_four_ulp_boundary(self) -> None:
         original = module.source_order_coeres_g
         baseline = json.loads((HERE / "raw/cpp_result.json").read_text())["baseline"]["stage_scalars"]
         captured = baseline[module.MELT_STAGE + ".coeres_g"]
@@ -311,6 +311,8 @@ class ReplayTests(unittest.TestCase):
                         return shifted_ulps(captured, distance)
                     return original(r2, rslope, rb, rmu, qcrmin)
 
+                # Only the added diagnostic helper changes here. The inherited
+                # full melt replay still uses its separate exact source-order path.
                 with mock.patch.object(module, "source_order_coeres_g", side_effect=candidate):
                     if distance == 4:
                         result = module.replay()
@@ -323,6 +325,31 @@ class ReplayTests(unittest.TestCase):
                         with self.assertRaisesRegex(
                                 ValueError, "source-order coeres_g within portable ULP bound"):
                             module.replay()
+
+    def test_sqrt_one_ulp_passes_partial_diagnostic_but_fails_full_replay(self) -> None:
+        baseline = json.loads((HERE / "raw/cpp_result.json").read_text())["baseline"]["stage_scalars"]
+        stage = module.COERES_STAGE + "."
+        sqrt_argument = baseline[stage + "rslope_g"] * baseline[stage + "rslopeb_g"]
+        self.assertGreater(sqrt_argument, baseline[stage + "qcrmin"])
+        real_math = module.math
+
+        class TargetedMath:
+            def __getattr__(self, name: str):
+                return getattr(real_math, name)
+
+            def sqrt(self, value: float) -> float:
+                result = real_math.sqrt(value)
+                if value == sqrt_argument:
+                    return real_math.nextafter(result, real_math.inf)
+                return result
+
+        # Replace only this packet's math global. The pinned parent replay has
+        # its own math reference and must not be altered by the synthetic shift.
+        with mock.patch.object(module, "math", TargetedMath()):
+            diagnostic = module.coeres_values(baseline, "baseline")
+            self.assertEqual(diagnostic["coeres_g_ulp_distance"], 1)
+            with self.assertRaisesRegex(ValueError, "D1 melt source-order: baseline/coeres_g"):
+                module.replay()
 
     def test_mask_change_and_masked_branch_claim_are_rejected(self) -> None:
         def change(data):
