@@ -1,0 +1,23 @@
+{
+  "schema": "kdm6.host_selected_f32_coupled_boundary_receipt.v1",
+  "scope": "same host-captured selected column, separate B=1 f32 value calls; no perturbed WRF tile or AD",
+  "selected_full_sha256": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae",
+  "input_bin_sha256": "8aced88b4f4f967a7cde0692837617b5ed3d058ccb30de8d2acdd7c43690d8ea",
+  "sweep_sha256": "9c866594768764d51c42b9d7d24471bd5484a85f9b80e00f51316b6bfb88bee7",
+  "executed_sweep_source_sha256": "302df422cc77d1947412ab6cba42986cad709308458b3fe401a71b6365352845",
+  "runner_executable_sha256": "b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050",
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "parent_build_receipt_sha256": "cb3fe4bc2d9b93dfefe03b8d60b73dd4552c4ab537f094c056b0d9a81c0efdff",
+  "initial_helper_failure": {
+    "first_source_sha256": "7190031203cf005ecf8b5b4fe5ff663f06538195f1dedb3ccfb333392a558652",
+    "first_sweep_sha256": "03fa628494c6002d11b203017eff02a4208466654259c030a24ec1fb7227fe3c",
+    "reason": "fromhex() argument must be str, not int",
+    "interpretation": "post-bisection gap formatting error in private driver; corrected driver reran all probes"
+  },
+  "terminal_calls": 6,
+  "endpoint_words": [
+    "43a00285",
+    "43a00286"
+  ]
+}
