@@ -1,0 +1,146 @@
+{
+  "th": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "439403f8",
+      "reference_word": "4393dbda"
+    }
+  },
+  "qv": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "3c9287c2",
+      "reference_word": "3c9394d7"
+    }
+  },
+  "qc": {
+    "equal": 8,
+    "different": 31,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "36e02a96",
+      "reference_word": "35b27854"
+    }
+  },
+  "qr": {
+    "equal": 22,
+    "different": 17,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "3893687b",
+      "reference_word": "32cde57d"
+    }
+  },
+  "qi": {
+    "equal": 8,
+    "different": 31,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "1614e5c0",
+      "reference_word": "00000000"
+    }
+  },
+  "qs": {
+    "equal": 29,
+    "different": 10,
+    "first_different": {
+      "level_zero_based": 14,
+      "host_word": "34506cbc",
+      "reference_word": "32c36fda"
+    }
+  },
+  "qg": {
+    "equal": 30,
+    "different": 9,
+    "first_different": {
+      "level_zero_based": 14,
+      "host_word": "00000000",
+      "reference_word": "a3568fde"
+    }
+  },
+  "nccn": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "4d15fef4",
+      "reference_word": "4d16052f"
+    }
+  },
+  "nc": {
+    "equal": 18,
+    "different": 21,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "00000000",
+      "reference_word": "478683c3"
+    }
+  },
+  "ni": {
+    "equal": 30,
+    "different": 9,
+    "first_different": {
+      "level_zero_based": 16,
+      "host_word": "00000000",
+      "reference_word": "4607cdb6"
+    }
+  },
+  "nr": {
+    "equal": 29,
+    "different": 10,
+    "first_different": {
+      "level_zero_based": 7,
+      "host_word": "00000000",
+      "reference_word": "b1243fa5"
+    }
+  },
+  "bg": {
+    "equal": 29,
+    "different": 10,
+    "first_different": {
+      "level_zero_based": 14,
+      "host_word": "00000000",
+      "reference_word": "20c68ca1"
+    }
+  },
+  "rho": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "3f936ca0",
+      "reference_word": "3f9395d0"
+    }
+  },
+  "pii": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "3f805785",
+      "reference_word": "3f805a92"
+    }
+  },
+  "p": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "47c524f8",
+      "reference_word": "47c5355e"
+    }
+  },
+  "delz": {
+    "equal": 0,
+    "different": 39,
+    "first_different": {
+      "level_zero_based": 0,
+      "host_word": "4250f9ef",
+      "reference_word": "4250d4d9"
+    }
+  }
+}

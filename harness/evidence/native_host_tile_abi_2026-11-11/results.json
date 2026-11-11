@@ -1,0 +1,71 @@
+{
+  "native_column": [
+    203,
+    149
+  ],
+  "packed_ij_zero": [
+    201,
+    6
+  ],
+  "physical_unit_status": "INCONCLUSIVE",
+  "private_full_tile_reexecution": "SKIPPED unless private tile and exact DSO are supplied",
+  "public_assets_verified": 11,
+  "public_selected_levels_zero_based": [
+    0,
+    19,
+    38
+  ],
+  "recorded_energy_variables_each_frame": 5,
+  "recorded_forecast_variables_each_frame": 254,
+  "recorded_full_tile_mismatch_counts": {
+    "bg": 0,
+    "graupel": 0,
+    "nc": 0,
+    "nccn": 0,
+    "ni": 0,
+    "nr": 0,
+    "qc": 0,
+    "qg": 0,
+    "qi": 0,
+    "qr": 0,
+    "qs": 0,
+    "qv": 0,
+    "rain": 0,
+    "rhog": 0,
+    "snow": 0,
+    "th": 0
+  },
+  "recorded_historical_reference_signature_matches": 0,
+  "recorded_paired_host_times": [
+    "2025-07-19_00:00:00",
+    "2025-07-19_00:00:20"
+  ],
+  "recorded_single_column_mismatch_counts": {
+    "bg": 0,
+    "graupel": 0,
+    "nc": 0,
+    "nccn": 0,
+    "ni": 0,
+    "nr": 0,
+    "qc": 0,
+    "qg": 0,
+    "qi": 0,
+    "qr": 0,
+    "qs": 0,
+    "qv": 0,
+    "rain": 0,
+    "rhog": 0,
+    "snow": 0,
+    "th": 0
+  },
+  "runtime_b_zero": 27945,
+  "schema": "kdm6.native_host_tile_abi_public_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "public metadata consistency only; host invocation not independently authenticated",
+  "tile_call_index": 2,
+  "tile_shape_im_km_jm": [
+    232,
+    39,
+    139
+  ]
+}

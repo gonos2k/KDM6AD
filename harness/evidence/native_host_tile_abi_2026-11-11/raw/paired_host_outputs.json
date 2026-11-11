@@ -1,0 +1,18 @@
+{
+  "fcst_0": {
+    "returncode": 0,
+    "output": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n"
+  },
+  "fcst_1": {
+    "returncode": 0,
+    "output": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n"
+  },
+  "energy_0": {
+    "returncode": 0,
+    "output": "# klfs_lc05_energy.202507190000 (frames=2) vs klfs_lc05_energy.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 5 common, 5 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n"
+  },
+  "energy_1": {
+    "returncode": 0,
+    "output": "# klfs_lc05_energy.202507190000 (frames=2) vs klfs_lc05_energy.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 5 common, 5 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n"
+  }
+}
