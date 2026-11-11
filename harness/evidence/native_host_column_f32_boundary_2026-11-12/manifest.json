@@ -1,0 +1,11 @@
+{
+  "files": {
+    "producer/sweep.py": "302df422cc77d1947412ab6cba42986cad709308458b3fe401a71b6365352845",
+    "raw/endpoint_captures/th_43a00285.csv.gz": "0718e70db85c329b8efd652f736b2a905cd2409b1c7fe958cd1c78445af8ad6f",
+    "raw/endpoint_captures/th_43a00286.csv.gz": "969950d1979b4657b5529f1642a65335770b9725092fcb8c1123d14f23bf40a0",
+    "raw/run_receipt.json": "36bd76d12e6d4bafd9b0656de9f9395fe03d3842bf67f52bde05c6dcd782c691",
+    "raw/sweep.json.gz": "1aeeb9e2bc80f0a56c4c59e6ea7e7fde598db6041addff77789ad7aa0df7319c",
+    "raw/terminal_calls.json": "77b2783d24ca5c8ffbaef3c196225178f73b8b698caeadca4ae5f4127e48f993"
+  },
+  "schema": "kdm6.host_selected_f32_coupled_boundary_packet.v1"
+}

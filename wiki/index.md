@@ -162,3 +162,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-tile-abi-2026-11-11]] — Private full-tile f32 ABI replay and paired WRF output receipt, with public metadata and host-lineage limits.
 
 - [[sources/native-host-column-f32-2026-11-11]] — Full 39-level selected host-call f32 column and separate B=1 output/activation capture, with no new boundary claim.
+
+- [[sources/native-host-column-f32-boundary-2026-11-12]] — Coupled-mask TH16 search on that same host-column input, with an adjacent f32 B=1 activation transition and endpoint output parity.
