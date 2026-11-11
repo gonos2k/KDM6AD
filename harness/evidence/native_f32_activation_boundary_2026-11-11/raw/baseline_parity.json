@@ -1,0 +1,73 @@
+{
+  "schema": "kdm6.native_f32_activation_boundary_baseline_parity.v1",
+  "call_count": 3,
+  "installed_reference": {
+    "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "symbol": "kdm6_step_c"
+  },
+  "private_capture_dso": {
+    "path": "source/build_f32_capture/libkdm6_c.dylib",
+    "sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95"
+  },
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "controls": {
+    "shape": [
+      1,
+      39,
+      1
+    ],
+    "dt_s": 20,
+    "xland": 2.0,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "environment": "production defaults; experimental ICE_FACTORIAL_MODE/QR_TRANSPORT/QNC_LIVE_GUARD unset",
+    "value_only": 1
+  },
+  "comparisons": {
+    "state_output_f32_words": {
+      "count": 468,
+      "installed_vs_private_capture_off_bitwise_equal": true,
+      "private_capture_off_vs_on_bitwise_equal": true,
+      "installed_vs_off_mismatches": 0,
+      "off_vs_on_mismatches": 0
+    },
+    "precip_increment_f32_words": {
+      "count": 3,
+      "installed_vs_private_capture_off_bitwise_equal": true,
+      "private_capture_off_vs_on_bitwise_equal": true,
+      "installed_vs_off_mismatches": 0,
+      "off_vs_on_mismatches": 0
+    },
+    "rhog_output_f32_words": {
+      "count": 39,
+      "installed_vs_private_capture_off_bitwise_equal": true,
+      "private_capture_off_vs_on_bitwise_equal": true,
+      "installed_vs_off_mismatches": 0,
+      "off_vs_on_mismatches": 0
+    }
+  },
+  "passed": true,
+  "outputs": {
+    "installed_baseline": {
+      "path": "raw/installed_baseline.json",
+      "sha256": "ad148d1304b83c9d24b3f28b330279afd528b8158a27c0cd4737e86922204306"
+    },
+    "private_capture_off": {
+      "path": "raw/private_baseline_capture_off.json",
+      "sha256": "73fbde1e9d2396d711b5d7ea946386eb17c31b59dce5cccf70cedaa7523e2177"
+    },
+    "private_capture_on": {
+      "path": "raw/private_baseline_capture_on.json",
+      "sha256": "73fbde1e9d2396d711b5d7ea946386eb17c31b59dce5cccf70cedaa7523e2177"
+    }
+  },
+  "capture": {
+    "path": "raw/baseline_capture/native_qnice_applied_95721_runtime1.csv",
+    "sha256": "edc9308939fa3d5b594245bd177b013311ac138b3493d2fa6f5052cea1d2b1ab",
+    "dtype": "f32",
+    "activation_rows_target_topfirst_k_zero23": 33,
+    "runtime_call": 1,
+    "substep": 0
+  }
+}

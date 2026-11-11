@@ -1,0 +1,13 @@
+{
+  "baseline_parity_sha256": "17cf4ee985cd46a11b3b9d98a4cdf36e32696f50157a4d97184803a4a3aebab4",
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "schema": "kdm6.native_f32_activation_boundary_run.v1",
+  "scope": "one native column B=1 value-only f32 C ABI, production default environment; not host full-tile or AD",
+  "sweep_events": 36,
+  "sweep_receipt_sha256": "58f8b28eae334415c211df8bb3e1b26d77d4775fbd595df061dd03086c79df22",
+  "sweep_sha256": "05a540159575660f5e030da199a489f7fd31d8c78fdb00dea5231438c9352fc3",
+  "terminal_distinct_endpoints": 4,
+  "terminal_receipt_sha256": "870d1180214bec5e8ca78fa2912e128c0cf35aa536218af4210fa4f2fb9338df"
+}
