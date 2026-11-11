@@ -1,0 +1,21 @@
+{
+  "schema": "kdm6.native_f32_activation_probe_attempt.v1",
+  "attempt_id": "attempt_01_installed_dlopen_failure",
+  "command": [
+    "runner_build/native_f32_cabi_probe",
+    "--library",
+    "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "--input",
+    "input.bin",
+    "--output",
+    "raw/installed_baseline.json"
+  ],
+  "returncode": 2,
+  "c_abi_calls": 0,
+  "kdm6_calls": 0,
+  "failure_phase": "dlopen before symbol resolution / ABI entry",
+  "stderr_path": "raw/attempt_01_installed_dlopen_failure.stderr.txt",
+  "stderr_sha256": "2a6fabda94e8bb86d2132a0ae5f83c90a2b13a20015d321bb7c5b0f77f14c1b0",
+  "installed_dso_sha256_before": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "remediation": "add the same Torch 3.9 LC_RPATH as host/KIM-meso_v1.0/main/wrf.exe to this isolated test runner only"
+}

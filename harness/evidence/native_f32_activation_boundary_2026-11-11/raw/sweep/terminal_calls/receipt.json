@@ -1,0 +1,340 @@
+{
+  "schema": "kdm6.native_f32_activation_boundary.terminal_calls.v1",
+  "timestamp": "2026-11-11T11:14:45.567272+09:00",
+  "runner_sha256": "b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "environment": "Inherited environment with KDM6* removed; OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, OMP_THREAD_LIMIT=1; capture controls as recorded per call",
+  "calls": [
+    {
+      "axis": "th16",
+      "word": "439ff9f0",
+      "mode": "installed",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f0_installed.json",
+      "sha256": "f41d64be83229375014bbe478d1e3447acc188ed9af3c3ba3217425803738891",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f0_installed.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f0"
+      ],
+      "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "capture_controls": {}
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f0",
+      "mode": "capture_off",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f0_capture_off.json",
+      "sha256": "1a83ee6783adbdf75cc56b94bc2a18fc3a3374815d1472cc8ca5774c9807a5b0",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f0_capture_off.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f0"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {}
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f0",
+      "mode": "capture_on",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f0_capture_on.json",
+      "sha256": "1a83ee6783adbdf75cc56b94bc2a18fc3a3374815d1472cc8ca5774c9807a5b0",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f0_capture_on.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f0"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/.capture_th16_439ff9f0",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f1",
+      "mode": "installed",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f1_installed.json",
+      "sha256": "57258c90f26996da3e43feae5a4d64884d474f930d490320dc0e222c31f1b407",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f1_installed.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f1"
+      ],
+      "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "capture_controls": {}
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f1",
+      "mode": "capture_off",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f1_capture_off.json",
+      "sha256": "545045871d52b0651d03f19bc7d14a9bc920184e1b0beffe7ced3c1ac428f6ce",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f1_capture_off.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f1"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {}
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f1",
+      "mode": "capture_on",
+      "path": "raw/sweep/terminal_calls/th16_439ff9f1_capture_on.json",
+      "sha256": "545045871d52b0651d03f19bc7d14a9bc920184e1b0beffe7ced3c1ac428f6ce",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/th16_439ff9f1_capture_on.json",
+        "--axis",
+        "th16",
+        "--word",
+        "439ff9f1"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/.capture_th16_439ff9f1",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf4f",
+      "mode": "installed",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf4f_installed.json",
+      "sha256": "0338e0707e15baf10949d6fd870c7520ab7bff72e561813d6016353ee960e7ec",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf4f_installed.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf4f"
+      ],
+      "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "capture_controls": {}
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf4f",
+      "mode": "capture_off",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf4f_capture_off.json",
+      "sha256": "72b15ca53c757b7c1db49f2f299f0affe03eb21ee12d44cb344689f07550c3d7",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf4f_capture_off.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf4f"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {}
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf4f",
+      "mode": "capture_on",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf4f_capture_on.json",
+      "sha256": "72b15ca53c757b7c1db49f2f299f0affe03eb21ee12d44cb344689f07550c3d7",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf4f_capture_on.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf4f"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/.capture_qv16_3befdf4f",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf50",
+      "mode": "installed",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf50_installed.json",
+      "sha256": "a54b6b653caa46bac784869c575fc02c4e9e048e44a6dd3a2dd4601ca8d2c250",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf50_installed.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf50"
+      ],
+      "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "capture_controls": {}
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf50",
+      "mode": "capture_off",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf50_capture_off.json",
+      "sha256": "8a31174bb70354ae4fc44209f9be516cdd3a5078692f25cfd699c0d6ac1ff8ac",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf50_capture_off.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf50"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {}
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf50",
+      "mode": "capture_on",
+      "path": "raw/sweep/terminal_calls/qv16_3befdf50_capture_on.json",
+      "sha256": "8a31174bb70354ae4fc44209f9be516cdd3a5078692f25cfd699c0d6ac1ff8ac",
+      "command": [
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/runner_build/native_f32_cabi_probe",
+        "--library",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/source/build_f32_capture/libkdm6_c.dylib",
+        "--input",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/input.bin",
+        "--output",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/qv16_3befdf50_capture_on.json",
+        "--axis",
+        "qv16",
+        "--word",
+        "3befdf50"
+      ],
+      "library_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+      "capture_controls": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111/raw/sweep/terminal_calls/.capture_qv16_3befdf50",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    }
+  ],
+  "independently_recomputed_comparisons": [
+    {
+      "axis": "th16",
+      "word": "439ff9f0",
+      "exact": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      }
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f1",
+      "exact": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      }
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf4f",
+      "exact": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      }
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf50",
+      "exact": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      }
+    }
+  ],
+  "scope": "Single native column, standard f32 C ABI value_only; no host full-tile or f64 AD claim."
+}

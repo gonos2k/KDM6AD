@@ -1,0 +1,218 @@
+{
+  "schema": "kdm6.native_f32_activation_boundary.sweep_receipt.v1",
+  "created_local": "2026-11-11T11:13:34.857776+09:00",
+  "search_integrity": {
+    "th16": {
+      "count": 13,
+      "unique_input_words": 13,
+      "word_sorted_strict": true,
+      "represented_values_strict": true,
+      "sampled_sw_monotone": true,
+      "sampled_fraction_monotone": true,
+      "sampled_word_gaps": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ]
+    },
+    "qv16": {
+      "count": 23,
+      "unique_input_words": 23,
+      "word_sorted_strict": true,
+      "represented_values_strict": true,
+      "sampled_sw_monotone": true,
+      "sampled_fraction_monotone": true,
+      "sampled_word_gaps": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    }
+  },
+  "boundaries": [
+    {
+      "axis": "th16",
+      "predicate": "sw",
+      "lower_word": "439ff9f0",
+      "upper_word": "439ff9f1",
+      "lower_predicate": true,
+      "upper_predicate": false,
+      "gap": 3.0517578125e-05,
+      "adjacent_words": true
+    },
+    {
+      "axis": "th16",
+      "predicate": "fraction",
+      "lower_word": "439ff9f0",
+      "upper_word": "439ff9f1",
+      "lower_predicate": true,
+      "upper_predicate": false,
+      "gap": 3.0517578125e-05,
+      "adjacent_words": true
+    },
+    {
+      "axis": "qv16",
+      "predicate": "sw",
+      "lower_word": "3befdf4f",
+      "upper_word": "3befdf50",
+      "lower_predicate": false,
+      "upper_predicate": true,
+      "gap": 4.656612873077393e-10,
+      "adjacent_words": true
+    },
+    {
+      "axis": "qv16",
+      "predicate": "fraction",
+      "lower_word": "3befdf4f",
+      "upper_word": "3befdf50",
+      "lower_predicate": false,
+      "upper_predicate": true,
+      "gap": 4.656612873077393e-10,
+      "adjacent_words": true
+    }
+  ],
+  "terminal_checks": [
+    {
+      "axis": "qv16",
+      "word": "3befdf4f",
+      "comparisons": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      },
+      "trace_repeated_exact": true
+    },
+    {
+      "axis": "qv16",
+      "word": "3befdf50",
+      "comparisons": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      },
+      "trace_repeated_exact": true
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f0",
+      "comparisons": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      },
+      "trace_repeated_exact": true
+    },
+    {
+      "axis": "th16",
+      "word": "439ff9f1",
+      "comparisons": {
+        "state_output_f32_words": true,
+        "precip_increment_f32_words": true,
+        "rhog_output_f32_words": true
+      },
+      "trace_repeated_exact": true
+    }
+  ],
+  "files": [
+    {
+      "path": "sweep.py",
+      "sha256": "b791ac0eea87ad6dc0760d721fac7295c6de60fa41604a7863b476a9aee7632f"
+    },
+    {
+      "path": "raw/sweep/sweep.json",
+      "sha256": "05a540159575660f5e030da199a489f7fd31d8c78fdb00dea5231438c9352fc3"
+    },
+    {
+      "path": "raw/sweep_execution.log",
+      "sha256": "292c2565be0bc31ec644e78f9f59bc7bbc0eab1cc0b733fcd62836aa1c44402a"
+    },
+    {
+      "path": "runner/main.cpp",
+      "sha256": "0ba1904d6dfd38cbc9256e560354a369f779869b19a6a702eed78c6118e59351"
+    },
+    {
+      "path": "runner/CMakeLists.txt",
+      "sha256": "985d38a61cffb2f382a3e61f89d9ea15750637c73871e0510f563ec16187e207"
+    },
+    {
+      "path": "runner_build/native_f32_cabi_probe",
+      "sha256": "b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050"
+    },
+    {
+      "path": "source/build_f32_capture/libkdm6_c.dylib",
+      "sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95"
+    },
+    {
+      "path": "source/src/coordinator.cpp",
+      "sha256": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b"
+    },
+    {
+      "path": "source/src/runtime.cpp",
+      "sha256": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10"
+    },
+    {
+      "path": "source/src/ops.cpp",
+      "sha256": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014"
+    },
+    {
+      "path": "source/bridge/kdm6_c_api.cpp",
+      "sha256": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049"
+    },
+    {
+      "path": "input.bin",
+      "sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d"
+    },
+    {
+      "path": "raw/baseline_capture/native_qnice_applied_95721_runtime1.csv.gz",
+      "sha256": "d3ba16496ae5a25e712d383f9efcfeb99fa7e03e3cb0e44cd7c1aa6c40a6e02f"
+    },
+    {
+      "path": "raw/sweep/qv16_3befdf4f_cpp_scalar_11323_1.csv.gz",
+      "sha256": "c19437830a9163432610d0ec244ffd639320037e1fc64a9f00c4be6930dab74a"
+    },
+    {
+      "path": "raw/sweep/qv16_3befdf4f_native_qnice_applied_11323_runtime1.csv.gz",
+      "sha256": "04f4c437cc786b4fd185c3dd9bf7b4209e6c9f073ba99153b308aec85a33d2f1"
+    },
+    {
+      "path": "raw/sweep/qv16_3befdf50_cpp_scalar_11326_1.csv.gz",
+      "sha256": "c10dac5266ac59033407f1b5b0e14066d0d06b24dbea2caad5ccec4930e4a6ab"
+    },
+    {
+      "path": "raw/sweep/qv16_3befdf50_native_qnice_applied_11326_runtime1.csv.gz",
+      "sha256": "54d05c96edb66348e2383187dd26d87cf3cf0783334aec5637aee73a63337845"
+    },
+    {
+      "path": "raw/sweep/th16_439ff9f0_cpp_scalar_11329_1.csv.gz",
+      "sha256": "59d62dd92eb88d71203c867d6b8317527bcdb6f6300806e868c24260c8263567"
+    },
+    {
+      "path": "raw/sweep/th16_439ff9f0_native_qnice_applied_11329_runtime1.csv.gz",
+      "sha256": "3fe18c2516cf8390c140ffbf6bf6720f5fa734d84a7246b9bb580ede01d85c59"
+    },
+    {
+      "path": "raw/sweep/th16_439ff9f1_cpp_scalar_11332_1.csv.gz",
+      "sha256": "2cb0e8786b14be019084b1a014545c50c0a3e23fac990ef0a9dfe26c9da3d662"
+    },
+    {
+      "path": "raw/sweep/th16_439ff9f1_native_qnice_applied_11332_runtime1.csv.gz",
+      "sha256": "16a33a44f78c810f13790e6536137682297d419853018778d22a600bdb7064a7"
+    }
+  ],
+  "installed_library": {
+    "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7"
+  },
+  "runner_hash_note": "Actual runner binary hash here differs from preflight receipt: preflight recorded binary before RPATH repair; baseline and sweep use repaired executable.",
+  "trace_storage": "All 36 events retain 33 target operands/masks and complete 468/3/39 outputs in sweep.json. Four endpoint full trace captures gzip; baseline full CSV retained and gzip copy.",
+  "limitations": "Monotonicity only over sampled input words. Adjacent endpoint evidence does not prove global uniqueness. Single column f32 C ABI value_only; no full host tile, AD or RTTOV claim."
+}

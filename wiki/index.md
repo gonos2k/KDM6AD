@@ -156,3 +156,5 @@ date_modified: 2026-10-26
 - [[sources/native-activation-upper-boundary-2026-11-10]] — Adjacent-f64 TH/QV activation brackets and side derivatives with output-resolution and branch limits.
 
 - [[sources/native-activation-operands-2026-11-10]] — Actual fraction power and separate rate-cap operands in the selected f64 boundary sweep.
+
+- [[sources/native-f32-activation-boundary-2026-11-11]] — Single-column native-input f32 C ABI activation boundary with installed/capture DSO raw-output links and explicit host limits.
