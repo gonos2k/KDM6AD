@@ -1,0 +1,1221 @@
+{
+  "schema": "kdm6.selected_host_f32_th_search_stop.v1",
+  "scope": "B=1 value-only perturbation of host-captured column; not a perturbed host tile or f32 AD",
+  "private_sweep_sha256": "fbabe09b78ddf763e90f738a844ca9cb7bb279e0de0d39588dab3f17c82627b8",
+  "private_input_bin_sha256": "8aced88b4f4f967a7cde0692837617b5ed3d058ccb30de8d2acdd7c43690d8ea",
+  "selected_json_sha256": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae",
+  "runner_sha256": "b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050",
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "axis": "th16",
+  "base_input_words": {
+    "th": "439ffb36",
+    "qv": "3bf0f004"
+  },
+  "max_word_distance": 1048576,
+  "probe_offsets": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024,
+    2048
+  ],
+  "trace_identity": {
+    "runtime_call": 1,
+    "one_step_call": 1,
+    "substep": 0,
+    "b_zero": 0,
+    "k_zero": 23,
+    "native_level": 16,
+    "stage": "fd_satadj_inner"
+  },
+  "samples": [
+    {
+      "th_input_word": "439ffb36",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef27"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef804"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f528b38"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fdb5105"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb0d170"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb37",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef27"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef828"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f527c60"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fdb418f"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb0c9f5"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb38",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef27"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef84f"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f526bf8"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fdb3078"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb0c1b1"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb3a",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef27"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef874"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f525c58"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fdb2031"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb0b9d0"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb3e",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef28"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef8f5"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f522670"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fdae80a"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb09ea3"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb46",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef29"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beef9ea"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f51bf50"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fda7c9e"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb06a9d"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb56",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef2a"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beefbbc"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f50fb38"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fd9b05b"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fb00795"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffb76",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef2d"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3beeff63"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f4f7240"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fd81703"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3faf40af"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffbb6",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef33"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3bef068b"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f4c6ff0"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fd4f49a"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fadb915"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffc36",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef40"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3bef14cd"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f467258"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fceb71c"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3faaa686"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439ffd36",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef59"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3bef313c"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f3a8218"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fc24784"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3fa46a19"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "439fff36",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0ef8b"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3bef6a6f"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3f228640"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3fa94bd8"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3f9761a1"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f800000"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    },
+    {
+      "th_input_word": "43a00336",
+      "trace": {
+        "qv_input": {
+          "dtype": "f32",
+          "raw_hex": "3bf0eff0"
+        },
+        "qs1": {
+          "dtype": "f32",
+          "raw_hex": "3befdd11"
+        },
+        "sw_percent": {
+          "dtype": "f32",
+          "raw_hex": "3ee52fe0"
+        },
+        "sw_ratio": {
+          "dtype": "f32",
+          "raw_hex": "3f6ebc8a"
+        },
+        "activation_fraction_pow": {
+          "dtype": "f32",
+          "raw_hex": "3f757f63"
+        },
+        "activation_fraction_min_output": {
+          "dtype": "f32",
+          "raw_hex": "3f757f63"
+        },
+        "activated_fraction": {
+          "dtype": "f32",
+          "raw_hex": "3f757f63"
+        },
+        "nc_input": {
+          "dtype": "f32",
+          "raw_hex": "0"
+        },
+        "nccn_input": {
+          "dtype": "f32",
+          "raw_hex": "4cbebc20"
+        },
+        "ncact_raw": {
+          "dtype": "f32",
+          "raw_hex": "4a9253f6"
+        },
+        "ncact_nccn_rate_cap": {
+          "dtype": "f32",
+          "raw_hex": "4a989680"
+        },
+        "activation_fraction_pow_lt_one": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "activation_fraction_pow_eq_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "activation_fraction_pow_gt_one": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "sw_positive": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "cloud_complete_evap": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        },
+        "nccn_floor_active": {
+          "dtype": "bool",
+          "raw_hex": "1"
+        },
+        "nccn_cap_active": {
+          "dtype": "bool",
+          "raw_hex": "0"
+        }
+      }
+    }
+  ],
+  "stop": {
+    "status": "stopped",
+    "reason": "unrelated masks changed: {\"ncact_raw_eq_nccn_rate_cap\": [\"1\", \"0\"], \"ncact_raw_lt_nccn_rate_cap\": [\"0\", \"1\"]}",
+    "last_unchanged_sample_index": 11,
+    "changed_sample_index": 12,
+    "boundaries_recorded": 0,
+    "qv_search_attempted": false
+  },
+  "baseline_parity": [
+    {
+      "axis": "th",
+      "word": "439ffb36",
+      "mode": "off",
+      "match": true
+    },
+    {
+      "axis": "th",
+      "word": "439ffb36",
+      "mode": "installed",
+      "match": true
+    }
+  ]
+}

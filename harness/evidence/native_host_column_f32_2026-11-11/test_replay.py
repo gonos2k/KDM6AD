@@ -15,12 +15,26 @@ class ColumnTest(unittest.TestCase):
         raw = replay.HERE / 'raw'
         self.b1 = json.loads((raw / 'b1_replay.json').read_text())
         self.activation = json.loads((raw / 'activation_summary.json').read_text())
+        self.th_stop = json.loads((raw / 'th_search_stop.json').read_text())
         self.calls = json.loads((raw / 'activation_calls.json').read_text())
         self.parent = json.loads((replay.HERE.parent / 'native_host_tile_abi_2026-11-11/raw/selected_column.json').read_text())
 
     def test_public_packet(self):
         actual = replay.validate_column(self.selected, self.b1, self.parent)
         replay.validate_activation(self.activation, actual)
+        self.assertEqual(replay.validate_th_search_stop(self.th_stop, self.selected, self.activation), 13)
+
+    def test_th_stop_rejects_missing_or_changed_probe(self):
+        for change, message in (
+            (lambda d: d['samples'].pop(11), 'sample inventory'),
+            (lambda d: d['samples'][-1]['trace']['ncact_raw_eq_nccn_rate_cap'].__setitem__('raw_hex', '1'), 'comparison mask'),
+            (lambda d: d['samples'][-1]['trace']['ncact_raw'].__setitem__('raw_hex', '4a989680'), 'source-order'),
+            (lambda d: d['stop'].__setitem__('boundaries_recorded', 1), 'stop decision'),
+        ):
+            data = copy.deepcopy(self.th_stop)
+            change(data)
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                replay.validate_th_search_stop(data, self.selected, self.activation)
 
     def test_saved_public_summary_contract(self):
         actual = replay.public_summary()

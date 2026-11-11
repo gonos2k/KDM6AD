@@ -17,6 +17,10 @@
   "public_limit": "validates published words and captured trace arithmetic; host invocation, private tile and installed library are not independently re-executed in public mode",
   "schema": "kdm6.native_host_column_f32_public_replay.v1",
   "scientific_status": "INCONCLUSIVE",
+  "th_search_changed_word": "43a00336",
+  "th_search_last_unchanged_word": "439fff36",
+  "th_search_limit": "B=1 sampled search stopped on rate/cap mask change before a certified activation bracket; no QV search, host perturbed replay, boundary or AD claim",
+  "th_search_recorded_samples": 13,
   "tile_output_words": 510,
   "tile_vs_archived_b1_raw_mismatches": 0
 }
