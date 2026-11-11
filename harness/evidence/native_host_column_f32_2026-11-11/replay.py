@@ -181,6 +181,107 @@ def validate_activation_calls(data, selected, actual, activation):
             need(outputs[name] == actual[name], 'activation call output mismatch: '+label+' '+name)
     return True
 
+
+TH_STOP_FLOAT = set('qv_input qs1 sw_percent sw_ratio activation_fraction_pow activation_fraction_min_output activated_fraction nc_input nccn_input ncact_raw ncact_nccn_rate_cap'.split())
+TH_STOP_BOOL = TRACE_BOOL
+TH_GUARD_BOOL = TH_STOP_BOOL - set('activation_fraction_pow_lt_one activation_fraction_pow_eq_one activation_fraction_pow_gt_one'.split())
+TH_OFFSETS = [0] + [1 << k for k in range(12)]
+TH_SWEEP_SHA = 'fbabe09b78ddf763e90f738a844ca9cb7bb279e0de0d39588dab3f17c82627b8'
+TH_RUNNER_SHA = 'b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050'
+
+
+def validate_th_search_stop(data, selected, activation):
+    """Check the published TH probe record, not the unavailable private calls."""
+    need(data['schema'] == 'kdm6.selected_host_f32_th_search_stop.v1'
+         and data['scope'] == 'B=1 value-only perturbation of host-captured column; not a perturbed host tile or f32 AD',
+         'TH search scope')
+    need(data['private_sweep_sha256'] == TH_SWEEP_SHA
+         and data['selected_json_sha256'] == SELECTED_SHA
+         and data['private_input_bin_sha256'] == '8aced88b4f4f967a7cde0692837617b5ed3d058ccb30de8d2acdd7c43690d8ea'
+         and data['runner_sha256'] == TH_RUNNER_SHA
+         and data['installed_dso_sha256'] == DSO_SHA
+         and data['capture_dso_sha256'] == activation['capture_dso_sha256'],
+         'TH search provenance')
+    need(data['axis'] == 'th16' and data['base_input_words'] == {
+        'th': selected['input_words_hex']['th'][15],
+        'qv': selected['input_words_hex']['qv'][15],
+    } and data['max_word_distance'] == 1 << 20, 'TH search base input')
+    need(data['probe_offsets'] == TH_OFFSETS
+         and data['trace_identity'] == activation['identity'], 'TH search schedule and identity')
+    samples = data['samples']
+    need(isinstance(samples, list) and len(samples) == len(TH_OFFSETS), 'TH search sample inventory')
+    base = int(data['base_input_words']['th'], 16)
+    recorded = []
+    for index, sample in enumerate(samples):
+        need(sample['th_input_word'] == f'{base + TH_OFFSETS[index]:08x}', 'TH search input word')
+        trace = sample['trace']
+        need(set(trace) == TH_STOP_FLOAT | TH_STOP_BOOL, 'TH search trace fields')
+        for name in TH_STOP_FLOAT:
+            item = trace[name]
+            raw = item.get('raw_hex')
+            need(item.get('dtype') == 'f32' and isinstance(raw, str)
+                 and re.fullmatch('[0-9a-f]{1,8}', raw) is not None,
+                 'TH search f32 field: ' + name)
+            vector([raw.zfill(8)], 1, 'TH search f32: ' + name)
+        for name in TH_STOP_BOOL:
+            item = trace[name]
+            need(item.get('dtype') == 'bool' and item.get('raw_hex') in ('0', '1'),
+                 'TH search mask: ' + name)
+        val = lambda name: value(trace[name]['raw_hex'])
+        mask = lambda name: trace[name]['raw_hex'] == '1'
+        exact = lambda name, expected: need(int(trace[name]['raw_hex'], 16) == int(word(expected), 16),
+                                             'TH search source-order: ' + name)
+        rh = rounded(val('qv_input') / max(val('qs1'), rounded(1.0e-9)))
+        sw = rounded(rounded(rh - 1.0) * 100.0)
+        exact('sw_percent', sw)
+        ratio = max(rounded(sw / rounded(0.48)), 0.0)
+        exact('sw_ratio', ratio)
+        pow_expected = rounded(math.pow(max(ratio, rounded(1.0e-15)), rounded(0.6)))
+        need(abs(int(word(pow_expected), 16) - int(trace['activation_fraction_pow']['raw_hex'], 16)) <= 4,
+             'TH search pow within 4 f32 ULP')
+        exact('activation_fraction_min_output', min(1.0, val('activation_fraction_pow')))
+        exact('activated_fraction', val('activation_fraction_min_output'))
+        preclamp = rounded(-val('nc_input') + rounded(
+            rounded(val('nccn_input') + val('nc_input')) * val('activated_fraction')))
+        exact('ncact_raw', rounded(max(preclamp, 0.0) / rounded(20.0)))
+        exact('ncact_nccn_rate_cap', rounded(max(val('nccn_input'), 0.0) / rounded(20.0)))
+        for stem, left, right in (
+            ('activation_fraction_pow', val('activation_fraction_pow'), 1.0),
+            ('ncact_raw', val('ncact_raw'), val('ncact_nccn_rate_cap')),
+        ):
+            suffix = '_one' if stem == 'activation_fraction_pow' else '_nccn_rate_cap'
+            for comparison, expected in (('lt', left < right), ('eq', left == right), ('gt', left > right)):
+                need(mask(stem + '_' + comparison + suffix) == expected,
+                     'TH search comparison mask: ' + stem + '_' + comparison)
+        recorded.append({name: trace[name]['raw_hex'] for name in TH_STOP_BOOL})
+    need({name: samples[0]['trace'][name] for name in TH_STOP_FLOAT | TH_STOP_BOOL}
+         == {name: activation['trace'][name] for name in TH_STOP_FLOAT | TH_STOP_BOOL},
+         'TH search baseline activation link')
+    need(all(all(row[name] == recorded[0][name] for name in TH_GUARD_BOOL)
+             for row in recorded[:-1]), 'TH search pre-stop masks')
+    changed = {name: (recorded[0][name], recorded[-1][name])
+               for name in TH_GUARD_BOOL if recorded[-1][name] != recorded[0][name]}
+    need(changed == {'ncact_raw_eq_nccn_rate_cap': ('1', '0'),
+                     'ncact_raw_lt_nccn_rate_cap': ('0', '1')}, 'TH search stop masks')
+    need(all(value(sample['trace']['sw_percent']['raw_hex']) > 0.48 for sample in samples[:-1])
+         and value(samples[-1]['trace']['sw_percent']['raw_hex']) < 0.48,
+         'TH search sampled supersaturation')
+    need(all(sample['trace']['sw_positive']['raw_hex'] == '1' for sample in samples),
+         'TH search positive supersaturation mask')
+    need(data['stop'] == {
+        'status': 'stopped',
+        'reason': 'unrelated masks changed: {"ncact_raw_eq_nccn_rate_cap": ["1", "0"], "ncact_raw_lt_nccn_rate_cap": ["0", "1"]}',
+        'last_unchanged_sample_index': 11,
+        'changed_sample_index': 12,
+        'boundaries_recorded': 0,
+        'qv_search_attempted': False,
+    }, 'TH search stop decision')
+    need(data['baseline_parity'] == [
+        {'axis':'th','word':data['base_input_words']['th'],'mode':'off','match':True},
+        {'axis':'th','word':data['base_input_words']['th'],'mode':'installed','match':True},
+    ], 'TH search baseline parity receipt')
+    return len(samples)
+
 def validate_private(tile_path, dso_path, selected):
     """Optionally bind every public column word to the pinned private tile and DSO."""
     import ctypes
@@ -228,7 +329,7 @@ def validate_private(tile_path, dso_path, selected):
         need(actual == expected[name], 'private B=1 output: '+name)
 
 
-MANIFEST_SHA = 'aab81cfeffe3bacf86f807ba00ee7c54a46592c056cee2fe1991ef283f80d6a2'
+MANIFEST_SHA = 'c1f17fff7818778dbf287faa2248da50abba6718c9d7d1cea91248048b0d4af9'
 PINS = {
     'raw/activation_calls.json': '4b181883e4723f34881dbda2cd1da97cdbdbbbe671029c8a95e0d7463f717f45',
     'raw/activation_capture.csv.gz': '257b136e97b976bce08db0d2f682855f201024d785c8048c5645fee5e622e642',
@@ -236,6 +337,7 @@ PINS = {
     'raw/b1_replay.json': '542f2578f8abf38563921d354aa7dff6617056238d1d319185a2ec55c26bc0f8',
     'raw/column_receipt.json': '90b6926124e34523e2cbb1361f467732628ff16aba2d6808db927f3168891851',
     'raw/selected_full.json': SELECTED_SHA,
+    'raw/th_search_stop.json': '896e33963ff44af5e815b6d81d064e0829858eee708128c0fc940a46f3d83413',
 }
 PARENT_SHA = 'e9ce79d45090218c43754a54ff078373e7e69335fdc8f3e9eea2d7f285e55232'
 CSV_SHA = 'b211688e9d3c63885a976edde93f9283fb637c3ea2cf232980e34ebbf835bb38'
@@ -249,7 +351,9 @@ def load_packet(root=HERE):
     raw = root / 'raw'
     read = lambda n: json.loads((raw / n).read_text())
     receipt = read('column_receipt.json')
-    need(receipt['schema'] == 'kdm6.native_host_column_f32_receipt.v1' and receipt['files'] == {k:v for k,v in PINS.items() if k != 'raw/column_receipt.json'}, 'receipt files')
+    # The original #580 receipt remains byte-for-byte fixed; the TH supplement is
+    # independently pinned by this packet's updated manifest.
+    need(receipt['schema'] == 'kdm6.native_host_column_f32_receipt.v1' and receipt['files'] == {k:v for k,v in PINS.items() if k not in ('raw/column_receipt.json', 'raw/th_search_stop.json')}, 'receipt files')
     need(receipt['parent_host_tile_capture_sha256'] == TILE_SHA and receipt['installed_dso_sha256'] == DSO_SHA and receipt['parent_public_selected_summary_sha256'] == PARENT_SHA and receipt['input_word_count'] == 624 and receipt['output_word_count'] == 510 and receipt['private_activation_capture_csv_sha256'] == CSV_SHA, 'receipt provenance')
     need(receipt['scope'] == 'selected 39-level host-call column and separate B=1 C ABI replay; no host-tile stage AD or schedule claim', 'receipt scope')
     parent_path = root.parent / 'native_host_tile_abi_2026-11-11/raw/selected_column.json'
@@ -262,6 +366,7 @@ def load_packet(root=HERE):
     need(historical['th']['equal'] == 0 and historical['th']['different'] == 39 and historical['th']['first_different']['host_word'] == selected['input_words_hex']['th'][0] and historical['th']['first_different']['reference_word'] != selected['input_words_hex']['th'][0], 'historical input distinction')
     actual = validate_column(selected, replay, json.loads(parent_path.read_text()))
     validate_activation(activation, actual)
+    validate_th_search_stop(read('th_search_stop.json'), selected, activation)
     validate_activation_calls(read('activation_calls.json'), selected, actual, activation)
     need(receipt['private_activation_calls_original_sha256'] == 'e6b686caac613735414b61d3ee245f6394cc09240b8daa2407778074d1414c6b', 'activation calls original SHA-256')
     csv_bytes = gzip.decompress((raw / 'activation_capture.csv.gz').read_bytes())
@@ -288,6 +393,10 @@ def public_summary(selected=None):
         'tile_vs_archived_b1_raw_mismatches': 0,
         'activation_stage_trace_fields': 33,
         'capture_csv_rows': 19656,
+        'th_search_recorded_samples': 13,
+        'th_search_last_unchanged_word': '439fff36',
+        'th_search_changed_word': '43a00336',
+        'th_search_limit': 'B=1 sampled search stopped on rate/cap mask change before a certified activation bracket; no QV search, host perturbed replay, boundary or AD claim',
         'native_column': selected['column_native'],
         'levels': 39,
         'call_scope': 'host tile call and separate B=1 call; internal schedule unobserved',
