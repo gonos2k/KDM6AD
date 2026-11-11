@@ -1,0 +1,23 @@
+{
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "files": {
+    "raw/activation_calls.json": "4b181883e4723f34881dbda2cd1da97cdbdbbbe671029c8a95e0d7463f717f45",
+    "raw/activation_capture.csv.gz": "257b136e97b976bce08db0d2f682855f201024d785c8048c5645fee5e622e642",
+    "raw/activation_summary.json": "8354c4682dc632b92b9a1322079cb4a6b64e348916fdb61e03e5dbedbf2b471b",
+    "raw/b1_replay.json": "542f2578f8abf38563921d354aa7dff6617056238d1d319185a2ec55c26bc0f8",
+    "raw/selected_full.json": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae"
+  },
+  "input_word_count": 624,
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "output_word_count": 510,
+  "parent_host_tile_capture_sha256": "a13d3aafdc4d71ffe5ea7a59616a48f4ea7c6ab3da813b8883bb7277df71ecce",
+  "parent_public_selected_summary_sha256": "e9ce79d45090218c43754a54ff078373e7e69335fdc8f3e9eea2d7f285e55232",
+  "parent_research_merge_commit": "b58dda48fe40d954ad07f202294b4f0163d76d35",
+  "private_activation_calls_original_sha256": "e6b686caac613735414b61d3ee245f6394cc09240b8daa2407778074d1414c6b",
+  "private_activation_capture_csv_sha256": "b211688e9d3c63885a976edde93f9283fb637c3ea2cf232980e34ebbf835bb38",
+  "private_activation_summary_original_sha256": "8354c4682dc632b92b9a1322079cb4a6b64e348916fdb61e03e5dbedbf2b471b",
+  "private_b1_replay_original_sha256": "28a87cf0ff76fbb443c42275f52e53647703262db212c5a99225ab53fa9e529c",
+  "private_selected_full_original_sha256": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae",
+  "schema": "kdm6.native_host_column_f32_receipt.v1",
+  "scope": "selected 39-level host-call column and separate B=1 C ABI replay; no host-tile stage AD or schedule claim"
+}

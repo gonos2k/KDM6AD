@@ -1,0 +1,162 @@
+{
+  "schema": "kdm6.selected_native_f32_activation.v1",
+  "source_tile_sha256": "a13d3aafdc4d71ffe5ea7a59616a48f4ea7c6ab3da813b8883bb7277df71ecce",
+  "selected_input_sha256": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae",
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "capture_csv_sha256": "b211688e9d3c63885a976edde93f9283fb637c3ea2cf232980e34ebbf835bb38",
+  "capture_csv_rows": 19656,
+  "identity": {
+    "runtime_call": 1,
+    "one_step_call": 1,
+    "substep": 0,
+    "b_zero": 0,
+    "k_zero": 23,
+    "native_level": 16,
+    "stage": "fd_satadj_inner"
+  },
+  "trace": {
+    "qv_input": {
+      "dtype": "f32",
+      "raw_hex": "3bf0ef27"
+    },
+    "qs1": {
+      "dtype": "f32",
+      "raw_hex": "3beef804"
+    },
+    "sw_percent": {
+      "dtype": "f32",
+      "raw_hex": "3f528b38"
+    },
+    "sw_positive": {
+      "dtype": "bool",
+      "raw_hex": "1"
+    },
+    "sw_ratio": {
+      "dtype": "f32",
+      "raw_hex": "3fdb5105"
+    },
+    "activation_fraction_one": {
+      "dtype": "f32",
+      "raw_hex": "3f800000"
+    },
+    "activation_fraction_pow": {
+      "dtype": "f32",
+      "raw_hex": "3fb0d170"
+    },
+    "safe_pow_clamped_base_diagnostic": {
+      "dtype": "f32",
+      "raw_hex": "3fdb5105"
+    },
+    "activation_fraction_pow_lt_one": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "activation_fraction_pow_eq_one": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "activation_fraction_pow_gt_one": {
+      "dtype": "bool",
+      "raw_hex": "1"
+    },
+    "activation_fraction_min_output": {
+      "dtype": "f32",
+      "raw_hex": "3f800000"
+    },
+    "activated_fraction": {
+      "dtype": "f32",
+      "raw_hex": "3f800000"
+    },
+    "ncact_raw": {
+      "dtype": "f32",
+      "raw_hex": "4a989680"
+    },
+    "ncact_preclamp_fma": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    },
+    "ncact_clamped_numerator": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    },
+    "ncact_nccn_rate_cap": {
+      "dtype": "f32",
+      "raw_hex": "4a989680"
+    },
+    "ncact_min_output": {
+      "dtype": "f32",
+      "raw_hex": "4a989680"
+    },
+    "ncact_raw_lt_nccn_rate_cap": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "ncact_raw_eq_nccn_rate_cap": {
+      "dtype": "bool",
+      "raw_hex": "1"
+    },
+    "ncact_raw_gt_nccn_rate_cap": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "ncact": {
+      "dtype": "f32",
+      "raw_hex": "4a989680"
+    },
+    "nc_input": {
+      "dtype": "f32",
+      "raw_hex": "0"
+    },
+    "nccn_input": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    },
+    "nc_after_activation": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    },
+    "nccn_after_activation": {
+      "dtype": "f32",
+      "raw_hex": "0"
+    },
+    "cloud_complete_evap": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "nc_evap_amount": {
+      "dtype": "f32",
+      "raw_hex": "0"
+    },
+    "nc_final": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    },
+    "nccn_final_raw": {
+      "dtype": "f32",
+      "raw_hex": "0"
+    },
+    "nccn_floor_active": {
+      "dtype": "bool",
+      "raw_hex": "1"
+    },
+    "nccn_cap_active": {
+      "dtype": "bool",
+      "raw_hex": "0"
+    },
+    "nccn_final": {
+      "dtype": "f32",
+      "raw_hex": "4cbebc20"
+    }
+  },
+  "output_noninterference": {
+    "installed_vs_capture_on_off_equal": true,
+    "compared_words": 510,
+    "return_codes": [
+      0,
+      0,
+      0
+    ]
+  },
+  "excluded_attempt": "DYLD_LIBRARY_PATH included operational install, causing substitution with installed DSO and no capture; loader trace activation_loader.stderr"
+}
