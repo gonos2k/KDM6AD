@@ -174,3 +174,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-shared-screening-2026-11-12]] — Same-column f32/f64 stage comparison, bounded f64 state/forcing screening, unresolved NC plateau and conditional water inventory.
 
 - [[sources/native-host-batch4-analysis-2026-11-12]] — Output-wise saved FD/JVP screening, NC/PII gap localization, source-based unit gates and a single-build capture plan; no new derivative or physical approval.
+
+- [[sources/native-host-capture-preflight-2026-11-12]] — Exact 45-input SPEC_ONLY plan, prospective numeric gate and seven-group field inventory, with no DSO build or execution claim.

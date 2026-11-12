@@ -1,0 +1,301 @@
+{
+  "groups": {
+    "heat_bg": {
+      "new_requirements": [
+        "temperature, cpm, latent heats and applied phase-change terms",
+        "BG/rhox and pre/post ProgB volume terms",
+        "live tangents and masks"
+      ],
+      "observed_stages": [
+        "d1_melt_producer",
+        "d1_postmelt_progb",
+        "fd_main"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/coordinator.cpp:2353",
+        "libtorch/src/coordinator.cpp:2466",
+        "libtorch/src/coordinator.cpp:2656"
+      ]
+    },
+    "named_process": {
+      "new_requirements": [
+        "post-limiter named rates and applied amounts",
+        "donor/recipient post-state and next consumer",
+        "live tangent and branch masks"
+      ],
+      "observed_stages": [
+        "nc_budget",
+        "fd_state_update",
+        "fd_d5"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/coordinator.cpp:1320",
+        "libtorch/src/coordinator.cpp:2110"
+      ]
+    },
+    "nc_zero": {
+      "new_requirements": [
+        "entry floor operands and masks",
+        "NC and NCCN at each applied boundary and next consumer",
+        "live JVP for each requested state and limiter operand"
+      ],
+      "observed_stages": [
+        "runtime_full_entry",
+        "nc_budget",
+        "fd_state_update",
+        "fd_satadj_inner",
+        "fd_cleanup",
+        "fd_dsd"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/runtime.cpp:428",
+        "libtorch/src/coordinator.cpp:2110",
+        "libtorch/src/coordinator.cpp:2563"
+      ]
+    },
+    "pii_chain": {
+      "new_requirements": [
+        "PII to T, cpm, saturation and each minimum operand value and live tangent",
+        "capture masks and stagewise outputs"
+      ],
+      "observed_stages": [
+        "runtime_full_forcing",
+        "d1_entry_thermo",
+        "fd_satadj_inner"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/runtime.cpp:53",
+        "libtorch/src/coordinator.cpp:2563"
+      ]
+    },
+    "rate_cap_tie": {
+      "new_requirements": [
+        "live raw-rate and cap values and tangents",
+        "minimum output and tangent",
+        "less/equal/greater masks"
+      ],
+      "observed_stages": [
+        "fd_satadj_inner"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/coordinator.cpp:2596"
+      ]
+    },
+    "same_call_water": {
+      "new_requirements": [
+        "total rain increment and kernel/cleanup boundary values",
+        "rho and delz measure and live tangents",
+        "separate overlapping snow/graupel diagnostics"
+      ],
+      "observed_stages": [
+        "runtime_full_entry",
+        "runtime_full_forcing",
+        "runtime_full_exit"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/runtime.cpp:525",
+        "libtorch/src/sedimentation.cpp:300"
+      ]
+    },
+    "sedimentation": {
+      "new_requirements": [
+        "per species and substep applied departure, arrival and bottom export",
+        "before/after values, limiter gates and projection residual",
+        "live tangent of applied amounts"
+      ],
+      "observed_stages": [
+        "runtime_full_schedule",
+        "fd_main",
+        "ice_sedimentation_n1"
+      ],
+      "required_record_kinds": [
+        "value",
+        "live_tangent",
+        "mask"
+      ],
+      "source": [
+        "libtorch/src/sedimentation.cpp:105",
+        "libtorch/src/sedimentation.cpp:151",
+        "libtorch/src/sedimentation.cpp:246",
+        "libtorch/src/coordinator.cpp:3061"
+      ]
+    }
+  },
+  "parent_counts": {
+    "rows": 19656,
+    "stage_field_pairs": 505,
+    "stages": 51
+  },
+  "parent_exact_label_gaps": {
+    "graupel_volume_budget": [
+      {
+        "field": "brs_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "brs_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "dbrs_cold_sum",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "dbrs_warm_sum",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_out_brs",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_brs",
+        "stage": "fd_main"
+      }
+    ],
+    "heat_budget": [
+      {
+        "field": "temperature_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "temperature_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "xlwork2",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "pcond",
+        "stage": "fd_satadj_inner"
+      },
+      {
+        "field": "temperature_after",
+        "stage": "fd_satadj_inner"
+      }
+    ],
+    "named_process_applied_mass": [
+      {
+        "field": "qv_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qv_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qc_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qc_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_praut",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_pracw",
+        "stage": "fd_state_update"
+      }
+    ],
+    "precipitation_components_and_applied_export": [
+      {
+        "field": "rain_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "snow_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "graupel_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "applied_surface_qr",
+        "stage": "fd_main"
+      }
+    ],
+    "sedimentation_mass_departure_arrival": [
+      {
+        "field": "applied_out_qi",
+        "stage": "ice_sedimentation_n1"
+      },
+      {
+        "field": "applied_in_qi",
+        "stage": "ice_sedimentation_n1"
+      },
+      {
+        "field": "applied_out_qr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_qr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_out_qg",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_qg",
+        "stage": "fd_main"
+      }
+    ],
+    "sedimentation_number_all_substeps": [
+      {
+        "field": "applied_out_ni",
+        "stage": "ice_sedimentation_n2"
+      },
+      {
+        "field": "applied_in_ni",
+        "stage": "ice_sedimentation_n2"
+      },
+      {
+        "field": "applied_out_nr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_nr",
+        "stage": "fd_main"
+      }
+    ]
+  },
+  "parent_stage_inventory_sha256": "c82a86bdd0e41db4615a01b6da17e29030115cc521aeedab911b9d1e54e36e06",
+  "schema": "kdm6.native_host_capture_field_plan.v1",
+  "scope": "requirements only; existing capture is value-only and these labels are not a complete causal graph; live AD tensors must not be detached",
+  "status": "SPEC_ONLY"
+}
