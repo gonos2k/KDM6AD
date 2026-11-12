@@ -1,0 +1,77 @@
+{
+  "schema": "kdm6.host_selected_f64_baseline_full_capture.v1",
+  "timestamp": "2026-11-12T18:26:39.420432+09:00",
+  "command": "KDM6_NATIVE_CAPTURE_DIR=$PWD/batch3_baseline_capture_20261112 KDM6_NATIVE_CAPTURE_ALL_K=1 KDM6_NATIVE_CAPTURE_CALL=1 KDM6_NATIVE_CAPTURE_B=0 KDM6_NATIVE_CAPTURE_MAX_ROWS=200000 KDM6_NATIVE_CAPTURE_MAX_BYTES=134217728 DYLD_LIBRARY_PATH=<TORCH_LIB> DYLD_PRINT_LIBRARIES=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 python3 f64_da_boundary_20261112/probe.py capture_on 4073ff66c0000000",
+  "cwd": "<PRIVATE_HOST_EVIDENCE_DIR>",
+  "physics_environment": "all KDM6 physics override variables unset; only capture controls set",
+  "control": {
+    "shape": [
+      1,
+      39,
+      1
+    ],
+    "dt_s": 20,
+    "xland": 2,
+    "ncmin_land": 10,
+    "ncmin_sea": 10,
+    "abi": "kdm6_step_ad_c",
+    "value_only": 1,
+    "runtime_call": 1
+  },
+  "selected_sha256": "e3117d277a073042bbae648b87e7dd6661d14b600fc8245f6aeabc19fe715eae",
+  "producer_sha256": "e0ec2183f28cd1c397e1e6ed6f955e9fccd71fbb909b14fe30000a153f2494e4",
+  "python_executable": "<PYTHON_EXECUTABLE>",
+  "python_sha256": "c06459ab038bac893e8711387d50005e2308249cdfdeba98a09b9c4c7971d931",
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "torch_dependencies": {
+    "libtorch.dylib": {
+      "path": "<TORCH_LIB>/libtorch.dylib",
+      "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190"
+    },
+    "libtorch_cpu.dylib": {
+      "path": "<TORCH_LIB>/libtorch_cpu.dylib",
+      "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565"
+    },
+    "libc10.dylib": {
+      "path": "<TORCH_LIB>/libc10.dylib",
+      "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f"
+    },
+    "libomp.dylib": {
+      "path": "<TORCH_LIB>/libomp.dylib",
+      "sha256": "f16b7e35fa03c013cc7c51fce1e5fab5e825bb5bd2ee4f7a236075fbdc088992"
+    }
+  },
+  "assets": {
+    "native_qnice_applied_76647_runtime1.csv": "49d60ae156212acdf987577ec271f4b5a56a318b5a9ff4829c36419397e29aba",
+    "output.json": "c69de944ebd0214abcb9d5fa53c76e8b39728d69d70087f94d159618558e1fa9",
+    "loader.stderr": "a79d0d08bc2a7c9dd99300eb0b1ae119c920fb0b0733a9ed9bc3223ce21d0cae",
+    "cpp_scalar_76647_1.csv": "440d8331c3740ceed389a2a77f249884239f783660b7628b53b8919d818551c7"
+  },
+  "capture": {
+    "file": "native_qnice_applied_76647_runtime1.csv",
+    "rows": 19656,
+    "substeps": [
+      "0",
+      "1"
+    ],
+    "stages": 51,
+    "levels": 39,
+    "status": "complete",
+    "target_fields": 33,
+    "target_dtype": "f64"
+  },
+  "comparison": {
+    "words": 468,
+    "installed_archived_baseline_equal": true,
+    "capture_off_equal": true,
+    "installed_value_equal": true,
+    "archive_sha256": "8fbeb9398064fc3e3747e7f5e6862a4f09f159ab102794be29d13e0dd7e6a81d",
+    "capture_off_call_sha256": "0c388141c8a7d2c0996c988b2887852792ff04b6053a6d2f29bd439126aa0a6e",
+    "installed_call_sha256": "c18b9c2216b6d66a7ddb914733efc8c6733199fc2db609679346765112615564"
+  },
+  "scope": "one selected B=1 f64 Legacy value-only capture; no host-tile or AD claim",
+  "redaction": {
+    "original_receipt_sha256": "aa6c572aac06069fbeef48a0eae907d09204889772290aee7fb24a4dd1bf5f13",
+    "rule": "machine-specific absolute paths replaced; hashes and execution controls unchanged"
+  }
+}
