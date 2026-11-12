@@ -30,6 +30,7 @@ on:
       - 'harness/oracle_evidence_suites.json'
       - 'harness/run_oracle_evidence_suites.py'
       - 'harness/tests/test_run_oracle_evidence_suites.py'
+      - 'harness/ci_diagnostics/**'
       - '.github/requirements/oracle-*.txt'
       - '.github/workflows/oracle-ci.yml'
   # No paths filter on pull_request: "oracle pytest (f64 reference)" is a
@@ -79,8 +80,15 @@ jobs:
 
       # The mandatory pyproj import above prevents importorskip from hiding the
       # independent LCC check. Run that test once, inside the complete suite.
+      - name: Validate Oracle profiler
+        run: python -m unittest discover -s harness/ci_diagnostics -p test_profile_pytest.py -v
+
       - name: pytest (oracle/, pure-Python subset)
-        run: cd oracle && python -m pytest -rs -q
+        run: |
+          cd oracle
+          python ../harness/ci_diagnostics/profile_pytest.py \
+            --output "$RUNNER_TEMP/oracle-pytest-profile.json" \
+            --durations 30 -- python -m pytest -rs -q
 
       # The NumPy-only harness job intentionally has no Torch. Exercise the
       # native batch graph/checkpoint boundaries here, where Torch is mandatory.
@@ -110,11 +118,13 @@ jobs:
           PYTHONOPTIMIZE: '1'
         run: python harness/run_oracle_evidence_suites.py --mode optimized --output "$RUNNER_TEMP/oracle-evidence-optimized.json"
 
-      - name: Upload evidence timings
+      - name: Upload evidence timings and Oracle profile
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oracle-evidence-timings-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/oracle-evidence-*.json
+          path: |
+            ${{ runner.temp }}/oracle-evidence-*.json
+            ${{ runner.temp }}/oracle-pytest-profile.json
           if-no-files-found: warn
           retention-days: 14

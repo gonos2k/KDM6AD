@@ -1,6 +1,6 @@
 {
   "schema": "kdm6.oracle_evidence_suites.v1",
-  "expected_count": 50,
+  "expected_count": 51,
   "suites": [
     "harness/evidence/native_qnice_same_call_2026-11-02",
     "harness/evidence/native_qnice_prec3_2026-11-02",
@@ -51,7 +51,8 @@
     "harness/evidence/native_host_column_f32_2026-11-11",
     "harness/evidence/native_host_column_f32_boundary_2026-11-12",
     "harness/evidence/native_host_column_f64_da_2026-11-12",
-    "harness/evidence/native_host_analysis_batch_2026-11-12"
+    "harness/evidence/native_host_analysis_batch_2026-11-12",
+    "harness/evidence/native_number_coordinate_contract_2026-11-12"
   ],
   "timing_hints_seconds": {
     "normal": {
@@ -190,5 +191,16 @@
     "harness/evidence/pr408_synthetic_capture_success_2026-10-11": "Historical PR research; outside the established oracle evidence gate.",
     "harness/evidence/pr413_cloud_convergence_2026-10-12": "Historical PR research; outside the established oracle evidence gate.",
     "harness/evidence/pr418_nine_channels_2026-10-12": "Historical PR research; outside the established oracle evidence gate."
+  },
+  "allowed_skips": {
+    "harness/evidence/native_host_tile_abi_2026-11-11": {
+      "test_replay.PrivateTileTest.test_private_full_tile": "PRIVATE_TILE_PATH and PRIVATE_DSO_PATH required for private full-tile replay"
+    },
+    "harness/evidence/native_host_column_f32_2026-11-11": {
+      "test_replay.ColumnTest.test_private_tile_and_dso": "PRIVATE_TILE_PATH and PRIVATE_DSO_PATH required for private full-tile check"
+    },
+    "harness/evidence/native_host_column_f32_boundary_2026-11-12": {
+      "test_replay.ReplayTests.test_private_reexecution": "private runner, input and DSOs unavailable"
+    }
   }
 }
