@@ -1,0 +1,795 @@
+{
+  "critical_path_job": "oracle pytest (f64 reference)",
+  "critical_path_seconds": 1544.0,
+  "evidence_modes": {
+    "normal": {
+      "reported_suite_seconds": 592.678,
+      "skipped": 3,
+      "suite_count": 49,
+      "suites": [
+        {
+          "path": "harness/evidence/native_qnice_same_call_2026-11-02",
+          "reported_seconds": 0.397,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_prec3_2026-11-02",
+          "reported_seconds": 0.917,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_qnice_applied_schema_2026-11-02",
+          "reported_seconds": 0.222,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_qnice_39_applied_2026-11-03",
+          "reported_seconds": 3.076,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_qnice_snap_a_ad_2026-11-03",
+          "reported_seconds": 1.74,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_sed_snap_chain_2026-11-03",
+          "reported_seconds": 2.117,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_ice_speed_ad_2026-11-03",
+          "reported_seconds": 2.295,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_qi_2026-11-03",
+          "reported_seconds": 0.524,
+          "skipped": 0,
+          "tests": 5
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_ad_2026-11-03",
+          "reported_seconds": 4.737,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_chain_ad_2026-11-04",
+          "reported_seconds": 4.385,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_cpm_ad_2026-11-04",
+          "reported_seconds": 5.767,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qi_applied_d1_active_2026-11-04",
+          "reported_seconds": 5.541,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_producer_ad_2026-11-04",
+          "reported_seconds": 5.663,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_state_ad_2026-11-04",
+          "reported_seconds": 9.42,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_ad_2026-11-04",
+          "reported_seconds": 8.688,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_cpp_ad_2026-11-04",
+          "reported_seconds": 7.161,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_upstream_cpp_ad_2026-11-04",
+          "reported_seconds": 13.558,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_d1_slope_cpp_ad_2026-11-05",
+          "reported_seconds": 7.722,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_entry_cpm_cpp_ad_2026-11-05",
+          "reported_seconds": 13.781,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/skipped_substep_ad_2026-11-05",
+          "reported_seconds": 2.678,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_fd_outlier_branches_2026-11-05",
+          "reported_seconds": 14.65,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_nc16_vjp_branch_window_2026-11-06",
+          "reported_seconds": 11.276,
+          "skipped": 0,
+          "tests": 5
+        },
+        {
+          "path": "harness/evidence/native_nc16_fd_expanded_2026-11-06",
+          "reported_seconds": 33.663,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nr16_vjp_fd_2026-11-06",
+          "reported_seconds": 62.651,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nc_nccn_applied_2026-11-07",
+          "reported_seconds": 2.201,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nc_budget_terms_2026-11-07",
+          "reported_seconds": 6.969,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_nc_rate_producer_2026-11-07",
+          "reported_seconds": 10.849,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_c2c_number_rates_2026-11-07",
+          "reported_seconds": 12.025,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_c2c_pre2_upstream_2026-11-07",
+          "reported_seconds": 13.325,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_pre2_c2c_cpp_ad_2026-11-07",
+          "reported_seconds": 10.352,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_pre2_input_cpp_ad_2026-11-08",
+          "reported_seconds": 19.973,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08",
+          "reported_seconds": 19.984,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08",
+          "reported_seconds": 20.432,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08",
+          "reported_seconds": 21.026,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08",
+          "reported_seconds": 20.804,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09",
+          "reported_seconds": 21.617,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09",
+          "reported_seconds": 21.23,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09",
+          "reported_seconds": 22.287,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09",
+          "reported_seconds": 22.543,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09",
+          "reported_seconds": 26.216,
+          "skipped": 0,
+          "tests": 15
+        },
+        {
+          "path": "harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10",
+          "reported_seconds": 42.251,
+          "skipped": 0,
+          "tests": 13
+        },
+        {
+          "path": "harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10",
+          "reported_seconds": 26.656,
+          "skipped": 0,
+          "tests": 13
+        },
+        {
+          "path": "harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10",
+          "reported_seconds": 12.817,
+          "skipped": 0,
+          "tests": 15
+        },
+        {
+          "path": "harness/evidence/native_activation_operands_cpp_ad_2026-11-10",
+          "reported_seconds": 14.793,
+          "skipped": 0,
+          "tests": 14
+        },
+        {
+          "path": "harness/evidence/native_f32_activation_boundary_2026-11-11",
+          "reported_seconds": 0.417,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_host_tile_abi_2026-11-11",
+          "reported_seconds": 0.058,
+          "skipped": 1,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_host_column_f32_2026-11-11",
+          "reported_seconds": 0.538,
+          "skipped": 1,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_host_column_f32_boundary_2026-11-12",
+          "reported_seconds": 0.292,
+          "skipped": 1,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_host_column_f64_da_2026-11-12",
+          "reported_seconds": 0.394,
+          "skipped": 0,
+          "tests": 8
+        }
+      ],
+      "tests": 400,
+      "wall_seconds": 617.0
+    },
+    "optimized": {
+      "reported_suite_seconds": 587.731,
+      "skipped": 3,
+      "suite_count": 49,
+      "suites": [
+        {
+          "path": "harness/evidence/native_qnice_same_call_2026-11-02",
+          "reported_seconds": 1.489,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_prec3_2026-11-02",
+          "reported_seconds": 0.85,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_qnice_applied_schema_2026-11-02",
+          "reported_seconds": 0.283,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_qnice_39_applied_2026-11-03",
+          "reported_seconds": 2.775,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_qnice_snap_a_ad_2026-11-03",
+          "reported_seconds": 1.575,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_sed_snap_chain_2026-11-03",
+          "reported_seconds": 1.903,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_ice_speed_ad_2026-11-03",
+          "reported_seconds": 2.147,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_qi_2026-11-03",
+          "reported_seconds": 0.502,
+          "skipped": 0,
+          "tests": 5
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_ad_2026-11-03",
+          "reported_seconds": 4.862,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_chain_ad_2026-11-04",
+          "reported_seconds": 3.91,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qnice_d1_cpm_ad_2026-11-04",
+          "reported_seconds": 5.013,
+          "skipped": 0,
+          "tests": 4
+        },
+        {
+          "path": "harness/evidence/native_qi_applied_d1_active_2026-11-04",
+          "reported_seconds": 5.004,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_producer_ad_2026-11-04",
+          "reported_seconds": 5.155,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_state_ad_2026-11-04",
+          "reported_seconds": 8.564,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_ad_2026-11-04",
+          "reported_seconds": 7.814,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_cpp_ad_2026-11-04",
+          "reported_seconds": 6.599,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_upstream_cpp_ad_2026-11-04",
+          "reported_seconds": 12.863,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_d1_slope_cpp_ad_2026-11-05",
+          "reported_seconds": 7.325,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_d1_entry_cpm_cpp_ad_2026-11-05",
+          "reported_seconds": 13.399,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/skipped_substep_ad_2026-11-05",
+          "reported_seconds": 2.701,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_fd_outlier_branches_2026-11-05",
+          "reported_seconds": 15.006,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_nc16_vjp_branch_window_2026-11-06",
+          "reported_seconds": 11.675,
+          "skipped": 0,
+          "tests": 5
+        },
+        {
+          "path": "harness/evidence/native_nc16_fd_expanded_2026-11-06",
+          "reported_seconds": 35.746,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nr16_vjp_fd_2026-11-06",
+          "reported_seconds": 65.877,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nc_nccn_applied_2026-11-07",
+          "reported_seconds": 2.115,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_nc_budget_terms_2026-11-07",
+          "reported_seconds": 7.086,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_nc_rate_producer_2026-11-07",
+          "reported_seconds": 10.153,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_c2c_number_rates_2026-11-07",
+          "reported_seconds": 12.085,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_c2c_pre2_upstream_2026-11-07",
+          "reported_seconds": 12.654,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_pre2_c2c_cpp_ad_2026-11-07",
+          "reported_seconds": 10.284,
+          "skipped": 0,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_pre2_input_cpp_ad_2026-11-08",
+          "reported_seconds": 20.184,
+          "skipped": 0,
+          "tests": 8
+        },
+        {
+          "path": "harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08",
+          "reported_seconds": 20.051,
+          "skipped": 0,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08",
+          "reported_seconds": 20.232,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08",
+          "reported_seconds": 20.751,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08",
+          "reported_seconds": 20.019,
+          "skipped": 0,
+          "tests": 7
+        },
+        {
+          "path": "harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09",
+          "reported_seconds": 20.934,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09",
+          "reported_seconds": 22.043,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09",
+          "reported_seconds": 22.69,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09",
+          "reported_seconds": 22.985,
+          "skipped": 0,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09",
+          "reported_seconds": 25.071,
+          "skipped": 0,
+          "tests": 15
+        },
+        {
+          "path": "harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10",
+          "reported_seconds": 41.619,
+          "skipped": 0,
+          "tests": 13
+        },
+        {
+          "path": "harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10",
+          "reported_seconds": 25.527,
+          "skipped": 0,
+          "tests": 13
+        },
+        {
+          "path": "harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10",
+          "reported_seconds": 12.217,
+          "skipped": 0,
+          "tests": 15
+        },
+        {
+          "path": "harness/evidence/native_activation_operands_cpp_ad_2026-11-10",
+          "reported_seconds": 14.321,
+          "skipped": 0,
+          "tests": 14
+        },
+        {
+          "path": "harness/evidence/native_f32_activation_boundary_2026-11-11",
+          "reported_seconds": 0.421,
+          "skipped": 0,
+          "tests": 11
+        },
+        {
+          "path": "harness/evidence/native_host_tile_abi_2026-11-11",
+          "reported_seconds": 0.056,
+          "skipped": 1,
+          "tests": 10
+        },
+        {
+          "path": "harness/evidence/native_host_column_f32_2026-11-11",
+          "reported_seconds": 0.516,
+          "skipped": 1,
+          "tests": 9
+        },
+        {
+          "path": "harness/evidence/native_host_column_f32_boundary_2026-11-12",
+          "reported_seconds": 0.29,
+          "skipped": 1,
+          "tests": 6
+        },
+        {
+          "path": "harness/evidence/native_host_column_f64_da_2026-11-12",
+          "reported_seconds": 0.39,
+          "skipped": 0,
+          "tests": 8
+        }
+      ],
+      "tests": 400,
+      "wall_seconds": 612.0
+    }
+  },
+  "interpretation": "Concurrent job wall times are not summed; parallel suites may reduce wait while increasing simultaneous CPU/memory use.",
+  "jobs": {
+    "g33": [
+      {
+        "name": "g33 harness (op-provenance regression)",
+        "steps": {
+          "Complete job": 0.0,
+          "Install numpy + pytest + netCDF4 (pinned)": 8.0,
+          "Post Run actions/checkout@v4": 0.0,
+          "Post Run actions/setup-python@v5": 0.0,
+          "Record versions": 0.0,
+          "Run actions/checkout@v4": 20.0,
+          "Run actions/setup-python@v5": 0.0,
+          "Set up job": 1.0,
+          "overlay 4-check (all instrumented TUs)": 1.0,
+          "pytest (harness/tests \u2014 container, comparator, overlay, probes)": 133.0,
+          "undefined-name family (ruff F821/F822/F823, whole harness)": 0.0
+        },
+        "wall_seconds": 165.0
+      }
+    ],
+    "oracle": [
+      {
+        "name": "oracle pytest (f64 reference)",
+        "steps": {
+          "Complete job": 0.0,
+          "Install torch (CPU, pinned) + oracle verification dependencies": 24.0,
+          "Post Run actions/checkout@v4": 0.0,
+          "Post Run actions/setup-python@v5": 0.0,
+          "Record versions": 2.0,
+          "Run actions/checkout@v4": 18.0,
+          "Run actions/setup-python@v5": 0.0,
+          "Set up job": 1.0,
+          "pytest (native batch first-order boundaries)": 4.0,
+          "pytest (oracle/, pure-Python subset)": 262.0,
+          "unittest (QNICE evidence, normal)": 617.0,
+          "unittest (QNICE evidence, optimized)": 612.0
+        },
+        "wall_seconds": 1544.0
+      }
+    ],
+    "port": [
+      {
+        "name": "detect changed paths",
+        "steps": {
+          "Complete job": 0.0,
+          "Post Run actions/checkout@v4": 1.0,
+          "Run actions/checkout@v4": 39.0,
+          "Run set -euo pipefail": 0.0,
+          "Set up job": 1.0
+        },
+        "wall_seconds": 45.0
+      },
+      {
+        "name": "build + ctest (ubuntu, libtorch CPU)",
+        "steps": {
+          "Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)": 2.0,
+          "Assert SONAME + versioned symlink chain (PR3-B)": 1.0,
+          "Assert exported symbol surface is exactly the 14 C ABI functions": 0.0,
+          "Assert the test fault seam is ABSENT from the shipped library": 0.0,
+          "Build (shipped)": 211.0,
+          "Complete job": 0.0,
+          "Configure (CMake, SHIPPED config \u2014 test hooks OFF)": 6.0,
+          "G3.3-M self-check gate": 92.0,
+          "Install (file-copy)": 1.0,
+          "Install gfortran + PyTorch (CPU)": 39.0,
+          "Post Run actions/checkout@v4": 0.0,
+          "Post Run actions/setup-python@v5": 1.0,
+          "Reconfigure ON + run the fault-path test through the shared lib": 15.0,
+          "Record toolchain versions": 3.0,
+          "Run actions/checkout@v4": 15.0,
+          "Run actions/setup-python@v5": 0.0,
+          "Set up job": 0.0,
+          "Upload G3.3-M gate diagnostics (on failure)": 0.0,
+          "cross-tree AD parity (built shared library)": 4.0,
+          "ctest (shipped, all 17)": 12.0,
+          "oracle\u2194C++ parity regression bounds (test_cpp_parity + conservative-interface)": 6.0
+        },
+        "wall_seconds": 411.0
+      },
+      {
+        "name": "build + symbol surface + smoke (macOS arm64, libtorch CPU)",
+        "steps": {
+          "Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)": 1.0,
+          "Assert arch (arm64) + fault seam ABSENT + install-name": 1.0,
+          "Assert exported symbol surface is exactly the 14 C ABI functions": 1.0,
+          "Assert versioned install-name + symlink chain (PR3-B)": 1.0,
+          "Build (shipped)": 254.0,
+          "Complete job": 3.0,
+          "Configure (CMake, SHIPPED config \u2014 test hooks OFF, Release)": 7.0,
+          "Fresh-process ctypes load resolves all 11": 0.0,
+          "G3.3-M self-check gate": 117.0,
+          "Install (file-copy)": 2.0,
+          "Install gfortran + PyTorch (macOS arm64)": 50.0,
+          "Post Run actions/checkout@v4": 1.0,
+          "Post Run actions/setup-python@v5": 0.0,
+          "Reconfigure ON + run the fault-path test through the shared lib": 22.0,
+          "Record toolchain versions": 3.0,
+          "Run actions/checkout@v4": 59.0,
+          "Run actions/setup-python@v5": 1.0,
+          "Set up job": 1.0,
+          "Upload G3.3-M gate diagnostics (on failure)": 0.0,
+          "cross-tree AD parity (built shared library)": 4.0,
+          "ctest (shipped, all 17)": 12.0
+        },
+        "wall_seconds": 542.0
+      }
+    ]
+  },
+  "schema": "kdm6.native_host_analysis_ci_timing.v1",
+  "scope": "#583 completed public CI logs; job wall time and per-suite reported time are distinct",
+  "sources": {
+    "g33": {
+      "head_sha": "4f46938f942e438d2bf3d867bf644b624874c6c4",
+      "log_sha256": "073518c32db5c1a8e1c2a41c38d85e228ff5f90e76ca3f3877ff7d43c5685d6d",
+      "metadata_sha256": "98a3af3e5a489772c4af29d9e3febce308ecdbdff8e4308b12d6316d6730822a",
+      "run_id": 43148214005
+    },
+    "oracle": {
+      "head_sha": "4f46938f942e438d2bf3d867bf644b624874c6c4",
+      "log_sha256": "d277de6418ecdddc36ec1df6ab2ca02bb7933fb88abe4e2eab7ac8bc0986b588",
+      "metadata_sha256": "89d77ee985eaa2a8ad0b7f6aef5f19509315bf75ce12a3c223fb858e95c7aa20",
+      "run_id": 43148213993
+    },
+    "port": {
+      "head_sha": "4f46938f942e438d2bf3d867bf644b624874c6c4",
+      "log_sha256": "f468b3e6dfeba76e16d2b7d581639270efbe3e16e820130757242a0021072f07",
+      "metadata_sha256": "53e2526659a5a80b41aa5ff1d6fc000257be5aebc7879f75e4e46f97d5f73e7b",
+      "run_id": 43148214063
+    }
+  },
+  "top_ten_normal": [
+    {
+      "normal_seconds": 62.651,
+      "optimized_seconds": 65.877,
+      "path": "harness/evidence/native_nr16_vjp_fd_2026-11-06"
+    },
+    {
+      "normal_seconds": 42.251,
+      "optimized_seconds": 41.619,
+      "path": "harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10"
+    },
+    {
+      "normal_seconds": 33.663,
+      "optimized_seconds": 35.746,
+      "path": "harness/evidence/native_nc16_fd_expanded_2026-11-06"
+    },
+    {
+      "normal_seconds": 26.656,
+      "optimized_seconds": 25.527,
+      "path": "harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10"
+    },
+    {
+      "normal_seconds": 26.216,
+      "optimized_seconds": 25.071,
+      "path": "harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09"
+    },
+    {
+      "normal_seconds": 22.543,
+      "optimized_seconds": 22.985,
+      "path": "harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09"
+    },
+    {
+      "normal_seconds": 22.287,
+      "optimized_seconds": 22.69,
+      "path": "harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09"
+    },
+    {
+      "normal_seconds": 21.617,
+      "optimized_seconds": 20.934,
+      "path": "harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09"
+    },
+    {
+      "normal_seconds": 21.23,
+      "optimized_seconds": 22.043,
+      "path": "harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09"
+    },
+    {
+      "normal_seconds": 21.026,
+      "optimized_seconds": 20.751,
+      "path": "harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08"
+    }
+  ]
+}

@@ -24,67 +24,20 @@ on:
     branches: [main]
     paths:
       - 'oracle/**'
-      - 'harness/evidence/native_qnice_same_call_2026-11-02/**'
-      - 'harness/evidence/native_qnice_prec3_2026-11-02/**'
-      - 'harness/evidence/native_qnice_applied_schema_2026-11-02/**'
-      - 'harness/evidence/native_qnice_39_applied_2026-11-03/**'
-      - 'harness/evidence/native_qnice_snap_a_ad_2026-11-03/**'
-      - 'harness/evidence/native_qnice_sed_snap_chain_2026-11-03/**'
-      - 'harness/evidence/native_qnice_ice_speed_ad_2026-11-03/**'
-      - 'harness/evidence/native_qnice_d1_qi_2026-11-03/**'
-      - 'harness/evidence/native_qnice_d1_ad_2026-11-03/**'
-      - 'harness/evidence/native_qnice_d1_chain_ad_2026-11-04/**'
-      - 'harness/evidence/native_qnice_d1_cpm_ad_2026-11-04/**'
-      - 'harness/evidence/native_qi_applied_d1_active_2026-11-04/**'
-      - 'harness/evidence/native_d1_melt_producer_ad_2026-11-04/**'
-      - 'harness/evidence/native_d1_melt_state_ad_2026-11-04/**'
-      - 'harness/evidence/native_d1_progb_ad_2026-11-04/**'
-      - 'harness/evidence/native_d1_progb_cpp_ad_2026-11-04/**'
-      - 'harness/evidence/native_d1_upstream_cpp_ad_2026-11-04/**'
-      - 'harness/evidence/native_d1_slope_cpp_ad_2026-11-05/**'
-      - 'harness/evidence/native_d1_entry_cpm_cpp_ad_2026-11-05/**'
-      - 'harness/evidence/skipped_substep_ad_2026-11-05/**'
-      - 'harness/evidence/native_fd_outlier_branches_2026-11-05/**'
-      - 'harness/evidence/native_nc16_vjp_branch_window_2026-11-06/**'
-      - 'harness/evidence/native_nc16_fd_expanded_2026-11-06/**'
-      - 'harness/evidence/native_nr16_vjp_fd_2026-11-06/**'
-      - 'harness/evidence/native_nc_nccn_applied_2026-11-07/**'
-      - 'harness/evidence/native_nc_budget_terms_2026-11-07/**'
-      - 'harness/evidence/native_nc_rate_producer_2026-11-07/**'
-      - 'harness/evidence/native_c2c_number_rates_2026-11-07/**'
-      - 'harness/evidence/native_c2c_pre2_upstream_2026-11-07/**'
-      - 'harness/evidence/native_pre2_c2c_cpp_ad_2026-11-07/**'
-      - 'harness/evidence/native_pre2_input_cpp_ad_2026-11-08/**'
-      - 'harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08/**'
-      - 'harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08/**'
-      - 'harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08/**'
-      - 'harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08/**'
-      - 'harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09/**'
-      - 'harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09/**'
-      - 'harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09/**'
-      - 'harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09/**'
-      - 'harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09/**'
-      - 'harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10/**'
-      - 'harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10/**'
-      - 'harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10/**'
-      - 'harness/evidence/native_activation_operands_cpp_ad_2026-11-10/**'
-      - 'harness/evidence/native_f32_activation_boundary_2026-11-11/**'
-      - 'harness/evidence/native_host_tile_abi_2026-11-11/**'
-      - 'harness/evidence/native_host_column_f32_2026-11-11/**'
-      - 'harness/evidence/native_host_column_f32_boundary_2026-11-12/**'
-      - 'harness/evidence/native_host_column_f64_da_2026-11-12/**'
-      - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
-      - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
+      - 'harness/evidence/**'
       - 'harness/ice_chain_applied_budget.py'
       - 'harness/tests/test_ice_chain_applied_budget.py'
+      - 'harness/oracle_evidence_suites.json'
+      - 'harness/run_oracle_evidence_suites.py'
+      - 'harness/tests/test_run_oracle_evidence_suites.py'
+      - '.github/requirements/oracle-*.txt'
       - '.github/workflows/oracle-ci.yml'
   # No paths filter on pull_request: "oracle pytest (f64 reference)" is a
   # REQUIRED status check in the main ruleset, so it must REPORT on every PR
   # to main. Path-filtering it (oracle/** only) left non-oracle PRs blocked
   # forever — GitHub waits for a required context that never runs, and a
   # manual workflow_dispatch run is not credited to the PR merge-box. The job
-  # is a ~1-2 min pure-Python pytest; running it on all PRs is cheap and makes
-  # the gate always satisfiable. (push stays oracle/evidence-scoped — post-merge only.)
+  # must run on all PRs so the required status can be reported. (push stays oracle/evidence-scoped — post-merge only.)
   pull_request:
     branches: [main, research/east_ice_radius_floor_packet]
   workflow_dispatch:
@@ -105,15 +58,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            .github/requirements/oracle-torch-cpu.txt
+            .github/requirements/oracle-pypi.txt
 
       - name: Install torch (CPU, pinned) + oracle verification dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+          pip install -r .github/requirements/oracle-torch-cpu.txt
           # Keep numeric dependencies pinned while moving the single CI interpreter
           # to Python 3.12; this interpreter change needs its own green run.
           # Exercise synthetic NetCDF ingestion/identity tests in CI, not only locally.
-          pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4" "pyproj==3.7.1"
+          pip install -r .github/requirements/oracle-pypi.txt
 
       - name: Record versions
         run: |
@@ -141,109 +98,23 @@ jobs:
       # These public evidence suites live outside harness/tests and depend
       # on Torch + NumPy + netCDF4. Keep separate discovery processes because
       # multiple directories contain test_replay.py. No private host/RTTOV is used.
+      - name: Validate evidence runner
+        run: python -m unittest discover -s harness/tests -p test_run_oracle_evidence_suites.py -v
+
       - name: unittest (QNICE evidence, normal)
-        run: |
-          python -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
-          python -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
-          python -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v
-          python -m unittest discover -s harness/evidence/native_qnice_39_applied_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_snap_a_ad_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_sed_snap_chain_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_ice_speed_ad_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_d1_qi_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_d1_ad_2026-11-03 -v
-          python -m unittest discover -s harness/evidence/native_qnice_d1_chain_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_qnice_d1_cpm_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_qi_applied_d1_active_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_melt_producer_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_melt_state_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_progb_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_progb_cpp_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_upstream_cpp_ad_2026-11-04 -v
-          python -m unittest discover -s harness/evidence/native_d1_slope_cpp_ad_2026-11-05 -v
-          python -m unittest discover -s harness/evidence/native_d1_entry_cpm_cpp_ad_2026-11-05 -v
-          python -m unittest discover -s harness/evidence/skipped_substep_ad_2026-11-05 -v
-          python -m unittest discover -s harness/evidence/native_fd_outlier_branches_2026-11-05 -v
-          python -m unittest discover -s harness/evidence/native_nc16_vjp_branch_window_2026-11-06 -v
-          python -m unittest discover -s harness/evidence/native_nc16_fd_expanded_2026-11-06 -v
-          python -m unittest discover -s harness/evidence/native_nr16_vjp_fd_2026-11-06 -v
-          python -m unittest discover -s harness/evidence/native_nc_nccn_applied_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_nc_budget_terms_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_nc_rate_producer_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_c2c_number_rates_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_c2c_pre2_upstream_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_pre2_c2c_cpp_ad_2026-11-07 -v
-          python -m unittest discover -s harness/evidence/native_pre2_input_cpp_ad_2026-11-08 -v
-          python -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v
-          python -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
-          python -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
-          python -m unittest discover -s harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08 -v
-          python -m unittest discover -s harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09 -v
-          python -m unittest discover -s harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09 -v
-          python -m unittest discover -s harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09 -v
-          python -m unittest discover -s harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09 -v
-          python -m unittest discover -s harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09 -v
-          python -m unittest discover -s harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10 -v
-          python -m unittest discover -s harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10 -v
-          python -m unittest discover -s harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10 -v
-          python -m unittest discover -s harness/evidence/native_activation_operands_cpp_ad_2026-11-10 -v
-          python -m unittest discover -s harness/evidence/native_f32_activation_boundary_2026-11-11 -v
-          python -m unittest discover -s harness/evidence/native_host_tile_abi_2026-11-11 -v
-          python -m unittest discover -s harness/evidence/native_host_column_f32_2026-11-11 -v
-          python -m unittest discover -s harness/evidence/native_host_column_f32_boundary_2026-11-12 -v
-          python -m unittest discover -s harness/evidence/native_host_column_f64_da_2026-11-12 -v
+        run: python harness/run_oracle_evidence_suites.py --mode normal --output "$RUNNER_TEMP/oracle-evidence-normal.json"
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
         env:
           PYTHONOPTIMIZE: '1'
-        run: |
-          python -O -m unittest discover -s harness/evidence/native_qnice_same_call_2026-11-02 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_prec3_2026-11-02 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_applied_schema_2026-11-02 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_39_applied_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_snap_a_ad_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_sed_snap_chain_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_ice_speed_ad_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_d1_qi_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_d1_ad_2026-11-03 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_d1_chain_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_qnice_d1_cpm_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_qi_applied_d1_active_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_melt_producer_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_melt_state_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_progb_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_progb_cpp_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_upstream_cpp_ad_2026-11-04 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_slope_cpp_ad_2026-11-05 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_entry_cpm_cpp_ad_2026-11-05 -v
-          python -O -m unittest discover -s harness/evidence/skipped_substep_ad_2026-11-05 -v
-          python -O -m unittest discover -s harness/evidence/native_fd_outlier_branches_2026-11-05 -v
-          python -O -m unittest discover -s harness/evidence/native_nc16_vjp_branch_window_2026-11-06 -v
-          python -O -m unittest discover -s harness/evidence/native_nc16_fd_expanded_2026-11-06 -v
-          python -O -m unittest discover -s harness/evidence/native_nr16_vjp_fd_2026-11-06 -v
-          python -O -m unittest discover -s harness/evidence/native_nc_nccn_applied_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_nc_budget_terms_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_nc_rate_producer_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_c2c_number_rates_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_c2c_pre2_upstream_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_pre2_c2c_cpp_ad_2026-11-07 -v
-          python -O -m unittest discover -s harness/evidence/native_pre2_input_cpp_ad_2026-11-08 -v
-          python -O -m unittest discover -s harness/evidence/native_nc_process_graph_cpp_ad_2026-11-08 -v
-          python -O -m unittest discover -s harness/evidence/native_warm_rate_inputs_cpp_ad_2026-11-08 -v
-          python -O -m unittest discover -s harness/evidence/native_rain_slope_upstream_cpp_ad_2026-11-08 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_graupel_applied_cpp_ad_2026-11-08 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_gfac_upstream_cpp_ad_2026-11-09 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_entry_slope_cpp_ad_2026-11-09 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_progb_pid_cpp_ad_2026-11-09 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_melt_amount_producer_cpp_ad_2026-11-09 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10 -v
-          python -O -m unittest discover -s harness/evidence/native_d1_thermal_input_cpp_ad_2026-11-10 -v
-          python -O -m unittest discover -s harness/evidence/native_activation_upper_boundary_cpp_ad_2026-11-10 -v
-          python -O -m unittest discover -s harness/evidence/native_activation_operands_cpp_ad_2026-11-10 -v
-          python -O -m unittest discover -s harness/evidence/native_f32_activation_boundary_2026-11-11 -v
-          python -O -m unittest discover -s harness/evidence/native_host_tile_abi_2026-11-11 -v
-          python -O -m unittest discover -s harness/evidence/native_host_column_f32_2026-11-11 -v
-          python -O -m unittest discover -s harness/evidence/native_host_column_f32_boundary_2026-11-12 -v
-          python -O -m unittest discover -s harness/evidence/native_host_column_f64_da_2026-11-12 -v
+        run: python harness/run_oracle_evidence_suites.py --mode optimized --output "$RUNNER_TEMP/oracle-evidence-optimized.json"
+
+      - name: Upload evidence timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-evidence-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/oracle-evidence-*.json
+          if-no-files-found: warn
+          retention-days: 14
