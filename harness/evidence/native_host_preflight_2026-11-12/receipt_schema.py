@@ -4,7 +4,10 @@ Passing this validator establishes internal consistency of caller-supplied bytes
 not when they were produced, which binary ran, or independent provenance.
 """
 
+import csv
+import functools
 import gzip
+import io
 import hashlib
 import json
 import math
@@ -247,6 +250,124 @@ def validate_effective_jvps(
     return len(specs)
 
 
+CONDITION_KEY_FIELDS = (
+    "runtime_call",
+    "one_step_call",
+    "substep",
+    "b_zero",
+    "k_zero",
+    "native_level_bottom_first",
+    "stage",
+    "field",
+    "event_ordinal",
+)
+BASELINE_CAPTURE = (
+    HERE.parent
+    / "native_host_batch3_shared_2026-11-12/raw/stage_compare_f64_baseline.csv.gz"
+)
+BASELINE_CAPTURE_SHA = (
+    "e84e020e8c4c219d9e93c3165c5e42cae8f53db1ec8b4fbc7826f6b6609c5649"
+)
+BASELINE_CSV_SHA = "49d60ae156212acdf987577ec271f4b5a56a318b5a9ff4829c36419397e29aba"
+
+
+def condition_key(row):
+    return "|".join(str(row[k]) for k in CONDITION_KEY_FIELDS)
+
+
+def condition_contract():
+    raw = BASELINE_CAPTURE.read_bytes()
+    need(sha(raw) == BASELINE_CAPTURE_SHA, "baseline condition gzip SHA")
+    return _condition_contract(raw)
+
+
+@functools.lru_cache(maxsize=1)
+def _condition_contract(raw):
+    text = gzip.decompress(raw)
+    need(sha(text) == BASELINE_CSV_SHA, "baseline condition CSV SHA")
+    rows = list(
+        csv.DictReader(
+            line
+            for line in io.StringIO(text.decode("ascii"))
+            if not line.startswith("#")
+        )
+    )
+    need(len(rows) == 19656, "baseline condition row count")
+    masks = {}
+    schedule = {}
+    for r in rows:
+        key = "|".join(
+            (
+                r["runtime_call"],
+                r["one_step_call"],
+                r["substep"],
+                r["b_zero"],
+                r["k_zero"],
+                str(39 - int(r["k_zero"])),
+                r["stage"],
+                r["field"],
+                "0",
+            )
+        )
+        if r["dtype"] == "bool":
+            need(
+                key not in masks and r["raw_hex"] in ("0", "1"),
+                "baseline mask identity",
+            )
+            masks[key] = r["raw_hex"] == "1"
+        if (
+            r["stage"] == "runtime_full_schedule"
+            and r["field"]
+            in ("mstep_ice_col", "mstep_main_col", "mstepmax_ice", "mstepmax_main")
+        ) or (r["stage"] == "runtime_full_meta" and r["field"] == "loops"):
+            need(
+                key not in schedule and r["dtype"] == "f64",
+                "baseline schedule identity",
+            )
+            schedule[key] = r["raw_hex"].zfill(16)
+    need(len(masks) == 1170 and len(schedule) == 195, "baseline condition counts")
+    mask_keys = tuple(sorted(masks))
+    schedule_keys = tuple(sorted(schedule))
+    contract = {"mask_keys": list(mask_keys), "schedule_keys": list(schedule_keys)}
+    contract_sha = sha(
+        json.dumps(contract, sort_keys=True, separators=(",", ":")).encode()
+    )
+    return mask_keys, schedule_keys, contract_sha, masks, schedule
+
+
+def validate_conditions(receipt, assets, inputs, call_sequences):
+    mask_keys, schedule_keys, contract_sha, _, _ = condition_contract()
+    refs = receipt.get("condition_assets")
+    need(
+        isinstance(refs, dict) and set(refs) == set(inputs), "condition call inventory"
+    )
+    result = {}
+    for input_id, ref in refs.items():
+        obj = json.loads(asset(ref, assets))
+        need(
+            obj["schema"] == "kdm6.captured_conditions.v1"
+            and obj["input_id"] == input_id
+            and obj["mode"] == "capture_on_value"
+            and type(obj["call_sequence"]) is int
+            and obj["call_sequence"] == call_sequences[(input_id, "capture_on_value")]
+            and obj["condition_contract_sha256"] == contract_sha,
+            "condition call identity/contract",
+        )
+        mv, sv = obj["mask_values"], obj["schedule_words"]
+        need(
+            isinstance(mv, list)
+            and len(mv) == len(mask_keys)
+            and all(type(v) is bool for v in mv),
+            "complete condition masks",
+        )
+        words(sv, len(schedule_keys), "complete condition schedules")
+        result[input_id] = {
+            "masks": dict(zip(mask_keys, mv)),
+            "schedule": dict(zip(schedule_keys, sv)),
+        }
+    return result
+
+
 def validate(receipt, assets):
     """Validate complete declared call/asset/coverage relationships, not truth."""
     canonical, inventory = load_plan()
@@ -411,6 +532,7 @@ def validate(receipt, assets):
         graph_handles,
         graph_jvp_hashes,
     )
+    conditions = validate_conditions(receipt, assets, inputs, call_sequences)
     records = json.loads(asset(receipt["capture_records_asset"], assets))
     need(
         isinstance(records, dict)
@@ -464,6 +586,13 @@ def validate(receipt, assets):
                 "present field absence metadata",
             )
             if kind == "mask":
+                key = condition_key(row)
+                need(
+                    key in conditions[row["input_id"]]["masks"]
+                    and conditions[row["input_id"]]["masks"][key]
+                    == (row["raw_hex"] == "1"),
+                    "mask condition binding",
+                )
                 need(
                     row["dtype"] == "bool" and row["raw_hex"] in ("0", "1"),
                     "mask raw word",
@@ -539,12 +668,30 @@ def validate(receipt, assets):
     }
 
 
-def validate_scheduler_bridge(receipt, scheduler, assets):
+def validate_scheduler_bridge(
+    receipt, scheduler, assets, *, scheduler_bytes, completion_bytes
+):
     """Bind the synthetic scheduler envelope to the semantic bundle.
 
     The existing scheduler is synthetic-only. Matching it cannot establish a
     physical execution or independent provenance, even if all bytes agree.
     """
+    need(
+        isinstance(scheduler_bytes, bytes) and isinstance(completion_bytes, bytes),
+        "scheduler receipt/marker bytes required",
+    )
+    need(json.loads(scheduler_bytes) == scheduler, "scheduler receipt bytes mismatch")
+    marker = json.loads(completion_bytes)
+    need(
+        isinstance(marker, dict)
+        and set(marker)
+        == {"schema", "execution_scope", "plan_sha256", "receipt_sha256"}
+        and marker["schema"] == "kdm6.native_host_preflight.budget_completion.v1"
+        and marker["execution_scope"] == "SYNTHETIC_TEST_ONLY"
+        and marker["receipt_sha256"] == sha(scheduler_bytes)
+        and marker["plan_sha256"] == scheduler.get("plan_sha256"),
+        "scheduler completion marker",
+    )
     result = validate(receipt, assets)
     canonical, _ = load_plan()
     need(

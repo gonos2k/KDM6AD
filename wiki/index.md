@@ -178,3 +178,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-capture-preflight-2026-11-12]] — Exact 45-input SPEC_ONLY plan, prospective numeric gate and seven-group field inventory, with no DSO build or execution claim.
 
 - [[sources/native-host-gate-receipt-2026-11-12]] — Diagnostic versus acceptance FD steps and source-only future receipt/seed/field/budget bridge; execution and scientific admission remain blocked.
+
+- [[sources/native-host-runner-closure-2026-11-13]] — Repeated-signal and full-budget synthetic runner fixes, baseline condition asset adapter and source-located but blocked field contract.

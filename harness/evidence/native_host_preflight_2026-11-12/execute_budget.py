@@ -34,6 +34,14 @@ class Cancelled(BudgetError):
     pass
 
 
+class FinalReceiptError(BudgetError):
+    """A durable final receipt could not be written; execution is not successful."""
+
+    def __init__(self, message, receipt):
+        super().__init__(message)
+        self.receipt = receipt
+
+
 def digest(path):
     h = hashlib.sha256()
     with Path(path).open("rb") as f:
@@ -254,10 +262,10 @@ def run(
         )
     if binding.get("compiler", {}).get("identity") != "SYNTHETIC_TEST_ONLY":
         raise BudgetError("synthetic test binding required")
+    begin = clock()
     calls = validate(plan, binding, commands, skipped, root=root)
     directory = Path(run_directory)
     directory.mkdir(parents=True, exist_ok=False)
-    begin = clock()
     deadline = begin + min(float(plan["limits"]["wall_seconds_max"]), MAX_SECONDS)
     records = []
     cancelled = []
@@ -281,9 +289,21 @@ def run(
         "scope": "scheduler envelope only; output semantics and scientific claims require independent verification",
     }
 
+    cleanup_active = False
+
     def cancel(sig, _frame):
+        first = not cancelled
         cancelled.append(sig)
-        raise Cancelled("received signal " + str(sig))
+        if first and not cleanup_active:
+            raise Cancelled("received signal " + str(sig))
+
+    def terminate(proc):
+        nonlocal cleanup_active
+        cleanup_active = True
+        try:
+            return _terminate(proc, deadline)
+        finally:
+            cleanup_active = False
 
     for sig in (signal.SIGTERM, signal.SIGINT):
         old_handlers[sig] = signal.signal(sig, cancel)
@@ -335,15 +355,15 @@ def run(
                     try:
                         rc = proc.wait(timeout=remaining)
                     except subprocess.TimeoutExpired:
-                        cleanup = _terminate(proc, deadline)
+                        cleanup = terminate(proc)
                         raise BudgetError("call timed out")
                 try:
                     residual = _alive(proc.pid)
                 except BudgetError:
-                    cleanup = _terminate(proc, deadline)
+                    cleanup = terminate(proc)
                     raise
                 if residual:
-                    cleanup = _terminate(proc, deadline)
+                    cleanup = terminate(proc)
                     raise BudgetError("residual process group after leader exit")
                 if rc != 0:
                     raise BudgetError("producer returned " + str(rc))
@@ -360,7 +380,7 @@ def run(
                 )
             except (Exception, KeyboardInterrupt) as exc:
                 if proc is not None and proc.poll() is None:
-                    cleanup += _terminate(proc, deadline)
+                    cleanup += terminate(proc)
                 failed = True
                 reason = str(exc)
                 record.update(
@@ -375,13 +395,17 @@ def run(
                     if p.exists():
                         record[file.replace(".bin", "_sha256")] = digest(p)
                 record["elapsed_seconds"] = clock() - start
-                _write_receipt(directory / "receipt.json", receipt)
+                try:
+                    _write_receipt(directory / "receipt.json", receipt)
+                except Exception as exc:
+                    failed = True
+                    reason = "intermediate receipt write failed: " + str(exc)
             if clock() > deadline:
                 failed = True
                 reason = "wall budget exceeded during record write"
     finally:
-        for sig, handler in old_handlers.items():
-            signal.signal(sig, handler)
+        # Record signals during finalization without interrupting the durable writes.
+        cleanup_active = True
         recorded = {x["sequence"] for x in records}
         for c in calls:
             if c["sequence"] not in recorded:
@@ -397,18 +421,86 @@ def run(
                 )
         records.sort(key=lambda x: x["sequence"])
         receipt["elapsed_seconds"] = clock() - begin
-        receipt["status"] = (
-            "INCOMPLETE"
-            if failed
-            or cancelled
-            or receipt["elapsed_seconds"]
-            > min(float(plan["limits"]["wall_seconds_max"]), MAX_SECONDS)
-            or any(x["required"] and x["status"] != "completed" for x in records)
-            else "SYNTHETIC_COMPLETED_UNVERIFIED"
-        )
-        receipt["reason"] = reason
+        receipt["status"] = "INCOMPLETE"
+        receipt["reason"] = reason or "finalization pending"
         receipt["signals"] = cancelled
-        _write_receipt(directory / "receipt.json", receipt)
+        receipt_path = directory / "receipt.json"
+        marker_path = directory / "completion.json"
+        try:
+            # A provisional receipt is durable before any completion candidate.
+            _write_receipt(receipt_path, receipt)
+            receipt["elapsed_seconds"] = clock() - begin
+            over = clock() > deadline
+            if over:
+                reason = "wall budget exceeded during final receipt write"
+            receipt["status"] = (
+                "INCOMPLETE"
+                if failed
+                or cancelled
+                or over
+                or any(x["required"] and x["status"] != "completed" for x in records)
+                else "SYNTHETIC_COMPLETED_UNVERIFIED"
+            )
+            receipt["reason"] = reason
+            _write_receipt(receipt_path, receipt)
+            # Include the candidate receipt serialization/fsync in elapsed time.
+            receipt["elapsed_seconds"] = clock() - begin
+            if clock() > deadline or cancelled:
+                receipt["status"] = "INCOMPLETE"
+                receipt["reason"] = (
+                    "wall budget exceeded during final receipt write"
+                    if clock() > deadline
+                    else "cancelled during finalization"
+                )
+            _write_receipt(receipt_path, receipt)
+            if receipt["status"] != "INCOMPLETE" and (clock() > deadline or cancelled):
+                receipt["status"] = "INCOMPLETE"
+                receipt["reason"] = (
+                    "wall budget exceeded during final receipt write"
+                    if clock() > deadline
+                    else "cancelled during finalization"
+                )
+                receipt["elapsed_seconds"] = clock() - begin
+                _write_receipt(receipt_path, receipt)
+            if receipt["status"] == "SYNTHETIC_COMPLETED_UNVERIFIED":
+                # Readers must require this marker and independently hash receipt.
+                marker = {
+                    "schema": "kdm6.native_host_preflight.budget_completion.v1",
+                    "execution_scope": "SYNTHETIC_TEST_ONLY",
+                    "plan_sha256": receipt["plan_sha256"],
+                    "receipt_sha256": digest(receipt_path),
+                }
+                _write_receipt(marker_path, marker)
+                if clock() > deadline or cancelled:
+                    marker_path.unlink(missing_ok=True)
+                    receipt["status"] = "INCOMPLETE"
+                    receipt["reason"] = (
+                        "wall budget exceeded during completion marker write"
+                        if clock() > deadline
+                        else "cancelled during finalization"
+                    )
+                    receipt["elapsed_seconds"] = clock() - begin
+                    _write_receipt(receipt_path, receipt)
+        except Exception as exc:
+            receipt["status"] = "INCOMPLETE"
+            receipt["reason"] = "final receipt write failed: " + str(exc)
+            receipt["elapsed_seconds"] = clock() - begin
+            try:
+                marker_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            try:
+                _write_receipt(receipt_path, receipt)
+            except Exception:
+                try:
+                    receipt_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            raise FinalReceiptError(receipt["reason"], receipt) from exc
+        finally:
+            for sig, handler in old_handlers.items():
+                signal.signal(sig, handler)
+
     return receipt
 
 
