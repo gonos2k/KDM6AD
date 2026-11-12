@@ -107,6 +107,34 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(row["classification"], "exploratory_distinct_words")
         self.assertNotIn("pass", row["classification"])
 
+    def test_nc_interval_slopes_and_three_point_formula_are_distinct(self):
+        result = m.analyze()
+        row = next(
+            item
+            for item in result["nc_second_forward_rows"]
+            if item["center"] == "baseline"
+            and item["h"] == 1e-4
+            and item["field"] == "nc"
+            and item["level_bottom_first"] == 16
+        )
+        y0, yh, y2h = map(
+            m.f, (row["center_word"], row["plus_word"], row["plus2_word"])
+        )
+        h = row["h"]
+        self.assertEqual(yh, y2h)
+        self.assertNotEqual(y0, yh)
+        self.assertEqual(row["center_to_plus_fd"], (yh - y0) / h)
+        self.assertEqual(row["plus_to_plus2_fd"], (y2h - yh) / h)
+        self.assertEqual(row["plus_to_plus2_fd"], 0.0)
+        self.assertEqual(
+            row["three_point_forward_fd"], (4 * (yh - y0) - (y2h - y0)) / (2 * h)
+        )
+        self.assertEqual(row["fd"], row["three_point_forward_fd"])
+        self.assertEqual(row["signed_fd_minus_jvp"], row["fd"] - row["effective_jvp"])
+        self.assertAlmostEqual(
+            row["three_point_forward_fd"] / row["center_to_plus_fd"], 1.5
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

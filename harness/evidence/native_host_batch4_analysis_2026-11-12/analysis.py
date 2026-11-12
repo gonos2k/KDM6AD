@@ -117,6 +117,7 @@ def row_metrics(center, direction, h, idx, lo, hi, jword, delta, stable, stencil
         "denominator": delta,
         "fd": fd,
         "jvp": j,
+        "signed_fd_minus_jvp": diff,
         "absolute_error": abs(diff),
         "field_scale": scale,
         "field_scaled_absolute_error": abs(diff) / scale,
@@ -397,6 +398,8 @@ def analyze():
                 rows2 = []
                 for i in range(468):
                     y0, y1, y2 = f(lo[i]), f(hi[i]), f(twice[i])
+                    center_to_plus_fd = (y1 - y0) / h
+                    plus_to_plus2_fd = (y2 - y1) / h
                     fd2 = (4 * (y1 - y0) - (y2 - y0)) / (2 * h)
                     j2 = f(j["output_words"][i]) * (second_effective / first_effective)
                     scale = SCALES[i // 39]
@@ -423,8 +426,12 @@ def analyze():
                             "center_word": lo[i],
                             "plus_word": hi[i],
                             "plus2_word": twice[i],
+                            "center_to_plus_fd": center_to_plus_fd,
+                            "plus_to_plus2_fd": plus_to_plus2_fd,
+                            "three_point_forward_fd": fd2,
                             "fd": fd2,
                             "effective_jvp": j2,
+                            "signed_fd_minus_jvp": err,
                             "absolute_error": abs(err),
                             "field_scale": scale,
                             "relative_error_to_jvp": abs(err) / abs(j2) if j2 else None,
@@ -506,6 +513,7 @@ def analyze():
             "certification": "exploratory comparisons only, no numerical pass or physical/full derivative certification",
             "field_scale": "declared numerical scales, not physical uncertainty or unit approval",
             "second_forward_jvp": "rescaled saved first-forward JVP by ratio of represented NC directions, using linearity; not independently executed second-forward JVP",
+            "second_forward_fd": "fd and three_point_forward_fd are (-3*y0+4*yh-y2h)/(2*h); center_to_plus_fd=(yh-y0)/h and plus_to_plus2_fd=(y2h-yh)/h are distinct interval slopes",
             "output_ulp": "prediction residual divided by the larger local f64 ULP; separate from f64-rounded-to-f32 output word distance",
         },
         "field_scales": dict(zip(FIELDS[:12], SCALES)),

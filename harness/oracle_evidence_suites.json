@@ -1,6 +1,6 @@
 {
   "schema": "kdm6.oracle_evidence_suites.v1",
-  "expected_count": 53,
+  "expected_count": 54,
   "suites": [
     "harness/evidence/native_qnice_same_call_2026-11-02",
     "harness/evidence/native_qnice_prec3_2026-11-02",
@@ -54,7 +54,8 @@
     "harness/evidence/native_host_analysis_batch_2026-11-12",
     "harness/evidence/native_number_coordinate_contract_2026-11-12",
     "harness/evidence/native_host_batch3_shared_2026-11-12",
-    "harness/evidence/native_host_batch4_analysis_2026-11-12"
+    "harness/evidence/native_host_batch4_analysis_2026-11-12",
+    "harness/evidence/native_host_preflight_2026-11-12"
   ],
   "timing_hints_seconds": {
     "normal": {
