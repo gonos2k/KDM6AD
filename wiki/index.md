@@ -170,3 +170,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-stored-analysis-ci-batch-2026-11-12]] — Full-output TH16 FD–JVP and f32/f64 baseline classifications, #583 suite timing, bounded evidence-CI execution and next shared-capture inventory.
 
 - [[sources/oracle-runner-review-and-number-coordinate-2026-11-12]] — Timeout child-group cleanup, approved private skips, CI provenance/profiling, research cache seeding and raw number-coordinate source review.
+
+- [[sources/native-host-shared-screening-2026-11-12]] — Same-column f32/f64 stage comparison, bounded f64 state/forcing screening, unresolved NC plateau and conditional water inventory.
