@@ -1,4 +1,5 @@
 {
+  "duplicate_policy": "reject duplicate complete identity; repeated stage/field within one substep requires contiguous event_ordinal starting at zero; never overwrite stage.field",
   "groups": {
     "heat_bg": {
       "new_requirements": [
@@ -151,6 +152,9 @@
       ]
     }
   },
+  "identity_scope": "validator checks planned input ID, mode/kind and derivative seed identity; future execution replay must authenticate seed payload, recorded values, required-field coverage and inactive-branch absence reasons",
+  "live_tensor_lifecycle": "retain the existing graph-connected tensor under complete identity until requested JVP/VJP is evaluated; no detach, item or no_grad; value-only CSV is a separate path",
+  "missing_policy": "each planned required value, live tangent and mask record must be present or carry an explicit inactive-branch absence reason; no silent omission",
   "parent_counts": {
     "rows": 19656,
     "stage_field_pairs": 505,
@@ -295,7 +299,26 @@
     ]
   },
   "parent_stage_inventory_sha256": "c82a86bdd0e41db4615a01b6da17e29030115cc521aeedab911b9d1e54e36e06",
+  "record_identity": [
+    "input_id",
+    "mode",
+    "runtime_call",
+    "one_step_call",
+    "substep",
+    "b_zero",
+    "k_zero",
+    "native_level_bottom_first",
+    "stage",
+    "field",
+    "record_kind",
+    "derivative_mode",
+    "direction_id",
+    "seed_sha256",
+    "cotangent_id",
+    "event_ordinal"
+  ],
   "schema": "kdm6.native_host_capture_field_plan.v1",
   "scope": "requirements only; existing capture is value-only and these labels are not a complete causal graph; live AD tensors must not be detached",
-  "status": "SPEC_ONLY"
+  "status": "SPEC_ONLY",
+  "vertical_mapping": "native_level_bottom_first = 39 - k_zero; k_zero=0 is native top level 39"
 }

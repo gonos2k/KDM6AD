@@ -89,6 +89,120 @@ class PreflightTest(unittest.TestCase):
             )
         )
 
+    def test_capture_identity_preserves_repeated_substeps_and_events(self):
+        inventory = plan.field_inventory()
+        self.assertIn("substep", inventory["record_identity"])
+        self.assertIn("event_ordinal", inventory["record_identity"])
+        self.assertIn("never overwrite", inventory["duplicate_policy"])
+        record = {
+            "input_id": "lower",
+            "mode": "capture_on_value",
+            "runtime_call": 1,
+            "one_step_call": 1,
+            "substep": 0,
+            "b_zero": 0,
+            "k_zero": 23,
+            "native_level_bottom_first": 16,
+            "stage": "fd_satadj_inner",
+            "field": "ncact_raw",
+            "record_kind": "value",
+            "derivative_mode": "none",
+            "direction_id": "none",
+            "seed_sha256": "none",
+            "cotangent_id": "none",
+            "event_ordinal": 0,
+        }
+        second_substep = dict(record, substep=1)
+        repeated_event = dict(record, event_ordinal=1)
+        self.assertEqual(
+            plan.validate_record_identity(
+                [record, second_substep, repeated_event], inventory, self.result
+            ),
+            3,
+        )
+        with self.assertRaisesRegex(ValueError, "duplicate capture"):
+            plan.validate_record_identity(
+                [record, dict(record)], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "ordinals must be contiguous"):
+            plan.validate_record_identity(
+                [record, dict(record, event_ordinal=2)], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "vertical mapping"):
+            plan.validate_record_identity(
+                [dict(record, native_level_bottom_first=15)], inventory, self.result
+            )
+
+    def test_capture_identity_binds_plan_mode_and_derivative_seed(self):
+        inventory = plan.field_inventory()
+        value = {
+            "input_id": "lower",
+            "mode": "capture_on_value",
+            "runtime_call": 1,
+            "one_step_call": 1,
+            "substep": 0,
+            "b_zero": 0,
+            "k_zero": 23,
+            "native_level_bottom_first": 16,
+            "stage": "fd_satadj_inner",
+            "field": "ncact_raw",
+            "record_kind": "value",
+            "derivative_mode": "none",
+            "direction_id": "none",
+            "seed_sha256": "none",
+            "cotangent_id": "none",
+            "event_ordinal": 0,
+        }
+        graph_th = dict(
+            value,
+            mode="center_joint_graph",
+            record_kind="live_tangent",
+            derivative_mode="jvp",
+            direction_id="th",
+            seed_sha256="a" * 64,
+        )
+        graph_pii = dict(graph_th, direction_id="pii", seed_sha256="b" * 64)
+        graph_vjp = dict(
+            graph_th,
+            derivative_mode="vjp",
+            direction_id="none",
+            cotangent_id="nc16_unit",
+            seed_sha256="c" * 64,
+        )
+        self.assertEqual(
+            plan.validate_record_identity(
+                [graph_th, graph_pii, graph_vjp], inventory, self.result
+            ),
+            3,
+        )
+        with self.assertRaisesRegex(ValueError, "unplanned capture input"):
+            plan.validate_record_identity(
+                [dict(value, input_id="not-in-plan")], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "mode/kind"):
+            plan.validate_record_identity(
+                [dict(graph_th, mode="capture_on_value")], inventory, self.result
+            )
+        endpoint_id = next(
+            x["id"] for x in self.result["inputs"] if x["direction"] == "nc"
+        )
+        with self.assertRaisesRegex(ValueError, "mode/kind"):
+            plan.validate_record_identity(
+                [dict(graph_th, input_id=endpoint_id)], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "seed identity"):
+            plan.validate_record_identity(
+                [dict(graph_th, seed_sha256="bad")], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "JVP direction"):
+            plan.validate_record_identity(
+                [dict(graph_th, direction_id="missing")], inventory, self.result
+            )
+        with self.assertRaisesRegex(ValueError, "VJP cotangent"):
+            plan.validate_record_identity(
+                [dict(graph_vjp, cotangent_id="none")], inventory, self.result
+            )
+
     def test_undeclared_negative_zero_and_invalid_words_rejected(self):
         for args in [
             ("baseline", "nc", 1e-4, -1),

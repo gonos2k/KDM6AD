@@ -404,8 +404,129 @@ def field_inventory():
         "parent_counts": {"stages": 51, "stage_field_pairs": 505, "rows": 19656},
         "groups": groups,
         "parent_exact_label_gaps": existing["ledger_exact_label_gaps"],
+        "record_identity": [
+            "input_id",
+            "mode",
+            "runtime_call",
+            "one_step_call",
+            "substep",
+            "b_zero",
+            "k_zero",
+            "native_level_bottom_first",
+            "stage",
+            "field",
+            "record_kind",
+            "derivative_mode",
+            "direction_id",
+            "seed_sha256",
+            "cotangent_id",
+            "event_ordinal",
+        ],
+        "vertical_mapping": "native_level_bottom_first = 39 - k_zero; k_zero=0 is native top level 39",
+        "duplicate_policy": "reject duplicate complete identity; repeated stage/field within one substep requires contiguous event_ordinal starting at zero; never overwrite stage.field",
+        "missing_policy": "each planned required value, live tangent and mask record must be present or carry an explicit inactive-branch absence reason; no silent omission",
+        "live_tensor_lifecycle": "retain the existing graph-connected tensor under complete identity until requested JVP/VJP is evaluated; no detach, item or no_grad; value-only CSV is a separate path",
+        "identity_scope": "validator checks planned input ID, mode/kind and derivative seed identity; future execution replay must authenticate seed payload, recorded values, required-field coverage and inactive-branch absence reasons",
         "scope": "requirements only; existing capture is value-only and these labels are not a complete causal graph; live AD tensors must not be detached",
     }
+
+
+def validate_record_identity(records, inventory, plan):
+    """Reject repeated-substep overwrites in a future capture ledger."""
+    need(isinstance(records, list) and records, "capture records required")
+    need(
+        plan["schema"] == "kdm6.native_host_capture_preflight.v1"
+        and plan["status"] == "SPEC_ONLY",
+        "planned capture identity",
+    )
+    inputs = {item["id"]: item for item in plan["inputs"]}
+    need(len(inputs) == 45, "planned input inventory")
+    fields = inventory["record_identity"]
+    seen = set()
+    ordinal_groups = {}
+    for record in records:
+        need(
+            isinstance(record, dict) and all(field in record for field in fields),
+            "complete capture record identity",
+        )
+        need(record["input_id"] in inputs, "unplanned capture input")
+        kind, mode = record["record_kind"], record["mode"]
+        need(
+            (mode == "capture_on_value" and kind in ("value", "mask"))
+            or (
+                mode == "center_joint_graph"
+                and kind == "live_tangent"
+                and inputs[record["input_id"]]["direction"] == "center"
+            ),
+            "capture record mode/kind",
+        )
+        derivative_mode = record["derivative_mode"]
+        if kind == "live_tangent":
+            need(
+                derivative_mode in ("jvp", "vjp")
+                and isinstance(record["seed_sha256"], str)
+                and len(record["seed_sha256"]) == 64
+                and all(c in "0123456789abcdef" for c in record["seed_sha256"]),
+                "live derivative seed identity",
+            )
+            if derivative_mode == "jvp":
+                need(
+                    record["direction_id"] in plan["direction_seeds"]
+                    and record["cotangent_id"] == "none",
+                    "JVP direction identity",
+                )
+            else:
+                need(
+                    record["direction_id"] == "none"
+                    and isinstance(record["cotangent_id"], str)
+                    and record["cotangent_id"] not in ("", "none"),
+                    "VJP cotangent identity",
+                )
+        else:
+            need(
+                derivative_mode == "none"
+                and record["direction_id"] == "none"
+                and record["seed_sha256"] == "none"
+                and record["cotangent_id"] == "none",
+                "value/mask derivative identity",
+            )
+        need(
+            type(record["runtime_call"]) is int
+            and record["runtime_call"] >= 1
+            and type(record["one_step_call"]) is int
+            and record["one_step_call"] >= 0
+            and type(record["substep"]) is int
+            and record["substep"] >= 0
+            and type(record["b_zero"]) is int
+            and record["b_zero"] == 0
+            and type(record["k_zero"]) is int
+            and 0 <= record["k_zero"] < 39
+            and type(record["native_level_bottom_first"]) is int
+            and record["native_level_bottom_first"] == 39 - record["k_zero"]
+            and type(record["event_ordinal"]) is int
+            and record["event_ordinal"] >= 0,
+            "capture record index/vertical mapping",
+        )
+        need(
+            all(
+                isinstance(record[key], str) and record[key]
+                for key in ("input_id", "stage", "field")
+            ),
+            "capture record labels",
+        )
+        identity = tuple(record[field] for field in fields)
+        need(identity not in seen, "duplicate capture record identity")
+        seen.add(identity)
+        base = identity[:-1]
+        ordinal_groups.setdefault(base, []).append(record["event_ordinal"])
+    need(
+        all(
+            sorted(ordinals) == list(range(len(ordinals)))
+            for ordinals in ordinal_groups.values()
+        ),
+        "capture event ordinals must be contiguous",
+    )
+    return len(seen)
 
 
 def execution_preflight(plan):
