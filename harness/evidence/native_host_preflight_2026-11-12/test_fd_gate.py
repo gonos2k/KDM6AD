@@ -189,6 +189,66 @@ class GateTests(unittest.TestCase):
         self.assertEqual(result["provenance_status"], "UNVERIFIED_EXECUTION_RECEIPTS")
         self.assertTrue(result["gate_eligibility"].startswith("NOT_ELIGIBLE"))
 
+    def test_canonical_upper_pii_preselected_steps(self):
+        plan = m.canonical_plan(
+            m.PACKET.read_bytes(), m.PACKET_GZ_SHA, "upper", "pii", 0
+        )
+        center = plan["center_input_words"]
+        index = m.INPUT_FIELDS.index("pii") * 39 + 15
+        center_output = obs(0.0)
+        samples = []
+        for step in plan["steps"]:
+            h = m.val(step["h_word"])
+            lo = step["lower_input_words"]
+            hi = step["upper_input_words"]
+            actual = [(m.val(b) - m.val(a)) / (2 * h) for a, b in zip(lo, hi)]
+            jvp = [m.word(0.0)] * 468
+            jvp[0] = m.word(actual[index])
+            samples.append(
+                {
+                    "id": step["id"],
+                    "jvp_evaluation_input_words": center,
+                    "jvp_direction_words": [m.word(x) for x in actual],
+                    "jvp_output_words": jvp,
+                    "jvp_forward_output_words": center_output["output_words"],
+                    "jvp_rc": 0,
+                    "lower": obs(m.val(lo[index]) - m.val(center[index])),
+                    "upper": obs(m.val(hi[index]) - m.val(center[index])),
+                }
+            )
+        data = {
+            "schema": m.SCHEMA,
+            "intent": "prospective_pre_capture_plan",
+            "data_origin": "new_prospective_acquisition",
+            "center_name": "upper",
+            "direction": "pii",
+            "packet_plan_sha256": m.PACKET_GZ_SHA,
+            "plan": plan,
+            "plan_sha256": m.plan_sha(plan),
+            "center": center_output,
+            "samples": samples,
+        }
+        large = next(x for x in samples if x["id"] == "1e-04")
+        large["lower"]["masks"]["gate"] = False
+        result = m.evaluate(data)
+        self.assertEqual(result["acceptance_step_ids"], ["1e-06", "1e-05"])
+        self.assertEqual(result["tag"], "LOCAL_NUMERIC_CONSISTENT")
+        self.assertEqual(
+            next(x for x in result["steps"] if x["id"] == "1e-04")["tag"],
+            "BRANCH_CROSSING",
+        )
+        self.assertEqual(
+            next(x for x in result["steps"] if x["id"] == "1e-04")["role"], "diagnostic"
+        )
+        self.assertTrue(result["gate_eligibility"].startswith("NOT_ELIGIBLE"))
+        selected = next(x for x in data["samples"] if x["id"] == "1e-06")
+        selected["jvp_output_words"][0] = m.word(
+            2 * m.val(selected["jvp_output_words"][0])
+        )
+        self.assertEqual(m.evaluate(data)["tag"], "NUMERIC_MISMATCH")
+        selected["jvp_output_words"][0] = m.word(0.0)
+        self.assertEqual(m.evaluate(data)["tag"], "UNRESOLVED")
+
     def test_relative_threshold_boundary(self):
         self.assertEqual(
             m.evaluate(example(jvp_factor=1.0000009), allow_synthetic=True)["tag"],
