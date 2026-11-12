@@ -1,0 +1,114 @@
+{
+  "createdAt": "2026-11-12T03:26:22Z",
+  "headSha": "4f46938f942e438d2bf3d867bf644b624874c6c4",
+  "jobs": [
+    {
+      "completedAt": "2026-11-12T03:52:08Z",
+      "conclusion": "success",
+      "databaseId": 130950952646,
+      "name": "oracle pytest (f64 reference)",
+      "startedAt": "2026-11-12T03:26:24Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-12T03:26:26Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-12T03:26:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:26:44Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-11-12T03:26:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:26:44Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "startedAt": "2026-11-12T03:26:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:08Z",
+          "conclusion": "success",
+          "name": "Install torch (CPU, pinned) + oracle verification dependencies",
+          "number": 4,
+          "startedAt": "2026-11-12T03:26:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:10Z",
+          "conclusion": "success",
+          "name": "Record versions",
+          "number": 5,
+          "startedAt": "2026-11-12T03:27:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:31:32Z",
+          "conclusion": "success",
+          "name": "pytest (oracle/, pure-Python subset)",
+          "number": 6,
+          "startedAt": "2026-11-12T03:27:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:31:36Z",
+          "conclusion": "success",
+          "name": "pytest (native batch first-order boundaries)",
+          "number": 7,
+          "startedAt": "2026-11-12T03:31:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:41:53Z",
+          "conclusion": "success",
+          "name": "unittest (QNICE evidence, normal)",
+          "number": 8,
+          "startedAt": "2026-11-12T03:31:36Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:52:05Z",
+          "conclusion": "success",
+          "name": "unittest (QNICE evidence, optimized)",
+          "number": 9,
+          "startedAt": "2026-11-12T03:41:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:52:05Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 17,
+          "startedAt": "2026-11-12T03:52:05Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:52:05Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 18,
+          "startedAt": "2026-11-12T03:52:05Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:52:05Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-11-12T03:52:05Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/gonos2k/KDM6AD/actions/runs/43148213993/job/130950952646"
+    }
+  ],
+  "updatedAt": "2026-11-12T03:52:08Z"
+}

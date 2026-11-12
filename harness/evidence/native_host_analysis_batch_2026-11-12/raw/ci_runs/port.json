@@ -1,0 +1,416 @@
+{
+  "createdAt": "2026-11-12T03:26:22Z",
+  "headSha": "4f46938f942e438d2bf3d867bf644b624874c6c4",
+  "jobs": [
+    {
+      "completedAt": "2026-11-12T03:27:10Z",
+      "conclusion": "success",
+      "databaseId": 130950953034,
+      "name": "detect changed paths",
+      "startedAt": "2026-11-12T03:26:25Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-12T03:26:27Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-12T03:26:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:06Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-11-12T03:26:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:06Z",
+          "conclusion": "success",
+          "name": "Run set -euo pipefail",
+          "number": 3,
+          "startedAt": "2026-11-12T03:27:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:07Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 6,
+          "startedAt": "2026-11-12T03:27:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:07Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 7,
+          "startedAt": "2026-11-12T03:27:07Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/gonos2k/KDM6AD/actions/runs/43148214063/job/130950953034"
+    },
+    {
+      "completedAt": "2026-11-12T03:34:03Z",
+      "conclusion": "success",
+      "databaseId": 130951228890,
+      "name": "build + ctest (ubuntu, libtorch CPU)",
+      "startedAt": "2026-11-12T03:27:12Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-12T03:27:13Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-12T03:27:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:28Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-11-12T03:27:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:27:28Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "startedAt": "2026-11-12T03:27:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:28:07Z",
+          "conclusion": "success",
+          "name": "Install gfortran + PyTorch (CPU)",
+          "number": 4,
+          "startedAt": "2026-11-12T03:27:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:28:10Z",
+          "conclusion": "success",
+          "name": "Record toolchain versions",
+          "number": 5,
+          "startedAt": "2026-11-12T03:28:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:28:16Z",
+          "conclusion": "success",
+          "name": "Configure (CMake, SHIPPED config \u2014 test hooks OFF)",
+          "number": 6,
+          "startedAt": "2026-11-12T03:28:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:31:47Z",
+          "conclusion": "success",
+          "name": "Build (shipped)",
+          "number": 7,
+          "startedAt": "2026-11-12T03:28:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:31:48Z",
+          "conclusion": "success",
+          "name": "Install (file-copy)",
+          "number": 8,
+          "startedAt": "2026-11-12T03:31:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:32:00Z",
+          "conclusion": "success",
+          "name": "ctest (shipped, all 17)",
+          "number": 9,
+          "startedAt": "2026-11-12T03:31:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:32Z",
+          "conclusion": "success",
+          "name": "G3.3-M self-check gate",
+          "number": 10,
+          "startedAt": "2026-11-12T03:32:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:32Z",
+          "conclusion": "skipped",
+          "name": "Upload G3.3-M gate diagnostics (on failure)",
+          "number": 11,
+          "startedAt": "2026-11-12T03:33:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:32Z",
+          "conclusion": "success",
+          "name": "Assert the test fault seam is ABSENT from the shipped library",
+          "number": 12,
+          "startedAt": "2026-11-12T03:33:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:32Z",
+          "conclusion": "success",
+          "name": "Assert exported symbol surface is exactly the 14 C ABI functions",
+          "number": 13,
+          "startedAt": "2026-11-12T03:33:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:34Z",
+          "conclusion": "success",
+          "name": "Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)",
+          "number": 14,
+          "startedAt": "2026-11-12T03:33:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:35Z",
+          "conclusion": "success",
+          "name": "Assert SONAME + versioned symlink chain (PR3-B)",
+          "number": 15,
+          "startedAt": "2026-11-12T03:33:34Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:50Z",
+          "conclusion": "success",
+          "name": "Reconfigure ON + run the fault-path test through the shared lib",
+          "number": 16,
+          "startedAt": "2026-11-12T03:33:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:56Z",
+          "conclusion": "success",
+          "name": "oracle\u2194C++ parity regression bounds (test_cpp_parity + conservative-interface)",
+          "number": 17,
+          "startedAt": "2026-11-12T03:33:50Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:34:00Z",
+          "conclusion": "success",
+          "name": "cross-tree AD parity (built shared library)",
+          "number": 18,
+          "startedAt": "2026-11-12T03:33:56Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:34:01Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 35,
+          "startedAt": "2026-11-12T03:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:34:01Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 36,
+          "startedAt": "2026-11-12T03:34:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:34:01Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "startedAt": "2026-11-12T03:34:01Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/gonos2k/KDM6AD/actions/runs/43148214063/job/130951228890"
+    },
+    {
+      "completedAt": "2026-11-12T03:36:14Z",
+      "conclusion": "success",
+      "databaseId": 130951228959,
+      "name": "build + symbol surface + smoke (macOS arm64, libtorch CPU)",
+      "startedAt": "2026-11-12T03:27:12Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-12T03:27:14Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-12T03:27:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:28:13Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-11-12T03:27:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:28:14Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "startedAt": "2026-11-12T03:28:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:29:04Z",
+          "conclusion": "success",
+          "name": "Install gfortran + PyTorch (macOS arm64)",
+          "number": 4,
+          "startedAt": "2026-11-12T03:28:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:29:07Z",
+          "conclusion": "success",
+          "name": "Record toolchain versions",
+          "number": 5,
+          "startedAt": "2026-11-12T03:29:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:29:14Z",
+          "conclusion": "success",
+          "name": "Configure (CMake, SHIPPED config \u2014 test hooks OFF, Release)",
+          "number": 6,
+          "startedAt": "2026-11-12T03:29:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:28Z",
+          "conclusion": "success",
+          "name": "Build (shipped)",
+          "number": 7,
+          "startedAt": "2026-11-12T03:29:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:30Z",
+          "conclusion": "success",
+          "name": "Install (file-copy)",
+          "number": 8,
+          "startedAt": "2026-11-12T03:33:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:42Z",
+          "conclusion": "success",
+          "name": "ctest (shipped, all 17)",
+          "number": 9,
+          "startedAt": "2026-11-12T03:33:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:33:46Z",
+          "conclusion": "success",
+          "name": "cross-tree AD parity (built shared library)",
+          "number": 10,
+          "startedAt": "2026-11-12T03:33:42Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:43Z",
+          "conclusion": "success",
+          "name": "G3.3-M self-check gate",
+          "number": 11,
+          "startedAt": "2026-11-12T03:33:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:43Z",
+          "conclusion": "skipped",
+          "name": "Upload G3.3-M gate diagnostics (on failure)",
+          "number": 12,
+          "startedAt": "2026-11-12T03:35:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:44Z",
+          "conclusion": "success",
+          "name": "Assert arch (arm64) + fault seam ABSENT + install-name",
+          "number": 13,
+          "startedAt": "2026-11-12T03:35:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:45Z",
+          "conclusion": "success",
+          "name": "Assert exported symbol surface is exactly the 14 C ABI functions",
+          "number": 14,
+          "startedAt": "2026-11-12T03:35:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:45Z",
+          "conclusion": "success",
+          "name": "Fresh-process ctypes load resolves all 11",
+          "number": 15,
+          "startedAt": "2026-11-12T03:35:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:46Z",
+          "conclusion": "success",
+          "name": "Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)",
+          "number": 16,
+          "startedAt": "2026-11-12T03:35:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:35:47Z",
+          "conclusion": "success",
+          "name": "Assert versioned install-name + symlink chain (PR3-B)",
+          "number": 17,
+          "startedAt": "2026-11-12T03:35:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:36:09Z",
+          "conclusion": "success",
+          "name": "Reconfigure ON + run the fault-path test through the shared lib",
+          "number": 18,
+          "startedAt": "2026-11-12T03:35:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:36:09Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 35,
+          "startedAt": "2026-11-12T03:36:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:36:10Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 36,
+          "startedAt": "2026-11-12T03:36:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-12T03:36:13Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "startedAt": "2026-11-12T03:36:10Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/gonos2k/KDM6AD/actions/runs/43148214063/job/130951228959"
+    }
+  ],
+  "updatedAt": "2026-11-12T03:36:15Z"
+}

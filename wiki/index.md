@@ -166,3 +166,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-column-f32-boundary-2026-11-12]] — Coupled-mask TH16 search on that same host-column input, with an adjacent f32 B=1 activation transition and endpoint output parity.
 
 - [[sources/native-host-column-f64-da-2026-11-12]] — Exact f32-to-f64 host-column input mapping, separate f64 DA activation sides, branch-interior NC16 JVP/VJP versus directional differences and an isolated rate-minimum tie test.
+
+- [[sources/native-host-stored-analysis-ci-batch-2026-11-12]] — Full-output TH16 FD–JVP and f32/f64 baseline classifications, #583 suite timing, bounded evidence-CI execution and next shared-capture inventory.
