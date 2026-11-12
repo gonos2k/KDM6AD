@@ -172,3 +172,5 @@ date_modified: 2026-10-26
 - [[sources/oracle-runner-review-and-number-coordinate-2026-11-12]] — Timeout child-group cleanup, approved private skips, CI provenance/profiling, research cache seeding and raw number-coordinate source review.
 
 - [[sources/native-host-shared-screening-2026-11-12]] — Same-column f32/f64 stage comparison, bounded f64 state/forcing screening, unresolved NC plateau and conditional water inventory.
+
+- [[sources/native-host-batch4-analysis-2026-11-12]] — Output-wise saved FD/JVP screening, NC/PII gap localization, source-based unit gates and a single-build capture plan; no new derivative or physical approval.
