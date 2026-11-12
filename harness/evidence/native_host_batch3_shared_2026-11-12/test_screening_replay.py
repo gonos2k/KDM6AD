@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import math
 import zipfile
 import unittest
 from pathlib import Path
@@ -22,9 +23,46 @@ class ScreeningTests(unittest.TestCase):
         cls.centers = {x: cls.inputs["center_" + x] for x in m.CENTERS}
 
     def test_saved_result(self):
-        self.assertEqual(
+        m.compare_saved_result(
             m.replay(), json.loads((m.HERE / "screening_results.json").read_bytes())
         )
+
+    def test_saved_vjp_dot_portability_is_isolated(self):
+        saved = json.loads((m.HERE / "screening_results.json").read_bytes())
+        diagnostic = 29
+        value = saved["diagnostics"][diagnostic]["nc16_vjp_dot"]
+        nearby = copy.deepcopy(saved)
+        nearby["diagnostics"][diagnostic]["nc16_vjp_dot"] = math.nextafter(
+            value, math.inf
+        )
+        m.compare_saved_result(nearby, saved)
+        nearby["diagnostics"][diagnostic]["nc16_vjp_dot"] = math.nextafter(
+            math.nextafter(value, math.inf), math.inf
+        )
+        m.compare_saved_result(nearby, saved)
+        nearby["diagnostics"][diagnostic]["nc16_vjp_dot"] = math.nextafter(
+            math.nextafter(math.nextafter(value, math.inf), math.inf), math.inf
+        )
+        with self.assertRaisesRegex(ValueError, "VJP dot within 2 ULP"):
+            m.compare_saved_result(nearby, saved)
+        for invalid in (True, 1, float("nan"), float("inf")):
+            nearby["diagnostics"][diagnostic]["nc16_vjp_dot"] = invalid
+            with (
+                self.subTest(invalid=repr(invalid)),
+                self.assertRaisesRegex(ValueError, "VJP dot"),
+            ):
+                m.compare_saved_result(nearby, saved)
+        changed_jvp = copy.deepcopy(saved)
+        jvp = changed_jvp["diagnostics"][diagnostic]["nc16_jvp"]
+        changed_jvp["diagnostics"][diagnostic]["nc16_jvp"] = math.nextafter(
+            jvp, math.inf
+        )
+        with self.assertRaisesRegex(ValueError, "saved diagnostic exact"):
+            m.compare_saved_result(changed_jvp, saved)
+        changed_type = copy.deepcopy(saved)
+        changed_type["endpoint_parity_checks"] = 122.0
+        with self.assertRaisesRegex(ValueError, "saved result field"):
+            m.compare_saved_result(changed_type, saved)
 
     def test_rehashed_direction_or_step_spoof(self):
         x = copy.deepcopy(self.inputs["lower_th_-1"])

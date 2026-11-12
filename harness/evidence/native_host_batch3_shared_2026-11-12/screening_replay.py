@@ -342,8 +342,10 @@ def source_checks(z, manifest, screen, adaptive):
 
 def replay():
     z, manifest = load_archive()
+
     def get(name):
         return json.loads(z.read(name))
+
     screen = get("screen/result.json")
     adaptive = get("adaptive/result.json")
     sinput = get("screen/inputs.json")
@@ -732,6 +734,62 @@ def replay():
 
 def main():
     print(json.dumps(replay(), indent=2, sort_keys=True, allow_nan=False))
+
+
+def ulp_distance(a, b):
+    """Distance between finite f64 values in monotonically ordered bit space."""
+    need(type(a) is float and type(b) is float, "VJP dot type")
+    need(math.isfinite(a) and math.isfinite(b), "VJP dot finite")
+
+    def ordered(value):
+        bits = struct.unpack(">Q", struct.pack(">d", value))[0]
+        return (~bits & 0xFFFFFFFFFFFFFFFF) if bits >> 63 else bits | (1 << 63)
+
+    return abs(ordered(a) - ordered(b))
+
+
+def exact_same(a, b):
+    """Compare saved summary fields without Python's bool/int coercion."""
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, dict):
+        return a.keys() == b.keys() and all(exact_same(a[key], b[key]) for key in a)
+    if isinstance(a, list):
+        return len(a) == len(b) and all(exact_same(x, y) for x, y in zip(a, b))
+    if isinstance(a, float):
+        return math.isfinite(a) and math.isfinite(b) and w(a) == w(b)
+    return a == b
+
+
+def compare_saved_result(actual, saved):
+    """Keep the evidence contract exact; only the Python VJP sum is portable."""
+    need(type(actual) is dict and type(saved) is dict, "saved result type")
+    need(actual.keys() == saved.keys(), "saved result keys")
+    for key in actual:
+        if key != "diagnostics":
+            need(exact_same(actual[key], saved[key]), "saved result field " + key)
+    left, right = actual["diagnostics"], saved["diagnostics"]
+    need(
+        type(left) is list and type(right) is list and len(left) == len(right) == 61,
+        "saved diagnostic inventory",
+    )
+    for index, (a, b) in enumerate(zip(left, right)):
+        need(
+            type(a) is dict and type(b) is dict and a.keys() == b.keys(),
+            f"saved diagnostic fields {index}",
+        )
+        for key in a:
+            if key == "nc16_vjp_dot":
+                # Python 3.12's float summation may differ by one f64 ULP from
+                # older Python for the same 624 stored products.
+                need(
+                    ulp_distance(a[key], b[key]) <= 2,
+                    f"saved diagnostic VJP dot within 2 ULP {index}",
+                )
+            else:
+                need(
+                    exact_same(a[key], b[key]), f"saved diagnostic exact {index}/{key}"
+                )
 
 
 if __name__ == "__main__":
