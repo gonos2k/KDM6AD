@@ -579,6 +579,16 @@ def validate(receipt, assets):
             seedkey = (row["derivative_mode"], row["direction_id"], row["cotangent_id"])
         else:
             seedkey = ("none", "none", "none")
+        if kind == "value":
+            schedule = conditions[row["input_id"]]["schedule"]
+            key = condition_key(row)
+            if key in schedule:
+                need(
+                    row["availability"] == "present"
+                    and row.get("dtype") == "f64"
+                    and row.get("raw_hex") == schedule[key],
+                    "schedule value condition binding",
+                )
         if row["availability"] == "present":
             need(
                 row.get("inactive_reason") is None
@@ -669,7 +679,7 @@ def validate(receipt, assets):
 
 
 def validate_scheduler_bridge(
-    receipt, scheduler, assets, *, scheduler_bytes, completion_bytes
+    receipt, scheduler, assets, *, scheduler_bytes, completion_bytes, supervisor_bytes
 ):
     """Bind the synthetic scheduler envelope to the semantic bundle.
 
@@ -677,27 +687,87 @@ def validate_scheduler_bridge(
     physical execution or independent provenance, even if all bytes agree.
     """
     need(
-        isinstance(scheduler_bytes, bytes) and isinstance(completion_bytes, bytes),
-        "scheduler receipt/marker bytes required",
+        isinstance(scheduler_bytes, bytes)
+        and isinstance(completion_bytes, bytes)
+        and isinstance(supervisor_bytes, bytes),
+        "scheduler receipt/candidate/supervisor bytes required",
     )
     need(json.loads(scheduler_bytes) == scheduler, "scheduler receipt bytes mismatch")
     marker = json.loads(completion_bytes)
     need(
         isinstance(marker, dict)
         and set(marker)
-        == {"schema", "execution_scope", "plan_sha256", "receipt_sha256"}
-        and marker["schema"] == "kdm6.native_host_preflight.budget_completion.v1"
+        == {"schema", "status", "execution_scope", "plan_sha256", "receipt_sha256"}
+        and marker["schema"]
+        == "kdm6.native_host_preflight.budget_completion_candidate.v1"
+        and marker["status"] == "CANDIDATE_NOT_SUFFICIENT"
         and marker["execution_scope"] == "SYNTHETIC_TEST_ONLY"
         and marker["receipt_sha256"] == sha(scheduler_bytes)
         and marker["plan_sha256"] == scheduler.get("plan_sha256"),
         "scheduler completion marker",
+    )
+    witness = json.loads(supervisor_bytes)
+    need(
+        isinstance(witness, dict)
+        and set(witness)
+        == {
+            "schema",
+            "execution_scope",
+            "plan_sha256",
+            "receipt_sha256",
+            "candidate_sha256",
+            "child_exit_code",
+            "child_return_confirmed",
+            "child_return_token",
+            "child_return_token_sha256",
+            "wall_seconds",
+            "budget_seconds",
+            "supervisor_source_sha256",
+        }
+        and witness["schema"] == "kdm6.native_host_preflight.supervisor_witness.v1"
+        and witness["execution_scope"] == "SYNTHETIC_TEST_ONLY"
+        and witness["plan_sha256"] == scheduler.get("plan_sha256")
+        and witness["receipt_sha256"] == sha(scheduler_bytes)
+        and witness["candidate_sha256"] == sha(completion_bytes)
+        and type(witness["child_exit_code"]) is int
+        and witness["child_exit_code"] == 0
+        and witness["child_return_confirmed"] is True
+        and type(witness["wall_seconds"]) in (int, float)
+        and math.isfinite(witness["wall_seconds"])
+        and type(witness["budget_seconds"]) in (int, float)
+        and witness["budget_seconds"] == 900
+        and 0 <= witness["wall_seconds"] <= witness["budget_seconds"]
+        and witness["supervisor_source_sha256"]
+        == sha((HERE / "synthetic_supervisor.py").read_bytes()),
+        "supervisor witness",
+    )
+    token = witness["child_return_token"]
+    need(isinstance(token, str), "supervisor child return token")
+    token_bytes = token.encode("utf-8")
+    token_obj = json.loads(token)
+    need(
+        token_obj
+        == {
+            "schema": "kdm6.native_host_preflight.child_return.v1",
+            "receipt_sha256": sha(scheduler_bytes),
+            "candidate_sha256": sha(completion_bytes),
+        }
+        and token == json.dumps(token_obj, sort_keys=True, separators=(",", ":"))
+        and witness["child_return_token_sha256"] == sha(token_bytes),
+        "supervisor child return token",
+    )
+    need(
+        type(scheduler.get("elapsed_seconds")) in (int, float)
+        and math.isfinite(scheduler["elapsed_seconds"])
+        and scheduler["elapsed_seconds"] <= witness["wall_seconds"],
+        "supervisor wall timing",
     )
     result = validate(receipt, assets)
     canonical, _ = load_plan()
     need(
         scheduler.get("schema") == "kdm6.native_host_preflight.execution_budget.v1"
         and scheduler.get("execution_scope") == "SYNTHETIC_TEST_ONLY"
-        and scheduler.get("status") == "SYNTHETIC_COMPLETED_UNVERIFIED",
+        and scheduler.get("status") == "SYNTHETIC_CANDIDATE_UNVERIFIED",
         "scheduler scope/status",
     )
     bound = json.loads(json.dumps(canonical))

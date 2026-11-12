@@ -253,7 +253,7 @@ def synthetic_scheduler(receipt):
         calls.append(out)
     return {
         "schema": "kdm6.native_host_preflight.execution_budget.v1",
-        "status": "SYNTHETIC_COMPLETED_UNVERIFIED",
+        "status": "SYNTHETIC_CANDIDATE_UNVERIFIED",
         "execution_scope": "SYNTHETIC_TEST_ONLY",
         "plan_gzip_sha256": rs.PLAN_GZ_SHA,
         "plan_sha256": rs.sha(
@@ -269,19 +269,58 @@ def synthetic_scheduler(receipt):
     }
 
 
-def bridge(receipt, scheduler, assets, marker=None):
+def bridge(receipt, scheduler, assets, marker=None, witness=None):
     raw = data_bytes(scheduler)
     if marker is None:
         marker = data_bytes(
             {
-                "schema": "kdm6.native_host_preflight.budget_completion.v1",
+                "schema": "kdm6.native_host_preflight.budget_completion_candidate.v1",
+                "status": "CANDIDATE_NOT_SUFFICIENT",
                 "execution_scope": "SYNTHETIC_TEST_ONLY",
                 "plan_sha256": scheduler["plan_sha256"],
                 "receipt_sha256": rs.sha(raw),
             }
         )
+    if witness is None:
+        witness = data_bytes(
+            {
+                "schema": "kdm6.native_host_preflight.supervisor_witness.v1",
+                "execution_scope": "SYNTHETIC_TEST_ONLY",
+                "plan_sha256": scheduler["plan_sha256"],
+                "receipt_sha256": rs.sha(raw),
+                "candidate_sha256": rs.sha(marker),
+                "child_exit_code": 0,
+                "child_return_confirmed": True,
+                "child_return_token": data_bytes(
+                    {
+                        "schema": "kdm6.native_host_preflight.child_return.v1",
+                        "receipt_sha256": rs.sha(raw),
+                        "candidate_sha256": rs.sha(marker),
+                    }
+                ).decode(),
+                "child_return_token_sha256": rs.sha(
+                    data_bytes(
+                        {
+                            "schema": "kdm6.native_host_preflight.child_return.v1",
+                            "receipt_sha256": rs.sha(raw),
+                            "candidate_sha256": rs.sha(marker),
+                        }
+                    )
+                ),
+                "wall_seconds": 101,
+                "budget_seconds": 900,
+                "supervisor_source_sha256": rs.sha(
+                    (rs.HERE / "synthetic_supervisor.py").read_bytes()
+                ),
+            }
+        )
     return rs.validate_scheduler_bridge(
-        receipt, scheduler, assets, scheduler_bytes=raw, completion_bytes=marker
+        receipt,
+        scheduler,
+        assets,
+        scheduler_bytes=raw,
+        completion_bytes=marker,
+        supervisor_bytes=witness,
     )
 
 
@@ -450,6 +489,103 @@ class ReceiptSchemaTest(unittest.TestCase):
             bridge(receipt, scheduler, assets, marker=bad)
         with self.assertRaises(TypeError):
             rs.validate_scheduler_bridge(receipt, scheduler, assets)
+
+    def test_supervisor_witness_required_and_fail_closed(self):
+        receipt, assets = self.bundle()
+        scheduler = synthetic_scheduler(receipt)
+        raw = data_bytes(scheduler)
+        marker = data_bytes(
+            {
+                "schema": "kdm6.native_host_preflight.budget_completion_candidate.v1",
+                "status": "CANDIDATE_NOT_SUFFICIENT",
+                "execution_scope": "SYNTHETIC_TEST_ONLY",
+                "plan_sha256": scheduler["plan_sha256"],
+                "receipt_sha256": rs.sha(raw),
+            }
+        )
+        witness = {
+            "schema": "kdm6.native_host_preflight.supervisor_witness.v1",
+            "execution_scope": "SYNTHETIC_TEST_ONLY",
+            "plan_sha256": scheduler["plan_sha256"],
+            "receipt_sha256": rs.sha(raw),
+            "candidate_sha256": rs.sha(marker),
+            "child_exit_code": 0,
+            "child_return_confirmed": True,
+            "child_return_token": data_bytes(
+                {
+                    "schema": "kdm6.native_host_preflight.child_return.v1",
+                    "receipt_sha256": rs.sha(raw),
+                    "candidate_sha256": rs.sha(marker),
+                }
+            ).decode(),
+            "child_return_token_sha256": rs.sha(
+                data_bytes(
+                    {
+                        "schema": "kdm6.native_host_preflight.child_return.v1",
+                        "receipt_sha256": rs.sha(raw),
+                        "candidate_sha256": rs.sha(marker),
+                    }
+                )
+            ),
+            "wall_seconds": 101,
+            "budget_seconds": 900,
+            "supervisor_source_sha256": rs.sha(
+                (rs.HERE / "synthetic_supervisor.py").read_bytes()
+            ),
+        }
+        for mutation in (
+            "exit",
+            "return",
+            "missing_token",
+            "token",
+            "token_hash",
+            "wall",
+            "wall_short",
+            "candidate",
+            "receipt",
+            "source",
+            "scope",
+        ):
+            altered = copy.deepcopy(witness)
+            if mutation == "exit":
+                altered["child_exit_code"] = 1
+            elif mutation == "return":
+                altered["child_return_confirmed"] = False
+            elif mutation == "missing_token":
+                del altered["child_return_token"]
+            elif mutation == "token":
+                token = json.loads(altered["child_return_token"])
+                token["receipt_sha256"] = "a" * 64
+                altered["child_return_token"] = data_bytes(token).decode()
+                altered["child_return_token_sha256"] = rs.sha(
+                    altered["child_return_token"].encode()
+                )
+            elif mutation == "token_hash":
+                altered["child_return_token_sha256"] = "a" * 64
+            elif mutation == "wall":
+                altered["wall_seconds"] = 901
+            elif mutation == "wall_short":
+                altered["wall_seconds"] = 99
+            elif mutation == "candidate":
+                altered["candidate_sha256"] = "a" * 64
+            elif mutation == "receipt":
+                altered["receipt_sha256"] = "a" * 64
+            elif mutation == "source":
+                altered["supervisor_source_sha256"] = "a" * 64
+            else:
+                altered["execution_scope"] = "REAL"
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                bridge(
+                    receipt,
+                    scheduler,
+                    assets,
+                    marker=marker,
+                    witness=data_bytes(altered),
+                )
+        with self.assertRaises(TypeError):
+            rs.validate_scheduler_bridge(
+                receipt, scheduler, assets, scheduler_bytes=raw, completion_bytes=marker
+            )
 
     def test_inactive_reason_must_bind_a_same_requirement_false_mask(self):
         receipt, assets = self.bundle()
