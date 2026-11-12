@@ -210,6 +210,8 @@ def evaluate(data, *, allow_synthetic=False):
     )
     need(len({val(p["h_word"]) for p in ps}) == len(ps), "distinct h required")
     need(len({p["stencil"] for p in ps}) == 1, "same stencil required")
+    # Preselect by plan only, before inspecting any observed output or mask.
+    selected_ids = {p["id"] for p in sorted(ps, key=lambda p: val(p["h_word"]))[:2]}
     center_obs = observation(data["center"], idx)
     results = []
     for p in ps:
@@ -320,6 +322,7 @@ def evaluate(data, *, allow_synthetic=False):
             tag = "NUMERIC_MISMATCH"
         record = {
             "id": p["id"],
+            "role": "acceptance" if p["id"] in selected_ids else "diagnostic",
             "h_word": p["h_word"],
             "stencil": stencil,
             "output_lower_word": sample["lower"]["output_words"][idx],
@@ -373,7 +376,8 @@ def evaluate(data, *, allow_synthetic=False):
             if changed:
                 record["tag"] = "BRANCH_CROSSING"
         results.append(record)
-    tags = [x["tag"] for x in results]
+    selected_results = [x for x in results if x["id"] in selected_ids]
+    tags = [x["tag"] for x in selected_results]
     if "BRANCH_CROSSING" in tags:
         overall = "BRANCH_CROSSING"
     elif "DIRECTION_DEGENERATE" in tags:
@@ -384,7 +388,7 @@ def evaluate(data, *, allow_synthetic=False):
         overall = "UNRESOLVED"
     elif "ROUNDING_LIMITED" in tags:
         overall = "ROUNDING_LIMITED"
-    elif len(results) < 2:
+    elif len(selected_results) < 2:
         overall = "UNRESOLVED"
     else:
         overall = "LOCAL_NUMERIC_CONSISTENT"
@@ -395,6 +399,10 @@ def evaluate(data, *, allow_synthetic=False):
         "field": FIELDS[idx // 39],
         "native_level": idx % 39 + 1,
         "tag": overall,
+        "acceptance_step_ids": [
+            p["id"] for p in sorted(ps, key=lambda p: val(p["h_word"]))[:2]
+        ],
+        "selection_rule": "two smallest distinct positive planned h; fixed before observations; remaining steps diagnostic",
         "steps": results,
         "scope": "CAPTURED_BRANCH_ONLY: local numerical consistency only; no full Jacobian, host forcing, physical budget or RTTOV certification",
         "registration": "caller attests pre-capture registration; evaluator cannot independently establish chronology",
