@@ -148,7 +148,7 @@ class BudgetTest(unittest.TestCase):
 
     def test_success_all_calls_accounted(self):
         r = self.run_adapter()
-        self.assertEqual(r["status"], "SYNTHETIC_COMPLETED_UNVERIFIED")
+        self.assertEqual(r["status"], "SYNTHETIC_CANDIDATE_UNVERIFIED")
         self.assertEqual(
             [x["status"] for x in r["calls"]], ["completed", "completed", "skipped"]
         )
@@ -160,8 +160,10 @@ class BudgetTest(unittest.TestCase):
         self.assertEqual(json.loads(receipt_path.read_text())["status"], r["status"])
         marker = json.loads((self.root / "run/completion.json").read_text())
         self.assertEqual(
-            marker["schema"], "kdm6.native_host_preflight.budget_completion.v1"
+            marker["schema"],
+            "kdm6.native_host_preflight.budget_completion_candidate.v1",
         )
+        self.assertEqual(marker["status"], "CANDIDATE_NOT_SUFFICIENT")
         self.assertEqual(marker["receipt_sha256"], b.digest(receipt_path))
         self.assertEqual(marker["plan_sha256"], r["plan_sha256"])
 

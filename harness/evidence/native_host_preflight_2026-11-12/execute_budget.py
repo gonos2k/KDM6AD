@@ -439,7 +439,7 @@ def run(
                 or cancelled
                 or over
                 or any(x["required"] and x["status"] != "completed" for x in records)
-                else "SYNTHETIC_COMPLETED_UNVERIFIED"
+                else "SYNTHETIC_CANDIDATE_UNVERIFIED"
             )
             receipt["reason"] = reason
             _write_receipt(receipt_path, receipt)
@@ -462,10 +462,11 @@ def run(
                 )
                 receipt["elapsed_seconds"] = clock() - begin
                 _write_receipt(receipt_path, receipt)
-            if receipt["status"] == "SYNTHETIC_COMPLETED_UNVERIFIED":
-                # Readers must require this marker and independently hash receipt.
+            if receipt["status"] == "SYNTHETIC_CANDIDATE_UNVERIFIED":
+                # Candidate only: an external parent wait witness is mandatory.
                 marker = {
-                    "schema": "kdm6.native_host_preflight.budget_completion.v1",
+                    "schema": "kdm6.native_host_preflight.budget_completion_candidate.v1",
+                    "status": "CANDIDATE_NOT_SUFFICIENT",
                     "execution_scope": "SYNTHETIC_TEST_ONLY",
                     "plan_sha256": receipt["plan_sha256"],
                     "receipt_sha256": digest(receipt_path),
