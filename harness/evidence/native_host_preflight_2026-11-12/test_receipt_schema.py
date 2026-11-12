@@ -119,21 +119,50 @@ def synthetic_bundle():
             )
         calls.append(out)
     records = []
+    mask_keys, schedule_keys, contract_sha, _, baseline_schedule = (
+        rs.condition_contract()
+    )
+    requirements = [
+        (group, i)
+        for group, data in inv["groups"].items()
+        for i in range(len(data["new_requirements"]))
+    ]
+    requirement_keys = dict(zip(requirements, mask_keys))
+    condition_assets = {}
+    for input_id in inputs:
+        condition_assets[input_id] = add(
+            assets,
+            "conditions/" + input_id + ".json",
+            {
+                "schema": "kdm6.captured_conditions.v1",
+                "input_id": input_id,
+                "mode": "capture_on_value",
+                "call_sequence": seq[(input_id, "capture_on_value")],
+                "condition_contract_sha256": contract_sha,
+                "mask_values": [True] * len(mask_keys),
+                "schedule_words": [baseline_schedule[key] for key in schedule_keys],
+            },
+        )
 
     def emit(input_id, mode, group, idx, kind, seedid=("none", "none", "none")):
         requirement = inv["groups"][group]["new_requirements"][idx]
-        stage = f"{group}_{idx}"
-        field = kind + "_" + "_".join(seedid)
+        key_parts = requirement_keys[(group, idx)].split("|")
+        stage = key_parts[6]
+        field = (
+            key_parts[7]
+            if kind == "mask"
+            else kind + "_" + group + "_" + str(idx) + "_" + "_".join(seedid)
+        )
         row = {
             "input_id": input_id,
             "mode": mode,
             "call_sequence": seq[(input_id, mode)],
             "runtime_call": 1,
-            "one_step_call": 1,
-            "substep": 0,
-            "b_zero": 0,
-            "k_zero": 23,
-            "native_level_bottom_first": 16,
+            "one_step_call": int(key_parts[1]),
+            "substep": int(key_parts[2]),
+            "b_zero": int(key_parts[3]),
+            "k_zero": int(key_parts[4]),
+            "native_level_bottom_first": int(key_parts[5]),
             "stage": stage,
             "field": field,
             "record_kind": kind,
@@ -193,6 +222,7 @@ def synthetic_bundle():
         "elapsed_seconds": 100,
         "seed_assets": seeds,
         "effective_jvp_assets": effective_assets,
+        "condition_assets": condition_assets,
         "calls": calls,
         "capture_records_asset": add(
             assets,
@@ -237,6 +267,22 @@ def synthetic_scheduler(receipt):
         "elapsed_seconds": 100,
         "calls": calls,
     }
+
+
+def bridge(receipt, scheduler, assets, marker=None):
+    raw = data_bytes(scheduler)
+    if marker is None:
+        marker = data_bytes(
+            {
+                "schema": "kdm6.native_host_preflight.budget_completion.v1",
+                "execution_scope": "SYNTHETIC_TEST_ONLY",
+                "plan_sha256": scheduler["plan_sha256"],
+                "receipt_sha256": rs.sha(raw),
+            }
+        )
+    return rs.validate_scheduler_bridge(
+        receipt, scheduler, assets, scheduler_bytes=raw, completion_bytes=marker
+    )
 
 
 class ReceiptSchemaTest(unittest.TestCase):
@@ -367,9 +413,7 @@ class ReceiptSchemaTest(unittest.TestCase):
         receipt, assets = self.bundle()
         scheduler = synthetic_scheduler(receipt)
         self.assertEqual(
-            rs.validate_scheduler_bridge(receipt, scheduler, assets)[
-                "scheduler_binding"
-            ],
+            bridge(receipt, scheduler, assets)["scheduler_binding"],
             "SYNTHETIC_ONLY_UNVERIFIED",
         )
         for mutation in ("plan", "gzip", "dso", "call", "path", "sha", "scope"):
@@ -389,7 +433,23 @@ class ReceiptSchemaTest(unittest.TestCase):
             else:
                 altered["execution_scope"] = "REAL"
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
-                rs.validate_scheduler_bridge(receipt, altered, assets)
+                bridge(receipt, altered, assets)
+
+    def test_scheduler_bridge_rejects_missing_or_stale_completion_marker(self):
+        receipt, assets = self.bundle()
+        scheduler = synthetic_scheduler(receipt)
+        bad = data_bytes(
+            {
+                "schema": "kdm6.native_host_preflight.budget_completion.v1",
+                "execution_scope": "SYNTHETIC_TEST_ONLY",
+                "plan_sha256": scheduler["plan_sha256"],
+                "receipt_sha256": "0" * 64,
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "scheduler completion marker"):
+            bridge(receipt, scheduler, assets, marker=bad)
+        with self.assertRaises(TypeError):
+            rs.validate_scheduler_bridge(receipt, scheduler, assets)
 
     def test_inactive_reason_must_bind_a_same_requirement_false_mask(self):
         receipt, assets = self.bundle()
@@ -406,6 +466,14 @@ class ReceiptSchemaTest(unittest.TestCase):
             and x["requirement_index"] == row["requirement_index"]
         )
         mask["raw_hex"] = "0"
+        condition_ref = receipt["condition_assets"][row["input_id"]]
+        condition = json.loads(assets[condition_ref["path"]])
+        condition["mask_values"][
+            rs.condition_contract()[0].index(rs.condition_key(mask))
+        ] = False
+        receipt["condition_assets"][row["input_id"]] = add(
+            assets, condition_ref["path"], condition
+        )
         row.update(
             availability="inactive",
             inactive_reason="synthetic inactive branch",
@@ -460,8 +528,8 @@ class ReceiptSchemaTest(unittest.TestCase):
                 raw_hex=None,
             )
             if mutation == "level":
-                mask["k_zero"] = 22
-                mask["native_level_bottom_first"] = 17
+                mask["k_zero"] = (mask["k_zero"] + 1) % 39
+                mask["native_level_bottom_first"] = 39 - mask["k_zero"]
             elif mutation == "substep":
                 mask["substep"] = 1
             elif mutation == "call":

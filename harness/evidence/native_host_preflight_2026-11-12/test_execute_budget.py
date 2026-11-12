@@ -3,6 +3,7 @@ import importlib.util
 import json
 import multiprocessing
 import signal
+import subprocess
 import time
 import os
 from pathlib import Path
@@ -155,10 +156,14 @@ class BudgetTest(unittest.TestCase):
         self.assertEqual(
             r["calls"][0]["output_sha256"], b.digest(self.root / "run/001/out.bin")
         )
+        receipt_path = self.root / "run/receipt.json"
+        self.assertEqual(json.loads(receipt_path.read_text())["status"], r["status"])
+        marker = json.loads((self.root / "run/completion.json").read_text())
         self.assertEqual(
-            json.loads((self.root / "run/receipt.json").read_text())["status"],
-            r["status"],
+            marker["schema"], "kdm6.native_host_preflight.budget_completion.v1"
         )
+        self.assertEqual(marker["receipt_sha256"], b.digest(receipt_path))
+        self.assertEqual(marker["plan_sha256"], r["plan_sha256"])
 
     def test_elapsed_covers_producer_output_write(self):
         self.commands[1] = self.command("success")
@@ -247,6 +252,166 @@ class BudgetTest(unittest.TestCase):
             with self.assertRaisesRegex(b.BudgetError, "stub missing or changed"):
                 self.run_adapter()
         self.assertFalse((self.root / "run").exists())
+
+    def test_double_sigterm_does_not_interrupt_cleanup(self):
+        self.commands[1] = self.command("term_ignoring_child")
+        marker = self.root / "cleanup_started"
+        original = b._terminate
+
+        def observed(proc, deadline):
+            marker.write_text(str(proc.pid))
+            return original(proc, deadline)
+
+        with mock.patch.object(b, "_terminate", side_effect=observed):
+            proc = multiprocessing.get_context("fork").Process(target=self.run_adapter)
+            proc.start()
+            try:
+                deadline = time.monotonic() + 5
+                while (
+                    time.monotonic() < deadline
+                    and not (self.root / "run/001/stdout.bin").exists()
+                ):
+                    time.sleep(0.02)
+                self.assertTrue((self.root / "run/001/stdout.bin").exists())
+                time.sleep(0.3)
+                os.kill(proc.pid, signal.SIGTERM)
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline and not marker.exists():
+                    time.sleep(0.01)
+                self.assertTrue(marker.exists())
+                time.sleep(0.1)
+                os.kill(proc.pid, signal.SIGTERM)
+                proc.join(5)
+                self.assertFalse(proc.is_alive())
+                r = json.loads((self.root / "run/receipt.json").read_text())
+                self.assertEqual(r["status"], "INCOMPLETE")
+                self.assertEqual(
+                    [x["status"] for x in r["calls"]], ["failed", "skipped", "skipped"]
+                )
+                self.assertEqual(r["signals"].count(signal.SIGTERM), 2)
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(int(marker.read_text()), 0)
+                listing = subprocess.run(
+                    ["ps", "-axo", "pgid=,stat="],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout
+                live = [
+                    line
+                    for line in listing.splitlines()
+                    if len(line.split()) >= 2
+                    and line.split()[0] == marker.read_text()
+                    and not line.split()[1].startswith("Z")
+                ]
+                self.assertEqual(live, [])
+            finally:
+                if proc.is_alive():
+                    proc.kill()
+                    proc.join()
+
+    def test_initial_validation_time_counts_against_budget(self):
+        self.reference["limits"]["wall_seconds_max"] = 2.0
+        self.plan["limits"]["wall_seconds_max"] = 2.0
+        original = b.validate
+
+        def delayed(*args, **kwargs):
+            time.sleep(2.2)
+            return original(*args, **kwargs)
+
+        with mock.patch.object(b, "validate", side_effect=delayed):
+            r = self.run_adapter()
+        self.assertEqual(r["status"], "INCOMPLETE")
+        self.assertGreaterEqual(r["elapsed_seconds"], 2.2)
+        self.assertEqual(
+            [x["status"] for x in r["calls"]], ["skipped", "skipped", "skipped"]
+        )
+        self.assertFalse((self.root / "run/001").exists())
+
+    def test_final_receipt_delay_counts_and_is_persisted_incomplete(self):
+        self.reference["limits"]["wall_seconds_max"] = 2.0
+        self.plan["limits"]["wall_seconds_max"] = 2.0
+        original = b._write_receipt
+        count = 0
+
+        def delayed(path, receipt):
+            nonlocal count
+            count += 1
+            if count == 4:
+                time.sleep(2.2)
+            original(path, receipt)
+
+        with mock.patch.object(b, "_write_receipt", side_effect=delayed):
+            r = self.run_adapter()
+        self.assertEqual(r["status"], "INCOMPLETE")
+        self.assertGreaterEqual(r["elapsed_seconds"], 2.2)
+        stored = json.loads((self.root / "run/receipt.json").read_text())
+        self.assertEqual(stored["status"], "INCOMPLETE")
+        self.assertGreaterEqual(stored["elapsed_seconds"], 2.2)
+        self.assertFalse((self.root / "run/completion.json").exists())
+
+    def test_final_receipt_failure_is_explicit_and_not_success(self):
+        original = b._write_receipt
+        count = 0
+
+        def failing(path, receipt):
+            nonlocal count
+            count += 1
+            if count == 4:
+                raise OSError("synthetic fsync failure")
+            original(path, receipt)
+
+        with mock.patch.object(b, "_write_receipt", side_effect=failing):
+            with self.assertRaisesRegex(
+                b.FinalReceiptError, "final receipt write failed"
+            ) as caught:
+                self.run_adapter()
+        self.assertEqual(caught.exception.receipt["status"], "INCOMPLETE")
+        stored = json.loads((self.root / "run/receipt.json").read_text())
+        self.assertEqual(stored["status"], "INCOMPLETE")
+        self.assertIn("final receipt write failed", stored["reason"])
+
+    def test_failed_overrun_correction_never_has_completion_marker(self):
+        self.reference["limits"]["wall_seconds_max"] = 2.0
+        self.plan["limits"]["wall_seconds_max"] = 2.0
+        original = b._write_receipt
+        count = 0
+
+        def delayed_then_fail(path, receipt):
+            nonlocal count
+            count += 1
+            if count == 4:
+                time.sleep(2.2)
+            if count == 5:
+                raise OSError("correction write failed")
+            original(path, receipt)
+
+        with mock.patch.object(b, "_write_receipt", side_effect=delayed_then_fail):
+            with self.assertRaises(b.FinalReceiptError):
+                self.run_adapter()
+        self.assertFalse((self.root / "run/completion.json").exists())
+        stored = json.loads((self.root / "run/receipt.json").read_text())
+        self.assertEqual(stored["status"], "INCOMPLETE")
+
+    def test_completion_marker_write_overrun_removes_marker(self):
+        self.reference["limits"]["wall_seconds_max"] = 2.0
+        self.plan["limits"]["wall_seconds_max"] = 2.0
+        original = b._write_receipt
+
+        def delayed(path, receipt):
+            if path.name == "completion.json":
+                time.sleep(2.2)
+            original(path, receipt)
+
+        with mock.patch.object(b, "_write_receipt", side_effect=delayed):
+            r = self.run_adapter()
+        self.assertEqual(r["status"], "INCOMPLETE")
+        self.assertIn("completion marker", r["reason"])
+        self.assertFalse((self.root / "run/completion.json").exists())
+        self.assertEqual(
+            json.loads((self.root / "run/receipt.json").read_text())["status"],
+            "INCOMPLETE",
+        )
 
     def test_optional_skip_only_and_budget_cap(self):
         with self.assertRaisesRegex(b.BudgetError, "optional"):
