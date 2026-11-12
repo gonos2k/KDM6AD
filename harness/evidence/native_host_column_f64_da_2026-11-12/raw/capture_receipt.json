@@ -1,0 +1,94 @@
+{
+  "schema": "kdm6.host_selected_f64_da_boundary.capture_calls.v1",
+  "parent_receipt_sha256": "0642157fe6277c4dbc7132661a58edd4a33b668b2ccaee02d0322492d3c83081",
+  "calls": [
+    {
+      "th_word": "4074002793cded6a",
+      "output_path": "parity_calls/4074002793cded6a_capture_on.json",
+      "output_sha256": "9a4e2ec34a323ba0eba462c1bed9e1c2a259f0066cffba50e6bdf12d0bc63931",
+      "capture_gzip_path": "parity_calls/4074002793cded6a_capture.csv.gz",
+      "capture_gzip_sha256": "db7b4ce3c8b08f1e4f0493031a212fd37a4ea7e4467e88adf4a1a5af31017f38",
+      "capture_csv_sha256": "58dc779bd9432a5d579af9411bea92efcb992f997622616b3051b340e6cf8531",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_on",
+        "4074002793cded6a"
+      ],
+      "capture_environment": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/tmpoo2889d0",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "th_word": "4074005089907cc6",
+      "output_path": "parity_calls/4074005089907cc6_capture_on.json",
+      "output_sha256": "c042dc59ff603c9b41e1364def3ac413e04d9d525e5b2bd1e2e5f9ffca48ec77",
+      "capture_gzip_path": "parity_calls/4074005089907cc6_capture.csv.gz",
+      "capture_gzip_sha256": "c9638849ea10f4d13302fa002cb3ca9ff108b51bac7d530fc346f8ef97bd51e7",
+      "capture_csv_sha256": "5c7fdf88dd489c690eef863782425ac245bbb67fef0264e58e2c2e17fd4dc78e",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_on",
+        "4074005089907cc6"
+      ],
+      "capture_environment": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/tmpdgr4yxlk",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "th_word": "4074005089907cc7",
+      "output_path": "parity_calls/4074005089907cc7_capture_on.json",
+      "output_sha256": "e83ffc44da38ebbd0e90f4c988c8c7d3395dcc14d33915a7975f98503e262df9",
+      "capture_gzip_path": "parity_calls/4074005089907cc7_capture.csv.gz",
+      "capture_gzip_sha256": "f6dfc7eba43928eeaee6379bc5e67257be0a058c35552fedf36bb47095ee73f8",
+      "capture_csv_sha256": "10c7646e4d829839b3fd364c6d774ce479ab19044d0ed70f53e7b8c223d8fdac",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_on",
+        "4074005089907cc7"
+      ],
+      "capture_environment": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/tmpc5gl_vx9",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    },
+    {
+      "th_word": "407400797f530c23",
+      "output_path": "parity_calls/407400797f530c23_capture_on.json",
+      "output_sha256": "35d32e9a939e79302ece51a593f2f8f3e7f79c3cb4c624169349012dcf651f5a",
+      "capture_gzip_path": "parity_calls/407400797f530c23_capture.csv.gz",
+      "capture_gzip_sha256": "65c8fc6b206112fc13163c3cc2e9fd6f1955a21a282da2f959c8d55f03110303",
+      "capture_csv_sha256": "0696ec8eab64dffa0388d619fa2310eccd1dd88c33b3e85c537e62dc9f907e4e",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_on",
+        "407400797f530c23"
+      ],
+      "capture_environment": {
+        "KDM6_NATIVE_CAPTURE_DIR": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/tmp4lc7tbdu",
+        "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+        "KDM6_NATIVE_CAPTURE_CALL": "1",
+        "KDM6_NATIVE_CAPTURE_B": "0",
+        "KDM6_NATIVE_CAPTURE_MAX_ROWS": "200000",
+        "KDM6_NATIVE_CAPTURE_MAX_BYTES": "134217728"
+      }
+    }
+  ]
+}

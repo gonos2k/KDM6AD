@@ -1,0 +1,20 @@
+{
+  "schema": "kdm6.host_selected_f64_da_ctypes_receipt.v1",
+  "created": "2026-11-12T11:59:32.597834+09:00",
+  "command": "DYLD_LIBRARY_PATH=/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 python3 f64_da_probe_20261112/probe.py",
+  "cwd": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111",
+  "python": "/opt/local/bin/python3",
+  "script_sha256": "4abed355556f390d639b8ae4277ee683d3d1cd26f116c7907ef4d35780bcc49f",
+  "result_sha256": "8fbeb9398064fc3e3747e7f5e6862a4f09f159ab102794be29d13e0dd7e6a81d",
+  "torch_dependency_sha256": {
+    "libtorch.dylib": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+    "libtorch_cpu.dylib": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+    "libc10.dylib": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f"
+  },
+  "initial_attempt": {
+    "status": "failed before ABI call",
+    "reason": "ctypes dlopen lacked LC_RPATH / DYLD_LIBRARY_PATH for @rpath/libtorch.dylib",
+    "resolution": "set DYLD_LIBRARY_PATH before launching Python"
+  },
+  "limitations": "Single selected host column and production-default f64 state map only. No branch capture, derivative finite-difference check, f32 derivative or host tile parity."
+}

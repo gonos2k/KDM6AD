@@ -1,0 +1,223 @@
+{
+  "schema": "kdm6.host_selected_f64_da_boundary.receipt.v1",
+  "timestamp": "2026-11-12T12:08:24.169852+09:00",
+  "initial_command": "DYLD_LIBRARY_PATH=/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 python3 probe.py > run.log 2>&1",
+  "interior_command": "DYLD_LIBRARY_PATH=/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 python3 interior_ad_fd.py > interior_ad_fd.log 2>&1",
+  "python": "/opt/local/bin/python3",
+  "files": {
+    "probe.py": "e0ec2183f28cd1c397e1e6ed6f955e9fccd71fbb909b14fe30000a153f2494e4",
+    "result.json": "c2a5260e2d1d3e33bf0bad718850394e72deeae7d1e7e4fa34ec84207a54b179",
+    "run.log": "96b7123f081415e9c2bc0d47d2105b93cd17f0e6eb85de9c36d003c7c5914364",
+    "interior_ad_fd.py": "c34e40190bbcd4feb35642245f17c594d22ff0a1796de4bb258933954fb7c8ad",
+    "interior_ad_fd.json": "0cc5a76fcef89bd9e540e55ef2acd7cfa60f837250115dce5762bb9d1f461ddc",
+    "interior_ad_fd.log": "6598f605d7bf55d7d82beb6bddcf87d8715f951b455ed9373c827f23d7dabca3"
+  },
+  "torch_dylibs": {
+    "libtorch.dylib": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+    "libtorch_cpu.dylib": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+    "libc10.dylib": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f"
+  },
+  "independent_parity_calls": [
+    {
+      "path": "parity_calls/4073ff66c0000000_installed_value.json",
+      "sha256": "c18b9c2216b6d66a7ddb914733efc8c6733199fc2db609679346765112615564",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_value",
+        "4073ff66c0000000"
+      ]
+    },
+    {
+      "path": "parity_calls/4073ff66c0000000_installed_graph.json",
+      "sha256": "ae3a981130e18e8e6ddb9db3cdec9cfa97057a1b947ff24be0daa8c86a194a9e",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_graph",
+        "4073ff66c0000000"
+      ]
+    },
+    {
+      "path": "parity_calls/4073ff66c0000000_capture_value.json",
+      "sha256": "0c388141c8a7d2c0996c988b2887852792ff04b6053a6d2f29bd439126aa0a6e",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_value",
+        "4073ff66c0000000"
+      ]
+    },
+    {
+      "path": "parity_calls/4073ff66c0000000_capture_graph.json",
+      "sha256": "92b314c72a96cdc803dbf8af26aa83a945a12fef6debfd6e0c7c279419b7155d",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_graph",
+        "4073ff66c0000000"
+      ]
+    },
+    {
+      "path": "parity_calls/4074002793cded6a_installed_value.json",
+      "sha256": "798f90830b5b67b746b472371ea53bfec33f26697e1e2042fb6588778366a2e1",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_value",
+        "4074002793cded6a"
+      ]
+    },
+    {
+      "path": "parity_calls/4074002793cded6a_installed_graph.json",
+      "sha256": "eda1dda2c425d09a4b4ca2849d786e3b75ee96173f71cbdac5369966f2554c37",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_graph",
+        "4074002793cded6a"
+      ]
+    },
+    {
+      "path": "parity_calls/4074002793cded6a_capture_value.json",
+      "sha256": "70f3e59463811adce380d7a2407e3fa78edf6b0c0aa71f0b3fbb017debbb3ba5",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_value",
+        "4074002793cded6a"
+      ]
+    },
+    {
+      "path": "parity_calls/4074002793cded6a_capture_graph.json",
+      "sha256": "3cde32128f3958a4d41c0f83e9f8ea7a15a23307414b75ab5e79b07755a829ee",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_graph",
+        "4074002793cded6a"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc6_installed_value.json",
+      "sha256": "b3ca778e1445f4c9f7236caf7b0b96461c8835b162977bdf1b157bc74aec4b82",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_value",
+        "4074005089907cc6"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc6_installed_graph.json",
+      "sha256": "ced6c666e770fa0345fffd541e7e4acb401b14345073a5020f18bbc8466973a0",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_graph",
+        "4074005089907cc6"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc6_capture_value.json",
+      "sha256": "c6604cb23ff6a3225e3170603c2823f08f453047dec94143bc24147fbd829325",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_value",
+        "4074005089907cc6"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc6_capture_graph.json",
+      "sha256": "10f9ca1c9ff93d0d1489f752d5a5863da50bc3a4bedd52a704270e098260047a",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_graph",
+        "4074005089907cc6"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc7_installed_value.json",
+      "sha256": "160d6d88b42fc76e59bdd1465bedc817f6338e4ff76e37e39514dfb96a901e47",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_value",
+        "4074005089907cc7"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc7_installed_graph.json",
+      "sha256": "78efd3e4bc1d7f90b255c6e55b92a0c73bdf09e622baa6f12e4f6ab3f13c3a42",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_graph",
+        "4074005089907cc7"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc7_capture_value.json",
+      "sha256": "a814990ec31367f93e28c56ace23e85328042086b47e0cd8ceb97963eb2ed06f",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_value",
+        "4074005089907cc7"
+      ]
+    },
+    {
+      "path": "parity_calls/4074005089907cc7_capture_graph.json",
+      "sha256": "0fa80466be9aee6bfd67ecb0180f10f603c6134af7bde86e4c021c1fd33b4e7f",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_graph",
+        "4074005089907cc7"
+      ]
+    },
+    {
+      "path": "parity_calls/407400797f530c23_installed_value.json",
+      "sha256": "456ad8f5e25036fb2b501607abb94dd7934442c9d57c1b0ed747ba2e5d41f9d4",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_value",
+        "407400797f530c23"
+      ]
+    },
+    {
+      "path": "parity_calls/407400797f530c23_installed_graph.json",
+      "sha256": "3d036e1f0356f1a79e0c3549e2a9a4e390dd6bbfaa0f458cd2013f679df65611",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "installed_graph",
+        "407400797f530c23"
+      ]
+    },
+    {
+      "path": "parity_calls/407400797f530c23_capture_value.json",
+      "sha256": "b994dee53190ad3291db22e134a797ee91fe1babe073f14018c4b5de21776273",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_value",
+        "407400797f530c23"
+      ]
+    },
+    {
+      "path": "parity_calls/407400797f530c23_capture_graph.json",
+      "sha256": "47b2d8b9d2fbb983d06716432cd0079e5c01d52cd204e27fc1aa1be99f0d7489",
+      "command": [
+        "/opt/local/bin/python3",
+        "/Users/yhlee/KDM6AD-k/host/research_evidence/native_host_tile_abi_20261111/f64_da_boundary_20261112/probe.py",
+        "capture_graph",
+        "407400797f530c23"
+      ]
+    }
+  ],
+  "scope": "single selected column; captured selected activation masks only; no all-process smoothness or host-tile inference"
+}

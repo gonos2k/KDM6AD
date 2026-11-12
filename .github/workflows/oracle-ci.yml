@@ -72,6 +72,7 @@ on:
       - 'harness/evidence/native_host_tile_abi_2026-11-11/**'
       - 'harness/evidence/native_host_column_f32_2026-11-11/**'
       - 'harness/evidence/native_host_column_f32_boundary_2026-11-12/**'
+      - 'harness/evidence/native_host_column_f64_da_2026-11-12/**'
       - 'harness/evidence/native_c3_c4_dsd_call_2026-11-01/**'
       - 'harness/evidence/native_c5_limiter_call_2026-11-01/**'
       - 'harness/ice_chain_applied_budget.py'
@@ -190,6 +191,7 @@ jobs:
           python -m unittest discover -s harness/evidence/native_host_tile_abi_2026-11-11 -v
           python -m unittest discover -s harness/evidence/native_host_column_f32_2026-11-11 -v
           python -m unittest discover -s harness/evidence/native_host_column_f32_boundary_2026-11-12 -v
+          python -m unittest discover -s harness/evidence/native_host_column_f64_da_2026-11-12 -v
 
       # The tests launch child Python CLIs. Propagate optimization to them too.
       - name: unittest (QNICE evidence, optimized)
@@ -244,3 +246,4 @@ jobs:
           python -O -m unittest discover -s harness/evidence/native_host_tile_abi_2026-11-11 -v
           python -O -m unittest discover -s harness/evidence/native_host_column_f32_2026-11-11 -v
           python -O -m unittest discover -s harness/evidence/native_host_column_f32_boundary_2026-11-12 -v
+          python -O -m unittest discover -s harness/evidence/native_host_column_f64_da_2026-11-12 -v

@@ -1,0 +1,3 @@
+[ 50%] Building CXX object CMakeFiles/rate_min_operator.dir/main.cpp.o
+[100%] Linking CXX executable rate_min_operator
+[100%] Built target rate_min_operator
