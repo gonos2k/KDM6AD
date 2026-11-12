@@ -168,3 +168,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-column-f64-da-2026-11-12]] — Exact f32-to-f64 host-column input mapping, separate f64 DA activation sides, branch-interior NC16 JVP/VJP versus directional differences and an isolated rate-minimum tie test.
 
 - [[sources/native-host-stored-analysis-ci-batch-2026-11-12]] — Full-output TH16 FD–JVP and f32/f64 baseline classifications, #583 suite timing, bounded evidence-CI execution and next shared-capture inventory.
+
+- [[sources/oracle-runner-review-and-number-coordinate-2026-11-12]] — Timeout child-group cleanup, approved private skips, CI provenance/profiling, research cache seeding and raw number-coordinate source review.

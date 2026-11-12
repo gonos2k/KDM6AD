@@ -1,0 +1,41 @@
+name: oracle-pip-cache-seed
+
+# Seed the research base-branch pip download cache only when its actual pinned
+# requirements or this seed policy change. PR-created caches are scoped to the
+# PR merge ref and cannot warm sibling PRs.
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [research/east_ice_radius_floor_packet]
+    paths:
+      - '.github/requirements/oracle-torch-cpu.txt'
+      - '.github/requirements/oracle-pypi.txt'
+      - '.github/workflows/oracle-pip-cache-seed.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: seed Oracle pip downloads
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            .github/requirements/oracle-torch-cpu.txt
+            .github/requirements/oracle-pypi.txt
+      - name: Install pinned dependencies and verify imports
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .github/requirements/oracle-torch-cpu.txt
+          pip install -r .github/requirements/oracle-pypi.txt
+          python -c 'import torch,numpy,pytest,netCDF4,pyproj; print("torch",torch.__version__,"numpy",numpy.__version__,"pytest",pytest.__version__,"netCDF4",netCDF4.__version__,"pyproj",pyproj.__version__)'
