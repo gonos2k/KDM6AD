@@ -1,4 +1,7 @@
 #include "kdm6/satadj.h"
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+#include "kdm6/batch5_capture.h"
+#endif
 
 namespace kdm6 {
 namespace satadj {
@@ -76,6 +79,25 @@ SatAdjOutputs saturation_adjustment_torch(
     // old is_sub_with_cloud gate blocked it). pcond>=0 with qc>0 makes -qc/dt<0
     // unreachable, so the bare gate is exactly the evap-exhausted + qc==0 set.
     auto cloud_complete_evap = (pcond == (-qc / dtcld));
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        const bool top = batch5::top_first();
+        batch5::full("satadj_inner", "t_input", t, top);
+        batch5::full("satadj_inner", "q_input", q, top);
+        batch5::full("satadj_inner", "qc_input", qc, top);
+        batch5::full("satadj_inner", "qs1", qs1, top);
+        batch5::full("satadj_inner", "xl", xl, top);
+        batch5::full("satadj_inner", "cpm", cpm, top);
+        batch5::full("satadj_inner", "denom", denom, top);
+        batch5::full("satadj_inner", "work1", work1, top);
+        batch5::full("satadj_inner", "cond_path", cond_path, top);
+        batch5::full("satadj_inner", "evap_path", evap_path, top);
+        batch5::full("satadj_inner", "is_super", is_super, top);
+        batch5::full("satadj_inner", "is_sub_with_cloud", is_sub_with_cloud, top);
+        batch5::full("satadj_inner", "pcond", pcond, top);
+        batch5::full("satadj_inner", "cloud_complete_evap", cloud_complete_evap, top);
+    }
+#endif
     return SatAdjOutputs{/*pcond=*/pcond, /*cloud_complete_evap=*/cloud_complete_evap};
 }
 

@@ -1,6 +1,6 @@
 # 동일 호스트 열의 실제 계측 실행 준비 점검
 
-이번 점검은 #591에서 수정한 합성 감독자·FD 입력 계약을 **실제 DSO/ABI 생산자**로 연결하기 전에 source, 빌드 자산, 필요한 피연산자를 대조한 결과다. native `(203,149)` 열의 45개 f64 입력·100회 호출·900초 한도는 [기존 계획](../harness/evidence/native_host_preflight_2026-11-12/README.md)에 고정돼 있다. 격리 소스의 정적 archive와 합성 sidecar 실행 파일을 빌드해 표적 CTest 1개를 통과했고, 이어 격리 계측 DSO를 빌드·로드했다. **KDM 기호를 호출하거나 모델을 실행하지 않았다.**
+이번 점검은 #591에서 수정한 합성 감독자·FD 입력 계약을 **실제 DSO/ABI 생산자**로 연결하기 전에 source, 빌드 자산, 필요한 피연산자를 대조한 결과다. native `(203,149)` 열의 45개 f64 입력·100회 호출·900초 한도는 [기존 계획](../harness/evidence/native_host_preflight_2026-11-12/README.md)에 고정돼 있다. 아래의 첫 격리 빌드는 이력으로 남긴다. 확장된 공개 소스와 새 격리 빌드의 현재 범위는 [batch5 소스 보고서](NATIVE_HOST_BATCH5_SOURCE_SCAFFOLD_20261113.md)에 정리했다. **KDM 기호를 호출하거나 모델을 실행하지 않았다.**
 
 ## P3 문구 정정
 
@@ -24,7 +24,7 @@
 
 비공개 격리 사본에 macro-gated C++ sidecar **초안**을 만들고 runtime·coordinator·thermo의 일부 원시 값과 mask 지점에 좁은 hook을 연결했다. 이는 28개 측정 항목이나 19개 새 마스크의 완성, 모든 substep의 coverage, 실제 침강 적용량의 귀속을 뜻하지 않는다. 격리 DSO의 기호 export와 loader 경로는 확인했지만, graph 수명·출력 비침습성과 실제 호출 출처는 아직 입증되지 않았다. 비공개 runner의 등록 실행 진입점도 차단 상태다.
 
-비공개 소스의 정적 hook 대조는 **191개 원자 항목 중 45개에 직접 연결 가능한 hook 조각**을 찾았고, 146개는 이 검사로 직접 hook을 증명하지 못했다. 제안 마스크 19개 중 16개에는 부분적인 소스 조각이 있지만 셋(`main_transport_gate`, `ice_transport_gate`, `progb_density_gate`)에는 직접 조각이 없다. 이 숫자는 **소스 연결의 하한적 목록**이며 실제 호출에서 방출된 값·mask 또는 live 접선의 수가 아니다. 정적 대조 기록은 비공개 연구 경로에 있으므로 공개 재생의 검증 대상에도 포함하지 않는다. 28개 요구 그룹은 모두 차단 상태다.
+첫 좁은 소스의 정적 hook 대조는 **191개 원자 항목 중 45개**에 직접 연결 가능한 조각을 찾았다. 이후 소스 확장과 함께 수행한 새 감사에서는 **107개**로 늘었다. 두 숫자 모두 실제 호출에서 방출된 값·mask 또는 live 접선의 수가 아니다. 새 감사의 공개 재생 범위는 [batch5 소스 보고서](NATIVE_HOST_BATCH5_SOURCE_SCAFFOLD_20261113.md)와 그 패킷에 구분해 둔다. 28개 요구 그룹은 여전히 모두 차단 상태다.
 
 격리 합성 빌드는 `KDM6_BATCH5_RESEARCH_CAPTURE=ON`, `-ffp-contract=off`, 테스트의 `-UNDEBUG` 조건에서 성공했다. 39층의 서로 다른 값을 사용한 top-first/bottom-first 원시 값·층 메타데이터, 잘못된 shape, thread 분리, graph 모드 값 읽기 거부를 CTest에서 확인했다. 합성 시험 영수증 SHA-256은 `de10381719d44d2e69bf83d9347d855073a6cdea9180e4568d5241e4d6b86257`이다. 이어 만든 격리 DSO SHA-256은 `92338de6a2f695c3dc49c8bbf7871bc705e775200fbcbffdb5f9b72ad02e3c75`이고, 다섯 batch5 기호와 기존 f64 joint JVP/VJP 기호의 export 및 loader 경로를 확인했다. DSO 영수증 SHA-256은 `cacd8b1bc2817139cb940b50ffa56f79f5f254716ee81dfeddec96a08e95037e`이다. 두 영수증은 비공개 격리 빌드 자료이며 **실제 KDM 출력·비침습성·중간 접선의 검증 자료는 아니다.**
 

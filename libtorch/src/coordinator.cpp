@@ -5,6 +5,9 @@
 // torch::where + multiplicative mask (subgradient at boundary 0).
 //
 #include "kdm6/coordinator.h"
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+#include "kdm6/batch5_capture.h"
+#endif
 #include "kdm6/constants.h"
 #include "kdm6/ops.h"
 #include "kdm6/fconst.h"
@@ -849,6 +852,9 @@ CoordinatorState kdm62d_one_step(
     const torch::Tensor& entry_cpm,
     const torch::Tensor& entry_xl
 ) {
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::micro_step();
+#endif
 #ifdef KDM6_NATIVE_SCALAR_CAPTURE
     ++scalar_substep;
     ScalarCapture scalar_capture_scope;
@@ -985,18 +991,48 @@ CoordinatorState kdm62d_one_step(
     // number. Inert in unclamped cells (snap == identity); gated qc≥qmin & nc≥ncmin
     // (F:1638). Tensor-ops only ⇒ autograd-safe.
     auto nc_orig1 = working1b.nc;
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site("nc_snap1_lambda");
+#endif
     auto nc_snap1 = limit_number_for_lamda(
         working1b.qc, nc_orig1, forcing.dend,
         pidnc_snap, constants::DMC, constants::LAMDACMIN, constants::LAMDACMAX,
         constants::EPS, constants::NCMIN);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site(nullptr);
+#endif
     // Fortran F:1638 gates this re-slope snap on the PER-CELL ncmin (ncmin_sea=10 /
     // ncmin_land=100, F:820/822), NOT the scalar DSD floor NCMIN=1e-2. limit_number_for_lamda
     // uses the scalar, so restore cells below the per-cell floor — a near-empty cell
     // (NCMIN ≤ nc < ncmin_cell) must NOT be snapped (Codex stop-review). Tests pass
     // ncmin_for_slope=nullopt ⇒ scalar gate (unchanged). autograd-safe where.
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    torch::Tensor batch5_nc_snap1_gate;
+    if (ncmin_for_slope.has_value()) {
+        batch5_nc_snap1_gate = nc_orig1 >= *ncmin_for_slope;
+        working1b.nc = torch::where(batch5_nc_snap1_gate, nc_snap1, nc_orig1);
+    } else {
+        working1b.nc = nc_snap1;
+    }
+#else
     working1b.nc = ncmin_for_slope.has_value()
         ? torch::where(nc_orig1 >= *ncmin_for_slope, nc_snap1, nc_orig1)
         : nc_snap1;
+#endif
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("nc_snap1", "nc_before", nc_orig1, false);
+        batch5::full("nc_snap1", "nc_candidate", nc_snap1, false);
+        batch5::full("nc_snap1", "nc_selected", working1b.nc, false);
+        batch5::full("nc_snap1", "qc", working1b.qc, false);
+        batch5::full("nc_snap1", "density", forcing.dend, false);
+        if (ncmin_for_slope.has_value()) {
+            batch5::full("nc_snap1", "ncmin", *ncmin_for_slope, false);
+            batch5::full("nc_snap1", "nc_ge_ncmin", batch5_nc_snap1_gate, false);
+            batch5::full("nc_snap1", "nc_eq_ncmin", nc_orig1 == *ncmin_for_slope, false);
+        }
+    }
+#endif
     // Rebuild n0c CONSISTENT with the snapped nc. Fortran F:1640-1649: for ACTIVE cloud
     // (qci≥qmin & nci≥ncmin) n0c comes from the snap's OWN lamda —
     //   lamdc = clamp((pidnc·nci_raw/(den·qci))^(1/dmc), lamdacmin, lamdacmax)   [F:1640/1643/1647]
@@ -1168,14 +1204,44 @@ CoordinatorState kdm62d_one_step(
     // snapped nc; the C++ previously fed the raw larger nc. Gate qc≥qmin & nc≥ncmin
     // (F:1638, supcol-independent ⇒ fires for warm onset cells). autograd-safe.
     auto nc_orig2 = working.nc;
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site("nc_snap2_lambda");
+#endif
     auto nc_snap2 = limit_number_for_lamda(
         working.qc, nc_orig2, forcing.dend,
         pidnc_snap, constants::DMC, constants::LAMDACMIN, constants::LAMDACMAX,
         constants::EPS, constants::NCMIN);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site(nullptr);
+#endif
     // Per-cell ncmin gate (Fortran F:1638, ncmin_sea/land=10/100), not scalar NCMIN.
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    torch::Tensor batch5_nc_snap2_gate;
+    if (ncmin_for_slope.has_value()) {
+        batch5_nc_snap2_gate = nc_orig2 >= *ncmin_for_slope;
+        working.nc = torch::where(batch5_nc_snap2_gate, nc_snap2, nc_orig2);
+    } else {
+        working.nc = nc_snap2;
+    }
+#else
     working.nc = ncmin_for_slope.has_value()
         ? torch::where(nc_orig2 >= *ncmin_for_slope, nc_snap2, nc_orig2)
         : nc_snap2;
+#endif
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("nc_snap2", "nc_before", nc_orig2, false);
+        batch5::full("nc_snap2", "nc_candidate", nc_snap2, false);
+        batch5::full("nc_snap2", "nc_selected", working.nc, false);
+        batch5::full("nc_snap2", "qc", working.qc, false);
+        batch5::full("nc_snap2", "density", forcing.dend, false);
+        if (ncmin_for_slope.has_value()) {
+            batch5::full("nc_snap2", "ncmin", *ncmin_for_slope, false);
+            batch5::full("nc_snap2", "nc_ge_ncmin", batch5_nc_snap2_gate, false);
+            batch5::full("nc_snap2", "nc_eq_ncmin", nc_orig2 == *ncmin_for_slope, false);
+        }
+    }
+#endif
     // n0c CONSISTENT with the snapped nc (Fortran F:1640-1649) — cold_phase riming
     // (nsacw/ngacw/niacw) reads aux2.n0c. Rebuild from the snap's lamda (active cells),
     // NOT rslopec (boundary mismatch at nci==ncmin — Codex stop-review). See post-melt block.
@@ -1471,11 +1537,23 @@ CoordinatorState kdm62d_one_step(
     CAP("limited", scaled.cold.nmulcg); CAP("limited", scaled.cold.nmulrs); CAP("limited", scaled.cold.nmulrg);
     CAP("state_in", working.qi); CAP("state_in", working.ni);
 #endif
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("state_update", "nc_before", working.nc, false);
+        batch5::full("state_update", "nccn_before", working.nccn, false);
+    }
+#endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
         full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on,
         /*midpoint_trace=*/full_params.midpoint_trace
     );
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("state_update", "nc_after", new_state.nc, false);
+        batch5::full("state_update", "nccn_after", new_state.nccn, false);
+    }
+#endif
 #ifdef KDM6_NATIVE_SCALAR_CAPTURE
     CAP("state_out", new_state.qi); CAP("state_out", new_state.ni);
 #endif
@@ -1580,9 +1658,23 @@ CoordinatorState kdm62d_one_step(
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).
     new_state = reclassify_large_ice_to_snow(new_state, forcing.dend);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("reclass_ice", "nc_after", new_state.nc, false);
+        batch5::full("reclass_ice", "nccn_after", new_state.nccn, false);
+        batch5::full("reclass_ice", "qc_after", new_state.qc, false);
+    }
+#endif
 
     // F1g: rain → cloud (avedia_r ≤ 82μm).
     new_state = reclassify_small_rain_to_cloud(new_state, forcing.dend);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("reclass_rain", "nc_after", new_state.nc, false);
+        batch5::full("reclass_rain", "nccn_after", new_state.nccn, false);
+        batch5::full("reclass_rain", "qc_after", new_state.qc, false);
+    }
+#endif
 
     // F1g+: pcact activation + satadj on post-state-update + post-reclass
     // state. Mirrors Fortran module_mp_kdm6.F:2903-2943 sequence. The
@@ -1609,6 +1701,13 @@ CoordinatorState kdm62d_one_step(
 
     // F1h: paired threshold cleanup (catches reclass-induced remainders).
     new_state = apply_threshold_cleanup(new_state);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("cleanup", "nc_after", new_state.nc, false);
+        batch5::full("cleanup", "nccn_after", new_state.nccn, false);
+        batch5::full("cleanup", "qc_after", new_state.qc, false);
+    }
+#endif
 
     // F1i: DSD number limiters (lamda boundary snap + NRMAX/NCMAX caps).
 #ifdef KDM6_NATIVE_SCALAR_CAPTURE
@@ -1620,8 +1719,20 @@ CoordinatorState kdm62d_one_step(
         CAP("dsd_in", ncmin_gate);
     }
 #endif
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("dsd", "nc_before", new_state.nc, false);
+        batch5::full("dsd", "nccn_before", new_state.nccn, false);
+    }
+#endif
     new_state = apply_dsd_number_limiters(new_state, forcing.dend, /*qmin=*/1.0e-15,
                                           /*qcrmin=*/1.0e-9, /*ncmin_tensor=*/ncmin_for_slope);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("dsd", "nc_after", new_state.nc, false);
+        batch5::full("dsd", "nccn_after", new_state.nccn, false);
+    }
+#endif
 #ifdef KDM6_NATIVE_SCALAR_CAPTURE
     CAP("dsd_out", new_state.qi); CAP("dsd_out", new_state.ni);
 #endif
@@ -2304,6 +2415,24 @@ CoordinatorState state_update(
     // sequence (module_mp_kdm6.F:2937-2977). The mass balance here only
     // accounts for warm/cold/mf rates that Fortran applies BEFORE that block.
     auto nc_new = ops::fma_acc(state.nc + dnc_amount, dnc_rate_sum, dt_t);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("nc_budget", "state_nc", state.nc, false);
+        batch5::full("nc_budget", "nraut", warm.nraut, false);
+        batch5::full("nc_budget", "nccol", warm.nccol, false);
+        batch5::full("nc_budget", "nracw", warm.nracw, false);
+        batch5::full("nc_budget", "niacw", cold.niacw, false);
+        batch5::full("nc_budget", "naacw", cold.naacw, false);
+        batch5::full("nc_budget", "cold_mask_numeric", cold_mask, false);
+        batch5::full("nc_budget", "supcol", pre.supcol, false);
+        batch5::full("nc_budget", "ninuc", mf.ninuc, false);
+        batch5::full("nc_budget", "nfrzdtc", mf.nfrzdtc, false);
+        batch5::full("nc_budget", "pimlt_ni", mf.pimlt_ni, false);
+        batch5::full("nc_budget", "dnc_rate_sum", dnc_rate_sum, false);
+        batch5::full("nc_budget", "dnc_amount", dnc_amount, false);
+        batch5::full("nc_budget", "nc_before_final_clamp", nc_new, false);
+    }
+#endif
 
     // nrs(1) budget F:2624/2749 `max(nrs(1)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
     // ROOT-CAUSE FIX (strict per-branch, see qg): COLD collision number rates (niacr/nraci/nsacr/ngacr)
@@ -2585,23 +2714,83 @@ CoordinatorState apply_satadj_step(
     // pow(x, ACTK<1) grad = 0.6·x^-0.4 → inf at x=0 (rh_w=1) ⇒ NaN gradient; clamp the base
     // ≥ EPS for a finite one-sided subgradient (forward unchanged where sw_ratio≫EPS; ncact
     // gated to 0 at supsat≤0). Mirrors the Python apply_satadj_step_torch fix.
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    // Materialize each original inline operand ONCE; the same tensors feed the
+    // original minimum and the sidecar. No duplicate power evaluation.
+    auto batch5_fraction_one = torch::ones_like(sw_ratio);
+    auto batch5_fraction_pow = ops::safe_pow(sw_ratio, constants::ACTK);
+    auto activated_fraction = torch::minimum(batch5_fraction_one, batch5_fraction_pow);
+    if (batch5::enabled()) {
+        batch5::full("activation", "t_input", state.t, false);
+        batch5::full("activation", "qv_input", state.qv, false);
+        batch5::full("activation", "nc_input", state.nc, false);
+        batch5::full("activation", "nccn_input", state.nccn, false);
+        batch5::full("activation", "qs1", qs1, false);
+        batch5::full("activation", "qs1_safe", qs1_safe, false);
+        batch5::full("activation", "cpm", cpm, false);
+        batch5::full("activation", "cpm_safe", cpm_safe, false);
+        batch5::full("activation", "xl", xl, false);
+        batch5::full("activation", "sw_percent", sw_percent, false);
+        batch5::full("activation", "sw_ratio", sw_ratio, false);
+        batch5::full("activation", "fraction_one", batch5_fraction_one, false);
+        batch5::full("activation", "fraction_pow", batch5_fraction_pow, false);
+        batch5::full("activation", "fraction_min", activated_fraction, false);
+        batch5::full("activation", "fraction_lt", batch5_fraction_pow < batch5_fraction_one, false);
+        batch5::full("activation", "fraction_eq", batch5_fraction_pow == batch5_fraction_one, false);
+        batch5::full("activation", "fraction_gt", batch5_fraction_pow > batch5_fraction_one, false);
+        batch5::full("activation", "sw_positive", sw_percent > 0.0, false);
+    }
+#else
     auto activated_fraction = torch::minimum(
         torch::ones_like(sw_ratio),
         ops::safe_pow(sw_ratio, constants::ACTK)  // libm pow (bit-matches gfortran on float32)
     );
+#endif
     // Fortran F:2935-2936 `((nci3+nci1)*frac - nci1)`: strict IEEE two-rounding in
     // source order — (nccn+nc) rounds, *frac rounds, the subtract rounds (was an
     // fmsub mirror of -ffp-contract=fast before the IEEE transition; step-48 seed
     // class).
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    // Preserve the original add -> fma_acc -> clamp -> divide expression tree.
+    // The retained operands are the exact nodes passed to minimum, not copies
+    // computed on a parallel branch.
+    auto batch5_nc_sum = state.nccn + state.nc;
+    auto batch5_nc_numerator = ops::fma_acc(-state.nc, batch5_nc_sum, activated_fraction);
+    auto batch5_nc_nonnegative = torch::clamp(batch5_nc_numerator, /*min=*/0.0);
+    auto ncact_raw = batch5_nc_nonnegative / dtcld;
+    auto batch5_nccn_nonnegative = torch::clamp(state.nccn, /*min=*/0.0);
+    auto batch5_rate_cap = batch5_nccn_nonnegative / dtcld;
+    auto ncact = torch::minimum(ncact_raw, batch5_rate_cap);
+    if (batch5::enabled()) {
+        batch5::full("rate_cap", "nc_sum", batch5_nc_sum, false);
+        batch5::full("rate_cap", "numerator", batch5_nc_numerator, false);
+        batch5::full("rate_cap", "numerator_nonnegative", batch5_nc_nonnegative, false);
+        batch5::full("rate_cap", "raw", ncact_raw, false);
+        batch5::full("rate_cap", "nccn_nonnegative", batch5_nccn_nonnegative, false);
+        batch5::full("rate_cap", "cap", batch5_rate_cap, false);
+        batch5::full("rate_cap", "min_pre_sw", ncact, false);
+        batch5::full("rate_cap", "numerator_lt_zero", batch5_nc_numerator < 0.0, false);
+        batch5::full("rate_cap", "numerator_eq_zero", batch5_nc_numerator == 0.0, false);
+        batch5::full("rate_cap", "nccn_lt_zero", state.nccn < 0.0, false);
+        batch5::full("rate_cap", "nccn_eq_zero", state.nccn == 0.0, false);
+        batch5::full("rate_cap", "raw_lt_cap", ncact_raw < batch5_rate_cap, false);
+        batch5::full("rate_cap", "raw_eq_cap", ncact_raw == batch5_rate_cap, false);
+        batch5::full("rate_cap", "raw_gt_cap", ncact_raw > batch5_rate_cap, false);
+    }
+#else
     auto ncact_raw = torch::clamp(
         ops::fma_acc(-state.nc, state.nccn + state.nc, activated_fraction), /*min=*/0.0
     ) / dtcld;
     auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);
+#endif
     // CCN-activation gate (Fortran F:3051 `if(sw>0)`): gate on the DIVISION-based
     // sw_percent=(qv/qs1-1)*100 (matches Fortran sw, F:2996), NOT the subtraction
     // qv-qs1 — they flip oppositely in f32 at near-exact saturation, toggling the whole
     // CCN activation (the qc/nc satadj residual). sw_percent already computed above.
     ncact = torch::where(sw_percent > 0.0, ncact, torch::zeros_like(ncact));
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) batch5::full("rate_cap", "ncact_after_sw", ncact, false);
+#endif
     // SEED#3 (Fortran module_mp_kdm6.F:2908): the pcact mass constant
     //   K = 4.*pi*denr*(actr*1.E-6)**3
     // is evaluated by gfortran in REAL(4), left-to-right, with the cube as x*x*x
@@ -2663,6 +2852,26 @@ CoordinatorState apply_satadj_step(
 
     // Step 9: reservoir clamps (preserve NCCN_MIN/MAX band).
     auto nccn_final = torch::clamp(nccn_final_raw, constants::NCCN_MIN, constants::NCCN_MAX);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled()) {
+        batch5::full("activation_applied", "nc_pp", nc_pp, false);
+        batch5::full("activation_applied", "nccn_pp", nccn_pp, false);
+        batch5::full("activation_applied", "pcact", pcact, false);
+        batch5::full("activation_applied", "t_pp", t_pp, false);
+        batch5::full("activation_applied", "qs1_pp", qs1_pp, false);
+        batch5::full("activation_applied", "pcond", sat.pcond, false);
+        batch5::full("activation_applied", "cloud_complete_evap", sat.cloud_complete_evap, false);
+        batch5::full("activation_applied", "nc_evap_amount", nc_evap_amount, false);
+        batch5::full("activation_applied", "nc_final", nc_final, false);
+        batch5::full("activation_applied", "nccn_final_raw", nccn_final_raw, false);
+        batch5::full("activation_applied", "nccn_final", nccn_final, false);
+        batch5::full("activation_applied", "t_final", t_final, false);
+        batch5::full("activation_applied", "nccn_floor_lt", nccn_final_raw < constants::NCCN_MIN, false);
+        batch5::full("activation_applied", "nccn_floor_eq", nccn_final_raw == constants::NCCN_MIN, false);
+        batch5::full("activation_applied", "nccn_cap_gt", nccn_final_raw > constants::NCCN_MAX, false);
+        batch5::full("activation_applied", "nccn_cap_eq", nccn_final_raw == constants::NCCN_MAX, false);
+    }
+#endif
 
     // (nc6 root cause was the post-satadj apply_dsd_number_limiters cloud-snap gating on
     // scalar NCMIN instead of per-cell ncmin — fixed there, not here. satadj nc is correct.)
@@ -2690,7 +2899,17 @@ CoordinatorState apply_threshold_cleanup(
     double qcrmin
 ) {
     auto dtype = state.qc.dtype();
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    auto batch5_keep_qc_mask = state.qc > qmin;
+    auto keep_qc = batch5_keep_qc_mask.to(dtype);
+    if (batch5::enabled()) {
+        batch5::full("cleanup_mask", "qc", state.qc, false);
+        batch5::full("cleanup_mask", "keep_qc", batch5_keep_qc_mask, false);
+        batch5::full("cleanup_mask", "qc_eq_qmin", state.qc == qmin, false);
+    }
+#else
     auto keep_qc = (state.qc > qmin).to(dtype);
+#endif
     auto keep_qi = (state.qi > qmin).to(dtype);
     auto keep_qr = (state.qr > qcrmin).to(dtype);
     auto keep_qs = (state.qs > qcrmin).to(dtype);
@@ -2916,7 +3135,13 @@ torch::Tensor limit_number_for_lamda(
     auto dt = den.scalar_type();
     auto qf = q.to(dt);
     auto nf = n.to(dt);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    auto batch5_q_ge_threshold = qf >= q_thresh;
+    auto batch5_n_ge_threshold = nf >= n_thresh;
+    auto active = batch5_q_ge_threshold & batch5_n_ge_threshold;
+#else
     auto active = (qf >= q_thresh) & (nf >= n_thresh);
+#endif
     auto qden = torch::clamp(qf * den, /*min=*/eps);
     auto pidn_t = torch::full_like(nf, pidn);
     auto ratio = torch::clamp(pidn_t * nf / qden, /*min=*/eps);
@@ -2925,8 +3150,38 @@ torch::Tensor limit_number_for_lamda(
     auto lamda = ops::libm_exp(ops::libm_log(ratio) * static_cast<double>(1.0f / static_cast<float>(dm)));
     auto n_at_min = den * qf * std::pow(lamda_min, dm) / pidn;
     auto n_at_max = den * qf * std::pow(lamda_max, dm) / pidn;
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    auto batch5_lamda_le_min = lamda <= lamda_min;
+    auto batch5_lamda_ge_max = lamda >= lamda_max;
+    auto too_small = active & batch5_lamda_le_min;
+    auto too_large = active & batch5_lamda_ge_max;
+#else
     auto too_small = active & (lamda <= lamda_min);
     auto too_large = active & (lamda >= lamda_max);
+#endif
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    if (batch5::enabled() && !batch5::site().empty()) {
+        const char* label = batch5::site().c_str();
+        batch5::full(label, "qf", qf, batch5::top_first());
+        batch5::full(label, "nf", nf, batch5::top_first());
+        batch5::full(label, "density", den, batch5::top_first());
+        batch5::full(label, "qden", qden, batch5::top_first());
+        batch5::full(label, "ratio", ratio, batch5::top_first());
+        batch5::full(label, "lamda", lamda, batch5::top_first());
+        batch5::full(label, "n_at_min", n_at_min, batch5::top_first());
+        batch5::full(label, "n_at_max", n_at_max, batch5::top_first());
+        batch5::full(label, "q_ge_threshold", batch5_q_ge_threshold, batch5::top_first());
+        batch5::full(label, "n_ge_threshold", batch5_n_ge_threshold, batch5::top_first());
+        batch5::full(label, "lamda_le_min", batch5_lamda_le_min, batch5::top_first());
+        batch5::full(label, "lamda_ge_max", batch5_lamda_ge_max, batch5::top_first());
+        // Equality masks are additional observations, not operands of where.
+        batch5::full(label, "lamda_eq_min_observed", lamda == lamda_min, batch5::top_first());
+        batch5::full(label, "lamda_eq_max_observed", lamda == lamda_max, batch5::top_first());
+        batch5::full(label, "active", active, batch5::top_first());
+        batch5::full(label, "too_small", too_small, batch5::top_first());
+        batch5::full(label, "too_large", too_large, batch5::top_first());
+    }
+#endif
     return torch::where(too_small, n_at_min,
                         torch::where(too_large, n_at_max, nf));
 }
@@ -2959,16 +3214,36 @@ CoordinatorState apply_dsd_number_limiters(
     // e.g. nc≈6 in subsaturated cloud) were wrongly snapped UP (lamdc<=lamdacmin) to ~3.6e5
     // by the scalar gate (the nc6 residual); Fortran's per-cell gate skips them. Snap with
     // n_thresh=0 then where-gate by the per-cell ncmin so only nc>=ncmin cells snap.
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site("nc_dsd_lambda");
+#endif
     auto nc_snapped = limit_number_for_lamda(
         state.qc, state.nc, den,
         pidnc, constants::DMC,
         constants::LAMDACMIN, constants::LAMDACMAX,
         qmin, /*n_thresh=*/0.0
     );
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::site(nullptr);
+#endif
     auto ncmin_t = ncmin_tensor.has_value()
         ? ncmin_tensor.value().to(state.nc.scalar_type())
         : torch::full_like(state.nc, constants::NCMIN);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    auto batch5_dsd_ncmin_gate = state.nc >= ncmin_t;
+    auto nc_new = torch::where(batch5_dsd_ncmin_gate, nc_snapped, state.nc);
+    if (batch5::enabled()) {
+        batch5::full("dsd_inner", "nc_input", state.nc, false);
+        batch5::full("dsd_inner", "qc_input", state.qc, false);
+        batch5::full("dsd_inner", "ncmin", ncmin_t, false);
+        batch5::full("dsd_inner", "nc_snapped", nc_snapped, false);
+        batch5::full("dsd_inner", "nc_after_min_gate", nc_new, false);
+        batch5::full("dsd_inner", "nc_ge_ncmin", batch5_dsd_ncmin_gate, false);
+        batch5::full("dsd_inner", "nc_eq_ncmin", state.nc == ncmin_t, false);
+    }
+#else
     auto nc_new = torch::where(state.nc >= ncmin_t, nc_snapped, state.nc);
+#endif
     // apply_dsd_number_limiters implements the FINAL kdm62d block, whose ice
     // snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
     // — same qmin/ncmin pattern as the cloud snap (:2984) just above. The prior
@@ -2991,7 +3266,18 @@ CoordinatorState apply_dsd_number_limiters(
     auto nr_at_max = den * state.qr * std::pow(constants::LAMDARMAX, constants::DMR) / pidnr;
     auto nc_at_max = den * state.qc * std::pow(constants::LAMDACMAX, constants::DMC) / pidnc;
     nr_new = torch::where(nr_new > constants::NRMAX, nr_at_max, nr_new);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    auto batch5_dsd_ncmax_gate = nc_new > constants::NCMAX;
+    if (batch5::enabled()) {
+        batch5::full("dsd_inner", "nc_before_max_gate", nc_new, false);
+        batch5::full("dsd_inner", "nc_at_max", nc_at_max, false);
+        batch5::full("dsd_inner", "nc_gt_ncmax", batch5_dsd_ncmax_gate, false);
+        batch5::full("dsd_inner", "nc_eq_ncmax", nc_new == constants::NCMAX, false);
+    }
+    nc_new = torch::where(batch5_dsd_ncmax_gate, nc_at_max, nc_new);
+#else
     nc_new = torch::where(nc_new > constants::NCMAX, nc_at_max, nc_new);
+#endif
 
     return CoordinatorState{
         /*qv=*/state.qv,
@@ -3078,6 +3364,9 @@ SedimentationOutputs sedimentation_chain(
     auto w1_qi = work1_qi, wn_qi = workn_qi;
 
     for (int n = 1; n <= mstepmax_main; ++n) {
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+        batch5::phase("sedimentation_main", static_cast<std::uint64_t>(n));
+#endif
         sed::SubstepAdvectionInputs sin{
             adv_state,
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
@@ -3089,6 +3378,12 @@ SedimentationOutputs sedimentation_chain(
         // incoming tensor itself on that branch so its JVP/VJP is identity,
         // including at zero-moment min/clamp ties inside the unused candidate.
         auto active_main = (torch::clamp(mstep_col_main, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+        if (batch5::enabled()) {
+            batch5::column("sedimentation_gate", "active_main", active_main.squeeze(1));
+            batch5::column("sedimentation_gate", "mstep_main", mstep_col_main);
+        }
+#endif
         auto main_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
             return torch::where(active_main, candidate, before);
         };
@@ -3138,6 +3433,9 @@ SedimentationOutputs sedimentation_chain(
     // is set, else the passed-in initial — Fortran's ice loop reads work1(4) left by the main.
 
     for (int n = 1; n <= mstepmax_ice; ++n) {
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+        batch5::phase("sedimentation_ice", static_cast<std::uint64_t>(n));
+#endif
         sed::IceSubstepInputs iin{
             ice_state,
             fall_qi, fall_ni,
@@ -3146,6 +3444,12 @@ SedimentationOutputs sedimentation_chain(
         };
         auto out_i = ice_substep_fn(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
         auto active_ice = (torch::clamp(mstep_col_ice, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+        if (batch5::enabled()) {
+            batch5::column("sedimentation_gate", "active_ice", active_ice.squeeze(1));
+            batch5::column("sedimentation_gate", "mstep_ice", mstep_col_ice);
+        }
+#endif
         auto ice_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
             return torch::where(active_ice, candidate, before);
         };
@@ -3179,6 +3483,9 @@ SedimentationOutputs sedimentation_chain(
     auto fall_qg_b = fall_qg.index({Slice(), bottom});
     auto fall_qi_b = fall_qi.index({Slice(), bottom});
     auto delz_b = forcing.delz.index({Slice(), bottom});
+#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+    batch5::phase("sedimentation_surface", 0);
+#endif
     auto surface = sed::surface_accumulation_torch(
         fall_qr_b, fall_qs_b, fall_qg_b, fall_qi_b, delz_b, dtcld
     );
