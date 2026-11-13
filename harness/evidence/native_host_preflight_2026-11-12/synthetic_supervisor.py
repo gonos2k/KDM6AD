@@ -67,8 +67,10 @@ def supervise(plan, binding, commands, skipped, run_directory, *, root=scheduler
     There is deliberately no file-only witness creation API. The child is forked
     here, and only a zero exit and observed parent wall within the plan budget
     permit a witness. This synchronous helper does not enforce a parent watchdog;
-    an external watchdog must still handle a stuck child. No completion evidence
-    is produced if this parent itself is killed or wait fails.
+    an external watchdog must still handle a stuck child. Atomic publication
+    is the witness commitment point: interruption before it leaves no witness;
+    interruption afterward can leave a valid witness because child exit and
+    the full wall budget have already been checked.
     """
     directory = Path(run_directory)
     budget = float(plan["limits"]["wall_seconds_max"])

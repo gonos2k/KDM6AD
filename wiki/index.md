@@ -180,3 +180,5 @@ date_modified: 2026-10-26
 - [[sources/native-host-gate-receipt-2026-11-12]] — Diagnostic versus acceptance FD steps and source-only future receipt/seed/field/budget bridge; execution and scientific admission remain blocked.
 
 - [[sources/native-host-runner-closure-2026-11-13]] — Repeated-signal and full-budget synthetic runner fixes, baseline condition asset adapter and source-located but blocked field contract.
+
+- [[sources/native-host-execution-readiness-2026-11-13]] — Supervisor publication wording correction and DRAFT_BLOCKED actual-capture successor, with source/build/field blockers identified before any model call.
