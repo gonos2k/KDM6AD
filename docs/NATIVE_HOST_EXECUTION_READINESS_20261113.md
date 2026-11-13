@@ -1,6 +1,6 @@
 # 동일 호스트 열의 실제 계측 실행 준비 점검
 
-이번 점검은 #591에서 수정한 합성 감독자·FD 입력 계약을 **실제 DSO/ABI 생산자**로 연결하기 전에 source, 빌드 자산, 필요한 피연산자를 대조한 결과다. native `(203,149)` 열의 45개 f64 입력·100회 호출·900초 한도는 [기존 계획](../harness/evidence/native_host_preflight_2026-11-12/README.md)에 고정돼 있다. **새 계측 DSO를 빌드하거나 모델을 실행하지 않았다.**
+이번 점검은 #591에서 수정한 합성 감독자·FD 입력 계약을 **실제 DSO/ABI 생산자**로 연결하기 전에 source, 빌드 자산, 필요한 피연산자를 대조한 결과다. native `(203,149)` 열의 45개 f64 입력·100회 호출·900초 한도는 [기존 계획](../harness/evidence/native_host_preflight_2026-11-12/README.md)에 고정돼 있다. 격리 소스의 정적 archive와 합성 sidecar 실행 파일을 빌드해 표적 CTest 1개를 통과했고, 이어 격리 계측 DSO를 빌드·로드했다. **KDM 기호를 호출하거나 모델을 실행하지 않았다.**
 
 ## P3 문구 정정
 
@@ -22,11 +22,19 @@
 
 ## 소스 초안과 차단 상태
 
-비공개 격리 사본에 macro-gated C++ sidecar **초안**을 만들었지만 물리 source의 실제 측정 지점에는 연결하지 않았다. 새 DSO는 빌드하지 않았고, sidecar의 export·thread·graph 수명·비침습성도 검증하지 않았다. 비공개 runner 역시 기존 C ABI의 buffer·JVP/VJP 호출 준비와 합성 watchdog만 포함하며 등록 실행 진입점은 차단한다. 이 초안의 존재를 28개 측정 항목이나 19개 새 마스크의 구현으로 집계하지 않는다.
+비공개 격리 사본에 macro-gated C++ sidecar **초안**을 만들고 runtime·coordinator·thermo의 일부 원시 값과 mask 지점에 좁은 hook을 연결했다. 이는 28개 측정 항목이나 19개 새 마스크의 완성, 모든 substep의 coverage, 실제 침강 적용량의 귀속을 뜻하지 않는다. 격리 DSO의 기호 export와 loader 경로는 확인했지만, graph 수명·출력 비침습성과 실제 호출 출처는 아직 입증되지 않았다. 비공개 runner의 등록 실행 진입점도 차단 상태다.
+
+비공개 소스의 정적 hook 대조는 **191개 원자 항목 중 45개에 직접 연결 가능한 hook 조각**을 찾았고, 146개는 이 검사로 직접 hook을 증명하지 못했다. 제안 마스크 19개 중 16개에는 부분적인 소스 조각이 있지만 셋(`main_transport_gate`, `ice_transport_gate`, `progb_density_gate`)에는 직접 조각이 없다. 이 숫자는 **소스 연결의 하한적 목록**이며 실제 호출에서 방출된 값·mask 또는 live 접선의 수가 아니다. 정적 대조 기록은 비공개 연구 경로에 있으므로 공개 재생의 검증 대상에도 포함하지 않는다. 28개 요구 그룹은 모두 차단 상태다.
+
+격리 합성 빌드는 `KDM6_BATCH5_RESEARCH_CAPTURE=ON`, `-ffp-contract=off`, 테스트의 `-UNDEBUG` 조건에서 성공했다. 39층의 서로 다른 값을 사용한 top-first/bottom-first 원시 값·층 메타데이터, 잘못된 shape, thread 분리, graph 모드 값 읽기 거부를 CTest에서 확인했다. 합성 시험 영수증 SHA-256은 `de10381719d44d2e69bf83d9347d855073a6cdea9180e4568d5241e4d6b86257`이다. 이어 만든 격리 DSO SHA-256은 `92338de6a2f695c3dc49c8bbf7871bc705e775200fbcbffdb5f9b72ad02e3c75`이고, 다섯 batch5 기호와 기존 f64 joint JVP/VJP 기호의 export 및 loader 경로를 확인했다. DSO 영수증 SHA-256은 `cacd8b1bc2817139cb940b50ffa56f79f5f254716ee81dfeddec96a08e95037e`이다. 두 영수증은 비공개 격리 빌드 자료이며 **실제 KDM 출력·비침습성·중간 접선의 검증 자료는 아니다.**
+
+과거 계측 소스의 `testing::record_stage`는 graph-connected 텐서를 보존한 선례지만, `stage.field`만으로 만든 map은 반복 substep의 값을 덮어쓸 수 있다. 새 초안은 순서 있는 event와 입력·호출·outer loop·substep 계열/순번·열·층·stage·field를 기록한다. 현재 C ABI는 버전·크기를 검사하는 **값 전용** 복사 경로만 제공하며 graph 모드의 원시 값 읽기를 거부한다. 21개 실제 표현 방향의 중간 JVP/VJP를 꺼내는 계약과 graph-handle 수명 검증은 아직 없다.
 
 [후속 successor 초안](../harness/evidence/native_host_execution_successor_2026-11-13/README.md)은 #588 부모 계획, #591 정책 버전, 45개 입력과 100개 호출을 유지한다. 소스 diff, 원자적 tensor catalog, 컴파일러, 새 DSO·의존성, loader, 외부 watchdog의 필수 hash는 모두 비어 있고 상태는 `DRAFT_BLOCKED`다. 합성 구조 시험이 통과해도 `EXECUTION_READY`로 바꾸지 않는다. 특히 새 19개 마스크는 #586의 1,170개 기준 마스크를 검사하는 현재 adapter가 수용하지 못하므로, 생산자·스키마·계획의 후속 버전을 **첫 실제 호출 전에 함께 고정**해야 한다.
 
 초안의 [원자적 소스 목록](../harness/evidence/native_host_execution_successor_2026-11-13/atomic_catalog_draft.json)은 28개 요구 그룹을 **191개 source-site·피연산자·차단 사유**와 19개 제안 마스크로 분해하고, 공개 `libtorch` 소스 10개 archive의 정확한 줄과 SHA로 대조한다. QV/QC/QR/QI/QS/QG 입출력, NC의 서로 다른 rate·적용 항, 7종 침강의 최상층/내부 후보와 출발·도착·바닥의 미해결 분리를 포함한다. 이 목록의 순서는 **카탈로그 순서**이지 실행 시각의 연산 순서가 아니다. 모든 새 기록은 아직 `BLOCKED`이며, inline minimum 노드와 실제 적용 수송량은 `UNRESOLVED`다. 초안 SHA를 successor에 연결했지만 실행 가능한 원자적 field-catalog 해시 칸은 계속 비어 있다.
+
+[의미를 정정한 v2 패치](../harness/evidence/native_host_execution_successor_2026-11-13/atomic_catalog_consumer_patch_v2.json)는 과거 `consumer.location` 191개를 먼저 설명용 `context_location`으로 분리한다. 전체 v2 목록은 해시로 고정된 v1과 작은 패치에서 결정적으로 재구성하고 결과 SHA까지 확인한다. 같은 함수의 소스 사용이 확인된 `dep_sum_c` → `xlwork2_cold`와 `t_new` → 반환 상태 두 건만 `VERIFIED_SOURCE_USE`로 표시한다. 나머지 189개 원자 항목과 제안 마스크 19개의 실제 소비자는 `UNVERIFIED`다. 두 건도 **소스 사용 관계**이지 실행된 graph·계측·미분 검증이 아니다. 기존 successor의 실행용 field-catalog pin은 계속 비어 있다.
 
 검증기는 제출된 목록 전체를 고정 SHA의 원본과 비교해 다른 주석 줄을 소비 지점으로 재해시한 자료도 거부한다. 이는 **현재 초안의 참조가 바뀌지 않았다는 보장**이며, 그 소스 줄이 실제 실행 graph의 올바른 원인·미분 노드라는 독립 증명은 아니다. 다음 카탈로그 개정에는 새 소스 핀과 검토가 필요하다.
 
