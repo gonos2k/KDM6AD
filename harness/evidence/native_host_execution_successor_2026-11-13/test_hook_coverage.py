@@ -6,7 +6,8 @@ class HookCoverageTests(unittest.TestCase):
     def setUpClass(cls):
         parent=json.loads((m.HERE/'atomic_catalog_draft.json').read_bytes());patch=json.loads((m.HERE/'atomic_catalog_consumer_patch_v2.json').read_bytes())
         cls.catalog=m.catalog_v2.materialize(patch,parent)
-        cls.sources={name:(m.ROOT/'src'/name).read_text() for name in m.SOURCE_SHA}
+        with m.source_replay.reconstructed_tree() as (root,_):
+            cls.sources={name:(root/'src'/name).read_text() for name in m.SOURCE_SHA}
     def test_pinned_source_summary_and_blockers(self):
         result=m.load();summary=m.summary(result)
         self.assertEqual(summary,json.loads((m.HERE/'hook_coverage_summary.json').read_bytes()))

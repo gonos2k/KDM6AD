@@ -1,7 +1,4 @@
 #include "kdm6/thermo.h"
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-#include "kdm6/batch5_capture.h"
-#endif
 #include "kdm6/ops.h"
 
 #include <cmath>
@@ -64,19 +61,7 @@ torch::Tensor compute_cpm(const torch::Tensor& q, const ThermoParams& p) {
     // source order (-ffp-contract=off; fma_acc is two-rounding).
     auto ab = p.cpd * (1.0 - q_safe);            // first product (scalar*tensor, individually rounded)
     auto cpv_t = torch::full_like(q_safe, p.cpv);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    auto batch5_cpm = ops::fma_acc(ab, q_safe, cpv_t);
-    if (batch5::enabled()) {
-        batch5::full("thermo_cpm", "q_input", q, batch5::top_first());
-        batch5::full("thermo_cpm", "q_safe", q_safe, batch5::top_first());
-        batch5::full("thermo_cpm", "q_eq_floor", q == p.qmin, batch5::top_first());
-        batch5::full("thermo_cpm", "q_lt_floor", q < p.qmin, batch5::top_first());
-        batch5::full("thermo_cpm", "cpm", batch5_cpm, batch5::top_first());
-    }
-    return batch5_cpm;
-#else
     return ops::fma_acc(ab, q_safe, cpv_t);    // ab + q_safe*cpv  (mul rounds, add rounds)
-#endif
 }
 
 torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
@@ -90,16 +75,7 @@ torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
     auto dt = t - p.t0c;
     auto acc = torch::full_like(t, p.xlv0);
     auto xlv1_t = torch::full_like(t, xlv1);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    auto batch5_xl = ops::fma_acc(acc, dt, xlv1_t, -1.0);
-    if (batch5::enabled()) {
-        batch5::full("thermo_xl", "t_input", t, batch5::top_first());
-        batch5::full("thermo_xl", "xl", batch5_xl, batch5::top_first());
-    }
-    return batch5_xl;
-#else
     return ops::fma_acc(acc, dt, xlv1_t, -1.0);  // xlv0 - (t-t0c)*xlv1
-#endif
 }
 
 torch::Tensor compute_supcol(const torch::Tensor& t, const ThermoParams& p) {
@@ -122,39 +98,9 @@ torch::Tensor compute_qs_water(const torch::Tensor& t, const torch::Tensor& pres
     // libm exp/log on the float32 operational path so qs1 bit-matches gfortran (the activation
     // seed: a single exp where Sleef!=libm by 1 ULP, amplified by the (q/qs1-1) cancellation).
     auto es = p.psat * ops::libm_exp(ops::libm_log(tr) * p.xa) * ops::libm_exp(p.xb * (1.0 - tr));
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    auto batch5_es_input = es;
-    auto batch5_es_cap = 0.99 * pres;
-    es = torch::minimum(batch5_es_input, batch5_es_cap);
-    if (batch5::enabled()) {
-        batch5::full("thermo_qs_water", "t_input", t, batch5::top_first());
-        batch5::full("thermo_qs_water", "t_safe", t_safe, batch5::top_first());
-        batch5::full("thermo_qs_water", "pressure", pres, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_input", batch5_es_input, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_cap", batch5_es_cap, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_selected", es, batch5::top_first());
-        batch5::full("thermo_qs_water", "t_lt_floor", t < 1.0, batch5::top_first());
-        batch5::full("thermo_qs_water", "t_eq_floor", t == 1.0, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_lt_cap", batch5_es_input < batch5_es_cap, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_eq_cap", batch5_es_input == batch5_es_cap, batch5::top_first());
-        batch5::full("thermo_qs_water", "es_gt_cap", batch5_es_input > batch5_es_cap, batch5::top_first());
-    }
-#else
     es = torch::minimum(es, 0.99 * pres);
-#endif
     auto qs = p.ep2 * es / torch::clamp(pres - es, /*min=*/p.qmin);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    auto batch5_qs = torch::clamp(qs, /*min=*/p.qmin);
-    if (batch5::enabled()) {
-        batch5::full("thermo_qs_water", "qs_pre_floor", qs, batch5::top_first());
-        batch5::full("thermo_qs_water", "qs_post_floor", batch5_qs, batch5::top_first());
-        batch5::full("thermo_qs_water", "qs_lt_floor", qs < p.qmin, batch5::top_first());
-        batch5::full("thermo_qs_water", "qs_eq_floor", qs == p.qmin, batch5::top_first());
-    }
-    return batch5_qs;
-#else
     return torch::clamp(qs, /*min=*/p.qmin);
-#endif
 }
 
 torch::Tensor compute_qs_ice(const torch::Tensor& t, const torch::Tensor& pres, const ThermoParams& p) {

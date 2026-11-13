@@ -1,7 +1,4 @@
 #include "kdm6/progb.h"
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-#include "kdm6/batch5_capture.h"
-#endif
 #include "kdm6/ops.h"
 
 #include <array>
@@ -140,24 +137,6 @@ ProgBOutputs progb_param_torch(
         ? torch::where(active, bg_new_op.to(qg.scalar_type()),
                        torch::where(trace, qg / scalar_like(RHO_MID, qg), zero))
         : torch::where(active, bg_new_op.to(qg.scalar_type()), bg);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        const bool top = batch5::top_first();
-        batch5::full("progb", "qg_input", qg, top);
-        batch5::full("progb", "bg_input", bg, top);
-        batch5::full("progb", "active", active, top);
-        batch5::full("progb", "trace", trace, top);
-        batch5::full("progb", "produced", produced, top);
-        batch5::full("progb", "bg_den", bg_den, top);
-        batch5::full("progb", "zero_den", zero_den, top);
-        batch5::full("progb", "density_divisor", density_divisor, top);
-        batch5::full("progb", "rhox_op", rhox_op, top);
-        batch5::full("progb", "rhox_candidate", rhox_c, top);
-        batch5::full("progb", "bg_candidate", bg_new_op, top);
-        batch5::full("progb", "rhox_selected", rhox, top);
-        batch5::full("progb", "bg_selected", bg_new, top);
-    }
-#endif
 
     // ── cmg, pidn0g ─────────────────────────────────────────────────────
     auto cmg_raw = PI * rhox / 6.0;

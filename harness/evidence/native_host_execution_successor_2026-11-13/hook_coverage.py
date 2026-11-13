@@ -2,9 +2,9 @@
 """Source-only mapping of narrow batch5 hook sites; no model is executed."""
 import collections,hashlib,json,re
 import validate_atomic_catalog_v2 as catalog_v2
+from producer_source import replay as source_replay
 from pathlib import Path
 HERE=Path(__file__).resolve().parent
-ROOT=HERE.parents[2]/'libtorch'
 CATALOG_SHA='8693991bfc5acd28d7b6d81362302b9e9fffbfe80200d0a00a8dfb37d6d555f5'
 SOURCE_SHA={'runtime.cpp':'cd605c03d451969534dfdf70b5bf9f0fbb41b892fb732bf7a3e680a18d1fd0c1','coordinator.cpp':'9976046be2a70bf813f8626584857cf78bd42fe88b2518f8730ea08c3599fd42','thermo.cpp':'faa37cf6aa83591b10b0055a81bd5111aa2fe0c96dc1815a2ca44c5bc0260564','satadj.cpp':'ed22e020f4cc15cd2c8d9e8bfaaaa274e3da67eceaddbb66d824bc2d25e6c604','progb.cpp':'ffa1fc911ee126105dd48da4437a95ee4aeb4c9b239b114349359322b15ddb0c','sedimentation.cpp':'b1bd0926e1d006fb71270069fb04d5874ecd22fc9bdf951772911c348f451d56'}
 # Curated source-node correspondences. A source hook is not an emitted record,
@@ -164,8 +164,9 @@ def load():
     catalog_v2.validate(catalog,parent,archive)
     need(catalog_v2.V2_SHA==CATALOG_SHA,'materialized catalog SHA')
     sources={}
-    for name,digest in SOURCE_SHA.items():
-        data=(ROOT/'src'/name).read_bytes();need(sha(data)==digest,'source SHA '+name);sources[name]=data.decode()
+    with source_replay.reconstructed_tree() as (root,_):
+        for name,digest in SOURCE_SHA.items():
+            data=(root/'src'/name).read_bytes();need(sha(data)==digest,'source SHA '+name);sources[name]=data.decode()
     return analyze(catalog,sources)
 
 

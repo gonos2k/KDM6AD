@@ -1,7 +1,4 @@
 #include "kdm6/sedimentation.h"
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-#include "kdm6/batch5_capture.h"
-#endif
 #include "kdm6/ops.h"
 
 namespace kdm6 {
@@ -116,34 +113,11 @@ SubstepAdvectionOutputs substep_advection_torch(
         auto falk_qg_top = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
         auto falk_brs_top = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
 
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_main_top", "qr_falk_candidate", falk_qr_top, k, K);
-        batch5::layer("sed_main_top", "nr_falk_candidate", falk_nr_top, k, K);
-        batch5::layer("sed_main_top", "qs_falk_candidate", falk_qs_top, k, K);
-        batch5::layer("sed_main_top", "qg_falk_candidate", falk_qg_top, k, K);
-        batch5::layer("sed_main_top", "brs_falk_candidate", falk_brs_top, k, K);
-        batch5::layer("sed_main_top", "qr_state_before", qr_cols[k], k, K);
-        batch5::layer("sed_main_top", "nr_state_before", nr_cols[k], k, K);
-        batch5::layer("sed_main_top", "qs_state_before", qs_cols[k], k, K);
-        batch5::layer("sed_main_top", "qg_state_before", qg_cols[k], k, K);
-        batch5::layer("sed_main_top", "brs_state_before", brs_cols[k], k, K);
-    }
-#endif
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_top;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_top;
         fall_qs_cols[k] = fall_qs_cols[k] + falk_qs_top;
         fall_qg_cols[k] = fall_qg_cols[k] + falk_qg_top;
         fall_brs_cols[k] = fall_brs_cols[k] + falk_brs_top;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_main_top", "qr_fall_accumulator_candidate", fall_qr_cols[k], k, K);
-        batch5::layer("sed_main_top", "nr_fall_accumulator_candidate", fall_nr_cols[k], k, K);
-        batch5::layer("sed_main_top", "qs_fall_accumulator_candidate", fall_qs_cols[k], k, K);
-        batch5::layer("sed_main_top", "qg_fall_accumulator_candidate", fall_qg_cols[k], k, K);
-        batch5::layer("sed_main_top", "brs_fall_accumulator_candidate", fall_brs_cols[k], k, K);
-    }
-#endif
 
         qr_cols[k] = torch::clamp(qr_cols[k] - falk_qr_top * dtcld / dend_safe_col(k), 0.0);
         // F:1128 nrs = max(nrs - falkn*dtcld, 0.) — falkn*dtcld rounds, the subtract
@@ -155,15 +129,6 @@ SubstepAdvectionOutputs substep_advection_torch(
         qg_cols[k] = torch::clamp(qg_cols[k] - falk_qg_top * dtcld / dend_safe_col(k), 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - falk_brs_top * dtcld / dend_safe_col(k), 0.0);
 
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_main_top", "qr_state_after_candidate", qr_cols[k], k, K);
-        batch5::layer("sed_main_top", "nr_state_after_candidate", nr_cols[k], k, K);
-        batch5::layer("sed_main_top", "qs_state_after_candidate", qs_cols[k], k, K);
-        batch5::layer("sed_main_top", "qg_state_after_candidate", qg_cols[k], k, K);
-        batch5::layer("sed_main_top", "brs_state_after_candidate", brs_cols[k], k, K);
-    }
-#endif
         falk_qr_prev = falk_qr_top;  falk_nr_prev = falk_nr_top;
         falk_qs_prev = falk_qs_top;  falk_qg_prev = falk_qg_top;  falk_brs_prev = falk_brs_top;
     }
@@ -208,62 +173,11 @@ SubstepAdvectionOutputs substep_advection_torch(
         auto dbrs_above = torch::minimum(
             falk_brs_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), brs_cols[k - 1]);
 
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_main_interior", "qr_falk_candidate", falk_qr_k, k, K);
-        batch5::layer("sed_main_interior", "qr_stored_above_falk", falk_qr_prev, k, K);
-        batch5::layer("sed_main_interior", "qr_fall_accumulator_candidate", fall_qr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qr_out_limited_candidate", dqr_k, k, K);
-        batch5::layer("sed_main_interior", "qr_arrival_limited_candidate", dqr_above, k, K);
-        batch5::layer("sed_main_interior", "qr_state_before", qr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qr_above_candidate_post_state", qr_cols[k - 1], k, K);
-        batch5::layer("sed_main_interior", "nr_falk_candidate", falk_nr_k, k, K);
-        batch5::layer("sed_main_interior", "nr_stored_above_falk", falk_nr_prev, k, K);
-        batch5::layer("sed_main_interior", "nr_fall_accumulator_candidate", fall_nr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "nr_out_limited_candidate", dnr_k, k, K);
-        batch5::layer("sed_main_interior", "nr_arrival_limited_candidate", dnr_above, k, K);
-        batch5::layer("sed_main_interior", "nr_state_before", nr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "nr_above_candidate_post_state", nr_cols[k - 1], k, K);
-        batch5::layer("sed_main_interior", "qs_falk_candidate", falk_qs_k, k, K);
-        batch5::layer("sed_main_interior", "qs_stored_above_falk", falk_qs_prev, k, K);
-        batch5::layer("sed_main_interior", "qs_fall_accumulator_candidate", fall_qs_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qs_out_limited_candidate", dqs_k, k, K);
-        batch5::layer("sed_main_interior", "qs_arrival_limited_candidate", dqs_above, k, K);
-        batch5::layer("sed_main_interior", "qs_state_before", qs_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qs_above_candidate_post_state", qs_cols[k - 1], k, K);
-        batch5::layer("sed_main_interior", "qg_falk_candidate", falk_qg_k, k, K);
-        batch5::layer("sed_main_interior", "qg_stored_above_falk", falk_qg_prev, k, K);
-        batch5::layer("sed_main_interior", "qg_fall_accumulator_candidate", fall_qg_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qg_out_limited_candidate", dqg_k, k, K);
-        batch5::layer("sed_main_interior", "qg_arrival_limited_candidate", dqg_above, k, K);
-        batch5::layer("sed_main_interior", "qg_state_before", qg_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qg_above_candidate_post_state", qg_cols[k - 1], k, K);
-        batch5::layer("sed_main_interior", "brs_falk_candidate", falk_brs_k, k, K);
-        batch5::layer("sed_main_interior", "brs_stored_above_falk", falk_brs_prev, k, K);
-        batch5::layer("sed_main_interior", "brs_fall_accumulator_candidate", fall_brs_cols[k], k, K);
-        batch5::layer("sed_main_interior", "brs_out_limited_candidate", dbrs_k, k, K);
-        batch5::layer("sed_main_interior", "brs_arrival_limited_candidate", dbrs_above, k, K);
-        batch5::layer("sed_main_interior", "brs_state_before", brs_cols[k], k, K);
-        batch5::layer("sed_main_interior", "brs_above_candidate_post_state", brs_cols[k - 1], k, K);
-        batch5::layer("sed_main_interior", "dend", dend_col(k), k, K);
-        batch5::layer("sed_main_interior", "delz", delz_col(k), k, K);
-        batch5::layer("sed_main_interior", "delz_above", delz_col(k - 1), k, K);
-    }
-#endif
         qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);
         nr_cols[k] = torch::clamp(nr_cols[k] - dnr_k + dnr_above, 0.0);
         qs_cols[k] = torch::clamp(qs_cols[k] - dqs_k + dqs_above, 0.0);
         qg_cols[k] = torch::clamp(qg_cols[k] - dqg_k + dqg_above, 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - dbrs_k + dbrs_above, 0.0);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_main_interior", "qr_state_after_candidate", qr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "nr_state_after_candidate", nr_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qs_state_after_candidate", qs_cols[k], k, K);
-        batch5::layer("sed_main_interior", "qg_state_after_candidate", qg_cols[k], k, K);
-        batch5::layer("sed_main_interior", "brs_state_after_candidate", brs_cols[k], k, K);
-    }
-#endif
 
         // carry this cell's STORED falk (entry q) as the next cell's "above" inflow flux
         falk_qr_prev = falk_qr_k;  falk_nr_prev = falk_nr_k;
@@ -335,34 +249,14 @@ IceSubstepOutputs ice_substep_advection_torch(
                                .to(in.state.qi.scalar_type());
         auto falk_ni_top = (ni_cols[k] * workn_qi_col(k) / mstep_col_safe * gate_col)
                                .to(in.state.qi.scalar_type());
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_ice_top", "qi_falk_candidate", falk_qi_top, k, K);
-        batch5::layer("sed_ice_top", "ni_falk_candidate", falk_ni_top, k, K);
-        batch5::layer("sed_ice_top", "qi_state_before", qi_cols[k], k, K);
-        batch5::layer("sed_ice_top", "ni_state_before", ni_cols[k], k, K);
-    }
-#endif
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_ice_top", "qi_fall_accumulator_candidate", fall_qi_cols[k], k, K);
-        batch5::layer("sed_ice_top", "ni_fall_accumulator_candidate", fall_ni_cols[k], k, K);
-    }
-#endif
         qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
         // F:1220 nci = max(nci - falkn_i*dtcld, 0.) — multiply rounds, subtract rounds
         // (strict IEEE source order).
         ni_cols[k] = torch::clamp(
             ops::fma_acc(ni_cols[k], falk_ni_top, torch::full_like(falk_ni_top, dtcld), -1.0),
             0.0);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_ice_top", "qi_state_after_candidate", qi_cols[k], k, K);
-        batch5::layer("sed_ice_top", "ni_state_after_candidate", ni_cols[k], k, K);
-    }
-#endif
         falk_qi_prev = falk_qi_top;  falk_ni_prev = falk_ni_top;
     }
 
@@ -385,35 +279,8 @@ IceSubstepOutputs ice_substep_advection_torch(
         auto dni_above = torch::minimum(
             falk_ni_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld, ni_cols[k - 1]);
 
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_ice_interior", "qi_falk_candidate", falk_qi_k, k, K);
-        batch5::layer("sed_ice_interior", "qi_stored_above_falk", falk_qi_prev, k, K);
-        batch5::layer("sed_ice_interior", "qi_fall_accumulator_candidate", fall_qi_cols[k], k, K);
-        batch5::layer("sed_ice_interior", "qi_out_limited_candidate", dqi_k, k, K);
-        batch5::layer("sed_ice_interior", "qi_arrival_limited_candidate", dqi_above, k, K);
-        batch5::layer("sed_ice_interior", "qi_state_before", qi_cols[k], k, K);
-        batch5::layer("sed_ice_interior", "qi_above_candidate_post_state", qi_cols[k - 1], k, K);
-        batch5::layer("sed_ice_interior", "ni_falk_candidate", falk_ni_k, k, K);
-        batch5::layer("sed_ice_interior", "ni_stored_above_falk", falk_ni_prev, k, K);
-        batch5::layer("sed_ice_interior", "ni_fall_accumulator_candidate", fall_ni_cols[k], k, K);
-        batch5::layer("sed_ice_interior", "ni_out_limited_candidate", dni_k, k, K);
-        batch5::layer("sed_ice_interior", "ni_arrival_limited_candidate", dni_above, k, K);
-        batch5::layer("sed_ice_interior", "ni_state_before", ni_cols[k], k, K);
-        batch5::layer("sed_ice_interior", "ni_above_candidate_post_state", ni_cols[k - 1], k, K);
-        batch5::layer("sed_ice_interior", "dend", dend_col(k), k, K);
-        batch5::layer("sed_ice_interior", "delz", delz_col(k), k, K);
-        batch5::layer("sed_ice_interior", "delz_above", delz_col(k - 1), k, K);
-    }
-#endif
         qi_cols[k] = torch::clamp(qi_cols[k] - dqi_k + dqi_above, 0.0);
         ni_cols[k] = torch::clamp(ni_cols[k] - dni_k + dni_above, 0.0);
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::layer("sed_ice_interior", "qi_state_after_candidate", qi_cols[k], k, K);
-        batch5::layer("sed_ice_interior", "ni_state_after_candidate", ni_cols[k], k, K);
-    }
-#endif
 
         falk_qi_prev = falk_qi_k;  falk_ni_prev = falk_ni_k;  // carry stored falk
     }
@@ -442,17 +309,6 @@ SurfaceAccumOutputs surface_accumulation_torch(
 ) {
     auto fallsum = fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom;
     auto fallsum_qsi = fall_qs_bottom + fall_qi_bottom;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    if (batch5::enabled()) {
-        batch5::column("surface_candidates", "fall_qr", fall_qr_bottom);
-        batch5::column("surface_candidates", "fall_qs", fall_qs_bottom);
-        batch5::column("surface_candidates", "fall_qg", fall_qg_bottom);
-        batch5::column("surface_candidates", "fall_qi", fall_qi_bottom);
-        batch5::column("surface_candidates", "fallsum", fallsum);
-        batch5::column("surface_candidates", "fallsum_qsi", fallsum_qsi);
-        batch5::column("surface_candidates", "delz_bottom", delz_bottom);
-    }
-#endif
     // f32 association MUST match Fortran module_mp_kdm6.F:1412 left-to-right
     // `fallsum*delz/denr*dtcld*1000.` (fallsum FIRST), NOT a precomputed
     // `factor=delz/denr*dtcld*1000` then `fallsum*factor` — the grouping differs at

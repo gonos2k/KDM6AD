@@ -2,8 +2,8 @@
 """Prove the G3.3-M C++ overlay is a PURE #ifdef addition (protocol §5, §6, §10).
 
 Four fail-closed checks, run before any diagnostic build:
-  1. the canonical source with the independent batch5 research macro OFF still
-     matches the pinned base SHA-256 (the G33 overlay was derived from that file);
+  1. the canonical source still matches the pinned base SHA-256 (no drift — the
+     overlay was derived from that exact file);
   2. preprocessing the overlay with KDM6_G33_OP_DUMP UNDEFINED reproduces the
      canonical file TEXTUALLY — so every added line lives inside #ifdef and the
      macro-off build cannot differ (not even in line numbers / debug metadata);
@@ -36,10 +36,6 @@ is invisible in the text). NONE of this establishes non-invasiveness: added code
 can still perturb state, tensor layout, or dispatch. Only the 3-way
 `A_output == B_output == C_output` run (§10) can establish that. Never cite this
 script as a non-invasiveness certificate.
-
-The batch5 projection only preserves this historical G33 overlay's pinned base
-when the independent batch5 macro is OFF. It does not certify batch5 macro-ON
-source or runtime noninterference.
 """
 from __future__ import annotations
 
@@ -57,7 +53,6 @@ PAIRS = [("libtorch/src/sedimentation.cpp", "sedimentation.cpp.overlay",
          ("libtorch/src/sedimentation_conservative.cpp",
           "sedimentation_conservative.cpp.overlay",
           "BASE_SHA256_sedimentation_conservative.cpp")]
-BATCH5_MACRO = "KDM6_BATCH5_RESEARCH_CAPTURE"
 
 
 class OverlayShape(Exception):
@@ -81,58 +76,6 @@ def _directive(line: str):
     t = re.sub(r"//.*$", "", t).strip()
     m = _DIRECTIVE.match(t)
     return (m.group(1), m.group(2).strip()) if m else None
-
-
-def batch5_macro_off(text: str) -> str:
-    """Project the separately gated batch5 source OFF before G33 base checks.
-
-    Only plain ``#ifdef KDM6_BATCH5_RESEARCH_CAPTURE`` and its optional ``#else``
-    are interpreted. Unrelated preprocessor frames are preserved byte-for-byte.
-    The projected bytes must still match the old pinned G33 base hash; changing
-    production source outside the research gate cannot be accepted by this helper.
-    """
-    out: list[str] = []
-    stack: list[list[bool]] = []  # is_batch5, emitting, seen_else
-
-    def active() -> bool:
-        return all(frame[1] for frame in stack if frame[0])
-
-    for lineno, line in enumerate(text.splitlines(keepends=True), 1):
-        directive = _directive(line)
-        if directive is not None:
-            name, rest = directive
-            target = re.match(r"^" + BATCH5_MACRO + r"\b", rest) is not None
-            if (name == "ifndef" and target) or (name == "if" and BATCH5_MACRO in rest):
-                raise OverlayShape(f"line {lineno}: ambiguous batch5 conditional")
-            if name == "ifdef" and target:
-                stack.append([True, False, False])
-                continue
-            if name in ("if", "ifdef", "ifndef"):
-                if active():
-                    out.append(line)
-                stack.append([False, True, False])
-                continue
-            if name in ("else", "elif"):
-                if not stack:
-                    raise OverlayShape(f"line {lineno}: unmatched {name}")
-                frame = stack[-1]
-                if frame[0]:
-                    if name != "else" or frame[2]:
-                        raise OverlayShape(f"line {lineno}: ambiguous batch5 alternate")
-                    frame[1] = True
-                    frame[2] = True
-                    continue
-            if name == "endif":
-                if not stack:
-                    raise OverlayShape(f"line {lineno}: unmatched endif")
-                frame = stack.pop()
-                if frame[0]:
-                    continue
-        if active():
-            out.append(line)
-    if stack:
-        raise OverlayShape("unterminated preprocessor conditional")
-    return "".join(out)
 
 
 def _project(text: str, macro_on: bool) -> list[str]:
@@ -423,15 +366,11 @@ def main() -> int:
     rc = 0
     for canon_rel, overlay_name, sha_name in PAIRS:
         canon_p = REPO / canon_rel
-        try:
-            canon = batch5_macro_off(canon_p.read_text())
-        except OverlayShape as e:
-            print(f"FAIL {canon_rel}: {e}")
-            rc = 1; continue
+        canon = canon_p.read_text()
         pinned = (HERE / sha_name).read_text().strip()
         actual = hashlib.sha256(canon.encode()).hexdigest()
         if actual != pinned:
-            print(f"FAIL {canon_rel}: batch5-macro-OFF canonical drifted from the pinned base\n"
+            print(f"FAIL {canon_rel}: canonical drifted from the pinned base\n"
                   f"  pinned={pinned}\n  actual={actual}\n"
                   f"  -> re-derive the overlay against the new canonical before building")
             rc = 1; continue

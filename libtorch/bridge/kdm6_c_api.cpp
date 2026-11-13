@@ -1,8 +1,4 @@
 #include "kdm6_c_api.h"
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-#include "kdm6/batch5_capture.h"
-#include <stdexcept>
-#endif
 #include "kdm6/runtime.h"
 #include "kdm6/state.h"
 
@@ -912,15 +908,6 @@ static int kdm6_step_ad_variant_impl(
             h->im = im; h->kme = kme; h->jme = jme;
             h->dtype = c10::ScalarType::Double;   // fp64 DA graph
             h->state_forcing_ad = state_forcing_ad;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-            try {
-                if (kdm6::batch5::enabled()) {
-                    if (!state_forcing_ad || im != 1 || kme != 39 || jme != 1)
-                        throw std::runtime_error("batch5 requires narrow joint graph");
-                    kdm6::batch5::bind_handle(h);
-                }
-            } catch (...) { delete h; throw; }
-#endif
             *handle = h;
         }
         return KDM6_OK;
@@ -1103,9 +1090,6 @@ extern "C" int kdm6_handle_jvp_c(kdm6_handle_t* h,
 
 extern "C" int kdm6_handle_close_c(kdm6_handle_t* h) {
     if (!h) return KDM6_OK;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    kdm6::batch5::invalidate_handle(h);
-#endif
     if (h->impl) h->impl->close();
     delete h;
     return KDM6_OK;
@@ -1115,9 +1099,6 @@ extern "C" int kdm6_handle_close_c(kdm6_handle_t* h) {
 // caller's handle can never dangle. Idempotent on NULL / *NULL.
 extern "C" int kdm6_handle_closep_c(kdm6_handle_t** hp) {
     if (!hp || !*hp) return KDM6_OK;
-#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
-    kdm6::batch5::invalidate_handle(*hp);
-#endif
     if ((*hp)->impl) (*hp)->impl->close();
     delete *hp;
     *hp = nullptr;
