@@ -35,5 +35,23 @@ std::vector<IntermediateJvp> intermediate_jvp(
     }
     return out;
 }
+IntermediateVjp intermediate_vjp(const torch::Tensor& y,
+    const std::vector<torch::Tensor>& leaves, const torch::Tensor& u) {
+    TORCH_CHECK(leaves.size()==16, "batch5: 16 leaves required");
+    for (const auto& x : leaves) {
+        TORCH_CHECK(x.defined() && x.is_leaf() && x.requires_grad() && x.device().is_cpu() && x.scalar_type()==torch::kFloat64,
+                    "batch5: CPU f64 differentiable leaf required");
+    }
+    TORCH_CHECK(y.defined() && y.numel()==1 && y.device().is_cpu() && y.scalar_type()==torch::kFloat64,
+                "batch5: CPU f64 scalar required");
+    TORCH_CHECK(u.defined() && u.numel()==1 && u.device()==y.device() && u.scalar_type()==y.scalar_type() && u.sizes()==y.sizes(),
+                "batch5: scalar cotangent metadata mismatch");
+    if (!y.requires_grad()) return {IntermediateStatus::NO_GRAPH_PATH, std::vector<torch::Tensor>(16)};
+    auto grads=torch::autograd::grad({y},leaves,{u},true,false,true);
+    bool connected=false;
+    for (const auto& g:grads) if (g.defined()) connected=true;
+    return {connected ? IntermediateStatus::CONNECTED : IntermediateStatus::UNCONNECTED, std::move(grads)};
+}
+
 }
 #endif

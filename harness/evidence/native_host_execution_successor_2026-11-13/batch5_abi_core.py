@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Prepared C ABI mechanics. Registered/model execution remains blocked.
 
-The batch5 sidecar graph path is JVP-only and synthetic-tested. Claimed DSO
-hashes and caller-provided selectors are not independent provenance. The low-level helper is exercised solely with a synthetic fake.
+The batch5 sidecar graph path is synthetic-tested only. Claimed DSO hashes
+and caller-provided selectors are not independent provenance. The low-level helper is exercised solely with a synthetic fake.
 """
 import ctypes as C
 import math
@@ -98,6 +98,12 @@ def bind_graph_sidecar(lib):
     jvp=lib.kdm6_batch5_intermediate_jvp_c;jvp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,PD,C.c_size_t,PD,C.POINTER(C.c_int)];jvp.restype=C.c_int
     return token,jvp
 
+def bind_intermediate_vjp(lib):
+    vjp=lib.kdm6_batch5_intermediate_vjp_c
+    vjp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,D,PD,C.c_size_t,C.POINTER(C.c_uint16),C.POINTER(C.c_int)]
+    vjp.restype=C.c_int
+    return vjp
+
 def _copy_records(call,count,meta,value,max_records):
     if type(max_records) is not int or not 1<=max_records<=MAX_RECORDS:raise RuntimeError('sidecar limit outside bounds')
     n=count()
@@ -136,7 +142,7 @@ def _copy_records(call,count,meta,value,max_records):
         ordinals[key]=expected+1;records.append(row)
     return records
 
-def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS,intermediate_requests=None):
+def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS,intermediate_requests=None,intermediate_vjp_requests=None):
     """Synthetic-tested mechanics only; caller-supplied DSO hash is unverified.
 
     For instrumented sequences 1..93 a guard must persist on the same thread and
@@ -149,7 +155,8 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     try:
         sequence_guard.check(call,input_words)
         requests=[] if intermediate_requests is None else intermediate_requests
-        if type(requests) is not list or (requests and not graph):raise RuntimeError('intermediate requests require graph mode')
+        vjp_requests=[] if intermediate_vjp_requests is None else intermediate_vjp_requests
+        if type(requests) is not list or type(vjp_requests) is not list or ((requests or vjp_requests) and not graph):raise RuntimeError('intermediate requests require graph mode')
         if graph:
             sequence_guard.check_graph_seeds(call,effective,nominal,cotangents)
             effective={k:{'id':k,'center':v[0],'direction':v[1],'step_id':v[2],'evaluation_input_words':v[3],'effective_direction_words':v[4],'seed_sha256':words_sha(v[4])} for k,v in sequence_guard._effective.items() if v[0]==call['input_id']}
@@ -158,6 +165,10 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
                 if type(request) is not dict or set(request)!={'selector','seed_id'} or type(request['selector']) is not dict or set(request['selector'])!=set(SELECTOR_FIELDS):raise RuntimeError('full intermediate selector required')
                 if request['selector']['record_kind']!='value':raise RuntimeError('intermediate selector must identify a value')
                 sequence_guard.effective_seed(request['seed_id'],call['input_id'])
+            for request in vjp_requests:
+                if type(request) is not dict or set(request)!={'selector','cotangent_id'} or type(request['selector']) is not dict or set(request['selector'])!=set(SELECTOR_FIELDS):raise RuntimeError('full intermediate VJP selector required')
+                if request['selector']['record_kind']!='value':raise RuntimeError('intermediate VJP selector must identify a value')
+                if request['cotangent_id']!='intermediate_scalar:unit':raise RuntimeError('unknown intermediate scalar cotangent')
     except BaseException:
         sequence_guard.fail()
         raise
@@ -185,6 +196,20 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
                 irc=intermediate_jvp(h,token.value,matches[0],vector(seed,624),624,C.byref(tangent),C.byref(status))
                 if irc!=0 or status.value not in (0,1,2) or not math.isfinite(tangent.value):raise RuntimeError('intermediate JVP failed or nonfinite')
                 result['intermediate_jvps'].append({'selector':dict(request['selector']),'record_index':matches[0],'seed_id':request['seed_id'],'seed_sha256':words_sha(seed),'handle_token':token.value,'return_code':irc,'status':status.value,'output_f64_word':encode(tangent.value)})
+            result['intermediate_vjps']=[]
+            if vjp_requests:
+                intermediate_vjp=bind_intermediate_vjp(lib)
+                for request in vjp_requests:
+                    matches=[i for i,row in enumerate(metadata) if all(type(row[k]) is type(request['selector'][k]) and row[k]==request['selector'][k] for k in SELECTOR_FIELDS)]
+                    if len(matches)!=1:raise RuntimeError('intermediate VJP selector missing or ambiguous')
+                    gradients=(D*624)(*[float('nan')]*624);mask=C.c_uint16(0);status=C.c_int(-1)
+                    vrc=intermediate_vjp(h,token.value,matches[0],1.0,gradients,624,C.byref(mask),C.byref(status))
+                    if vrc!=0 or status.value not in (0,1,2) or not all(math.isfinite(v) for v in gradients):raise RuntimeError('intermediate VJP failed or nonfinite')
+                    if (status.value==0 and mask.value==0) or (status.value in (1,2) and mask.value!=0):raise RuntimeError('intermediate VJP status/mask mismatch')
+                    words=[encode(v) for v in gradients]
+                    for field in range(16):
+                        if not (mask.value & (1<<field)) and any(w!='0000000000000000' for w in words[field*39:(field+1)*39]):raise RuntimeError('undefined intermediate VJP slot is not positive zero')
+                    result['intermediate_vjps'].append({'selector':dict(request['selector']),'record_index':matches[0],'cotangent_id':'intermediate_scalar:unit','cotangent_word':'3ff0000000000000','cotangent_sha256':words_sha(['3ff0000000000000']),'handle_token':token.value,'return_code':vrc,'status':status.value,'connected_field_mask':mask.value,'gradient_words':words,'gradient_sha256':words_sha(words),'state_gradient_words':words[:STATE],'forcing_gradient_words':words[STATE:]})
             handle_id=f"graph:{call['sequence']}:{call['input_id']}";result['graph_handle_id']=handle_id;outputs={};payloads={}
             for ident,entry in effective.items():
                 seed=entry['effective_direction_words'];tan=(D*STATE)(*[float('nan')]*STATE);jrc=lib.kdm6_handle_state_forcing_jvp_c(h,vector(seed[:STATE],STATE),vector(seed[STATE:],FORCING),tan);jwords=[encode(v) for v in tan]

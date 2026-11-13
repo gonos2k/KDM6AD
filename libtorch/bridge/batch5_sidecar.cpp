@@ -5,11 +5,19 @@
 #include "kdm6/batch5_capture.h"
 #include "kdm6/batch5_intermediate_ad.h"
 #include <cmath>
+#include <array>
+#include <limits>
 #include <vector>
 #include <cstring>
 #include <cstdint>
 #include <string>
 namespace {
+bool disjoint_ranges(const void* a, std::size_t an, const void* b, std::size_t bn) {
+    auto x=reinterpret_cast<std::uintptr_t>(a), y=reinterpret_cast<std::uintptr_t>(b);
+    constexpr auto max=std::numeric_limits<std::uintptr_t>::max();
+    if (an>max-x || bn>max-y) return false;
+    return x+an<=y || y+bn<=x;
+}
 template<std::size_t N> bool copy_string(char (&dst)[N],const std::string& src){
     if(src.size()>=N)return false;
     std::memcpy(dst,src.data(),src.size());dst[src.size()]='\0';return true;
@@ -38,6 +46,7 @@ extern "C" KDM6_C_API int kdm6_batch5_metadata_c(std::uint64_t n,kdm6_batch5_met
 extern "C" KDM6_C_API int kdm6_batch5_value_word_c(std::uint64_t n,std::uint64_t* out,int* kind){
     try {
         const auto& records=kdm6::batch5::records();if(!out || !kind || n>=records.size())return -1;
+        if(!disjoint_ranges(out,sizeof(*out),kind,sizeof(*kind))) return -1;
         const auto& r=records[n];const auto& t=r.tensor;
         // Explicitly value-only, after forward; never read/detach a graph value here.
         if(r.mode!="capture_on_value" || !t.defined() || !t.device().is_cpu() || t.numel()!=1 || !t.is_contiguous())return -1;
@@ -55,6 +64,9 @@ extern "C" KDM6_C_API int kdm6_batch5_binding_token_c(const void* handle,std::ui
 extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std::uint64_t token,std::uint64_t n,const double* direction,std::size_t count,double* output,int* status) {
     try {
         if (!direction || !output || !status || count!=624) return -1;
+        if (!disjoint_ranges(output,sizeof(*output),status,sizeof(*status)) ||
+            !disjoint_ranges(direction,624*sizeof(double),output,sizeof(*output)) ||
+            !disjoint_ranges(direction,624*sizeof(double),status,sizeof(*status))) return -1;
         auto lock=kdm6::batch5::lock_bound_handle(handle,token);
         const auto& records=kdm6::batch5::records();
         const auto& inputs=kdm6::batch5::inputs();
@@ -72,6 +84,37 @@ extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std:
         double v=*result[0].tangent.data_ptr<double>();
         if(!std::isfinite(v)) return -1;
         int code=static_cast<int>(result[0].status); *output=v; *status=code; return 0;
+    } catch (...) { return -1; }
+}
+extern "C" KDM6_C_API int kdm6_batch5_intermediate_vjp_c(const void* handle,std::uint64_t token,std::uint64_t n,double cotangent,double* output,std::size_t count,std::uint16_t* connected_mask,int* status) {
+    try {
+        if (!output || !connected_mask || !status || count!=624 || !std::isfinite(cotangent)) return -1;
+        if (!disjoint_ranges(output,624*sizeof(double),connected_mask,sizeof(*connected_mask)) ||
+            !disjoint_ranges(output,624*sizeof(double),status,sizeof(*status)) ||
+            !disjoint_ranges(connected_mask,sizeof(*connected_mask),status,sizeof(*status))) return -1;
+        auto lock=kdm6::batch5::lock_bound_handle(handle,token);
+        const auto& records=kdm6::batch5::records(); const auto& inputs=kdm6::batch5::inputs();
+        if (n>=records.size() || records[n].mode!="center_joint_graph" || records[n].record_kind!="value" || inputs.state.size()!=12 || inputs.forcing.size()!=4) return -1;
+        std::vector<torch::Tensor> leaves; leaves.reserve(16);
+        for (const auto& t:inputs.state) leaves.push_back(t);
+        for (const auto& t:inputs.forcing) leaves.push_back(t);
+        for (const auto& t:leaves) if(!t.defined() || t.sizes()!=torch::IntArrayRef({1,39})) return -1;
+        const auto& y=records[n].tensor;
+        if(!y.defined() || !y.device().is_cpu() || y.scalar_type()!=torch::kFloat64 || y.numel()!=1) return -1;
+        auto u=torch::full_like(y,cotangent);
+        auto result=kdm6::batch5::intermediate_vjp(y,leaves,u);
+        if(result.gradients.size()!=16) return -1;
+        std::array<double,624> staged{}; std::uint16_t mask=0;
+        for(std::size_t i=0;i<16;++i) {
+            if(!result.gradients[i].defined()) continue;
+            auto g=result.gradients[i];
+            if(!g.device().is_cpu() || g.scalar_type()!=torch::kFloat64 || g.sizes()!=torch::IntArrayRef({1,39})) return -1;
+            auto contiguous=g.contiguous(); const auto* ptr=contiguous.data_ptr<double>();
+            for(std::size_t k=0;k<39;++k) { if(!std::isfinite(ptr[k])) return -1; staged[i*39+k]=ptr[k]; }
+            mask |= static_cast<std::uint16_t>(1u<<i);
+        }
+        int code=static_cast<int>(result.status);
+        std::memcpy(output,staged.data(),sizeof(double)*staged.size()); *connected_mask=mask; *status=code; return 0;
     } catch (...) { return -1; }
 }
 extern "C" KDM6_C_API void kdm6_batch5_clear_c(){kdm6::batch5::clear();}

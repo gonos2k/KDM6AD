@@ -19,12 +19,18 @@ struct kdm6_batch5_meta {
 int kdm6_batch5_begin_c(const char*,const char*,uint64_t);
 uint64_t kdm6_batch5_count_c(void);
 int kdm6_batch5_metadata_c(uint64_t,struct kdm6_batch5_meta*,size_t);
-/* mode capture_on_value only: kind=1 f32, 2 f64, 3 bool; raw bits low-aligned. */
+/* mode capture_on_value only: kind=1 f32, 2 f64, 3 bool; raw bits low-aligned.
+ * The output word and kind must occupy disjoint address ranges. */
 int kdm6_batch5_value_word_c(uint64_t,uint64_t*,int*);
-/* JVP-only prototype. VJP is BLOCKED. Status: 0 connected, 1 no graph, 2 unconnected.
- * Exactly 624 field-major f64 directions, one result; caller retains live joint handle. */
+/* Test-only derivative prototype. Status: 0 connected, 1 no graph, 2 unconnected.
+ * Exactly 624 field-major f64 directions, one result; caller retains live joint handle.
+ * Direction, output and status must occupy disjoint address ranges. */
 int kdm6_batch5_binding_token_c(const void*,uint64_t*);
 int kdm6_batch5_intermediate_jvp_c(const void*,uint64_t,uint64_t,const double*,size_t,double*,int*);
+/* Exactly 624 output f64s; bit i says gradient leaf i was defined. Undefined
+ * slots are zero-filled but are not certified physical zero derivatives. The
+ * gradient array, mask and status buffers must occupy disjoint address ranges. */
+int kdm6_batch5_intermediate_vjp_c(const void*,uint64_t,uint64_t,double,double*,size_t,uint16_t*,int*);
 void kdm6_batch5_clear_c(void);
 #ifdef __cplusplus
 }

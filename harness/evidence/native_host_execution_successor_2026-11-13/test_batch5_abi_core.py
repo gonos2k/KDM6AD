@@ -7,8 +7,8 @@ class Fn:
  def __init__(self,fn):self.fn=fn
  def __call__(self,*args):return self.fn(*args)
 class FakeABI:
- def __init__(self,*,fail_step=False,fail_meta=False,fail_value=False,bad_count=False,fail_begin=False,fail_clear=False,nan_value=False,f32_nan=False,wrong_token=False,nan_jvp=False,duplicate=False):
-  self.events=[];self.fail_step=fail_step;self.fail_meta=fail_meta;self.fail_value=fail_value;self.bad_count=bad_count;self.fail_begin=fail_begin;self.fail_clear=fail_clear;self.nan_value=nan_value;self.f32_nan=f32_nan;self.wrong_token=wrong_token;self.nan_jvp=nan_jvp;self.duplicate=duplicate;self.active=None
+ def __init__(self,*,fail_step=False,fail_meta=False,fail_value=False,bad_count=False,fail_begin=False,fail_clear=False,nan_value=False,f32_nan=False,wrong_token=False,nan_jvp=False,duplicate=False,vjp_rc=False,vjp_nan=False,vjp_badmask=False,vjp_badfill=False,vjp_status=0):
+  self.events=[];self.fail_step=fail_step;self.fail_meta=fail_meta;self.fail_value=fail_value;self.bad_count=bad_count;self.fail_begin=fail_begin;self.fail_clear=fail_clear;self.nan_value=nan_value;self.f32_nan=f32_nan;self.wrong_token=wrong_token;self.nan_jvp=nan_jvp;self.duplicate=duplicate;self.vjp_rc=vjp_rc;self.vjp_nan=vjp_nan;self.vjp_badmask=vjp_badmask;self.vjp_badfill=vjp_badfill;self.vjp_status=vjp_status;self.active=None
   def step(*args):
    self.events.append('step');out=args[7];h=C.cast(args[8],C.POINTER(C.c_void_p))
    if self.fail_step:return -1
@@ -46,10 +46,23 @@ class FakeABI:
    if handle.value!=123 or token!=567 or count!=624:return -1
    C.cast(out,C.POINTER(C.c_double))[0]=float('nan') if self.nan_jvp else seed[15]
    C.cast(status,C.POINTER(C.c_int))[0]=0;return 0
+  def intermediate_vjp(handle,token,index,cotangent,gradients,count,maskp,statusp):
+   self.events.append(('intermediate_vjp',handle.value,token,index,cotangent,count))
+   if handle.value!=123 or token!=567 or cotangent!=1.0 or count!=624:return -1
+   addresses=(C.addressof(gradients),C.addressof(C.cast(maskp,C.POINTER(C.c_uint16)).contents),C.addressof(C.cast(statusp,C.POINTER(C.c_int)).contents))
+   if len(set(addresses))!=3:return -1
+   mask=0 if self.vjp_status in (1,2) else ((1<<0)|(1<<11)|(1<<12)|(1<<15))
+   if self.vjp_badmask:mask=0 if self.vjp_status==0 else 1
+   for i in range(624):gradients[i]=float(i+1) if mask & (1<<(i//39)) else 0.0
+   gradients[0]=0.0
+   if self.vjp_nan:gradients[0]=float('nan')
+   if self.vjp_badfill:gradients[39]=1.0
+   C.cast(maskp,C.POINTER(C.c_uint16))[0]=mask;C.cast(statusp,C.POINTER(C.c_int))[0]=self.vjp_status
+   return -1 if self.vjp_rc else 0
   def clear():
    self.events.append('clear');self.active=None
    if self.fail_clear:raise RuntimeError('synthetic clear failure')
-  self.kdm6_step_ad_c=Fn(step);self.kdm6_step_ad_state_forcing_c=Fn(step);self.kdm6_handle_closep_c=Fn(close);self.kdm6_handle_state_forcing_jvp_c=Fn(jvp);self.kdm6_handle_state_forcing_vjp_c=Fn(vjp);self.kdm6_batch5_begin_c=Fn(begin);self.kdm6_batch5_count_c=Fn(count);self.kdm6_batch5_metadata_c=Fn(meta);self.kdm6_batch5_value_word_c=Fn(val);self.kdm6_batch5_binding_token_c=Fn(token);self.kdm6_batch5_intermediate_jvp_c=Fn(intermediate);self.kdm6_batch5_clear_c=Fn(clear)
+  self.kdm6_step_ad_c=Fn(step);self.kdm6_step_ad_state_forcing_c=Fn(step);self.kdm6_handle_closep_c=Fn(close);self.kdm6_handle_state_forcing_jvp_c=Fn(jvp);self.kdm6_handle_state_forcing_vjp_c=Fn(vjp);self.kdm6_batch5_begin_c=Fn(begin);self.kdm6_batch5_count_c=Fn(count);self.kdm6_batch5_metadata_c=Fn(meta);self.kdm6_batch5_value_word_c=Fn(val);self.kdm6_batch5_binding_token_c=Fn(token);self.kdm6_batch5_intermediate_jvp_c=Fn(intermediate);self.kdm6_batch5_intermediate_vjp_c=Fn(intermediate_vjp);self.kdm6_batch5_clear_c=Fn(clear)
 
 class PreflightTest(unittest.TestCase):
  @classmethod
@@ -142,6 +155,29 @@ class PreflightTest(unittest.TestCase):
   guard,call,sub,selector=self.graph_setup();lib=FakeABI();bad=copy.deepcopy(sub);bad[seed_id]['effective_direction_words'][15]='0000000000000000';bad[seed_id]['seed_sha256']=preflight.words_sha(bad[seed_id]['effective_direction_words'])
   with self.assertRaisesRegex(RuntimeError,'canonical effective seed'):abi_core._execute_bound(lib,call,self.center['words'],bad,self.nom,self.vjp,'a'*64,sequence_guard=guard)
   self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
+ def test_intermediate_scalar_vjp_is_distinct_from_final_state_vjp(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();request={'selector':selector,'cotangent_id':'intermediate_scalar:unit'}
+  result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[request,request])
+  self.assertEqual(len(result['intermediate_vjps']),2);row=result['intermediate_vjps'][0];self.assertEqual(row['cotangent_word'],'3ff0000000000000');self.assertEqual(row['cotangent_sha256'],preflight.words_sha(['3ff0000000000000']));self.assertEqual(row['connected_field_mask'],(1<<0)|(1<<11)|(1<<12)|(1<<15));self.assertEqual(row['gradient_words'][0],'0000000000000000');self.assertEqual(row['gradient_sha256'],preflight.words_sha(row['gradient_words']));self.assertEqual(len(row['state_gradient_words']),468);self.assertEqual(len(row['forcing_gradient_words']),156);self.assertEqual(row['handle_token'],567);self.assertEqual(row['status'],0);self.assertEqual(len(result['vjps']['state:nc:15']['seed_words']),468);self.assertEqual(lib.events[-2:],['close','clear']);self.assertNotIn(('value',0),lib.events)
+ def test_intermediate_vjp_unconnected_status_is_explicit(self):
+  for status in (1,2):
+   guard,call,sub,selector=self.graph_setup();lib=FakeABI(vjp_status=status);r=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}]);row=r['intermediate_vjps'][0];self.assertEqual(row['status'],status);self.assertEqual(row['connected_field_mask'],0);self.assertEqual(set(row['gradient_words']),{'0000000000000000'})
+ def test_intermediate_vjp_failures_cleanup_no_partial(self):
+  for options in ({'wrong_token':True},{'vjp_rc':True},{'vjp_nan':True},{'vjp_badmask':True},{'vjp_status':1,'vjp_badmask':True},{'vjp_status':3},{'vjp_badfill':True}):
+   guard,call,sub,selector=self.graph_setup();lib=FakeABI(**options)
+   with self.assertRaises(RuntimeError):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}])
+   self.assertTrue(guard.poisoned);self.assertEqual(lib.events[-2:],['close','clear'])
+ def test_final_state_cotangent_cannot_be_used_for_intermediate(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI()
+  with self.assertRaisesRegex(RuntimeError,'unknown intermediate scalar cotangent'):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'state:nc:15'}])
+  self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
+ def test_intermediate_vjp_missing_or_mask_selector_rejected(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();selector['field']='missing'
+  with self.assertRaisesRegex(RuntimeError,'missing or ambiguous'):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}])
+  self.assertEqual(lib.events[-2:],['close','clear']);self.assertTrue(guard.poisoned)
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();selector['record_kind']='mask'
+  with self.assertRaisesRegex(RuntimeError,'identify a value'):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}])
+  self.assertEqual(lib.events,[])
  def test_synthetic_abi_graph(self):
   guard=self.guard()
   for c in self.plan['calls'][:90]:guard.check(c,self.words_for(c));guard.complete()
