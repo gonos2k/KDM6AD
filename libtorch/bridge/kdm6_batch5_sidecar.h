@@ -21,6 +21,10 @@ uint64_t kdm6_batch5_count_c(void);
 int kdm6_batch5_metadata_c(uint64_t,struct kdm6_batch5_meta*,size_t);
 /* mode capture_on_value only: kind=1 f32, 2 f64, 3 bool; raw bits low-aligned. */
 int kdm6_batch5_value_word_c(uint64_t,uint64_t*,int*);
+/* JVP-only prototype. VJP is BLOCKED. Status: 0 connected, 1 no graph, 2 unconnected.
+ * Exactly 624 field-major f64 directions, one result; caller retains live joint handle. */
+int kdm6_batch5_binding_token_c(const void*,uint64_t*);
+int kdm6_batch5_intermediate_jvp_c(const void*,uint64_t,uint64_t,const double*,size_t,double*,int*);
 void kdm6_batch5_clear_c(void);
 #ifdef __cplusplus
 }

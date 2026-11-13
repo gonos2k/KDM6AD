@@ -1,6 +1,9 @@
 #include "kdm6/batch5_capture.h"
 #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
 #include <map>
+#include <mutex>
+#include <memory>
+#include <atomic>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -17,10 +20,16 @@ struct Context {
     std::uint64_t runtime_call = 0, one_step_call = 0, outer_loop = 0, substep_n = 0;
     std::vector<Record> data;
     InputLeaves leaves;
+    const void* handle = nullptr;
+    std::uint64_t token = 0;
+    std::shared_ptr<std::atomic<bool>> valid;
     std::map<std::tuple<std::uint64_t,std::uint64_t,std::string,std::uint64_t,std::string,std::string,std::string,std::string,std::int64_t,std::int64_t>,std::uint64_t> ordinals;
 };
 thread_local Context ctx;
 thread_local std::uint64_t runtime_sequence = 0;
+std::atomic<std::uint64_t> token_sequence{0};
+std::mutex binding_mutex;
+std::map<const void*, std::shared_ptr<std::atomic<bool>>> bindings;
 void add(const char* stage, const char* field, const char* scope,
          std::int64_t b, std::int64_t k, std::int64_t level, std::int64_t B, std::int64_t K, const torch::Tensor& t) {
     if (!ctx.on) return;
@@ -39,7 +48,44 @@ void begin(const std::string& input_id,const std::string& mode,std::uint64_t run
     if (ctx.on) throw std::runtime_error("batch5 prior context must be explicitly cleared");
     ctx=Context{}; ctx.on=true;ctx.input_id=input_id;ctx.mode=mode;ctx.runtime_call=runtime_call;
 }
-void clear(){ctx=Context{};}
+void invalidate_handle(const void* handle) {
+    std::lock_guard<std::mutex> lock(binding_mutex);
+    auto it=bindings.find(handle); if (it!=bindings.end()) { it->second->store(false); bindings.erase(it); }
+}
+void clear(){
+    // A stale TLS context may outlive a cross-thread close and address reuse.
+    // Only invalidate the exact generation owned by this context.
+    if (ctx.handle && ctx.valid) {
+        std::lock_guard<std::mutex> lock(binding_mutex);
+        auto it=bindings.find(ctx.handle);
+        ctx.valid->store(false);
+        if (it!=bindings.end() && it->second==ctx.valid) bindings.erase(it);
+    }
+    ctx=Context{};
+}
+void bind_handle(const void* handle) {
+    if (!ctx.on || !ctx.entered || ctx.mode!="center_joint_graph" || !handle || ctx.handle)
+        throw std::runtime_error("batch5 invalid graph binding");
+    auto valid=std::make_shared<std::atomic<bool>>(true);
+    std::lock_guard<std::mutex> lock(binding_mutex);
+    if (!bindings.emplace(handle,valid).second) throw std::runtime_error("batch5 duplicate graph binding");
+    ctx.handle=handle; ctx.valid=valid; ctx.token=++token_sequence;
+    if (ctx.token==0) { valid->store(false); bindings.erase(handle); ctx.handle=nullptr; throw std::runtime_error("batch5 token exhausted"); }
+}
+std::unique_lock<std::mutex> lock_bound_handle(const void* handle, std::uint64_t token) {
+    std::unique_lock<std::mutex> lock(binding_mutex);
+    auto it=bindings.find(handle);
+    if (!ctx.on || !ctx.entered || ctx.mode!="center_joint_graph" || !handle || ctx.handle!=handle || token==0 || ctx.token!=token || !ctx.valid || !ctx.valid->load() || it==bindings.end() || it->second!=ctx.valid)
+        throw std::runtime_error("batch5 stale, foreign or wrong-thread graph binding");
+    return lock;
+}
+
+std::uint64_t binding_token(const void* handle) {
+    auto token=ctx.token;
+    auto lock=lock_bound_handle(handle,token);
+    return token;
+}
+
 bool enabled(){return ctx.on;}
 void enter_runtime(bool value_only){
     const auto observed=++runtime_sequence;

@@ -6,7 +6,10 @@
 #include <cstdint>
 #include <cstring>
 #include <thread>
+#include <atomic>
 #include <stdexcept>
+#include <vector>
+#include <limits>
 
 int main(){
     assert(kdm6_batch5_begin_c("synthetic", "capture_on_value", 1)==0);
@@ -62,16 +65,77 @@ int main(){
     assert(kdm6_batch5_begin_c("synthetic_graph", "center_joint_graph", 2)==0);
     kdm6::batch5::enter_runtime(false);
     auto leaf=torch::full({1,39},1.0,torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));
+    std::vector<torch::Tensor> sx, fx;
+    for(int i=0;i<12;++i) sx.push_back(i==0 ? leaf : torch::ones({1,39},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true)));
+    for(int i=0;i<4;++i) fx.push_back(torch::ones({1,39},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true)));
+    kdm6::batch5::retain_inputs(sx,fx);
     kdm6::batch5::full("synthetic","graph",leaf*2.0,false);
+    const int synthetic_handle=1; kdm6::batch5::bind_handle(&synthetic_handle);
+    std::uint64_t token=0; assert(kdm6_batch5_binding_token_c(&synthetic_handle,&token)==0 && token!=0);
+    const int wrong_handle=2; std::uint64_t untouched_token=77;
+    assert(kdm6_batch5_binding_token_c(&wrong_handle,&untouched_token)!=0 && untouched_token==77);
+    bool wrong_thread_token_rejected=false;
+    std::thread getter([&] { std::uint64_t z=77;wrong_thread_token_rejected=kdm6_batch5_binding_token_c(&synthetic_handle,&z)!=0 && z==77; });getter.join();assert(wrong_thread_token_rejected);
+    double seed[624]{}; seed[38]=1.; double tangent=99.;int derivative_status=99;
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)==0 && tangent==2. && derivative_status==0);
+    tangent=99.;derivative_status=99;
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token+1,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,623,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+    seed[0]=std::numeric_limits<double>::quiet_NaN();
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99); seed[0]=0.;
+    bool foreign_thread_rejected=false;
+    std::thread wrong([&] { double a=42.;int b=42;foreign_thread_rejected=kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&a,&b)!=0 && a==42. && b==42; });wrong.join();assert(foreign_thread_rejected);
+    kdm6::batch5::invalidate_handle(&synthetic_handle);
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
     bits=123;kind=77;
     assert(kdm6_batch5_value_word_c(0,&bits,&kind)!=0 && bits==123 && kind==77);
     kdm6_batch5_clear_c();
     assert(kdm6_batch5_count_c()==0);
-    assert(kdm6_batch5_begin_c("wrong_sequence", "capture_on_value", 4)==0);
+    assert(kdm6_batch5_begin_c("reused_address", "center_joint_graph", 3)==0);
+    kdm6::batch5::enter_runtime(false);
+    kdm6::batch5::retain_inputs(sx,fx);
+    kdm6::batch5::full("synthetic","graph",leaf*2.0,false);
+    kdm6::batch5::bind_handle(&synthetic_handle);
+    std::uint64_t new_token=0; assert(kdm6_batch5_binding_token_c(&synthetic_handle,&new_token)==0 && new_token!=token);
+    tangent=99.; derivative_status=99;
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,new_token,0,seed,624,&tangent,&derivative_status)==0 && tangent==2. && derivative_status==0);
+    kdm6_batch5_clear_c();
+    assert(kdm6_batch5_begin_c("wrong_sequence", "capture_on_value", 5)==0);
     bool sequence_rejected=false;
     try { kdm6::batch5::enter_runtime(true); }
     catch (const std::runtime_error&) { sequence_rejected=true; }
     assert(sequence_rejected);kdm6_batch5_clear_c();
+    // Cross-thread close, same-address rebinding, then stale owner's clear.
+    const int reused_handle=3; std::atomic<int> stage{0};
+    std::atomic<std::uint64_t> old_token{0}; bool survived=false;
+    std::thread old_owner([&] {
+        assert(kdm6_batch5_begin_c("old", "center_joint_graph", 1)==0);
+        kdm6::batch5::enter_runtime(false); kdm6::batch5::bind_handle(&reused_handle);
+        std::uint64_t t=0; assert(kdm6_batch5_binding_token_c(&reused_handle,&t)==0); old_token.store(t);
+        stage.store(1); while(stage.load()<2) std::this_thread::yield();
+        kdm6_batch5_clear_c(); stage.store(3);
+    });
+    while(stage.load()<1) std::this_thread::yield();
+    kdm6::batch5::invalidate_handle(&reused_handle);
+    std::thread new_owner([&] {
+        assert(kdm6_batch5_begin_c("new", "center_joint_graph", 1)==0);
+        kdm6::batch5::enter_runtime(false);
+        auto x=torch::full({1,39},2.0,torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));
+        std::vector<torch::Tensor> state(12),forcing(4);
+        for(auto& t:state)t=torch::ones({1,39},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));
+        for(auto& t:forcing)t=torch::ones({1,39},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));
+        state[0]=x;kdm6::batch5::retain_inputs(state,forcing);
+        kdm6::batch5::full("synthetic","graph",x*2.0,false);
+        kdm6::batch5::bind_handle(&reused_handle);
+        std::uint64_t t=0;assert(kdm6_batch5_binding_token_c(&reused_handle,&t)==0 && t!=old_token.load());
+        stage.store(2);while(stage.load()<3)std::this_thread::yield();
+        double v[624]{};v[38]=1.;double out=91.;int status=91;
+        assert(kdm6_batch5_intermediate_jvp_c(&reused_handle,old_token.load(),0,v,624,&out,&status)!=0 && out==91. && status==91);
+        survived=kdm6_batch5_intermediate_jvp_c(&reused_handle,t,0,v,624,&out,&status)==0 && out==2. && status==0;
+        kdm6_batch5_clear_c();
+    });
+    old_owner.join();new_owner.join();assert(survived);
 }
 
 #endif

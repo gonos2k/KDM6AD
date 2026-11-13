@@ -1,4 +1,4 @@
-import ctypes as C,pathlib,sys,tempfile,threading,unittest
+import copy,ctypes as C,pathlib,sys,tempfile,threading,unittest
 from unittest import mock
 R=pathlib.Path(__file__).resolve().parent;sys.path.insert(0,str(R));import batch5_preflight as preflight,batch5_abi_core as abi_core
 ROOT=R.parent/'native_host_preflight_2026-11-12';SELECTED=R.parent/'native_host_column_f32_2026-11-11/raw/selected_full.json'
@@ -7,8 +7,8 @@ class Fn:
  def __init__(self,fn):self.fn=fn
  def __call__(self,*args):return self.fn(*args)
 class FakeABI:
- def __init__(self,*,fail_step=False,fail_meta=False,fail_value=False,bad_count=False,fail_begin=False,fail_clear=False,nan_value=False,f32_nan=False):
-  self.events=[];self.fail_step=fail_step;self.fail_meta=fail_meta;self.fail_value=fail_value;self.bad_count=bad_count;self.fail_begin=fail_begin;self.fail_clear=fail_clear;self.nan_value=nan_value;self.f32_nan=f32_nan;self.active=None
+ def __init__(self,*,fail_step=False,fail_meta=False,fail_value=False,bad_count=False,fail_begin=False,fail_clear=False,nan_value=False,f32_nan=False,wrong_token=False,nan_jvp=False,duplicate=False):
+  self.events=[];self.fail_step=fail_step;self.fail_meta=fail_meta;self.fail_value=fail_value;self.bad_count=bad_count;self.fail_begin=fail_begin;self.fail_clear=fail_clear;self.nan_value=nan_value;self.f32_nan=f32_nan;self.wrong_token=wrong_token;self.nan_jvp=nan_jvp;self.duplicate=duplicate;self.active=None
   def step(*args):
    self.events.append('step');out=args[7];h=C.cast(args[8],C.POINTER(C.c_void_p))
    if self.fail_step:return -1
@@ -32,15 +32,24 @@ class FakeABI:
    if self.fail_meta:return -1
    m=C.cast(ptr,C.POINTER(abi_core.Meta)).contents
    if m.abi_version!=1 or m.struct_size!=size:return -1
-   m.input_id=self.active[0];m.mode=self.active[1];m.family=b'microphysics';m.scope=b'layer';m.stage=b'synthetic';m.field=b'value' if index==0 else b'condition';m.record_kind=b'value' if index==0 else b'mask';m.derivative_mode=b'none';m.direction_id=b'none';m.seed_sha256=b'none';m.cotangent_id=b'none';m.runtime_call=self.active[2];m.one_step_call=1;m.outer_loop=0;m.substep_n=0;m.event_ordinal=0;m.b_zero=0;m.k_zero=23;m.native_level_bottom_first=16;m.B=1;m.K=39;return 0
+   m.input_id=self.active[0];m.mode=self.active[1];m.family=b'microphysics';m.scope=b'layer';m.stage=b'synthetic';m.field=b'value' if index==0 or self.duplicate else b'condition';m.record_kind=b'value' if index==0 or self.duplicate else b'mask';m.derivative_mode=b'none';m.direction_id=b'none';m.seed_sha256=b'none';m.cotangent_id=b'none';m.runtime_call=self.active[2];m.one_step_call=1;m.outer_loop=0;m.substep_n=0;m.event_ordinal=0;m.b_zero=0;m.k_zero=23;m.native_level_bottom_first=16;m.B=1;m.K=39;return 0
   def val(index,bitsp,kindp):
    self.events.append(('value',index))
    if self.fail_value:return -1
    C.cast(bitsp,C.POINTER(C.c_uint64))[0]=(0x7fc00000 if self.f32_nan else (0x7ff8000000000000 if self.nan_value else 0x3ff0000000000000)) if index==0 else 1;C.cast(kindp,C.POINTER(C.c_int))[0]=(1 if self.f32_nan else 2) if index==0 else 3;return 0
+  def token(handle,out):
+   self.events.append(('token',handle.value))
+   if handle.value!=123:return -1
+   C.cast(out,C.POINTER(C.c_uint64))[0]=999 if self.wrong_token else 567;return 0
+  def intermediate(handle,token,index,seed,count,out,status):
+   self.events.append(('intermediate',handle.value,token,index,count))
+   if handle.value!=123 or token!=567 or count!=624:return -1
+   C.cast(out,C.POINTER(C.c_double))[0]=float('nan') if self.nan_jvp else seed[15]
+   C.cast(status,C.POINTER(C.c_int))[0]=0;return 0
   def clear():
    self.events.append('clear');self.active=None
    if self.fail_clear:raise RuntimeError('synthetic clear failure')
-  self.kdm6_step_ad_c=Fn(step);self.kdm6_step_ad_state_forcing_c=Fn(step);self.kdm6_handle_closep_c=Fn(close);self.kdm6_handle_state_forcing_jvp_c=Fn(jvp);self.kdm6_handle_state_forcing_vjp_c=Fn(vjp);self.kdm6_batch5_begin_c=Fn(begin);self.kdm6_batch5_count_c=Fn(count);self.kdm6_batch5_metadata_c=Fn(meta);self.kdm6_batch5_value_word_c=Fn(val);self.kdm6_batch5_clear_c=Fn(clear)
+  self.kdm6_step_ad_c=Fn(step);self.kdm6_step_ad_state_forcing_c=Fn(step);self.kdm6_handle_closep_c=Fn(close);self.kdm6_handle_state_forcing_jvp_c=Fn(jvp);self.kdm6_handle_state_forcing_vjp_c=Fn(vjp);self.kdm6_batch5_begin_c=Fn(begin);self.kdm6_batch5_count_c=Fn(count);self.kdm6_batch5_metadata_c=Fn(meta);self.kdm6_batch5_value_word_c=Fn(val);self.kdm6_batch5_binding_token_c=Fn(token);self.kdm6_batch5_intermediate_jvp_c=Fn(intermediate);self.kdm6_batch5_clear_c=Fn(clear)
 
 class PreflightTest(unittest.TestCase):
  @classmethod
@@ -92,9 +101,9 @@ class PreflightTest(unittest.TestCase):
   lib=FakeABI();guard=self.guard();call=dict(self.plan['calls'][0]);call['input_id']='upper'
   with self.assertRaisesRegex(RuntimeError,'identity'):abi_core._execute_bound(lib,call,self.center['words'],{},self.nom,self.vjp,'a'*64,sequence_guard=guard)
   self.assertEqual(lib.events,[])
-  call=dict(self.plan['calls'][0]);substituted=self.center['words'].copy();substituted[0]='0000000000000000';call['input_sha256']=preflight.words_sha(substituted)
+  guard=self.guard();call=dict(self.plan['calls'][0]);substituted=self.center['words'].copy();substituted[0]='0000000000000000';call['input_sha256']=preflight.words_sha(substituted)
   with self.assertRaisesRegex(RuntimeError,'624-word'):abi_core._execute_bound(lib,call,substituted,{},self.nom,self.vjp,'a'*64,sequence_guard=guard)
-  self.assertEqual(lib.events,[])
+  self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
   with self.assertRaises(TypeError):guard._schedule[1]=('wrong','wrong',())
   with self.assertRaises(AttributeError):guard._schedule={}
  def test_explicit_optional_skip_follows_canonical_order(self):
@@ -110,6 +119,29 @@ class PreflightTest(unittest.TestCase):
   call=self.plan['calls'][93];lib=FakeABI()
   result=abi_core._execute_bound(lib,call,self.words_for(call),{},self.nom,self.vjp,'a'*64,sequence_guard=guard)
   self.assertEqual(lib.events,['step']);self.assertEqual(result['dso_identity_status'],'CALLER_SUPPLIED_UNVERIFIED');self.assertEqual(guard.next_sequence,95)
+ def graph_setup(self):
+  guard=self.guard()
+  for c in self.plan['calls'][:90]:guard.check(c,self.words_for(c));guard.complete()
+  call=self.plan['calls'][90];sub={k:v for k,v in self.eff.items() if v['center']=='baseline'}
+  selector={'input_id':'baseline','mode':'center_joint_graph','runtime_call':91,'one_step_call':1,'outer_loop':0,'family':'microphysics','substep_n':0,'scope':'layer','b_zero':0,'k_zero':23,'native_level_bottom_first':16,'B':1,'K':39,'stage':'synthetic','field':'value','record_kind':'value','event_ordinal':0}
+  return guard,call,sub,selector
+ def test_graph_intermediate_jvp_uses_bound_token_and_pinned_seed(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();seed_id=next(k for k,v in sub.items() if v['direction']=='th')
+  result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':seed_id}])
+  self.assertEqual(lib.events[:4],[('begin',b'baseline',b'center_joint_graph',91),'step',('token',123),'count']);self.assertNotIn(('value',0),lib.events);self.assertNotIn(('value',1),lib.events);self.assertEqual(lib.events[-2:],['close','clear'])
+  row=result['intermediate_jvps'][0];self.assertEqual(row['handle_token'],567);self.assertEqual(row['status'],0);self.assertEqual(row['seed_sha256'],preflight.words_sha(sub[seed_id]['effective_direction_words']));self.assertEqual(result['selector_registry_status'],'CALLER_SUPPLIED_UNVERIFIED')
+ def test_graph_failures_clear_close_and_poison_without_partial(self):
+  for options in ({'wrong_token':True},{'nan_jvp':True},{'duplicate':True},{'fail_meta':True},{'bad_count':True}):
+   guard,call,sub,selector=self.graph_setup();lib=FakeABI(**options);seed_id=next(k for k,v in sub.items() if v['direction']=='th')
+   with self.assertRaises(RuntimeError):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':seed_id}])
+   self.assertTrue(guard.poisoned);self.assertEqual(lib.events[-2:],['close','clear'])
+ def test_missing_selector_and_rehashed_seed_are_rejected(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();seed_id=next(k for k,v in sub.items() if v['direction']=='th');selector['field']='missing'
+  with self.assertRaisesRegex(RuntimeError,'missing or ambiguous'):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':seed_id}])
+  self.assertEqual(lib.events[-2:],['close','clear'])
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();bad=copy.deepcopy(sub);bad[seed_id]['effective_direction_words'][15]='0000000000000000';bad[seed_id]['seed_sha256']=preflight.words_sha(bad[seed_id]['effective_direction_words'])
+  with self.assertRaisesRegex(RuntimeError,'canonical effective seed'):abi_core._execute_bound(lib,call,self.center['words'],bad,self.nom,self.vjp,'a'*64,sequence_guard=guard)
+  self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
  def test_synthetic_abi_graph(self):
   guard=self.guard()
   for c in self.plan['calls'][:90]:guard.check(c,self.words_for(c));guard.complete()

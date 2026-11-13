@@ -3,6 +3,9 @@
 #include "kdm6_c_api.h"
 #include "kdm6_batch5_sidecar.h"
 #include "kdm6/batch5_capture.h"
+#include "kdm6/batch5_intermediate_ad.h"
+#include <cmath>
+#include <vector>
 #include <cstring>
 #include <cstdint>
 #include <string>
@@ -45,6 +48,31 @@ extern "C" KDM6_C_API int kdm6_batch5_value_word_c(std::uint64_t n,std::uint64_t
         else return -1;
         *out=bits;*kind=type;return 0;
     } catch (...) {return -1;}
+}
+extern "C" KDM6_C_API int kdm6_batch5_binding_token_c(const void* handle,std::uint64_t* output) {
+    try { if(!output)return -1; auto token=kdm6::batch5::binding_token(handle); *output=token; return 0; } catch (...) { return -1; }
+}
+extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std::uint64_t token,std::uint64_t n,const double* direction,std::size_t count,double* output,int* status) {
+    try {
+        if (!direction || !output || !status || count!=624) return -1;
+        auto lock=kdm6::batch5::lock_bound_handle(handle,token);
+        const auto& records=kdm6::batch5::records();
+        const auto& inputs=kdm6::batch5::inputs();
+        if (n>=records.size() || records[n].mode!="center_joint_graph" || records[n].record_kind!="value" || inputs.state.size()!=12 || inputs.forcing.size()!=4) return -1;
+        std::vector<torch::Tensor> leaves, seeds; leaves.reserve(16);seeds.reserve(16);
+        for (const auto& t:inputs.state) leaves.push_back(t);
+        for (const auto& t:inputs.forcing) leaves.push_back(t);
+        for (std::size_t i=0;i<16;++i) {
+            if (!leaves[i].defined() || leaves[i].sizes()!=torch::IntArrayRef({1,39})) return -1;
+            for(std::size_t k=0;k<39;++k) if(!std::isfinite(direction[i*39+k])) return -1;
+            seeds.push_back(torch::from_blob(const_cast<double*>(direction+i*39), {1,39}, torch::TensorOptions().dtype(torch::kFloat64)).clone());
+        }
+        auto result=kdm6::batch5::intermediate_jvp({records[n].tensor},leaves,seeds);
+        if(result.size()!=1 || !result[0].tangent.defined() || !result[0].tangent.device().is_cpu() || result[0].tangent.numel()!=1) return -1;
+        double v=*result[0].tangent.data_ptr<double>();
+        if(!std::isfinite(v)) return -1;
+        int code=static_cast<int>(result[0].status); *output=v; *status=code; return 0;
+    } catch (...) { return -1; }
 }
 extern "C" KDM6_C_API void kdm6_batch5_clear_c(){kdm6::batch5::clear();}
 #endif

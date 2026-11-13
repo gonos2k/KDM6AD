@@ -6,6 +6,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
+#include <atomic>
+#include <mutex>
 
 namespace kdm6::batch5 {
 struct Record {
@@ -25,6 +28,10 @@ struct InputLeaves { std::vector<torch::Tensor> state, forcing; };
 // escape the DSO. The test-only C bridge offers bounded POD copy-out only.
 void begin(const std::string& input_id, const std::string& mode, std::uint64_t runtime_call);
 void clear();
+void bind_handle(const void* handle);
+void invalidate_handle(const void* handle);
+std::unique_lock<std::mutex> lock_bound_handle(const void* handle, std::uint64_t token);
+std::uint64_t binding_token(const void* handle);
 bool enabled();
 // Counts all actual runtime entries in this OS thread, even if capture is off.
 // If a context is active it must match the caller-supplied expected sequence.

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Prepared C ABI mechanics. Registered/model execution remains blocked.
 
-The batch5 v1 sidecar supports value-only records only. Claimed DSO hashes are
-not loader proof. The low-level helper is exercised solely with a synthetic fake.
+The batch5 sidecar graph path is JVP-only and synthetic-tested. Claimed DSO
+hashes and caller-provided selectors are not independent provenance. The low-level helper is exercised solely with a synthetic fake.
 """
 import ctypes as C
 import math
@@ -10,10 +10,11 @@ import os
 import struct
 import threading
 from types import MappingProxyType
-from batch5_preflight import words_sha, load_inputs
+from batch5_preflight import words_sha, load_inputs, seed_specs
 
 D=C.c_double; HANDLE=C.c_void_p; PD=C.POINTER(D); PH=C.POINTER(HANDLE)
 STATE=468; FORCING=156; MAX_RECORDS=2_000_000; META_VERSION=1
+SELECTOR_FIELDS=('input_id','mode','runtime_call','one_step_call','outer_loop','family','substep_n','scope','b_zero','k_zero','native_level_bottom_first','B','K','stage','field','record_kind','event_ordinal')
 
 class Meta(C.Structure):
     _fields_=[('abi_version',C.c_uint32),('struct_size',C.c_uint32),
@@ -24,9 +25,9 @@ class Meta(C.Structure):
 
 class InstrumentedSequence:
     """Immutable #588 input/order snapshot, confined to one process and thread."""
-    __slots__=('pid','thread','next_sequence','poisoned','_schedule')
+    __slots__=('pid','thread','next_sequence','poisoned','_schedule','_effective','_nominal','_cotangents')
     def __setattr__(self,name,value):
-        if name=='_schedule' and hasattr(self,'_schedule'):raise AttributeError('canonical snapshot is immutable')
+        if name in ('_schedule','_effective','_nominal','_cotangents') and hasattr(self,name):raise AttributeError('canonical snapshot is immutable')
         object.__setattr__(self,name,value)
     def __init__(self,plan_path,selected_path,contract_path):
         plan,_,_=load_inputs(plan_path,selected_path,contract_path)
@@ -34,6 +35,10 @@ class InstrumentedSequence:
         schedule={c['sequence']:(c['input_id'],c['mode'],inputs[c['input_id']]) for c in plan['calls']}
         if set(schedule)!=set(range(1,101)):raise ValueError('canonical sequence inventory')
         self._schedule=MappingProxyType(schedule)
+        effective,nominal,cotangents=seed_specs(plan)
+        self._effective=MappingProxyType({k:(v['center'],v['direction'],v['step_id'],tuple(v['evaluation_input_words']),tuple(v['effective_direction_words'])) for k,v in effective.items()})
+        self._nominal=MappingProxyType({k:tuple(v) for k,v in nominal.items()})
+        self._cotangents=MappingProxyType({k:tuple(v) for k,v in cotangents.items()})
         self.pid=os.getpid();self.thread=threading.get_ident();self.next_sequence=1;self.poisoned=False
     def check(self,call,input_words):
         if self.poisoned or os.getpid()!=self.pid or threading.get_ident()!=self.thread:raise RuntimeError('instrumented sequence invalid, restarted or wrong thread')
@@ -42,6 +47,16 @@ class InstrumentedSequence:
         expected_id,expected_mode,expected_words=self._schedule[seq]
         if (input_id,mode)!=(expected_id,expected_mode):raise RuntimeError('canonical call identity mismatch')
         if tuple(input_words)!=expected_words:raise RuntimeError('canonical 624-word input mismatch')
+    def check_graph_seeds(self,call,effective,nominal,cotangents):
+        expected={k:v for k,v in self._effective.items() if v[0]==call['input_id']}
+        if set(effective)!=set(expected) or set(nominal)!=set(self._nominal) or set(cotangents)!=set(self._cotangents):raise RuntimeError('canonical graph seed inventory mismatch')
+        for ident,(center,direction,step,evaluation,seed) in expected.items():
+            item=effective[ident]
+            if (item.get('id'),item.get('center'),item.get('direction'),item.get('step_id'))!=(ident,center,direction,step) or tuple(item.get('evaluation_input_words',()))!=evaluation or tuple(item.get('effective_direction_words',()))!=seed or item.get('seed_sha256')!=words_sha(seed):raise RuntimeError('canonical effective seed mismatch')
+        if any(tuple(nominal[k])!=v for k,v in self._nominal.items()) or any(tuple(cotangents[k])!=v for k,v in self._cotangents.items()):raise RuntimeError('canonical nominal/cotangent seed mismatch')
+    def effective_seed(self,ident,center):
+        if ident not in self._effective or self._effective[ident][0]!=center:raise RuntimeError('unknown canonical effective seed')
+        return self._effective[ident][4]
     def complete(self):self.next_sequence+=1
     def fail(self):self.poisoned=True
     def skip_optional(self,call):
@@ -78,6 +93,11 @@ def bind_sidecar(lib):
     clear=lib.kdm6_batch5_clear_c;clear.argtypes=[];clear.restype=None
     return begin,count,meta,value,clear
 
+def bind_graph_sidecar(lib):
+    token=lib.kdm6_batch5_binding_token_c;token.argtypes=[HANDLE,C.POINTER(C.c_uint64)];token.restype=C.c_int
+    jvp=lib.kdm6_batch5_intermediate_jvp_c;jvp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,PD,C.c_size_t,PD,C.POINTER(C.c_int)];jvp.restype=C.c_int
+    return token,jvp
+
 def _copy_records(call,count,meta,value,max_records):
     if type(max_records) is not int or not 1<=max_records<=MAX_RECORDS:raise RuntimeError('sidecar limit outside bounds')
     n=count()
@@ -89,30 +109,34 @@ def _copy_records(call,count,meta,value,max_records):
         if m.abi_version!=META_VERSION or m.struct_size!=C.sizeof(Meta):raise RuntimeError('sidecar metadata ABI mismatch')
         row={k:getattr(m,k).decode('ascii') for k in ('input_id','mode','family','scope','stage','field','record_kind','derivative_mode','direction_id','seed_sha256','cotangent_id')}
         row.update({k:getattr(m,k) for k in ('runtime_call','one_step_call','outer_loop','substep_n','event_ordinal','b_zero','k_zero','native_level_bottom_first','B','K')})
-        if row['input_id']!=call['input_id'] or row['mode']!='capture_on_value' or row['runtime_call']!=call['sequence'] or row['b_zero']!=0 or row['B']!=1:raise RuntimeError('sidecar call identity mismatch')
+        if row['input_id']!=call['input_id'] or row['mode']!=call['mode'] or row['runtime_call']!=call['sequence'] or row['b_zero']!=0 or row['B']!=1:raise RuntimeError('sidecar call identity mismatch')
         if row['scope']=='layer':
             if row['K']!=39 or not 0<=row['k_zero']<39 or row['native_level_bottom_first']!=39-row['k_zero']:raise RuntimeError('sidecar layer identity mismatch')
         elif row['scope']=='column':
             if (row['k_zero'],row['native_level_bottom_first'],row['K'])!=(-1,-1,-1):raise RuntimeError('sidecar column identity mismatch')
         else:raise RuntimeError('unknown sidecar scope')
         if any(row[k]!='none' for k in ('derivative_mode','direction_id','seed_sha256','cotangent_id')):raise RuntimeError('sidecar derivative identity in value-only mode')
-        bits=C.c_uint64();kind=C.c_int()
-        if value(i,C.byref(bits),C.byref(kind))!=0:raise RuntimeError('sidecar value copy failed')
-        if kind.value==1 and bits.value<=0xffffffff:row.update(dtype='f32',raw_hex=f'{bits.value:08x}')
-        elif kind.value==2:row.update(dtype='f64',raw_hex=f'{bits.value:016x}')
-        elif kind.value==3 and bits.value in (0,1):row.update(dtype='bool',raw_hex=str(bits.value))
-        else:raise RuntimeError('unsupported sidecar value kind')
-        if kind.value in (1,2):
-            decoded=struct.unpack('>f' if kind.value==1 else '>d',bytes.fromhex(row['raw_hex']))[0]
-            if not math.isfinite(decoded):raise RuntimeError('nonfinite sidecar value')
-        if row['record_kind']!=('mask' if kind.value==3 else 'value'):raise RuntimeError('sidecar record kind mismatch')
+        if call['mode']=='capture_on_value':
+            bits=C.c_uint64();kind=C.c_int()
+            if value(i,C.byref(bits),C.byref(kind))!=0:raise RuntimeError('sidecar value copy failed')
+            if kind.value==1 and bits.value<=0xffffffff:row.update(dtype='f32',raw_hex=f'{bits.value:08x}')
+            elif kind.value==2:row.update(dtype='f64',raw_hex=f'{bits.value:016x}')
+            elif kind.value==3 and bits.value in (0,1):row.update(dtype='bool',raw_hex=str(bits.value))
+            else:raise RuntimeError('unsupported sidecar value kind')
+            if kind.value in (1,2):
+                decoded=struct.unpack('>f' if kind.value==1 else '>d',bytes.fromhex(row['raw_hex']))[0]
+                if not math.isfinite(decoded):raise RuntimeError('nonfinite sidecar value')
+            if row['record_kind']!=('mask' if kind.value==3 else 'value'):raise RuntimeError('sidecar record kind mismatch')
+        elif call['mode']=='center_joint_graph':
+            if row['record_kind'] not in ('value','mask'):raise RuntimeError('unsupported graph record kind')
+        else:raise RuntimeError('sidecar metadata mode mismatch')
         key=tuple(row[k] for k in ('input_id','mode','runtime_call','one_step_call','outer_loop','family','substep_n','scope','b_zero','k_zero','stage','field','record_kind'))
         expected=ordinals.get(key,0)
         if row['event_ordinal']!=expected:raise RuntimeError('sidecar event ordinal mismatch')
         ordinals[key]=expected+1;records.append(row)
     return records
 
-def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS):
+def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS,intermediate_requests=None):
     """Synthetic-tested mechanics only; caller-supplied DSO hash is unverified.
 
     For instrumented sequences 1..93 a guard must persist on the same thread and
@@ -122,13 +146,27 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     mode=call['mode'];installed=mode=='installed_value_optional';graph=mode=='center_joint_graph';capture=mode=='capture_on_value'
     if mode not in ('capture_off_value','capture_on_value','center_joint_graph','installed_value_optional'):raise ValueError('unsupported call mode')
     if not isinstance(sequence_guard,InstrumentedSequence):raise RuntimeError('persistent canonical sequence guard required')
-    sequence_guard.check(call,input_words)
+    try:
+        sequence_guard.check(call,input_words)
+        requests=[] if intermediate_requests is None else intermediate_requests
+        if type(requests) is not list or (requests and not graph):raise RuntimeError('intermediate requests require graph mode')
+        if graph:
+            sequence_guard.check_graph_seeds(call,effective,nominal,cotangents)
+            effective={k:{'id':k,'center':v[0],'direction':v[1],'step_id':v[2],'evaluation_input_words':v[3],'effective_direction_words':v[4],'seed_sha256':words_sha(v[4])} for k,v in sequence_guard._effective.items() if v[0]==call['input_id']}
+            nominal=dict(sequence_guard._nominal);cotangents=dict(sequence_guard._cotangents)
+            for request in requests:
+                if type(request) is not dict or set(request)!={'selector','seed_id'} or type(request['selector']) is not dict or set(request['selector'])!=set(SELECTOR_FIELDS):raise RuntimeError('full intermediate selector required')
+                if request['selector']['record_kind']!='value':raise RuntimeError('intermediate selector must identify a value')
+                sequence_guard.effective_seed(request['seed_id'],call['input_id'])
+    except BaseException:
+        sequence_guard.fail()
+        raise
     begun=False;h=HANDLE();result=None;close_attempted=False;success=False
     try:
         step,close=bind(lib,installed);state=vector(input_words[:STATE],STATE);forcing=vector(input_words[STATE:],FORCING);out=(D*STATE)(*[float('nan')]*STATE);xland=C.c_float(2)
-        if capture:
+        if capture or graph:
             begin,count,meta,value,clear=bind_sidecar(lib)
-            if begin(call['input_id'].encode('ascii'),b'capture_on_value',call['sequence'])!=0:raise RuntimeError('sidecar begin failed')
+            if begin(call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence'])!=0:raise RuntimeError('sidecar begin failed')
             begun=True
         args=[state,forcing,1,39,1,20.0,0 if graph else 1,out,C.byref(h),C.byref(xland),10.0,10.0]
         rc=step(*args,*([] if installed else [0,0]));had=bool(h.value)
@@ -137,6 +175,16 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
         result={'schema':'kdm6.future_call_raw.v1','sequence':call['sequence'],'input_id':call['input_id'],'mode':mode,'claimed_dso_sha256':dso_sha256,'dso_identity_status':'CALLER_SUPPLIED_UNVERIFIED','input_words':input_words,'return_code':rc,'handle_nonnull':had,'state_output_words':[encode(v) for v in out]}
         if capture:result['sidecar_records']=_copy_records(call,count,meta,value,max_records)
         if graph:
+            token_fn,intermediate_jvp=bind_graph_sidecar(lib);token=C.c_uint64()
+            if token_fn(h,C.byref(token))!=0 or token.value==0:raise RuntimeError('graph handle binding token failed')
+            metadata=_copy_records(call,count,meta,None,max_records);result['graph_metadata']=metadata;result['graph_binding_token']=token.value;result['selector_registry_status']='CALLER_SUPPLIED_UNVERIFIED';result['intermediate_jvps']=[]
+            for request in requests:
+                matches=[i for i,row in enumerate(metadata) if all(type(row[k]) is type(request['selector'][k]) and row[k]==request['selector'][k] for k in SELECTOR_FIELDS)]
+                if len(matches)!=1:raise RuntimeError('intermediate selector missing or ambiguous')
+                seed=sequence_guard.effective_seed(request['seed_id'],call['input_id']); tangent=D(float('nan'));status=C.c_int(-1)
+                irc=intermediate_jvp(h,token.value,matches[0],vector(seed,624),624,C.byref(tangent),C.byref(status))
+                if irc!=0 or status.value not in (0,1,2) or not math.isfinite(tangent.value):raise RuntimeError('intermediate JVP failed or nonfinite')
+                result['intermediate_jvps'].append({'selector':dict(request['selector']),'record_index':matches[0],'seed_id':request['seed_id'],'seed_sha256':words_sha(seed),'handle_token':token.value,'return_code':irc,'status':status.value,'output_f64_word':encode(tangent.value)})
             handle_id=f"graph:{call['sequence']}:{call['input_id']}";result['graph_handle_id']=handle_id;outputs={};payloads={}
             for ident,entry in effective.items():
                 seed=entry['effective_direction_words'];tan=(D*STATE)(*[float('nan')]*STATE);jrc=lib.kdm6_handle_state_forcing_jvp_c(h,vector(seed[:STATE],STATE),vector(seed[STATE:],FORCING),tan);jwords=[encode(v) for v in tan]
