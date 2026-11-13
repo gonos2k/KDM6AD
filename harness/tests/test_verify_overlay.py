@@ -29,7 +29,7 @@ _spec = importlib.util.spec_from_file_location("verify_overlay", HERE / "verify_
 v = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(v)
 
-CANON = (REPO / "libtorch/src/sedimentation.cpp").read_text()
+CANON = v.batch5_macro_off((REPO / "libtorch/src/sedimentation.cpp").read_text())
 BASE = CANON.splitlines()
 
 
@@ -47,6 +47,33 @@ def test_real_overlay_has_no_mutation_findings():
     overlay = (HERE / "sedimentation.cpp.overlay").read_text()
     on = v._project(overlay, macro_on=True)
     assert v.overriding_assignments(CANON, on) == []
+
+
+def test_batch5_macro_off_preserves_pinned_g33_bases():
+    import hashlib
+    for source, _, pin_file in v.PAIRS:
+        projected = v.batch5_macro_off((REPO / source).read_text())
+        pinned = (HERE / pin_file).read_text().strip()
+        assert hashlib.sha256(projected.encode()).hexdigest() == pinned
+
+
+def test_batch5_macro_off_keeps_unrelated_frames_and_else_source():
+    text = ("#ifdef OTHER\nint keep = 1;\n#endif\n"
+            "#ifdef KDM6_BATCH5_RESEARCH_CAPTURE\nint research = 2;\n"
+            "#else\nint keep = 3;\n#endif\n")
+    assert v.batch5_macro_off(text) == ("#ifdef OTHER\nint keep = 1;\n#endif\n"
+                                         "int keep = 3;\n")
+
+
+@pytest.mark.parametrize("text", [
+    "#ifndef KDM6_BATCH5_RESEARCH_CAPTURE\nint x;\n#endif\n",
+    "#if defined(KDM6_BATCH5_RESEARCH_CAPTURE)\nint x;\n#endif\n",
+    "#ifdef KDM6_BATCH5_RESEARCH_CAPTURE\nint x;\n#elif 1\nint y;\n#endif\n",
+    "#ifdef KDM6_BATCH5_RESEARCH_CAPTURE\nint x;\n",
+])
+def test_batch5_ambiguous_or_unterminated_frames_rejected(text):
+    with pytest.raises(v.OverlayShape):
+        v.batch5_macro_off(text)
 
 
 def test_comments_and_reads_are_not_flagged():

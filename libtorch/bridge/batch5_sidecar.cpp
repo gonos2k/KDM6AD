@@ -5,6 +5,8 @@
 #include "kdm6/batch5_capture.h"
 #include "kdm6/batch5_intermediate_ad.h"
 #include <cmath>
+#include <ATen/Parallel.h>
+#include <fenv.h>
 #include <array>
 #include <limits>
 #include <vector>
@@ -12,6 +14,17 @@
 #include <cstdint>
 #include <string>
 namespace {
+// Same save/restore contract as kdm6_c_api.cpp::FpEnvGuard.  The forward ABI
+// owns the one-time thread setup; every derivative call rechecks effective ATen
+// getters and never mutates process-global thread configuration here.
+struct FpEnvGuard {
+    fenv_t saved_;
+    FpEnvGuard() { fegetenv(&saved_); }
+    ~FpEnvGuard() { fesetenv(&saved_); }
+};
+bool effective_singlethread() {
+    return at::get_num_threads()==1 && at::get_num_interop_threads()==1;
+}
 bool disjoint_ranges(const void* a, std::size_t an, const void* b, std::size_t bn) {
     auto x=reinterpret_cast<std::uintptr_t>(a), y=reinterpret_cast<std::uintptr_t>(b);
     constexpr auto max=std::numeric_limits<std::uintptr_t>::max();
@@ -63,6 +76,8 @@ extern "C" KDM6_C_API int kdm6_batch5_binding_token_c(const void* handle,std::ui
 }
 extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std::uint64_t token,std::uint64_t n,const double* direction,std::size_t count,double* output,int* status) {
     try {
+        FpEnvGuard fpenv_guard;
+        if (!effective_singlethread()) return -1;
         if (!direction || !output || !status || count!=624) return -1;
         if (!disjoint_ranges(output,sizeof(*output),status,sizeof(*status)) ||
             !disjoint_ranges(direction,624*sizeof(double),output,sizeof(*output)) ||
@@ -88,6 +103,8 @@ extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std:
 }
 extern "C" KDM6_C_API int kdm6_batch5_intermediate_vjp_c(const void* handle,std::uint64_t token,std::uint64_t n,double cotangent,double* output,std::size_t count,std::uint16_t* connected_mask,int* status) {
     try {
+        FpEnvGuard fpenv_guard;
+        if (!effective_singlethread()) return -1;
         if (!output || !connected_mask || !status || count!=624 || !std::isfinite(cotangent)) return -1;
         if (!disjoint_ranges(output,624*sizeof(double),connected_mask,sizeof(*connected_mask)) ||
             !disjoint_ranges(output,624*sizeof(double),status,sizeof(*status)) ||

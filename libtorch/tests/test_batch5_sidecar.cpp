@@ -7,11 +7,15 @@
 #include <cstring>
 #include <thread>
 #include <atomic>
+#include <ATen/Parallel.h>
+#include <fenv.h>
 #include <stdexcept>
 #include <vector>
 #include <limits>
 
 int main(){
+    at::set_num_threads(1); at::set_num_interop_threads(1);
+    const int original_round=fegetround(); assert(original_round!=-1);
     assert(kdm6_batch5_begin_c("synthetic", "capture_on_value", 1)==0);
     assert(kdm6_batch5_begin_c("duplicate", "capture_on_value", 1)!=0);
     kdm6::batch5::enter_runtime(true);
@@ -89,9 +93,19 @@ int main(){
     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)==0 && tangent==2. && derivative_status==0);
     double joint_seed[624]{}; joint_seed[38]=1.;joint_seed[12*39+38]=2.;
     double joint_jvp=0.;int joint_status=-1;
+    assert(fesetround(FE_DOWNWARD)==0);
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)==0 && joint_jvp==8. && joint_status==0);
+    assert(fegetround()==FE_DOWNWARD);
+    joint_jvp=99.;joint_status=99;
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token+1,39,joint_seed,624,&joint_jvp,&joint_status)!=0 && joint_jvp==99. && joint_status==99);
+    assert(fegetround()==FE_DOWNWARD);
+    assert(fesetround(original_round)==0);
     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)==0 && joint_jvp==8. && joint_status==0);
     double grad[624];for(double& x:grad)x=99.;std::uint16_t mask=0;int vstatus=-1;
+    assert(fesetround(FE_DOWNWARD)==0);
     assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,2.,grad,624,&mask,&vstatus)==0 && vstatus==0 && mask==0x1001);
+    assert(fegetround()==FE_DOWNWARD);
+    assert(fesetround(original_round)==0);
     assert(grad[38]==4. && grad[12*39+38]==6. && grad[39]==0.);
     double dot=0.;for(int i=0;i<624;++i)dot+=grad[i]*joint_seed[i];assert(dot==joint_jvp*2.);
     assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,0.,grad,624,&mask,&vstatus)==0 && vstatus==0 && mask==0x1001 && grad[38]==0.);
@@ -108,6 +122,15 @@ int main(){
     int overlap=77;
     assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,1.,grad,624,reinterpret_cast<std::uint16_t*>(&overlap),&overlap)!=0 && overlap==77 && grad[0]==99.);
     assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,std::numeric_limits<double>::infinity(),grad,624,&mask,&vstatus)!=0 && grad[0]==99. && mask==77 && vstatus==77);
+    assert(fesetround(FE_DOWNWARD)==0);
+    assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token+1,39,1.,grad,624,&mask,&vstatus)!=0 && fegetround()==FE_DOWNWARD);
+    assert(fesetround(original_round)==0);
+    at::set_num_threads(2);
+    assert(at::get_num_threads()==2 && at::get_num_interop_threads()==1);
+    joint_jvp=99.; joint_status=99; for(double& x:grad)x=99.; mask=77; vstatus=77;
+    assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)!=0 && joint_jvp==99. && joint_status==99);
+    assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,1.,grad,624,&mask,&vstatus)!=0 && grad[0]==99. && mask==77 && vstatus==77);
+    at::set_num_threads(1); assert(at::get_num_threads()==1);
     bool foreign_vjp_rejected=false;
     std::thread wrong_vjp([&] { double a[624];for(double& z:a)z=42.;std::uint16_t b=42;int c=42;foreign_vjp_rejected=kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,1.,a,624,&b,&c)!=0 && a[0]==42. && b==42 && c==42; });wrong_vjp.join();assert(foreign_vjp_rejected);
     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)==0 && joint_jvp==8.);
