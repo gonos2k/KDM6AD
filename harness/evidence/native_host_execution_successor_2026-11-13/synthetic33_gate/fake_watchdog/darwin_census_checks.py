@@ -4,6 +4,8 @@ import importlib.util
 import os
 import py_compile
 import struct
+import sys
+import time
 import hashlib
 import tempfile
 from unittest.mock import patch
@@ -138,6 +140,31 @@ class CensusChecks(unittest.TestCase):
                 m.sample_group(provider, request(Fake()), 10, clock=lambda: 1)
             # On stable identities both observations still use sampled RSS.
             self.assertEqual(m.sample_group(provider, request(Fake()), 10, clock=lambda: 1)['rss_bytes'], 3072)
+
+    def test_native_helper_protocol_with_injected_provider_only(self):
+        # No native package, DSO, or model: the child inherits this fake module.
+        class Provider:
+            def __init__(self, package, manifest):
+                if package != Path('/fake/psutil') or manifest != {'fake.py': 'a' * 64}:
+                    raise RuntimeError('wrong provider pins')
+            def list_group(self, pgid, capacity):
+                return 4, [pgid]
+            def inspect(self, pid):
+                return (1000.123456, pid, 2048)
+        fake_module = SimpleNamespace(DarwinProvider=Provider, sample_group=m.sample_group)
+        sys.path.insert(0, str(PATH.parent))
+        try:
+            import census_helper
+            with patch.dict(sys.modules, {'darwin_census_provider': fake_module}):
+                helper = census_helper.CensusHelper(census_helper.native_sampler(Path('/fake/psutil'), {'fake.py': 'a' * 64}), helper_kind='native')
+                try:
+                    result = helper.sample(100, lambda: ('alive', (1000, 123456)), lambda: self.fail('unexpected abort'), time.monotonic() + 5)
+                    self.assertEqual(result['rss_bytes'], 2048)
+                    self.assertEqual(result['policy'], 'SAMPLED_STOP_THRESHOLD')
+                finally:
+                    helper.close()
+        finally:
+            sys.path.pop(0)
 
     def test_package_inventory_precheck(self):
         with tempfile.TemporaryDirectory() as tmp:

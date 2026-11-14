@@ -39,13 +39,22 @@ handled separately from missing or failed resource observations; the latter
 remain `INCOMPLETE`. This fixes a fast mock-worker zero-sample race without
 claiming a hard memory cap or actual A7 model execution.
 
-The next source-only connection candidate labels serialized calls as
-`kdm6.synthetic33.call_asset.v2`. Its fake worker stores the three selector
-records under `result.selectors`; the witness checks that shape, finite raw
-words, condition-row structure, graph status/connection masks and actual query
-counts. Missing or disconnected selectors remain `INCONCLUSIVE`. Required
-source pins include the selector manifest and census helper/provider. A valid
-helper sample may span the same leader's `alive` to `exited_reserved` transition;
-the Darwin provider uses a fresh PID start-time observation after RSS. These
-checks are sampled and fake-tested. They do not make the real worker, A7 graph,
-or completion witness executable.
+The source-only connection records serialize as
+`kdm6.synthetic33.call_asset.v3`. Its fake worker stores three selectors under
+`result.selectors`, keeping raw ABI JVP status separate from each fixed seed's
+direction connectivity. The witness checks exact slot types and float bits,
+finite raw words, condition-row structure, graph status/connection masks and
+actual query counts. Missing or disconnected selectors remain `INCONCLUSIVE`.
+The common fixed-plan budget is 33 forwards and at most 9 primal, 18 JVP and
+9 VJP queries. Offline replay first validates the asset structure, then
+recomputes the fake gradient dots and represented-step finite differences;
+one good step cannot certify a two-step pair. Overall status stays
+`INCONCLUSIVE`.
+
+Required source pins include the selector manifest and census helper/provider.
+A valid helper sample may span the same leader's `alive` to `exited_reserved`
+transition; the Darwin provider uses a fresh PID start-time observation after
+RSS. A disabled real-mode wiring candidate requires a separately SHA-pinned
+private census package inventory and rechecks the manifest before release.
+These checks are sampled and fake-tested. They do not make the real worker,
+A7 graph, or completion witness executable.

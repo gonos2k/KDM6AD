@@ -6,13 +6,16 @@ independent witness must audit actual loaded images and the entire journal.
 """
 import os,pathlib
 import fixture33
+import selector_manifest_spec_v1 as selectors
 from real33_contract import preflight
 EXECUTION_ENABLED=False
 
 def prepare(outdir):
     contract=preflight();rows=fixture33.plan();target=pathlib.Path(outdir).resolve(strict=True)
     if len(rows)!=33 or any(x['state']!='UNSTARTED' for x in rows):raise RuntimeError('invalid fixed inventory')
-    return {'status':'DRAFT_BLOCKED','scope':'synthetic; watchdog survival and no setsid escape assumed','output_dir':str(target),'contract':contract,'calls':rows,'limits':{'wall_seconds':900,'rss_bytes':4*1024**3,'forwards':33,'graph_primal':3,'jvp':6,'vjp':3,'serialized_total_bytes':4*1024**3,'serialized_call_bytes':128*1024**2}}
+    queries=selectors.query_budget(rows)
+    if not fixture33.same_plan_exact(contract.get('calls')):raise RuntimeError('preflight plan mismatch')
+    return {'status':'DRAFT_BLOCKED','scope':'synthetic; watchdog survival and no setsid escape assumed','output_dir':str(target),'contract':contract,'calls':rows,'limits':{'wall_seconds':900,'rss_bytes':4*1024**3,'forwards':33,'graph_primal':queries['total']['graph_primal'],'jvp':queries['total']['jvp'],'vjp':queries['total']['vjp'],'query_per_fixture':queries['per_fixture'],'serialized_total_bytes':4*1024**3,'serialized_call_bytes':128*1024**2}}
 
 def child_after_fork(ready_fd,release_fd,outdir):
     # Real code is intentionally unreachable until a separate reviewed change.

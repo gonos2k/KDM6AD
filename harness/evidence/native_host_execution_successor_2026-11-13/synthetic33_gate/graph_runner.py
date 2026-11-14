@@ -6,6 +6,7 @@ import json
 import os
 import struct
 import selector_manifest_spec_v1 as selectors
+import fixture33
 from fixture_plan import fixture, direction, perturb, TARGET_TOP, schedule, raw_words
 
 U64=C.c_uint64; I=C.c_int; D=C.c_double; V=C.c_void_p
@@ -32,19 +33,23 @@ def query_graph_selector(d,h,token,n,vectors,counts):
     counts['vjp']+=1
     if d.kdm6_batch5_intermediate_vjp_c(h,token,n,1.,grad,624,C.byref(mask),C.byref(vs)): raise RuntimeError('VJP ABI')
     if vs.value not in (0,1,2) or not all(math.isfinite(g) for g in grad): raise RuntimeError('invalid/nonfinite VJP')
-    js=[];dots=[];statuses=[]
+    js=[];dots=[];statuses=[];connectivity=[]
     for vector in vectors:
         j=D(float('nan'));status=I(-1);seed=(D*624)(*vector)
         counts['jvp']+=1
         if d.kdm6_batch5_intermediate_jvp_c(h,token,n,seed,624,C.byref(j),C.byref(status)) or status.value not in (0,1,2) or not math.isfinite(j.value): raise RuntimeError('JVP ABI/status')
         active={i//39 for i,x in enumerate(vector) if x!=0}
-        statuses.append(status.value if status.value!=0 or all(mask.value & (1<<i) for i in active) else 2)
+        statuses.append(status.value)
+        connectivity.append('NO_GRAPH_PATH' if status.value==1 else ('CONNECTED' if status.value==0 and all(mask.value & (1<<i) for i in active) else 'UNCONNECTED'))
         js.append(j.value);dots.append(sum(a*b for a,b in zip(grad,vector)))
-    return {'status':'SPEC_ONLY','graph_flag':flag.value,'primal':primal.value,'jvps':js,'dots':dots,'jvp_statuses':statuses,'vjp_status':vs.value,'mask':mask.value,'grad_words':[word(x).hex() for x in grad]}
+    return {'status':'SPEC_ONLY','graph_flag':flag.value,'primal':primal.value,'jvps':js,'dots':dots,'abi_jvp_statuses':statuses,'direction_connectivity':connectivity,'vjp_status':vs.value,'mask':mask.value,'grad_words':[word(x).hex() for x in grad]}
 def query_graph_set(d,h,token,requests,vectors,counts=None):
     if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
-    if len(requests)>3 or len(vectors)!=2:raise RuntimeError('graph query budget')
+    limits=selectors.query_budget(fixture33.plan())['per_fixture']
+    if len(requests)>limits['graph_primal'] or len(vectors)!=len(selectors.DIRECTIONS):raise RuntimeError('graph query budget')
     if counts is None:counts={'graph_primal':0,'jvp':0,'vjp':0}
+    increments={'graph_primal':len(requests),'jvp':len(requests)*len(vectors),'vjp':len(requests)}
+    if type(counts) is not dict or set(counts)!=set(limits) or any(type(counts[k]) is not int or counts[k]<0 or counts[k]+increments[k]>limits[k] for k in limits):raise RuntimeError('graph query budget')
     return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors,counts)} for name,key,n in requests}
 def release_capture(d,h):
     try:

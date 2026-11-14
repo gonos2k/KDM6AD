@@ -1,0 +1,328 @@
+"""Read-only replay of stored synthetic call assets; no model or DSO execution."""
+
+import hashlib
+import json
+import math
+import re
+import struct
+from pathlib import Path
+
+import fixture33 as fixtures
+import witness33
+from fixture_plan import CENTER, FIELDS, K, raw_words
+from selector_manifest_spec_v1 import SELECTORS
+
+
+def need(ok, message):
+    if not ok:
+        raise ValueError(message)
+
+
+def finite(value):
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def near(a, b, rtol=1e-5, atol=1e-8):
+    return abs(a - b) <= atol + rtol * max(abs(a), abs(b))
+
+
+def exact_fields(actual, expected):
+    if type(actual) is not dict or actual.keys() != expected.keys():
+        return False
+    for key, value in expected.items():
+        observed = actual[key]
+        if type(observed) is not type(value):
+            return False
+        if type(value) is float:
+            if struct.pack("=d", observed) != struct.pack("=d", value):
+                return False
+        elif observed != value:
+            return False
+    return True
+
+
+def read_assets(directory):
+    directory = Path(directory)
+    schedule = fixtures.plan()
+    journal = [
+        json.loads(line)
+        for line in (directory / "calls.jsonl").read_text().splitlines()
+    ]
+    need(len(journal) == 66, "journal length")
+    assets = []
+    for index, slot in enumerate(schedule):
+        expected = {
+            key: slot[key]
+            for key in ("seq", "fixture", "mode", "direction", "offset", "input_sha256")
+        }
+        started, done = journal[index * 2 : index * 2 + 2]
+        need(exact_fields(started, {**expected, "state": "STARTED"}), "started slot")
+        raw = (directory / f"call_{index + 1:02}.json").read_bytes()
+        need(
+            exact_fields(
+                done,
+                {
+                    **expected,
+                    "state": "COMPLETED",
+                    "asset_sha256": hashlib.sha256(raw).hexdigest(),
+                    "bytes": len(raw),
+                },
+            ),
+            "completed asset hash",
+        )
+        data = json.loads(raw)
+        need(
+            type(data) is dict
+            and set(data) == {"schema", "slot", "input_words", "result"}
+            and type(data["schema"]) is str
+            and data["schema"] == "kdm6.synthetic33.call_asset.v3"
+            and exact_fields(data["slot"], expected),
+            "asset identity",
+        )
+        need(
+            type(data["input_words"]) is str
+            and re.fullmatch(r"[0-9a-f]{9984}", data["input_words"]) is not None,
+            "input word encoding",
+        )
+        words = bytes.fromhex(data["input_words"])
+        need(
+            len(words) == 624 * 8
+            and hashlib.sha256(words).hexdigest() == slot["input_sha256"],
+            "input words",
+        )
+        values = struct.unpack("<624d", words)
+        need(all(math.isfinite(x) for x in values), "input finite")
+        data["values"] = values
+        assets.append(data)
+    need(
+        {p.name for p in directory.glob("call_*.json")}
+        == {f"call_{i:02}.json" for i in range(1, 34)},
+        "asset inventory",
+    )
+    return assets
+
+
+def replay(directory):
+    assets = read_assets(directory)
+    witness33.checked_results(assets)
+    results = []
+    for case_index, case in enumerate(fixtures.CASES):
+        group = assets[11 * case_index : 11 * (case_index + 1)]
+        off, on, graph = (x["result"] for x in group[:3])
+        need(
+            (off["out"], off["rain"])
+            == (on["out"], on["rain"])
+            == (graph["out"], graph["rain"]),
+            "forward parity",
+        )
+        for result in (off, on, graph):
+            need(
+                len(bytes.fromhex(result["out"])) == 468 * 8, "forward output inventory"
+            )
+            need(
+                type(result["rain"]) is int and 0 <= result["rain"] < (1 << 64),
+                "rain word",
+            )
+        need(
+            group[0]["input_words"]
+            == group[1]["input_words"]
+            == group[2]["input_words"],
+            "center input parity",
+        )
+        for selector in SELECTORS:
+            center, gd = on["selectors"][selector], graph["selectors"][selector]
+            need(
+                center["status"] == gd["status"] == "SPEC_ONLY"
+                and center["primal"] == gd["primal"],
+                "selector primal parity",
+            )
+            words = gd["grad_words"]
+            need(
+                len(words) == 624
+                and all(isinstance(x, str) and len(x) == 16 for x in words),
+                "gradient inventory",
+            )
+            gradient = [struct.unpack("=d", bytes.fromhex(x))[0] for x in words]
+            need(all(math.isfinite(x) for x in gradient), "gradient finite")
+            for direction_index, direction in enumerate(fixtures.DIRECTIONS):
+                seed = fixtures.direction(direction)
+                dot = sum(g * v for g, v in zip(gradient, seed))
+                jvp, stored_dot = (
+                    gd["jvps"][direction_index],
+                    gd["dots"][direction_index],
+                )
+                need(
+                    finite(dot) and finite(jvp) and finite(stored_dot),
+                    "gradient result finite",
+                )
+                need(
+                    near(dot, stored_dot, 1e-12, 1e-14),
+                    "stored dot differs from gradient",
+                )
+                need(gd["abi_jvp_statuses"][direction_index] in (0, 1, 2), "ABI status")
+                abi_status = gd["abi_jvp_statuses"][direction_index]
+                mask = gd["mask"]
+                need(type(mask) is int and 0 <= mask < (1 << 16), "gradient mask")
+                bit = 1 << FIELDS.index(direction)
+                connectivity = (
+                    "NO_GRAPH_PATH"
+                    if abi_status == 1
+                    else (
+                        "CONNECTED"
+                        if abi_status == 0 and (mask & bit)
+                        else "UNCONNECTED"
+                    )
+                )
+                need(
+                    gd["direction_connectivity"][direction_index] == connectivity,
+                    "connectivity",
+                )
+                rows = []
+                for step_index, h in enumerate(fixtures.H):
+                    base_index = 3 + direction_index * 4 + step_index * 2
+                    lower, upper = group[base_index : base_index + 2]
+                    idx = FIELDS.index(direction) * K + CENTER
+                    center_values = group[1]["values"]
+                    lo, hi = lower["values"], upper["values"]
+                    need(
+                        all(
+                            raw_words([lo[i]])
+                            == raw_words([center_values[i]])
+                            == raw_words([hi[i]])
+                            for i in range(624)
+                            if i != idx
+                        ),
+                        "unexpected perturbation",
+                    )
+                    gap = hi[idx] - lo[idx]
+                    need(math.isfinite(gap) and gap > 0, "represented gap")
+                    low_entry, high_entry = (
+                        lower["result"]["selectors"][selector],
+                        upper["result"]["selectors"][selector],
+                    )
+                    need(
+                        low_entry["status"] == high_entry["status"] == "SPEC_ONLY",
+                        "endpoint selector",
+                    )
+                    low = struct.unpack("=d", struct.pack("=Q", low_entry["primal"]))[0]
+                    high = struct.unpack("=d", struct.pack("=Q", high_entry["primal"]))[
+                        0
+                    ]
+                    fd = (high - low) / gap * seed[idx]
+                    need(math.isfinite(fd), "FD finite")
+                    conditions = [
+                        r.get("conditions")
+                        for r in (on, lower["result"], upper["result"])
+                    ]
+                    branch = (
+                        "CROSS"
+                        if all(conditions)
+                        and not (conditions[0] == conditions[1] == conditions[2])
+                        else (
+                            "INCOMPLETE"
+                            if any(not c for c in conditions)
+                            or any(
+                                r.get("unverified_absence", False)
+                                for r in (on, lower["result"], upper["result"])
+                            )
+                            else "STABLE"
+                        )
+                    )
+                    ulp_signal = abs(high - low) / max(math.ulp(low), math.ulp(high))
+                    resolution = (
+                        "RESOLVED"
+                        if ulp_signal >= 16 and abs(fd) >= 1e-8
+                        else "UNRESOLVED"
+                    )
+                    duality = (
+                        "UNCONNECTED"
+                        if connectivity != "CONNECTED"
+                        or gd["graph_flag"] != 1
+                        or gd["vjp_status"] != 0
+                        else ("CONSISTENT" if near(jvp, dot) else "MISMATCH")
+                    )
+                    status = (
+                        "NUMERIC_MISMATCH"
+                        if duality == "MISMATCH"
+                        else (
+                            "BRANCH_CROSSING"
+                            if branch == "CROSS"
+                            else (
+                                "UNRESOLVED"
+                                if branch == "INCOMPLETE"
+                                or duality == "UNCONNECTED"
+                                or resolution == "UNRESOLVED"
+                                or abs(jvp) < 1e-8
+                                else (
+                                    "LOCAL_NUMERIC_CONSISTENT"
+                                    if near(fd, jvp)
+                                    else "NUMERIC_MISMATCH"
+                                )
+                            )
+                        )
+                    )
+                    rows.append(
+                        {
+                            "h": h,
+                            "represented_gap": gap,
+                            "fd": fd,
+                            "fd_minus_jvp": fd - jvp,
+                            "output_ulp_signal": ulp_signal,
+                            "resolution": resolution,
+                            "recorded_branch_schedule": branch,
+                            "status": status,
+                        }
+                    )
+                stability = (
+                    "STABLE"
+                    if all(
+                        row["recorded_branch_schedule"] == "STABLE"
+                        and row["resolution"] == "RESOLVED"
+                        for row in rows
+                    )
+                    and near(rows[0]["fd"], rows[1]["fd"])
+                    else "UNSTABLE_OR_UNRESOLVED"
+                )
+                if any(row["status"] == "NUMERIC_MISMATCH" for row in rows):
+                    pair_status = "NUMERIC_MISMATCH"
+                elif any(row["recorded_branch_schedule"] == "CROSS" for row in rows):
+                    pair_status = "BRANCH_CROSSING"
+                elif all(row["status"] == "LOCAL_NUMERIC_CONSISTENT" for row in rows):
+                    pair_status = (
+                        "LOCAL_NUMERIC_CONSISTENT"
+                        if stability == "STABLE"
+                        else "NUMERIC_MISMATCH"
+                    )
+                else:
+                    pair_status = "UNRESOLVED"
+                results.append(
+                    {
+                        "fixture": case,
+                        "selector": selector,
+                        "direction": direction,
+                        "jvp": jvp,
+                        "vjp_dot": dot,
+                        "duality": "UNCONNECTED"
+                        if connectivity != "CONNECTED"
+                        or gd["graph_flag"] != 1
+                        or gd["vjp_status"] != 0
+                        else ("CONSISTENT" if near(jvp, dot) else "MISMATCH"),
+                        "connectivity": connectivity,
+                        "steps": rows,
+                        "two_step_stability": stability,
+                        "pair_status": pair_status,
+                    }
+                )
+    return {
+        "schema": "kdm6.synthetic33.offline_replay.v1",
+        "status": "INCONCLUSIVE",
+        "calls": len(assets),
+        "thresholds": {
+            "relative_tolerance": 1e-5,
+            "absolute_tolerance": 1e-8,
+            "minimum_output_ulps": 16,
+            "minimum_fd_magnitude": 1e-8,
+        },
+        "rows": results,
+        "scope": "offline synthetic evidence only; no model, DSO, native or physical claim",
+    }

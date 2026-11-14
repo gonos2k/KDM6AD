@@ -5,6 +5,9 @@ import selector_manifest_spec_v1 as selectors
 from real33_contract import sha,validate_dso_binding
 MAX_CALL=128*1024**2;MAX_TOTAL=4*1024**3
 
+def same_slot_value(actual,expected):
+    return type(actual) is type(expected) and (struct.pack('=d',actual)==struct.pack('=d',expected) if type(expected) is float else actual==expected)
+
 def checked_condition_rows(rows, *, operand):
     if rows=={}:rows=[]
     if type(rows) is not list:raise ValueError('condition rows')
@@ -28,22 +31,26 @@ def checked_condition_rows(rows, *, operand):
             if dtype==3 and not math.isfinite(struct.unpack('=d',struct.pack('=Q',raw))[0]):raise ValueError('condition f64')
 
 def checked_journal(directory,slots):
+    if not fixture33.same_plan_exact(slots):raise ValueError('slot plan mismatch')
     root=pathlib.Path(directory);events=[json.loads(line) for line in (root/'calls.jsonl').read_text().splitlines()]
-    if len(slots)!=33 or len(events)!=66:raise ValueError('journal incomplete')
+    selectors.query_budget(slots)
+    if len(events)!=2*len(slots):raise ValueError('journal incomplete')
     total=0;assets=[]
     for i,slot in enumerate(slots,1):
         a,b=events[2*(i-1):2*i]
         keys=('seq','fixture','mode','direction','offset','input_sha256')
-        if any(a.get(k)!=slot[k] or b.get(k)!=slot[k] for k in keys) or a.get('state')!='STARTED' or b.get('state')!='COMPLETED':raise ValueError('journal identity or state')
+        if any(k not in a or k not in b or not same_slot_value(a[k],slot[k]) or not same_slot_value(b[k],slot[k]) for k in keys) or a.get('state')!='STARTED' or b.get('state')!='COMPLETED':raise ValueError('journal identity or state')
         path=root/f'call_{i:02}.json';data=path.read_bytes();total+=len(data)
         if len(data)>MAX_CALL or total>MAX_TOTAL or b.get('bytes')!=len(data) or b.get('asset_sha256')!=hashlib.sha256(data).hexdigest():raise ValueError('call asset size/hash')
         obj=json.loads(data)
-        if obj.get('schema')!='kdm6.synthetic33.call_asset.v2' or obj.get('slot')!={k:slot[k] for k in keys} or hashlib.sha256(bytes.fromhex(obj['input_words'])).hexdigest()!=slot['input_sha256']:raise ValueError('call asset identity')
+        recorded=obj.get('slot');words=obj.get('input_words')
+        if obj.get('schema')!='kdm6.synthetic33.call_asset.v3' or type(recorded) is not dict or set(recorded)!=set(keys) or any(not same_slot_value(recorded[k],slot[k]) for k in keys) or type(words) is not str or re.fullmatch('[0-9a-f]{9984}',words) is None or hashlib.sha256(bytes.fromhex(words)).hexdigest()!=slot['input_sha256']:raise ValueError('call asset identity')
         assets.append(obj)
     return total,assets
 
 def checked_results(assets):
     """Validate serialized v2 call payloads; never certify scientific replay."""
+    limits=selectors.query_budget(fixture33.plan())['total']
     query={'graph_primal':0,'jvp':0,'vjp':0}
     for obj in assets:
         slot=obj['slot'];r=obj['result'];mode=slot['mode']
@@ -74,30 +81,32 @@ def checked_results(assets):
             if mode=='capture_on_value':
                 if set(entry)!={'status','identity','primal'}:raise ValueError('value selector schema')
             elif mode=='center_joint_graph':
-                if set(entry)!={'status','identity','primal','graph_flag','jvps','dots','jvp_statuses','vjp_status','mask','grad_words'}:raise ValueError('graph selector schema')
+                if set(entry)!={'status','identity','primal','graph_flag','jvps','dots','abi_jvp_statuses','direction_connectivity','vjp_status','mask','grad_words'}:raise ValueError('graph selector schema')
                 grad=entry['grad_words'];jvp=entry['jvps'];dots=entry['dots']
-                if type(grad) is not list or len(grad)!=624 or any(type(x) is not str or re.fullmatch('[0-9a-f]{16}',x) is None for x in grad) or type(jvp) is not list or len(jvp)!=2 or type(dots) is not list or len(dots)!=2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in jvp+dots) or type(entry['mask']) is not int or not 0<=entry['mask']<2**16 or type(entry['graph_flag']) is not int or entry['graph_flag'] not in (0,1) or type(entry['vjp_status']) is not int or entry['vjp_status'] not in (0,1,2) or type(entry['jvp_statuses']) is not list or len(entry['jvp_statuses'])!=2 or any(type(v) is not int or v not in (0,1,2) for v in entry['jvp_statuses']):raise ValueError('invalid graph payload schema')
+                if type(grad) is not list or len(grad)!=624 or any(type(x) is not str or re.fullmatch('[0-9a-f]{16}',x) is None for x in grad) or type(jvp) is not list or len(jvp)!=2 or type(dots) is not list or len(dots)!=2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in jvp+dots) or type(entry['mask']) is not int or not 0<=entry['mask']<2**16 or type(entry['graph_flag']) is not int or entry['graph_flag'] not in (0,1) or type(entry['vjp_status']) is not int or entry['vjp_status'] not in (0,1,2) or type(entry['abi_jvp_statuses']) is not list or len(entry['abi_jvp_statuses'])!=2 or any(type(v) is not int or v not in (0,1,2) for v in entry['abi_jvp_statuses']):raise ValueError('invalid graph payload schema')
                 if not all(math.isfinite(struct.unpack('=d',bytes.fromhex(x))[0]) for x in grad):raise ValueError('nonfinite graph gradient')
-                if entry['graph_flag']==0 and (entry['vjp_status']!=1 or entry['mask']!=0 or entry['jvp_statuses']!=[1,1] or any(x!='0000000000000000' for x in grad) or any(struct.pack('=d',x)!=b'\0'*8 for x in jvp+dots)):raise ValueError('inconsistent disconnected graph')
+                if entry['graph_flag']==0 and (entry['vjp_status']!=1 or entry['mask']!=0 or entry['abi_jvp_statuses']!=[1,1] or any(x!='0000000000000000' for x in grad) or any(struct.pack('=d',x)!=b'\0'*8 for x in jvp+dots)):raise ValueError('inconsistent disconnected graph')
                 if entry['graph_flag']==1 and not ((entry['vjp_status']==0 and entry['mask']!=0) or (entry['vjp_status']==2 and entry['mask']==0)):raise ValueError('inconsistent connected graph status')
-                if entry['graph_flag']==1 and entry['vjp_status']==2 and (entry['jvp_statuses']!=[2,2] or any(struct.pack('=d',x)!=b'\0'*8 for x in jvp+dots)):raise ValueError('inconsistent unconnected graph')
-                if entry['graph_flag']==1 and 1 in entry['jvp_statuses']:raise ValueError('inconsistent graph JVP status')
+                if entry['graph_flag']==1 and entry['vjp_status']==2 and (entry['abi_jvp_statuses']!=[2,2] or any(struct.pack('=d',x)!=b'\0'*8 for x in jvp+dots)):raise ValueError('inconsistent unconnected graph')
+                if entry['abi_jvp_statuses'] != [entry['vjp_status']]*2:raise ValueError('inconsistent ABI JVP status')
+                if type(entry['direction_connectivity']) is not list or len(entry['direction_connectivity'])!=2:raise ValueError('direction connectivity schema')
+                if entry['graph_flag']==0 and entry['direction_connectivity']!=['NO_GRAPH_PATH','NO_GRAPH_PATH']:raise ValueError('direction connectivity')
                 if entry['graph_flag']==1:
                     expected=[]
                     for direction in fixture33.DIRECTIONS:
                         vector=fixture33.direction(direction);active={i//39 for i,v in enumerate(vector) if v!=0}
                         if len(active)!=1:raise ValueError('ambiguous fixed seed')
-                        expected.append(0 if entry['mask'] & (1<<next(iter(active))) else 2)
-                    if entry['jvp_statuses']!=expected:raise ValueError('JVP direction connectivity')
-                    if any(status==2 and (jvp[i]!=0.0 or dots[i]!=0.0) for i,status in enumerate(expected)):raise ValueError('nonzero unconnected direction')
+                        expected.append('CONNECTED' if entry['mask'] & (1<<next(iter(active))) else 'UNCONNECTED')
+                    if entry['direction_connectivity']!=expected:raise ValueError('JVP direction connectivity')
+                    if any(status=='UNCONNECTED' and (jvp[i]!=0.0 or dots[i]!=0.0) for i,status in enumerate(expected)):raise ValueError('nonzero unconnected direction')
                 if any(grad[i]!='0000000000000000' for i in range(624) if not entry['mask'] & (1 << (i//39))):raise ValueError('nonzero undefined gradient')
             else:raise ValueError('unknown mode')
         if mode=='center_joint_graph':
-            counts=entry_counts={'graph_primal':successes,'jvp':2*successes,'vjp':successes}
+            counts=entry_counts={'graph_primal':successes,'jvp':len(selectors.DIRECTIONS)*successes,'vjp':successes}
             supplied=r.get('query_counts')
             if type(supplied) is not dict or set(supplied)!=set(entry_counts) or any(type(supplied[k]) is not int or supplied[k]!=v for k,v in entry_counts.items()):raise ValueError('graph query counts')
             for k,v in counts.items():query[k]+=v
-    if query['graph_primal']>9 or query['jvp']>18 or query['vjp']>9:raise ValueError('graph query budget')
+    if any(query[k]>limits[k] for k in limits):raise ValueError('graph query budget')
     return query
 
 def checked_loader(log,allowed,required,worker_pid,system_baseline):
@@ -128,11 +137,11 @@ def validate(directory,watchdog_result,elapsed_seconds,slots,allowed,required,lo
     if watchdog_result.get('status')!='INCOMPLETE' or watchdog_result.get('reason')!='worker_exit' or watchdog_result.get('cleanup_errors') or watchdog_result.get('signals') or watchdog_result.get('worker_wait_status')!=0:raise ValueError('worker/watcher failure')
     rss=watchdog_result.get('peak_group_rss_kib')
     if type(elapsed_seconds) not in (int,float) or not math.isfinite(elapsed_seconds) or not 0<=elapsed_seconds<=900 or type(rss) is not int or not 0<rss<=4*1024**2 or watchdog_result.get('released') is not True or watchdog_result.get('worker_reaped_pid')!=watchdog_result.get('worker_pid') or type(watchdog_result.get('worker_pid')) is not int:raise ValueError('resource/worker identity')
-    if slots!=fixture33.plan():raise ValueError('slot plan mismatch')
+    if not fixture33.same_plan_exact(slots):raise ValueError('slot plan mismatch')
     n,assets=checked_journal(directory,slots);queries=checked_results(assets);loaded=checked_loader(loader_log,allowed,required,watchdog_result['worker_pid'],system_baseline)
     worker=json.loads((pathlib.Path(directory)/'worker_result.json').read_text())
-    if worker.get('status')!='INCONCLUSIVE' or worker.get('calls')!=33 or worker.get('asset_bytes')!=n:raise ValueError('worker result')
-    return {'status':'EXECUTION_COMPLETED_ASSETS_ONLY','scientific_status':'INCONCLUSIVE','scope':'synthetic assets only; FD/JVP/VJP correctness requires separate replay; contingent on watchdog survival and no setsid escape','forwards':33,'asset_bytes':n,'loaded':loaded,'queries':queries}
+    if worker.get('status')!='INCONCLUSIVE' or worker.get('calls')!=len(slots) or worker.get('asset_bytes')!=n:raise ValueError('worker result')
+    return {'status':'EXECUTION_COMPLETED_ASSETS_ONLY','scientific_status':'INCONCLUSIVE','scope':'synthetic assets only; FD/JVP/VJP correctness requires separate replay; contingent on watchdog survival and no setsid escape','forwards':len(slots),'asset_bytes':n,'loaded':loaded,'queries':queries}
 
 def publish_fake_only(path,payload,deadline):
     # Executable integration remains disabled pending Red; fake tests only.

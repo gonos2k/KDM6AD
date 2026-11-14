@@ -1,4 +1,4 @@
-import json, os, pathlib, signal, tempfile, time, unittest, subprocess
+import json, os, pathlib, signal, tempfile, time, unittest, subprocess, hashlib
 import watchdog
 import sys
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
@@ -345,6 +345,53 @@ class WatchdogTest(unittest.TestCase):
     def test_real_default_readiness_bound_is_ten_seconds(self):
         import inspect
         self.assertEqual(inspect.signature(watchdog.supervise).parameters['fake_ready_timeout'].default,10.0)
+    def test_pre_ready_cleanup_freezes_before_group_or_pid_signal(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        pid=12345
+        waitid=MagicMock(side_effect=lambda kind,child,buf,opts:(setattr(ctypes.c_int.from_buffer(buf,12),'value',pid) or 0))
+        libc=SimpleNamespace(waitid=waitid)
+        with patch.object(watchdog.ctypes,'CDLL',return_value=libc),patch.object(watchdog.os,'kill') as kill,patch.object(watchdog.os,'getpgid',return_value=pid),patch.object(watchdog,'cleanup',return_value=[]) as clean:
+            self.assertEqual(watchdog.pre_ready_cleanup(pid),[])
+            kill.assert_called_once_with(pid,signal.SIGSTOP)
+            clean.assert_called_once_with(pid,None)
+            self.assertTrue(waitid.call_args.args[3]&os.WNOWAIT)
+        with patch.object(watchdog.ctypes,'CDLL',return_value=libc),patch.object(watchdog.os,'kill') as kill,patch.object(watchdog.os,'getpgid',return_value=888),patch.object(watchdog,'reapable'),patch.object(watchdog.os,'waitpid',return_value=(pid,9)) as reap,patch.object(watchdog,'cleanup') as clean:
+            self.assertEqual(watchdog.pre_ready_cleanup(pid),[])
+            self.assertEqual(kill.call_args_list,[unittest.mock.call(pid,signal.SIGSTOP),unittest.mock.call(pid,signal.SIGKILL)])
+            clean.assert_not_called();reap.assert_called_once_with(pid,0)
+        with patch.object(watchdog.ctypes,'CDLL',return_value=libc),patch.object(watchdog.os,'kill'),patch.object(watchdog.os,'getpgid',side_effect=PermissionError('unknown group')),patch.object(watchdog.os,'waitpid') as reap:
+            self.assertIn('pre-ready cleanup unresolved',watchdog.pre_ready_cleanup(pid)[0])
+            reap.assert_not_called()
+
+    def test_real_path_stays_disabled_and_requires_native_helper_before_fork(self):
+        args=(1,(1,1),-1,-1,-1,'unused','fixture33_real')
+        with patch.object(watchdog.os,'fork') as fork:
+            with self.assertRaisesRegex(RuntimeError,'real33 disabled'):
+                watchdog.supervise(*args)
+            fork.assert_not_called()
+        with patch.object(watchdog,'ENABLE_REAL33',True),patch.object(watchdog.os,'fork') as fork:
+            with self.assertRaisesRegex(RuntimeError,'pinned native census helper'):
+                watchdog.supervise(*args)
+            fork.assert_not_called()
+
+    def test_real_census_config_is_bound_to_private_manifest(self):
+        with tempfile.TemporaryDirectory() as t:
+            package=pathlib.Path(t).resolve()/'psutil';package.mkdir()
+            inventory={'__init__.py':'a'*64}
+            encoded=json.dumps(inventory,sort_keys=True,separators=(',',':')).encode('ascii')
+            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED',
+                   'census_provider':{'package':str(package),'inventory':inventory,'inventory_sha256':hashlib.sha256(encoded).hexdigest()}}
+            manifest=pathlib.Path(t)/'manifest.json';manifest.write_text(json.dumps(value))
+            digest=hashlib.sha256(manifest.read_bytes()).hexdigest()
+            self.assertEqual(watchdog.validate_real_census_config(manifest,digest,package,inventory)['package'],package)
+            with self.assertRaises(ValueError):watchdog.validate_real_census_config(manifest,'0'*64,package,inventory)
+            with self.assertRaises(ValueError):watchdog.validate_real_census_config(manifest,digest,package,{'__init__.py':'b'*64})
+            value.pop('census_provider');manifest.write_text(json.dumps(value))
+            with self.assertRaisesRegex(ValueError,'missing census provider pins'):
+                watchdog.validate_real_census_config(manifest,hashlib.sha256(manifest.read_bytes()).hexdigest(),package,inventory)
+
     def test_pre_ready_timeout_fails_closed(self):
         lr,lw=os.pipe();rr,rw=os.pipe();pr,pw=os.pipe()
         try:

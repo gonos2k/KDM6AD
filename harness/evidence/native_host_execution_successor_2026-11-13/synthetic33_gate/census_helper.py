@@ -53,8 +53,10 @@ def _recv(sock,deadline):
     return value
 
 class CensusHelper:
-    def __init__(self,sampler,*,startup_timeout=2.,clock=time.monotonic,fake_startup_stall=False):
-        """sampler is injected fake; native provider wiring is intentionally blocked."""
+    def __init__(self,sampler,*,startup_timeout=2.,clock=time.monotonic,fake_startup_stall=False,helper_kind='fake'):
+        """Start a separately bounded helper; the native sampler validates its own pins."""
+        if helper_kind not in ('fake','native'):raise HelperError('unknown helper kind')
+        ready_label='FAKE_HELPER_ONLY' if helper_kind=='fake' else 'PINNED_NATIVE_HELPER'
         self.clock=clock;self.nonce=secrets.token_hex(32);self.seq=0;self.next_sample=0.;self.closed=False
         parent,child=socket.socketpair();parent.setblocking(False);child.setblocking(False);self.sock=parent;self.group_ready=False;pid=os.fork()
         if pid==0:
@@ -75,7 +77,7 @@ class CensusHelper:
                 if hasattr(os,'posix_spawnp'):os.posix_spawnp=forbidden
                 subprocess.Popen=forbidden
                 if fake_startup_stall:time.sleep(20)
-                os.setsid();_send(child,{'ready':'FAKE_HELPER_ONLY'},time.monotonic()+startup_timeout)
+                os.setsid();_send(child,{'ready':ready_label},time.monotonic()+startup_timeout)
                 while True:
                     request=_recv(child,time.monotonic()+900.)
                     try:
@@ -88,7 +90,7 @@ class CensusHelper:
         child.close();self.pid=pid
         try:
             reply=_recv(self.sock,time.monotonic()+startup_timeout)
-            if reply!={'ready':'FAKE_HELPER_ONLY'} or os.getpgid(pid)!=pid:raise HelperError('helper identity')
+            if reply!={'ready':ready_label} or os.getpgid(pid)!=pid:raise HelperError('helper identity')
             self.group_ready=True
         except BaseException:
             self.close();raise

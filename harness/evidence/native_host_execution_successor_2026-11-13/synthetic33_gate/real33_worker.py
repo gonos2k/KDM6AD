@@ -4,6 +4,7 @@ import fixture33 as f
 from fixture_plan import FIELDS,K,CENTER,perturb,raw_words
 from graph_runner import Runner,as_double,near
 from real33_contract import preflight
+import selector_manifest_spec_v1 as selectors
 from selector_manifest_spec_v1 import SELECTORS
 
 def encode(v):
@@ -25,16 +26,16 @@ def run(release_fd,outdir):
     if os.read(release_fd,1)!=b'G':raise RuntimeError('watchdog release required')
     os.close(release_fd)
     # This is the first point after release at which the DSO may be loaded.
-    contract=preflight();r=Runner(contract['dso_path']);plan=f.plan();journal=outdir/'calls.jsonl';total=0;results=[];seq=0
+    contract=preflight();plan=f.plan();selectors.query_budget(plan);r=Runner(contract['dso_path']);journal=outdir/'calls.jsonl';total=0;results=[];seq=0
     def invoke(case,mode,x,v,selected=None):
         nonlocal seq,total
-        if seq>=33:raise RuntimeError('forward budget exhausted')
+        if seq>=len(plan):raise RuntimeError('forward budget exhausted')
         slot=plan[seq];event={k:slot[k] for k in ('seq','fixture','mode','direction','offset','input_sha256')}
         if (case,mode)!=(slot['fixture'],slot['mode']) or hashlib.sha256(raw_words(x)).hexdigest()!=slot['input_sha256']:raise RuntimeError('plan/input mismatch')
         seq+=1;append(journal,{**event,'state':'STARTED'})
         try:
             result=r._call(case,mode,x,v,selected,seq)
-            payload=json.dumps({'schema':'kdm6.synthetic33.call_asset.v2','slot':event,'input_words':raw_words(x).hex(),'result':encode(result)},sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
+            payload=json.dumps({'schema':'kdm6.synthetic33.call_asset.v3','slot':event,'input_words':raw_words(x).hex(),'result':encode(result)},sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
             if len(payload)>128*1024*1024 or total+len(payload)>4*1024**3:raise RuntimeError('serialized byte cap')
             target=outdir/f'call_{seq:02}.json';tmp=outdir/f'.call_{seq:02}.tmp'
             with open(tmp,'xb') as stream:stream.write(payload);stream.flush();os.fsync(stream.fileno())
@@ -48,6 +49,7 @@ def run(release_fd,outdir):
     for case in f.CASES:
         x=f.center(case);dirs=[f.direction(name) for name in f.DIRECTIONS]
         off=invoke(case,'capture_off_value',x,dirs[0]);on=invoke(case,'capture_on_value',x,dirs[0])
+        if (off['out'],off['rain'])!=(on['out'],on['rain']):raise RuntimeError('same-input raw parity')
         selected={name:entry['identity'] for name,entry in on['selectors'].items() if entry['status']=='SPEC_ONLY'}
         graph=invoke(case,'center_joint_graph',x,dirs,selected)
         if (off['out'],off['rain'])!=(on['out'],on['rain']) or (graph['out'],graph['rain'])!=(on['out'],on['rain']):raise RuntimeError('same-input raw parity')
@@ -71,10 +73,10 @@ def run(release_fd,outdir):
                     valid=all(e['status']=='SPEC_ONLY' for e in entries)
                     if entries[1]['status']=='SPEC_ONLY':
                         j,dot=entries[1]['jvps'][index],entries[1]['dots'][index]
-                        js,vs=entries[1]['jvp_statuses'][index],entries[1]['vjp_status']
-                        duality='UNCONNECTED' if entries[1]['graph_flag']!=1 or js!=0 or vs!=0 else ('CONSISTENT' if near(j,dot) else 'MISMATCH')
+                        js,vs=entries[1]['abi_jvp_statuses'][index],entries[1]['vjp_status'];connectivity=entries[1]['direction_connectivity'][index]
+                        duality='UNCONNECTED' if entries[1]['graph_flag']!=1 or connectivity!='CONNECTED' or vs!=0 else ('CONSISTENT' if near(j,dot) else 'MISMATCH')
                     else:
-                        j=dot=js=vs=None;duality='UNCONNECTED'
+                        j=dot=js=vs=None;connectivity='UNAVAILABLE';duality='UNCONNECTED'
                     if valid:
                         fd=(as_double(entries[3]['primal'])-as_double(entries[2]['primal']))/gap*dirs[index][coordinate]
                         if not math.isfinite(fd):fd=None
@@ -82,12 +84,12 @@ def run(release_fd,outdir):
                         fd=None
                     fd_signal='UNAVAILABLE' if fd is None else ('UNDER_RESOLUTION' if abs(fd)<1e-8 else 'RESOLVED')
                     status='NUMERIC_MISMATCH' if duality=='MISMATCH' else ('BRANCH_CROSSING' if branch=='CROSS' else ('UNRESOLVED' if branch=='INCOMPLETE' or duality=='UNCONNECTED' or fd_signal!='RESOLVED' or abs(j)<1e-8 else ('LOCAL_CONSISTENT' if near(fd,j) else 'NUMERIC_MISMATCH')))
-                    record={'selector':selector,'direction':name,'h':h,'represented_gap':gap,'fd':fd,'jvp':j,'vjp_dot':dot,'jvp_status':js,'vjp_status':vs,'ad_duality':duality,'fd_signal':fd_signal,'recorded_branch_schedule':branch,'two_step_stability':'UNKNOWN','status':status,'selector_status':'SPEC_ONLY' if valid and duality!='UNCONNECTED' and fd_signal=='RESOLVED' else 'INCONCLUSIVE'}
+                    record={'selector':selector,'direction':name,'h':h,'represented_gap':gap,'fd':fd,'jvp':j,'vjp_dot':dot,'abi_jvp_status':js,'direction_connectivity':connectivity,'vjp_status':vs,'ad_duality':duality,'fd_signal':fd_signal,'recorded_branch_schedule':branch,'two_step_stability':'UNKNOWN','status':status,'selector_status':'SPEC_ONLY' if valid and duality!='UNCONNECTED' and fd_signal=='RESOLVED' else 'INCONCLUSIVE'}
                     per.append(record);by_selector[selector].append(record)
             for direction_results in by_selector.values():
                 if len(direction_results)==2 and all(v['fd_signal']=='RESOLVED' and v['recorded_branch_schedule']=='STABLE' for v in direction_results):
                     stability='STABLE' if near(direction_results[0]['fd'],direction_results[1]['fd']) else 'UNSTABLE'
                     for v in direction_results:v['two_step_stability']=stability
         results.append({'fixture':case,'status':'INCONCLUSIVE','scope':'partial recorded conditions; graph masks and complete census unverified','derivatives':per})
-    if seq!=33:raise RuntimeError('incomplete schedule')
+    if seq!=len(plan):raise RuntimeError('incomplete schedule')
     return {'status':'INCONCLUSIVE','calls':seq,'asset_bytes':total,'results':results,'scope':'synthetic only; no native, physical conservation or execution-readiness claim'}

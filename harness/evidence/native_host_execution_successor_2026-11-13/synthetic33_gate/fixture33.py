@@ -1,5 +1,6 @@
 """Predeclared synthetic B1K39 plan. No DSO/model execution."""
 import hashlib
+import struct
 from fixture_plan import K,CENTER,FIELDS,fixture,perturb,raw_words
 CASES=('baseline','warm_vertical','ice_vertical')
 H=(1e-5,5e-6)
@@ -61,3 +62,12 @@ def validate():
                 if not lo[idx]<x[idx]<hi[idx] or any(lo[i]!=x[i] or hi[i]!=x[i] for i in range(624) if i!=idx):raise ValueError('unrepresented perturbation')
                 if name=='nc' and lo[idx]<0:raise ValueError('inadmissible NC endpoint')
     return rows
+
+
+def same_plan_exact(observed):
+    """Match the canonical plan, including every JSON scalar's exact type."""
+    expected=validate()
+    return (type(observed) is list and len(observed)==len(expected) and
+            all(type(row) is dict and set(row)==set(spec) and
+                all(type(row[k]) is type(v) and (struct.pack('>d',row[k])==struct.pack('>d',v) if type(v) is float else row[k]==v) for k,v in spec.items())
+                for row,spec in zip(observed,expected)))

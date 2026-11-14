@@ -25,6 +25,21 @@ GATES = {'absolute_tolerance': 1e-8, 'relative_tolerance': 1e-5, 'minimum_fd_sig
          'incomplete_branch_coverage': 'INCONCLUSIVE', 'units': 'UNRESOLVED'}
 
 
+def query_budget(slots):
+    """Derive maximum queries from the fixed graph slots and proposed selectors."""
+    import fixture33
+    if not fixture33.same_plan_exact(slots) or tuple(fixture33.CASES) != CENTERS or tuple(fixture33.DIRECTIONS) != DIRECTIONS:
+        raise ValueError('fixed plan/selector mismatch')
+    graph = [row for row in slots if row['mode'] == 'center_joint_graph']
+    if len(graph) != len(CENTERS) or {row['fixture'] for row in graph} != set(CENTERS):
+        raise ValueError('graph fixture inventory')
+    per_fixture = {'graph_primal': len(SELECTORS), 'jvp': len(SELECTORS)*len(DIRECTIONS), 'vjp': len(SELECTORS)}
+    total = {key: value*len(graph) for key,value in per_fixture.items()}
+    if (BUDGET['forwards'] != len(slots) or BUDGET['graph_primal'] != total['graph_primal'] or BUDGET['intermediate_jvp'] != total['jvp'] or BUDGET['intermediate_vjp'] != total['vjp']):
+        raise ValueError('selector manifest budget mismatch')
+    return {'per_fixture':per_fixture, 'total':total}
+
+
 def proposed_manifest():
     """Return a fresh manifest for review; no call to the model is authorized."""
     return {'schema': SCHEMA, 'status': STATUS, 'eligibility': ELIGIBILITY,

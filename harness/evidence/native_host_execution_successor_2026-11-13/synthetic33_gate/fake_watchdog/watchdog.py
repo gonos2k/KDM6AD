@@ -126,6 +126,66 @@ def cleanup(pid,record=None,members_check=None):
     except (OSError,subprocess.SubprocessError,ValueError,TimeoutError,RuntimeError) as e:errors.append(repr(e))
     return errors
 
+def pre_ready_cleanup(pid, record=None):
+    """Freeze the unreaped direct child, then choose safe group or PID cleanup.
+
+    A stop/exit observation uses WNOWAIT, preserving PID ownership. If group
+    identity cannot be established, leave the child unreaped and report failure.
+    Descendants that escaped the owned group are outside this contract.
+    """
+    try:
+        try:os.kill(pid,signal.SIGSTOP)
+        except ProcessLookupError:pass
+        libc=ctypes.CDLL(None,use_errno=True)
+        libc.waitid.argtypes=[ctypes.c_int,ctypes.c_uint,ctypes.c_void_p,ctypes.c_int];libc.waitid.restype=ctypes.c_int
+        deadline=time.monotonic()+2.
+        while True:
+            buf=ctypes.create_string_buffer(512)
+            if libc.waitid(os.P_PID,pid,buf,os.WEXITED|os.WSTOPPED|os.WNOWAIT|os.WNOHANG):
+                raise OSError(ctypes.get_errno(),'pre-ready waitid')
+            observed=ctypes.c_int.from_buffer(buf,12).value
+            if observed==pid:break
+            if observed!=0:raise RuntimeError('unexpected pre-ready child')
+            if time.monotonic()>=deadline:raise TimeoutError('pre-ready stop/exit not observed')
+            time.sleep(.02)
+        group=os.getpgid(pid)
+        if group==pid:
+            return cleanup(pid,record)
+        # The stopped, unreaped child has not formed its own group. Do not
+        # signal the parent's group; only the owned child PID is targeted.
+        try:os.kill(pid,signal.SIGKILL)
+        except ProcessLookupError:pass
+        reapable(pid)
+        child,status=os.waitpid(pid,0)
+        if record is not None:record.update(worker_reaped_pid=child,worker_wait_status=status)
+        return []
+    except (OSError,subprocess.SubprocessError,ValueError,TimeoutError,RuntimeError) as exc:
+        return ['pre-ready cleanup unresolved: '+repr(exc)]
+
+
+def validate_real_census_config(manifest_path,manifest_sha,package,inventory):
+    """Bind provider arguments to the separately pinned private manifest."""
+    if type(manifest_sha) is not str or len(manifest_sha)!=64 or any(c not in '0123456789abcdef' for c in manifest_sha):raise ValueError('independent manifest SHA required')
+    path=pathlib.Path(manifest_path)
+    if not path.is_absolute() or path.is_symlink() or not path.is_file() or path.stat().st_size>2*1024*1024:raise ValueError('private manifest path')
+    raw=path.read_bytes()
+    if hashlib.sha256(raw).hexdigest()!=manifest_sha:raise ValueError('private manifest SHA')
+    def unique(pairs):
+        data={}
+        for key,value in pairs:
+            if key in data:raise ValueError('duplicate manifest key')
+            data[key]=value
+        return data
+    value=json.loads(raw,object_pairs_hook=unique)
+    if value.get('schema')!='kdm6.synthetic33.private.v1' or value.get('status')!='REVIEWED_PINNED':raise ValueError('private manifest status')
+    config=value.get('census_provider')
+    if type(config) is not dict or set(config)!={'package','inventory','inventory_sha256'}:raise ValueError('missing census provider pins')
+    if not isinstance(package,pathlib.Path) or not package.is_absolute() or package!=package.resolve(strict=True) or str(package)!=config['package']:raise ValueError('census package binding')
+    if type(inventory) is not dict or not inventory or inventory!=config['inventory']:raise ValueError('census inventory binding')
+    encoded=json.dumps(inventory,sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
+    if hashlib.sha256(encoded).hexdigest()!=config['inventory_sha256']:raise ValueError('census inventory SHA')
+    return {'package':package,'inventory':dict(inventory),'manifest_sha256':manifest_sha}
+
 def fake_plan():
     rows=[]
     for case in ('baseline','warm_vertical','ice_vertical'):
@@ -221,10 +281,11 @@ def child(worker_ready,release,scenario,mock_outdir=None):
 
 def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None):
     if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real','fast_exit'):raise ValueError('fake scenarios only')
-    if scenario=='fixture33_real' and (use_fake_census_helper or use_native_census_helper):raise ValueError('census helper integration is fake-scope only')
+    if scenario=='fixture33_real' and use_fake_census_helper:raise ValueError('real path requires native census helper')
     if use_fake_census_helper and use_native_census_helper:raise ValueError('conflicting helper modes')
     if scenario=='fixture33_real' and (fake_ready_timeout!=10.0 or fake_post_release_timeout is not None):raise ValueError('fake-only timing override')
     if scenario=='fixture33_real' and not ENABLE_REAL33:raise RuntimeError('real33 disabled pending Red review')
+    if scenario=='fixture33_real' and not use_native_census_helper:raise RuntimeError('real path requires pinned native census helper')
     if not 0<fake_ready_timeout<=15 or (fake_post_release_timeout is not None and not 0<fake_post_release_timeout<=2):raise ValueError('invalid fake timing')
     if scenario in ('fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real') and not mock_outdir:raise ValueError('fake output directory required')
     started=time.monotonic();deadline=started+timeout
@@ -236,6 +297,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
             import freeze33,fixture33
             freeze33.validate_frozen(manifest_path,manifest_sha)
+            validate_real_census_config(manifest_path,manifest_sha,native_census_package,native_census_manifest)
             result.update(manifest_sha256=manifest_sha,run_nonce=run_nonce,watchdog_pid=os.getpid(),dyld_trace_enabled=True,actual_33_call_inventory=fixture33.plan())
         if process_start(supervisor_pid)!=tuple(supervisor_start):raise RuntimeError("stale supervisor identity")
         # Register before forking; disappearance/ESRCH fails closed.
@@ -247,19 +309,22 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             trace=Trace(mock_outdir)
         ar,aw=os.pipe();gr,gw=os.pipe();pid=os.fork()
         if pid==0:
-            os.close(ar);os.close(gw);os.close(life_fd);os.close(release_fd);os.close(ready_fd);kq.close()
-            if scenario=='fixture33_real':
-                trace.bind_child_stderr()
-                import real33_supervisor_draft
-                real33_supervisor_draft.child_after_fork(aw,gr,mock_outdir)
+            try:
+                os.close(ar);os.close(gw);os.close(life_fd);os.close(release_fd);os.close(ready_fd);kq.close()
+                if scenario=='fixture33_real':
+                    trace.bind_child_stderr()
+                    import real33_supervisor_draft
+                    real33_supervisor_draft.child_after_fork(aw,gr,mock_outdir)
+                    os._exit(99)
+                if scenario=='fixture33_exec_mock':
+                    os.setsid();os.set_inheritable(aw,True);os.set_inheritable(gr,True);trace.bind_child_stderr()
+                    interpreter=sys.executable
+                    root=pathlib.Path(__file__).resolve().parent.parent
+                    env={'PATH':'/usr/bin:/bin:/usr/sbin:/sbin','TMPDIR':'/tmp','LC_ALL':'C','OMP_NUM_THREADS':'1','MKL_NUM_THREADS':'1','OMP_THREAD_LIMIT':'1','OPENBLAS_NUM_THREADS':'1','PYTHONUNBUFFERED':'1','DYLD_PRINT_LIBRARIES':'1','RESEARCH_READY_FD':str(aw),'RESEARCH_RELEASE_FD':str(gr),'RESEARCH_OUTDIR':str(mock_outdir),'RESEARCH_FAKE_ONLY':'1'}
+                    os.execve(interpreter,[interpreter,str(root/'real33_entry.py')],env)
+                child(aw,gr,scenario,mock_outdir);os._exit(99)
+            except BaseException:
                 os._exit(99)
-            if scenario=='fixture33_exec_mock':
-                os.setsid();os.set_inheritable(aw,True);os.set_inheritable(gr,True);trace.bind_child_stderr()
-                interpreter=sys.executable
-                root=pathlib.Path(__file__).resolve().parent.parent
-                env={'PATH':'/usr/bin:/bin:/usr/sbin:/sbin','TMPDIR':'/tmp','LC_ALL':'C','OMP_NUM_THREADS':'1','MKL_NUM_THREADS':'1','OMP_THREAD_LIMIT':'1','OPENBLAS_NUM_THREADS':'1','PYTHONUNBUFFERED':'1','DYLD_PRINT_LIBRARIES':'1','RESEARCH_READY_FD':str(aw),'RESEARCH_RELEASE_FD':str(gr),'RESEARCH_OUTDIR':str(mock_outdir),'RESEARCH_FAKE_ONLY':'1'}
-                os.execve(interpreter,[interpreter,str(root/'real33_entry.py')],env)
-            child(aw,gr,scenario,mock_outdir);os._exit(99)
         os.close(aw);os.close(gr)
         if trace is not None:trace.parent_after_fork()
         # Drain stderr while awaiting readiness so dyld cannot fill the pipe.
@@ -293,7 +358,8 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             else:
                 if fake_census_sampler is None:raise RuntimeError('fake sampler required')
                 sampler=fake_census_sampler
-            helper=CensusHelper(sampler)
+            helper=CensusHelper(sampler,helper_kind='native' if use_native_census_helper else 'fake')
+            result['census_helper_mode']='PINNED_NATIVE' if use_native_census_helper else 'FAKE_ONLY'
             result['census_helper_pid']=helper.pid;result['census_latencies_seconds']=[]
         def take_rss_sample():
             def measure():
@@ -363,10 +429,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 return [member for member in sample['members'] if member!=pid]
             result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None)
         elif pid is not None:
-            try:os.kill(pid,signal.SIGKILL)
-            except ProcessLookupError:pass
-            try:os.waitpid(pid,0)
-            except ChildProcessError:pass
+            result['cleanup_errors']=pre_ready_cleanup(pid,result)
         if helper is not None:
             try:helper.close()
             except BaseException as exc:result['cleanup_errors'].append('helper:'+repr(exc))

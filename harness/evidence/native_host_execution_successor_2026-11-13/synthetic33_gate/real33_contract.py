@@ -34,7 +34,7 @@ def preflight():
     if sha(path)!=pin:raise ValueError('manifest pin mismatch')
     manifest=json.loads(path.read_text())
     if manifest.get('schema')!='kdm6.synthetic33.private.v1' or manifest.get('status')!='REVIEWED_PINNED':raise ValueError('unreviewed private manifest')
-    if manifest.get('slots')!=fixture33.validate():raise ValueError('slot plan mismatch')
+    if not fixture33.same_plan_exact(manifest.get('slots')):raise ValueError('slot plan mismatch')
     dso,dso_digest=validate_dso_binding(manifest)
     assets=manifest.get('assets');interpreter=manifest.get('interpreter')
     if type(assets) is not dict or type(dso) is not str or dso not in assets or type(interpreter) is not str or interpreter not in assets:raise ValueError('missing asset pins')

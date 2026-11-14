@@ -58,3 +58,15 @@
 실행 소스의 필수 해시 목록에는 selector 명세, census helper, Darwin provider를 포함한다. 유효한 helper 표본 도중 부모 예약이 같은 PID·시작 시각에서 `alive → exited_reserved`로 바뀌면 정상 종료 확인으로 연결하고, 잘못된 RSS·신원 변경은 거부한다. Darwin provider는 psutil 5.9.4의 객체별 `create_time()` 캐시를 재사용하지 않도록 RSS 뒤 새 `Process` 객체로 PID 시작 시각을 조회한다. 이는 표본 확인이며 순간 4 GiB 하드 상한이나 관측 사이의 모든 PID 경합을 배제한다는 뜻은 아니다.
 
 현재 수정은 Python fake 시험과 소스 검토 범위다. 기존 A7 DSO와 빌드 영수증의 해시는 재확인됐지만, **수정된 실행 소스를 고정한 독립 승인 manifest**, 실제 worker PID에 귀속한 loader trace, 실제 모드의 watchdog·witness 연결은 없다. 실행 경로의 하드 차단도 유지된다. 따라서 A7 KDM의 실제 33회 호출, 세 selector의 graph 미분, native 배치, 과학·물리 단위 판정은 아직 수행하지 않았다.
+
+## 다음 실행 준비 후보: 공통 예산·원시 ABI·저장 자료 replay
+
+고정한 세 fixture, fixture당 graph 한 번, 세 selector와 두 방향에서 조회 예산을 계산한다. fixture당 **3 primal·6 JVP·3 VJP**, 전체 **33 forward·9 primal·18 JVP·9 VJP**다. supervisor·runner·worker·witness는 같은 selector/slot 계획을 사용하고, 실제 수행 횟수는 성공한 graph 자산에 따로 기록한다. 이전 supervisor의 3/6/3은 전체 한도가 아니라 fixture 한 건의 수였다.
+
+`call_asset.v3`는 중간 scalar JVP의 **원시 ABI 상태** `abi_jvp_statuses`와 VJP 연결 mask 및 고정 seed에서 계산한 **방향별 연결** `direction_connectivity`를 분리한다. 원시 상태를 방향별 결과로 덮지 않으며, worker의 국소 분류에는 방향별 연결을 사용한다. 중심 capture-off/on의 원시 출력·같은 호출 강수가 다르면 graph 생성 전에 중단한다. 값이 일치한 경우에만 나머지 계획된 graph와 끝점 호출을 진행한다.
+
+fake scalar `s = nc/10^8 + th`의 624개 gradient는 선택 위치의 `nc=10^-8`, `th=1`이고 나머지는 0이다. 별도 read-only [저장 자산 replay](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/replay33_assets.py)는 witness의 v3 구조 검사를 먼저 거친 뒤 33개 자산·66개 event·입력 hash·동일 입력 값 일치를 확인한다. 저장 gradient와 두 seed에서 VJP 내적을 독립 재계산하고, 실제 f64 입력에 표현된 양 끝점 간격으로 FD·부호 있는 `FD−JVP`·출력 ULP 신호·두 보폭 안정성을 정리한다. 명백한 AD 불일치는 분기 교차가 있어도 별도 판정에서 사라지지 않고, 한 보폭만 맞는 쌍은 국소 일치로 채택하지 않는다. 16 ULP와 현재 `1e-5` 상대·`1e-8` 절대 문턱은 이 synthetic replay의 탐색 기준이며 물리 정확도 보증이 아니다. 전체 상태는 계속 `INCONCLUSIVE`다.
+
+실모드 감독의 **비활성 배선**은 독립 SHA로 고정한 private manifest의 `census_provider`가 지정한 bytecode-free psutil package와 파일별 inventory를 요구한다. watchdog은 양의 초기 RSS·부모의 WNOWAIT 예약 후 release하며, 준비 전 실패는 child를 멈춰 소유한 group인지 확인하고 정리한다. 신원이 불확실하거나 정리가 미완료면 실패로 기록한다. orchestrator는 전체 예산·provider pin을 release 직전에 다시 확인하고 후검사 뒤에도 deadline·취소를 확인한다. 이 경로의 `REAL33_RELEASE_ENABLED`, `ENABLE_REAL33`, 실제 Runner·ABI 호출 및 실모드 witness 발급은 여전히 차단돼 있다. 표본 RSS는 순간 4 GiB를 강제하는 OS hard cap이 아니다.
+
+고정 계획·journal·call asset의 슬롯은 필드 존재, 정확한 자료형과 값 및 부호 있는 0을 포함한 f64 보폭 원시 비트를 대조한다. 따라서 `seq=true`를 정수 1처럼 수용하거나 `+0.0`과 `-0.0`을 같은 슬롯으로 취급하지 않는다. 현재 후보의 로컬 Python 3.12 fake 검사는 portable **72/72**, Darwin **57/57**이 일반·`-O` 모두 통과했다. 이 수치는 이전 head `f4444380`의 hosted 결과와 구분해야 한다. 기존 격리 A7 DSO·빌드 영수증 및 84개 소스 해시는 일치해 재사용 **후보**이지만, A7 물리 parity는 실행하지 않았다. 변경된 Python 소스·33개 슬롯·9/18/9 예산·interpreter·Torch/loader 허용 이미지·census package를 담은 독립 검토 manifest와 그 별도 SHA는 아직 없다. 실제 worker의 PID-bound dyld trace, 성공·실패 전체 journal, 정상 종료·정리 및 완료 witness도 아직 생성되지 않았다. 기존 `REVIEW_REQUIRED` manifest를 상태만 바꿔 승인할 수 없으므로 33회 KDM 실측은 **NOT READY**다.

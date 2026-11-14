@@ -1,4 +1,5 @@
 """Fake assets test source pin completeness; no library is loaded."""
+import copy
 import importlib.util
 import json
 import os
@@ -9,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import fixture33
+import freeze33
 import real33_contract as real
 
 
@@ -38,6 +40,11 @@ class SourcePins(unittest.TestCase):
                 with patch.dict(os.environ, {'RESEARCH_PRIVATE_MANIFEST':str(path), 'RESEARCH_MANIFEST_SHA256':contract.sha(path)}):
                     return contract.preflight()
             self.assertEqual(validate(manifest)['status'], 'SPEC_ONLY_UNVERIFIED_RUNTIME_LOADER')
+            for key,value in (('seq',True),('offset',0),('offset',False),('offset',-0.0)):
+                with self.subTest(wrong_type=key,value=value):
+                    bad=copy.deepcopy(manifest);bad['slots'][0][key]=value
+                    with self.assertRaisesRegex(ValueError,'slot plan mismatch'):
+                        validate(bad)
             for name in contract.EXECUTION_SOURCE_FILES:
                 with self.subTest(missing=name):
                     incomplete = dict(manifest, assets=dict(assets))
@@ -52,6 +59,21 @@ class SourcePins(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'asset pin mismatch'):
                         validate(manifest)
                     target.write_bytes(original)
+
+    def test_freeze_rejects_wrong_typed_plan_before_preflight(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory).resolve()/'manifest.json'
+            canonical=fixture33.plan()
+            for field,value in (('seq',True),('offset',0),('offset',False),('offset',-0.0)):
+                slots=copy.deepcopy(canonical);slots[0][field]=value
+                path.write_text(json.dumps({'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','slots':slots}))
+                digest=real.sha(path)
+                with patch.dict(os.environ,{'RESEARCH_PRIVATE_MANIFEST':str(path),'RESEARCH_MANIFEST_SHA256':digest}),patch.object(real,'preflight',side_effect=AssertionError('preflight not reached')):
+                    with self.assertRaisesRegex(ValueError,'slot plan mismatch'):freeze33.validate_frozen(path,digest)
+            extra=copy.deepcopy(canonical);extra[0]['extra']=0
+            missing=copy.deepcopy(canonical);del missing[0]['seq']
+            self.assertFalse(fixture33.same_plan_exact(extra))
+            self.assertFalse(fixture33.same_plan_exact(missing))
 
 
 if __name__ == '__main__':

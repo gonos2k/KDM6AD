@@ -18,7 +18,10 @@ class FakeRunner:
         out['selectors']={}
         for name,spec in SELECTORS.items():
             entry={'status':'SPEC_ONLY','identity':{**spec,**LAYER,'record_kind':'value'},'primal':bits(p)}
-            if mode=='center_joint_graph':entry.update(graph_flag=1,jvps=[.01,1.],dots=[.01,1.],jvp_statuses=[0,0],vjp_status=0,mask=257,grad_words=['0000000000000000']*624)
+            if mode=='center_joint_graph':
+                grad=[0.]*624;grad[FIELDS.index('nc')*K+CENTER]=1e-8;grad[FIELDS.index('th')*K+CENTER]=1.
+                dots=[sum(g*z for g,z in zip(grad,vec)) for vec in v]
+                entry.update(graph_flag=1,jvps=list(dots),dots=list(dots),abi_jvp_statuses=[0,0],direction_connectivity=['CONNECTED','CONNECTED'],vjp_status=0,mask=257,grad_words=[struct.pack('=d',g).hex() for g in grad])
             out['selectors'][name]=entry
         if mode=='center_joint_graph':
             out['query_counts']={'graph_primal':3,'jvp':6,'vjp':3}
@@ -82,6 +85,19 @@ class WorkerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t, patch.object(w,'Runner',FakeRunner),patch.object(w,'preflight',side_effect=AssertionError('must not load')):
             with self.assertRaisesRegex(RuntimeError,'release'):w.run(a,t)
         os.close(a)
+    def test_off_on_mismatch_stops_before_graph(self):
+        class BadParity(FakeRunner):
+            def _call(self,case,mode,x,v,selected,seq):
+                result=super()._call(case,mode,x,v,selected,seq)
+                if mode=='capture_on_value':result['rain']=1
+                return result
+        import json,pathlib
+        a,b=os.pipe();os.write(b,b'G');os.close(b)
+        with tempfile.TemporaryDirectory() as t,patch.object(w,'preflight',return_value={'dso_path':'fake'}),patch.object(w,'Runner',BadParity):
+            with self.assertRaisesRegex(RuntimeError,'raw parity'):w.run(a,t)
+            rows=[json.loads(line) for line in (pathlib.Path(t)/'calls.jsonl').read_text().splitlines()]
+            self.assertEqual([row['seq'] for row in rows],[1,1,2,2])
+            self.assertFalse((pathlib.Path(t)/'call_03.json').exists())
     def test_missing_selector_continues_all_calls(self):
         class Missing(FakeRunner):
             def _call(self,case,mode,x,v,selected,seq):
@@ -100,7 +116,7 @@ class WorkerTest(unittest.TestCase):
             def _call(self,case,mode,x,v,selected,seq):
                 out=super()._call(case,mode,x,v,selected,seq)
                 if case=='baseline' and mode=='center_joint_graph':
-                    for entry in out['selectors'].values():entry['jvp_statuses'][0]=2
+                    for entry in out['selectors'].values():entry['abi_jvp_statuses'][0]=2;entry['direction_connectivity'][0]='UNCONNECTED'
                 return out
         a,b=os.pipe();os.write(b,b'G');os.close(b)
         with tempfile.TemporaryDirectory() as t,patch.object(w,'preflight',return_value={'dso_path':'fake'}),patch.object(w,'Runner',Unconnected):

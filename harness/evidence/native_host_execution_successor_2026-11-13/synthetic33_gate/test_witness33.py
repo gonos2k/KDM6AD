@@ -34,11 +34,11 @@ class WitnessTest(unittest.TestCase):
             r['query_counts']={'graph_primal':2,'jvp':4,'vjp':2}
             self.assertEqual(z.checked_results(missing),{'graph_primal':8,'jvp':16,'vjp':8})
             unconnected=copy.deepcopy(assets);r=next(x['result'] for x in unconnected if x['slot']['mode']=='center_joint_graph')
-            e=r['selectors'][name];e['graph_flag']=0;e['vjp_status']=1;e['mask']=0;e['jvp_statuses']=[1,1];e['jvps']=[0.,0.];e['dots']=[0.,0.]
+            e=r['selectors'][name];e['graph_flag']=0;e['vjp_status']=1;e['mask']=0;e['abi_jvp_statuses']=[1,1];e['direction_connectivity']=['NO_GRAPH_PATH','NO_GRAPH_PATH'];e['jvps']=[0.,0.];e['dots']=[0.,0.];e['grad_words']=['0000000000000000']*624
             self.assertEqual(z.checked_results(unconnected),{'graph_primal':9,'jvp':18,'vjp':9})
-            e['graph_flag']=1;e['vjp_status']=2;e['jvp_statuses']=[2,2]
+            e['graph_flag']=1;e['vjp_status']=2;e['abi_jvp_statuses']=[2,2];e['direction_connectivity']=['UNCONNECTED','UNCONNECTED']
             self.assertEqual(z.checked_results(unconnected),{'graph_primal':9,'jvp':18,'vjp':9})
-            e['vjp_status']=0;e['mask']=256;e['jvp_statuses']=[0,2];e['jvps']=[.01,-0.];e['dots']=[.01,-0.]
+            e['vjp_status']=0;e['mask']=256;e['abi_jvp_statuses']=[0,0];e['direction_connectivity']=['CONNECTED','UNCONNECTED'];e['jvps']=[.01,-0.];e['dots']=[.01,-0.]
             self.assertEqual(z.checked_results(unconnected),{'graph_primal':9,'jvp':18,'vjp':9})
             for key in ('jvps','dots'):
                 bad=copy.deepcopy(unconnected);r=next(x['result'] for x in bad if x['slot']['mode']=='center_joint_graph')
@@ -59,8 +59,8 @@ class WitnessTest(unittest.TestCase):
                 if mutation=='connected_zero_mask':r['selectors'][name]['mask']=0
                 if mutation=='unconnected_nonzero_mask':r['selectors'][name]['vjp_status']=2
                 if mutation=='unconnected_nonzero_jvp':r['selectors'][name]['vjp_status']=2;r['selectors'][name]['mask']=0
-                if mutation=='wrong_direction_status':r['selectors'][name]['jvp_statuses']=[2,2]
-                if mutation=='connected_no_graph_jvp':r['selectors'][name]['jvp_statuses'][0]=1
+                if mutation=='wrong_direction_status':r['selectors'][name]['direction_connectivity']=['UNCONNECTED','UNCONNECTED']
+                if mutation=='connected_no_graph_jvp':r['selectors'][name]['abi_jvp_statuses'][0]=1
                 if mutation=='undefined_gradient':r['selectors'][name]['grad_words'][39]=struct.pack('=d',1.).hex()
                 if mutation in ('condition_garbage','condition_duplicate','condition_counter_overflow','absence_flag'):
                     on=next(x['result'] for x in bad if x['slot']['mode']=='capture_on_value')
@@ -90,6 +90,25 @@ class WitnessTest(unittest.TestCase):
                 journal.write_text(''.join(json.dumps(e)+'\n' for e in events))
                 _,assets=z.checked_journal(root,fixture33.plan())
                 with self.assertRaises(ValueError):z.checked_results(assets)
+    def test_journal_and_rehashed_asset_reject_bool_sequence(self):
+        for mutation in ('started','completed','asset','started_negative_zero','asset_negative_zero'):
+            with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as d:
+                root=pathlib.Path(d);self.make(root)
+                journal=root/'calls.jsonl';events=[json.loads(x) for x in journal.read_text().splitlines()]
+                if mutation=='started':events[0]['seq']=True
+                elif mutation=='completed':events[1]['seq']=True
+                elif mutation=='started_negative_zero':events[0]['offset']=-0.0
+                else:
+                    path=root/'call_01.json';obj=json.loads(path.read_bytes())
+                    if mutation=='asset':obj['slot']['seq']=True
+                    else:obj['slot']['offset']=-0.0
+                    data=json.dumps(obj,sort_keys=True,separators=(',',':')).encode('ascii');path.write_bytes(data)
+                    events[1]['bytes']=len(data);events[1]['asset_sha256']=hashlib.sha256(data).hexdigest()
+                journal.write_text(''.join(json.dumps(e)+'\n' for e in events))
+                with self.assertRaises(ValueError):z.checked_journal(root,fixture33.plan())
+    def test_checked_journal_rejects_bool_plan_sequence(self):
+        slots=fixture33.plan();slots[0]['seq']=True
+        with self.assertRaisesRegex(ValueError,'slot plan mismatch'):z.checked_journal('/not-read',slots)
     def test_loader_mismatch_and_resource_fail(self):
         with tempfile.TemporaryDirectory() as d:
             root=pathlib.Path(d);status,allowed,required,log=self.make(root)
