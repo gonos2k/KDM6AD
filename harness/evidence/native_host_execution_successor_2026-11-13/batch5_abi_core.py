@@ -5,6 +5,10 @@ The batch5 sidecar graph path is synthetic-tested only. Claimed DSO hashes
 and caller-provided selectors are not independent provenance. The low-level helper is exercised solely with a synthetic fake.
 """
 import ctypes as C
+import hashlib
+import importlib.util
+from pathlib import Path
+import json
 import math
 import os
 import struct
@@ -165,7 +169,7 @@ def _copy_records(call,count,meta,value,max_records):
         ordinals[key]=expected+1;records.append(row)
     return records
 
-def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS,intermediate_requests=None,intermediate_vjp_requests=None):
+def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,*,sequence_guard=None,max_records=MAX_RECORDS,intermediate_requests=None,intermediate_vjp_requests=None,require_condition_v2=False):
     """Synthetic-tested mechanics only; caller-supplied DSO hash is unverified.
 
     For instrumented sequences 1..93 a guard must persist on the same thread and
@@ -177,6 +181,7 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     if not isinstance(sequence_guard,InstrumentedSequence):raise RuntimeError('persistent canonical sequence guard required')
     try:
         sequence_guard.check(call,input_words)
+        if type(require_condition_v2) is not bool or (require_condition_v2 and mode not in ('capture_on_value','center_joint_graph')):raise RuntimeError('v2 capture requires capture-on or graph mode')
         requests=[] if intermediate_requests is None else intermediate_requests
         vjp_requests=[] if intermediate_vjp_requests is None else intermediate_vjp_requests
         if type(requests) is not list or type(vjp_requests) is not list or ((requests or vjp_requests) and not graph):raise RuntimeError('intermediate requests require graph mode')
@@ -274,6 +279,15 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
                 gs=(D*STATE)(*[float('nan')]*STATE);gf=(D*FORCING)(*[float('nan')]*FORCING);vrc=lib.kdm6_handle_state_forcing_vjp_c(h,vector(seed,STATE),gs,gf)
                 if vrc!=0 or not all(math.isfinite(v) for v in gs) or not all(math.isfinite(v) for v in gf):raise RuntimeError('VJP failed: '+ident)
                 result['vjps'][ident]={'rc':vrc,'seed_words':seed,'seed_sha256':words_sha(seed),'state_words':[encode(v) for v in gs],'forcing_words':[encode(v) for v in gf]}
+        if require_condition_v2:
+            reader_path=Path(__file__).resolve().parent/'condition_abi_v2_reader.py'
+            spec=importlib.util.spec_from_file_location('_batch5_local_condition_v2_reader',reader_path)
+            if spec is None or spec.loader is None:raise RuntimeError('local condition v2 reader unavailable')
+            reader=importlib.util.module_from_spec(spec);spec.loader.exec_module(reader)
+            copied=reader.read_records(lib,input_id=call['input_id'],mode=mode,runtime_call=call['sequence'],handle=h if graph else None,token=token.value if graph else 0,max_records=max_records)
+            asset={'schema':'kdm6.condition_v2_same_call.unverified.v1','status':'SPEC_ONLY_BLOCKED','sequence':call['sequence'],'input_id':call['input_id'],'mode':mode,'input_words':list(input_words),'state_output_words':list(result['state_output_words']),'same_call_rain':dict(result['same_call_rain']),'claimed_dso_sha256':dso_sha256,'dso_identity_status':'CALLER_SUPPLIED_UNVERIFIED','graph_handle_token':token.value if graph else None,'capture':copied}
+            encoded=json.dumps(asset,sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
+            result['condition_v2_asset']=asset;result['condition_v2_asset_sha256']=hashlib.sha256(encoded).hexdigest()
         close_rc=None
         if h.value:
             close_attempted=True;close_rc=close(C.byref(h))

@@ -2,6 +2,8 @@
 
 이 표는 [격리 소스의 A2·A3 층](../harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6_layers/README.md)을 소스로 대조한 **정적 목록**이다. 19개 그룹 중 18개에 적어도 하나의 v2 기록 지점이 있고, `warm_cold_gate`에는 없다. 이는 호출·층·반복에서 실제 기록이 방출됐다는 수가 아니다. 모든 그룹은 `PARTIAL/BLOCKED`이며 등록된 native 열의 FD 판정 자격은 `NOT_ELIGIBLE`이다.
 
+후속 [A5 소스 층](NATIVE_HOST_BATCH7_CONNECTION_20261114.md)은 warm/cold의 원래 두 소비 Boolean을 추가했다. 이 표의 18/19 수치는 **A2·A3 시점**의 정적 감사로 유지한다. A5에서도 전체 19개 그룹의 동적 실행 coverage가 입증된 것은 아니다.
+
 `C`는 원래 연산이 소비하는 Boolean 텐서, `D`는 추가 진단 비교, `O`는 기존 값 피연산자, `S`는 선언된 C++ scalar의 원시 단어다. `D`를 `C`로 해석하거나, 비활성 결과를 미실행으로 바꾸지 않는다. 현재 `NOT_EVALUATED` 기록은 0개다.
 
 | 제안 그룹 | 현재 직접 연결한 소스 기록 | 실행용 계약에서 남은 항목 |

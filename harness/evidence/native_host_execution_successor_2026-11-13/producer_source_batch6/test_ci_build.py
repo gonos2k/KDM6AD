@@ -79,13 +79,20 @@ class DriverTests(unittest.TestCase):
             commands.append(cmd)
             if '--show-only=json-v1' in cmd:
                 return json.dumps({'tests': [{'name': x} for x in
-                    (ci.TARGET_TESTS if str(cmd[2]).endswith('/on') else ci.OFF_TESTS)]})
+                    (ci.OFF_TESTS | ci.TARGET_TESTS if str(cmd[2]).endswith('/on') else ci.OFF_TESTS)]})
             return ''
         with patch.object(ci, 'run', side_effect=fake_run), patch.object(ci, 'check_flags', return_value=['test_x.cpp']), patch.object(ci, 'exports', return_value=[]), patch.object(ci, 'check_junit', return_value={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}):
             ci.build_all(Path('/fake/source'), Path('/fake/build'), '/fake/torch', receipt)
         on_build = next(cmd for cmd in commands if cmd[:2] == ['cmake', '--build'] and str(cmd[2]).endswith('/on'))
         self.assertIn('kdm6_c', on_build[on_build.index('--target') + 1:])
         self.assertTrue({'test_' + name for name in ci.TARGET_TESTS} <= set(on_build))
+        on_ctest = next(cmd for cmd in commands if cmd[0] == 'ctest' and str(cmd[2]).endswith('/on') and '--output-junit' in cmd)
+        self.assertEqual(on_ctest[on_ctest.index('-R') + 1], '^(' + '|'.join(sorted(ci.RUN_TESTS)) + ')$')
+        self.assertEqual(receipt['builds']['ON']['passed_ctests'], sorted(ci.RUN_TESTS))
+        self.assertEqual(receipt['unrun_tests'], {'batch6_synthetic_capture_parity': 'CONTAINMENT_PENDING'})
+        self.assertNotIn('batch6_synthetic_capture_parity', receipt['builds']['ON']['passed_ctests'])
+        self.assertEqual(len(ci.RUN_TESTS), 4)
+        self.assertEqual(ci.TARGET_TESTS, ci.RUN_TESTS | set(ci.UNRUN_TESTS))
 
     def test_build_stops_on_missing_research_ctest(self):
         receipt = {'commands': [], 'builds': {}}
@@ -94,7 +101,7 @@ class DriverTests(unittest.TestCase):
                 return json.dumps({'tests': [{'name': name} for name in ci.OFF_TESTS]})
             return ''
         with patch.object(ci, 'run', side_effect=fake_run), patch.object(ci, 'check_flags', return_value=['test_x.cpp']), patch.object(ci, 'exports', return_value=[]), patch.object(ci, 'check_junit', return_value={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}):
-            with self.assertRaisesRegex(ValueError, 'missing research CTests'):
+            with self.assertRaisesRegex(ValueError, 'invalid research CTest inventory'):
                 ci.build_all(Path('/fake/source'), Path('/fake/build'), '/fake/torch', receipt)
         self.assertEqual(receipt['builds']['OFF']['passed_ctests'], sorted(ci.OFF_TESTS))
         self.assertNotIn('passed_ctests', receipt['builds']['ON'])

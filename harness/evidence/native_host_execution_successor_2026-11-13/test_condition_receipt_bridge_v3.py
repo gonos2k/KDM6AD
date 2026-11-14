@@ -26,8 +26,9 @@ def row(name, sequence, role=1, cause=m.NO_CAUSE):
 class BridgeTests(unittest.TestCase):
     def setUp(self):
         self.plan = {'inputs': [], 'calls': []}
-        self.receipt = {'build': {'new_instrumented_dso_sha256': 'a' * 64}}
+        self.receipt = {'build': {'new_instrumented_dso_sha256': 'a' * 64}, 'calls': []}
         self.assets = {}
+        self.results = {}
         self.envelope = {'schema': m.SCHEMA, 'status': 'SPEC_ONLY', 'plan_gzip_sha256': m.rs.PLAN_GZ_SHA, 'calls': []}
         for i in range(45):
             ident = f'input{i}'
@@ -42,14 +43,40 @@ class BridgeTests(unittest.TestCase):
 
     def add(self, i, item):
         path = f'copy{i}.json'
-        data = json.dumps(item).encode()
-        self.assets[path] = data
-        entry = {'input_id': f'input{i}', 'sequence': i + 1,
-                 'asset': {'path': path, 'sha256': hashlib.sha256(data).hexdigest()}}
-        if i < len(self.envelope['calls']):
-            self.envelope['calls'][i] = entry
+        ident = f'input{i}'
+        sequence = i + 1
+        rain = {'raw_hex': '4000000000000000', 'graph_flag': 0}
+        output = ['0000000000000000'] * 468
+        same = {'schema': 'kdm6.condition_v2_same_call.unverified.v1', 'status': 'SPEC_ONLY_BLOCKED',
+                'sequence': sequence, 'input_id': ident, 'mode': 'capture_on_value',
+                'input_words': item['input_words'], 'state_output_words': output, 'same_call_rain': rain,
+                'claimed_dso_sha256': 'a' * 64, 'dso_identity_status': 'CALLER_SUPPLIED_UNVERIFIED',
+                'graph_handle_token': None, 'capture': item['reader']}
+        rainrow = {'input_id': ident, 'mode': 'capture_on_value', 'runtime_call': sequence, 'scope': 'column',
+                   'stage': 'fnresult', 'field': 'rain_increment', 'record_kind': 'value', 'b_zero': 0,
+                   'k_zero': -1, 'native_level_bottom_first': -1, 'B': 1, 'K': -1, 'dtype': 'f64', 'raw_hex': rain['raw_hex']}
+        result = {'schema': 'kdm6.future_call_raw.v1', 'sequence': sequence, 'input_id': ident,
+                  'mode': 'capture_on_value', 'input_words': item['input_words'], 'state_output_words': output,
+                  'claimed_dso_sha256': 'a' * 64, 'dso_identity_status': 'CALLER_SUPPLIED_UNVERIFIED',
+                  'return_code': 0, 'handle_nonnull': False, 'handle_null_after': True, 'close_rc': None,
+                  'same_call_rain': rain, 'rain_unit_status': 'UNAPPROVED', 'rain_provenance': 'SAME_CALL_CONTEXT_UNVERIFIED',
+                  'sidecar_records': [rainrow], 'condition_v2_asset': same,
+                  'condition_v2_asset_sha256': hashlib.sha256(m.canonical_bytes(same)).hexdigest()}
+        call = {'input_id': ident, 'sequence': sequence, 'mode': 'capture_on_value'}
+        packed = m.serialize_same_call(result, call, item['input_words'], 'a' * 64, path)
+        self.results[i] = result
+        self.assets[path] = packed['bytes']
+        output_path = f'output{i}.json'
+        payload = {'input_words': item['input_words'], 'state_output_words': output, 'dso_sha256': 'a' * 64}
+        data = m.canonical_bytes(payload)
+        self.assets[output_path] = data
+        receipt_call = {**call, 'status': 'completed', 'output_asset': {'path': output_path, 'sha256': hashlib.sha256(data).hexdigest()}}
+        if i < len(self.receipt['calls']):
+            self.receipt['calls'][i] = receipt_call
+            self.envelope['calls'][i] = packed['entry']
         else:
-            self.envelope['calls'].append(entry)
+            self.receipt['calls'].append(receipt_call)
+            self.envelope['calls'].append(packed['entry'])
 
     def join(self):
         with patch.object(m.rs, 'validate'), patch.object(m.rs, 'load_plan', return_value=(self.plan, {})):
@@ -86,9 +113,8 @@ class BridgeTests(unittest.TestCase):
             else:
                 rows[1]['k_zero'] = 1
                 rows[1]['native_level_bottom_first'] = 38
-            self.add(0, item)
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
-                self.join()
+                self.add(0, item)
 
     def test_hypothetical_projection_preserves_order_and_is_vetoed(self):
         joined = self.join()
@@ -131,6 +157,81 @@ class BridgeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'UNSUPPORTED: mixed one_step_call'):
                 m.project_gate_input(self.receipt, self.assets, self.envelope, {}, bindings,
                                      {'sites': []}, {'input0': []})
+
+    def test_fake_executor_same_call_serializes_and_joins(self):
+        executor_spec = importlib.util.spec_from_file_location('batch5_fake_test_bridge', HERE / 'test_batch5_abi_core.py')
+        fake = importlib.util.module_from_spec(executor_spec)
+        executor_spec.loader.exec_module(fake)
+        fixture = fake.PreflightTest()
+        fixture.setUpClass()
+        guard = fixture.guard()
+        guard.check(fixture.plan['calls'][0], fixture.words_for(fixture.plan['calls'][0]))
+        guard.complete()
+        call = fixture.plan['calls'][1]
+        result = fake.abi_core._execute_bound(fake.FakeV2(), call, fixture.center['words'], {}, fixture.nom,
+                                               fixture.vjp, 'a' * 64, sequence_guard=guard,
+                                               require_condition_v2=True)
+        packed = m.serialize_same_call(result, call, fixture.center['words'], 'a' * 64, 'actual.json')
+        self.assets['actual.json'] = packed['bytes']
+        self.envelope['calls'][0] = packed['entry']
+        self.plan['calls'][0] = call
+        self.plan['inputs'][0] = {'id': call['input_id'], 'words': fixture.center['words']}
+        output_payload = {'input_words': result['input_words'], 'state_output_words': result['state_output_words'],
+                          'dso_sha256': 'a' * 64}
+        output_bytes = m.canonical_bytes(output_payload)
+        self.assets['actual-output.json'] = output_bytes
+        self.receipt['calls'][0] = {**call, 'status': 'completed', 'output_asset': {
+            'path': 'actual-output.json', 'sha256': hashlib.sha256(output_bytes).hexdigest()}}
+        joined = self.join()
+        self.assertEqual(joined['eligibility'], 'NOT_ELIGIBLE')
+        self.assertEqual(joined['calls'][0]['records'], result['condition_v2_asset']['capture']['records'])
+        self.assertEqual(len(result['input_words']), 624)
+        self.assertEqual(len(result['state_output_words']), 468)
+        self.assertEqual(result['same_call_rain']['raw_hex'], '4000000000000000')
+        borrowed = copy.deepcopy(result)
+        borrowed['same_call_rain']['raw_hex'] = '4008000000000000'
+        with self.assertRaises(ValueError):
+            m.serialize_same_call(borrowed, call, fixture.center['words'], 'a' * 64, 'actual.json')
+        swapped = json.loads(packed['bytes'])
+        swapped['reader'] = json.loads(self.assets['copy1.json'])['reader']
+        raw = m.canonical_bytes(swapped)
+        self.assets['actual.json'] = raw
+        self.envelope['calls'][0]['asset']['sha256'] = hashlib.sha256(raw).hexdigest()
+        with self.assertRaises(ValueError):
+            self.join()
+
+    def test_executor_and_nested_copy_mismatches_rejected(self):
+        call = self.plan['calls'][0]
+        for field in ('input_words', 'state_output_words', 'same_call_rain', 'reader', 'dso'):
+            result = copy.deepcopy(self.results[0])
+            if field == 'input_words':
+                result['input_words'][0] = '3ff0000000000000'
+            elif field == 'state_output_words':
+                result['state_output_words'][0] = '3ff0000000000000'
+            elif field == 'same_call_rain':
+                result['same_call_rain']['raw_hex'] = '4008000000000000'
+            elif field == 'reader':
+                result['condition_v2_asset']['capture']['records'][0]['raw_hex'] = '0000000000000001'
+            else:
+                result['claimed_dso_sha256'] = 'b' * 64
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                m.serialize_same_call(result, call, self.plan['inputs'][0]['words'], 'a' * 64, 'copy0.json')
+
+    def test_rehashed_outer_raw_swap_and_borrowed_rain_rejected(self):
+        for mutation in ('reader', 'rain'):
+            self.setUp()
+            item = json.loads(self.assets['copy0.json'])
+            if mutation == 'reader':
+                item['reader'] = json.loads(self.assets['copy1.json'])['reader']
+            else:
+                item['same_call_rain']['raw_hex'] = '4008000000000000'
+                item['same_call_asset']['same_call_rain']['raw_hex'] = '4008000000000000'
+                item['same_call_asset_sha256'] = hashlib.sha256(m.canonical_bytes(item['same_call_asset'])).hexdigest()
+            raw = m.canonical_bytes(item)
+            self.assets['copy0.json'] = raw
+            self.envelope['calls'][0]['asset']['sha256'] = hashlib.sha256(raw).hexdigest()
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                self.join()
 
     def test_asset_hash_and_missing_inventory_rejected(self):
         original = copy.deepcopy(self.envelope)

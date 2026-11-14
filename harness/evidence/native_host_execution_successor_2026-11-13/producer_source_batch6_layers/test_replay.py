@@ -13,7 +13,7 @@ spec.loader.exec_module(m)
 class LayerTests(unittest.TestCase):
     def test_complete_reconstruction(self):
         result = m.replay()
-        self.assertEqual([result[x]['reconstructed_files'] for x in ('a5', 'v2', 'a2', 'a3', 'a4')], [77, 82, 83, 83, 84])
+        self.assertEqual([result[x]['reconstructed_files'] for x in ('a5', 'v2', 'a2', 'a3', 'a4', 'a5_graph', 'a7_ledger')], [77, 82, 83, 83, 84, 84, 84])
         self.assertEqual(result['scientific_status'], 'INCONCLUSIVE')
 
     def test_asset_and_base_pins(self):

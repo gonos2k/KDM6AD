@@ -1,6 +1,7 @@
-import copy,ctypes as C,pathlib,sys,tempfile,threading,unittest
+import copy,ctypes as C,pathlib,subprocess,sys,tempfile,threading,unittest
 from unittest import mock
 R=pathlib.Path(__file__).resolve().parent;sys.path.insert(0,str(R));import batch5_preflight as preflight,batch5_abi_core as abi_core
+import condition_abi_v2_reader as v2
 ROOT=R.parent/'native_host_preflight_2026-11-12';SELECTED=R.parent/'native_host_column_f32_2026-11-11/raw/selected_full.json'
 
 class Fn:
@@ -82,6 +83,26 @@ class FakeABI:
    if self.fail_clear:raise RuntimeError('synthetic clear failure')
   self.kdm6_step_ad_c=Fn(step);self.kdm6_step_ad_state_forcing_c=Fn(step);self.kdm6_handle_closep_c=Fn(close);self.kdm6_handle_state_forcing_jvp_c=Fn(jvp);self.kdm6_handle_state_forcing_vjp_c=Fn(vjp);self.kdm6_batch5_begin_c=Fn(begin);self.kdm6_batch5_count_c=Fn(count);self.kdm6_batch5_metadata_c=Fn(meta);self.kdm6_batch5_value_word_c=Fn(val);self.kdm6_batch5_binding_token_c=Fn(token);self.kdm6_batch5_result_rain_c=Fn(rain);self.kdm6_batch5_graph_primal_c=Fn(primal);self.kdm6_batch5_intermediate_jvp_c=Fn(intermediate);self.kdm6_batch5_intermediate_vjp_c=Fn(intermediate_vjp);self.kdm6_batch5_clear_c=Fn(clear)
 
+class FakeV2(FakeABI):
+ def __init__(self,*,bad_identity=False,bad_phase=False,fail_raw=False):
+  super().__init__();self.bad_identity=bad_identity;self.bad_phase=bad_phase;self.fail_raw=fail_raw
+  def check(h,t):
+   if self.active is None:raise RuntimeError('v2 called after clear')
+   graph=self.active[1]==b'center_joint_graph'
+   if graph and (not h or h.value!=123 or t!=567):raise RuntimeError('wrong graph binding')
+   if not graph and (h is not None or t!=0):raise RuntimeError('wrong value binding')
+  def count(h,t,p):
+   check(h,t);self.events.append('v2_count');C.cast(p,C.POINTER(C.c_uint64))[0]=1;return 0
+  def meta(h,t,i,p,size):
+   check(h,t);self.events.append('v2_meta');m=C.cast(p,C.POINTER(v2.Meta)).contents
+   if m.abi_version!=2 or m.struct_size!=size:return -1
+   m.input_id=b'other' if self.bad_identity else self.active[0];m.mode=b'capture_on_value' if self.bad_phase else self.active[1];m.family=b'main';m.stage=b's';m.field=b'f';m.source_hook=b'h';m.context_epoch=7;m.runtime_call=self.active[2];m.one_step_call=1;m.outer_loop=1;m.substep_n=1;m.event_ordinal=0;m.causal_index=v2.NO_CAUSE;m.b_zero=0;m.k_zero=23;m.native_level_bottom_first=16;m.B=1;m.K=39;m.role=1;m.dtype=1;m.scope=1;m.reason=0;return 0
+  def raw(h,t,i,p):
+   check(h,t);self.events.append('v2_raw');C.cast(p,C.POINTER(C.c_uint64))[0]=1;return -1 if self.fail_raw else 0
+  def verify(h,t,p):
+   check(h,t);self.events.append('v2_verify');C.cast(p,C.POINTER(C.c_uint64))[0]=0;return 0
+  self.kdm6_batch5_condition_v2_count_c=Fn(count);self.kdm6_batch5_condition_v2_meta_c=Fn(meta);self.kdm6_batch5_condition_v2_raw_c=Fn(raw);self.kdm6_batch5_condition_v2_verify_absences_c=Fn(verify)
+
 class PreflightTest(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
@@ -156,6 +177,32 @@ class PreflightTest(unittest.TestCase):
   call=self.plan['calls'][90];sub={k:v for k,v in self.eff.items() if v['center']=='baseline'}
   selector={'input_id':'baseline','mode':'center_joint_graph','runtime_call':91,'one_step_call':1,'outer_loop':0,'family':'microphysics','substep_n':0,'scope':'layer','b_zero':0,'k_zero':23,'native_level_bottom_first':16,'B':1,'K':39,'stage':'synthetic','field':'value','record_kind':'value','event_ordinal':0}
   return guard,call,sub,selector
+ def test_v2_same_call_value_and_graph_lifecycle(self):
+  guard=self.guard();off=self.plan['calls'][0];guard.check(off,self.words_for(off));guard.complete();call=self.plan['calls'][1];lib=FakeV2()
+  result=abi_core._execute_bound(lib,call,self.center['words'],{},self.nom,self.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True);asset=result['condition_v2_asset']
+  self.assertEqual(asset['input_words'],self.center['words']);self.assertEqual(asset['state_output_words'],result['state_output_words']);self.assertEqual(asset['same_call_rain'],result['same_call_rain']);self.assertEqual(asset['capture']['records'][0]['context_epoch'],7);self.assertLess(lib.events.index('v2_raw'),lib.events.index('clear'));self.assertEqual(asset['dso_identity_status'],'CALLER_SUPPLIED_UNVERIFIED')
+  guard,call,sub,_=self.graph_setup();lib=FakeV2();result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True);asset=result['condition_v2_asset'];self.assertTrue(asset['capture']['graph_metadata_only']);self.assertIsNone(asset['capture']['records'][0]['raw_hex']);self.assertEqual(asset['graph_handle_token'],567);self.assertNotIn('v2_raw',lib.events);self.assertLess(lib.events.index('v2_meta'),lib.events.index('close'))
+ def test_v2_reader_loads_from_file_without_import_path(self):
+  script="""import importlib.util, pathlib, sys
+p=pathlib.Path(sys.argv[1]); spec=importlib.util.spec_from_file_location('fixture_test',p/'test_batch5_abi_core.py'); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+sys.path[:]=[x for x in sys.path if pathlib.Path(x or '.').resolve()!=p];sys.modules.pop('condition_abi_v2_reader',None)
+t=m.PreflightTest();t.setUpClass();guard=t.guard();guard.check(t.plan['calls'][0],t.words_for(t.plan['calls'][0]));guard.complete();lib=m.FakeV2()
+r=m.abi_core._execute_bound(lib,t.plan['calls'][1],t.center['words'],{},t.nom,t.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True)
+assert r['condition_v2_asset']['capture']['records'][0]['context_epoch']==7
+"""
+  with tempfile.TemporaryDirectory() as directory:
+   subprocess.run([sys.executable,'-I','-c',script,str(R)],cwd=directory,check=True,env={'PATH':'/usr/bin:/bin'})
+ def test_v2_failure_poison_clear_and_no_partial(self):
+  for opts in ({'bad_identity':True},{'fail_raw':True}):
+   guard=self.guard();guard.check(self.plan['calls'][0],self.words_for(self.plan['calls'][0]));guard.complete();lib=FakeV2(**opts)
+   with self.assertRaises(RuntimeError):abi_core._execute_bound(lib,self.plan['calls'][1],self.center['words'],{},self.nom,self.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True)
+   self.assertTrue(guard.poisoned);self.assertEqual(lib.events[-1],'clear')
+  guard,call,sub,_=self.graph_setup();lib=FakeV2(bad_phase=True)
+  with self.assertRaises(RuntimeError):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True)
+  self.assertTrue(guard.poisoned);self.assertEqual(lib.events[-2:],['close','clear'])
+  guard=self.guard();guard.check(self.plan['calls'][0],self.words_for(self.plan['calls'][0]));guard.complete();lib=FakeABI()
+  with self.assertRaises(AttributeError):abi_core._execute_bound(lib,self.plan['calls'][1],self.center['words'],{},self.nom,self.vjp,'a'*64,sequence_guard=guard,require_condition_v2=True)
+  self.assertEqual(lib.events[-1],'clear');self.assertTrue(guard.poisoned)
  def test_graph_intermediate_jvp_uses_bound_token_and_pinned_seed(self):
   guard,call,sub,selector=self.graph_setup();lib=FakeABI();seed_id=next(k for k,v in sub.items() if v['direction']=='th')
   result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':seed_id}])

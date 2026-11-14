@@ -31,7 +31,9 @@ RESEARCH = {'kdm6_batch5_' + x + '_c' for x in
              'result_rain', 'intermediate_jvp', 'intermediate_vjp', 'clear')}
 RESEARCH |= {'kdm6_batch5_condition_v2_' + x + '_c' for x in ('count', 'meta', 'raw', 'verify_absences')}
 OFF_TESTS = set('smoke slope progb warm satadj aux_placeholder_gap cold melt_freeze sedimentation thermo coordinator cloud_dsd c_abi state_forcing_abi autograd_endtoend dry_number handle_vjp conservative_interface fortran_smoke fortran_normalized_ad fortran_state_forcing'.split())
-TARGET_TESTS = {'batch5_intermediate_ad', 'batch5_sidecar', 'batch6_f32_context_rejection', 'batch5_conditions_v2', 'batch6_synthetic_capture_parity'}
+UNRUN_TESTS = {'batch6_synthetic_capture_parity': 'CONTAINMENT_PENDING'}
+RUN_TESTS = {'batch5_intermediate_ad', 'batch5_sidecar', 'batch6_f32_context_rejection', 'batch5_conditions_v2'}
+TARGET_TESTS = RUN_TESTS | set(UNRUN_TESTS)
 
 
 def run(cmd, receipt, cwd=None):
@@ -114,6 +116,7 @@ def check_junit(path, expected, result=None):
 
 
 def build_all(root, work, prefix, receipt):
+    receipt['unrun_tests'] = dict(UNRUN_TESTS)
     for mode in ('OFF', 'ON'):
         build = work / mode.lower()
         run(['cmake', '-S', root, '-B', build, '-DCMAKE_BUILD_TYPE=Release',
@@ -128,15 +131,15 @@ def build_all(root, work, prefix, receipt):
         receipt['builds'][mode]['exports'] = exports(build, BASE | (RESEARCH if mode == 'ON' else set()), receipt)
         listing = json.loads(run(['ctest', '--test-dir', build, '--show-only=json-v1'], receipt))
         names = {test['name'] for test in listing['tests']}
-        if mode == 'ON' and not TARGET_TESTS <= names:
-            raise ValueError('missing research CTests: ' + str(sorted(TARGET_TESTS - names)))
+        if mode == 'ON' and names != OFF_TESTS | TARGET_TESTS:
+            raise ValueError('invalid research CTest inventory: missing=' + str(sorted((OFF_TESTS | TARGET_TESTS) - names)) + ' extra=' + str(sorted(names - (OFF_TESTS | TARGET_TESTS))))
         if mode == 'OFF' and names != OFF_TESTS:
             raise ValueError('invalid shipped CTest inventory')
         junit = build / 'ctest-results.xml'
         cmd = ['ctest', '--test-dir', build, '--output-on-failure', '--no-tests=error', '--output-junit', junit]
         if mode == 'ON':
-            cmd += ['-R', '^(' + '|'.join(sorted(TARGET_TESTS)) + ')$']
-        expected = TARGET_TESTS if mode == 'ON' else names
+            cmd += ['-R', '^(' + '|'.join(sorted(RUN_TESTS)) + ')$']
+        expected = RUN_TESTS if mode == 'ON' else names
         try:
             run(cmd, receipt)
         except RuntimeError:
@@ -153,7 +156,7 @@ def main():
     args = parser.parse_args()
     receipt = {'schema': 'kdm6.batch6.source_ci.v1', 'status': 'failed',
                'scope': 'Public C++ tests may run KDM on synthetic fixtures; no registered native host-column batch, WRF/RTTOV execution, scientific validation, or installed-build identity.',
-               'commands': [], 'builds': {}, 'platform': platform.platform()}
+               'commands': [], 'builds': {}, 'unrun_tests': dict(UNRUN_TESTS), 'platform': platform.platform()}
     try:
         receipt['source_asset_sha256'] = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in {
             'a5_snapshot': a5_replay.HERE / 'source_snapshot.json',

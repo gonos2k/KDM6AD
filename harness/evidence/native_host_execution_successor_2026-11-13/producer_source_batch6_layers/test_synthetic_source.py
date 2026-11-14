@@ -22,7 +22,7 @@ class SyntheticSourceTests(unittest.TestCase):
         broken = source_patch.replace(b'new file mode 100644', b'new file mode 120000', 1)
         with self.assertRaises(ValueError):
             validator.validate_patch(broken, a3, a4)
-        with m.reconstructed_tree() as (root, _):
+        with m.reconstructed_tree('a4') as (root, _):
             wrong = dict(a4)
             wrong['libtorch/CMakeLists.txt'] = '0' * 64
             with self.assertRaises(ValueError):

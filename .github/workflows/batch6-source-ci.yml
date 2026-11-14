@@ -45,7 +45,8 @@ jobs:
         run: |
           python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6 -p test_ci_build.py -v
           python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6_layers -p 'test_*.py' -v
-      - name: Reconstruct and test source
+      # Synthetic parity is built and inventoried but not run pending containment.
+      - name: Reconstruct and test source (parity containment pending)
         run: python harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6/ci_build.py --receipt "$RUNNER_TEMP/batch6-receipt.json"
       - name: Upload receipt
         if: always()

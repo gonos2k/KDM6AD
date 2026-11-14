@@ -98,6 +98,68 @@ def checked_records(rows, ident, sequence):
     return epoch
 
 
+
+def canonical_bytes(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('ascii')
+
+
+def serialize_same_call(result, planned_call, planned_words, claimed_dso, path):
+    """Serialize a value-mode executor result; all claimed identities stay unverified."""
+    result = copy.deepcopy(result)
+    need(type(result) is dict and type(planned_call) is dict, 'executor result/call')
+    ident, sequence = planned_call['input_id'], planned_call['sequence']
+    need(type(sequence) is int and sequence > 0 and planned_call['mode'] == 'capture_on_value', 'planned call')
+    need(type(path) is str and path and not path.startswith('/') and '..' not in Path(path).parts and '\\' not in path, 'asset path')
+    need(result.get('schema') == 'kdm6.future_call_raw.v1'
+         and (result.get('input_id'), result.get('sequence'), result.get('mode')) == (ident, sequence, 'capture_on_value')
+         and type(result.get('return_code')) is int and result['return_code'] == 0
+         and result.get('handle_nonnull') is False and result.get('handle_null_after') is True
+         and result.get('close_rc') is None and result.get('dso_identity_status') == 'CALLER_SUPPLIED_UNVERIFIED'
+         and rs.hex_sha(claimed_dso) and result.get('claimed_dso_sha256') == claimed_dso, 'executor call')
+    need(rs.words(result.get('input_words'), 624, 'executor input') == rs.words(planned_words, 624, 'planned input'), 'executor input binding')
+    rs.words(result.get('state_output_words'), 468, 'executor output')
+    rain = result.get('same_call_rain')
+    need(type(rain) is dict and set(rain) == {'raw_hex', 'graph_flag'} and type(rain['graph_flag']) is int
+         and rain['graph_flag'] == 0 and type(rain['raw_hex']) is str
+         and re.fullmatch('[0-9a-f]{16}', rain['raw_hex']) is not None
+         and math.isfinite(struct.unpack('>d', bytes.fromhex(rain['raw_hex']))[0])
+         and result.get('rain_unit_status') == 'UNAPPROVED'
+         and result.get('rain_provenance') == 'SAME_CALL_CONTEXT_UNVERIFIED', 'rain checkpoint')
+    sidecar = result.get('sidecar_records')
+    need(type(sidecar) is list, 'sidecar records')
+    matches = [r for r in sidecar if type(r) is dict and r.get('stage') == 'fnresult' and r.get('field') == 'rain_increment']
+    need(len(matches) == 1, 'unique FnResult rain')
+    rr = matches[0]
+    need((rr.get('input_id'), rr.get('mode'), rr.get('runtime_call')) == (ident, 'capture_on_value', sequence)
+         and (rr.get('scope'), rr.get('record_kind'), rr.get('b_zero'), rr.get('k_zero'),
+              rr.get('native_level_bottom_first'), rr.get('B'), rr.get('K')) == ('column', 'value', 0, -1, -1, 1, -1)
+         and rr.get('dtype') == 'f64' and rr.get('raw_hex') == rain['raw_hex'], 'FnResult rain binding')
+    same = result.get('condition_v2_asset')
+    need(type(same) is dict and set(same) == {'schema', 'status', 'sequence', 'input_id', 'mode', 'input_words',
+         'state_output_words', 'same_call_rain', 'claimed_dso_sha256', 'dso_identity_status', 'graph_handle_token', 'capture'}
+         and same['schema'] == 'kdm6.condition_v2_same_call.unverified.v1' and same['status'] == 'SPEC_ONLY_BLOCKED'
+         and same['graph_handle_token'] is None, 'same-call asset')
+    for key in ('sequence', 'input_id', 'mode', 'input_words', 'state_output_words', 'same_call_rain',
+                'claimed_dso_sha256', 'dso_identity_status'):
+        need(same[key] == result[key], 'same-call field mismatch: ' + key)
+    encoded = canonical_bytes(same)
+    need(result.get('condition_v2_asset_sha256') == hashlib.sha256(encoded).hexdigest(), 'same-call asset SHA')
+    reader = same['capture']
+    need(type(reader) is dict and set(reader) == {'status', 'records', 'graph_metadata_only'}
+         and reader['status'] == 'SPEC_ONLY_BLOCKED' and reader['graph_metadata_only'] is False, 'reader copy')
+    checked_records(reader['records'], ident, sequence)
+    payload = {'schema': ASSET_SCHEMA, 'input_id': ident, 'sequence': sequence, 'mode': 'capture_on_value',
+               'input_words': list(planned_words), 'dso_sha256': claimed_dso, 'reader': reader,
+               'state_output_words': list(result['state_output_words']), 'same_call_rain': rain,
+               'same_call_asset': same, 'same_call_asset_sha256': hashlib.sha256(encoded).hexdigest(),
+               'rain_record': rr}
+    raw = canonical_bytes(payload)
+    need(len(raw) <= MAX_ASSET_BYTES, 'asset byte bound')
+    return {'entry': {'input_id': ident, 'sequence': sequence,
+                      'asset': {'path': path, 'sha256': hashlib.sha256(raw).hexdigest()}}, 'bytes': raw,
+            'status': 'SPEC_ONLY', 'eligibility': 'NOT_ELIGIBLE'}
+
+
 def join(receipt, assets, envelope):
     """Join 45 caller-provided reader-copy assets, retaining order and provenance limits."""
     receipt = copy.deepcopy(receipt)
@@ -112,6 +174,7 @@ def join(receipt, assets, envelope):
     need(len(expected) == 45 and type(envelope['calls']) is list and len(envelope['calls']) == 45, '45-call inventory')
     inputs = {entry['id']: entry['words'] for entry in plan['inputs']}
     dso = receipt['build']['new_instrumented_dso_sha256']
+    receipt_calls = {(call['input_id'], call['mode']): call for call in receipt['calls'] if call['status'] == 'completed'}
     output = []
     used = set()
     total = 0
@@ -124,11 +187,29 @@ def join(receipt, assets, envelope):
         need(len(raw) <= MAX_ASSET_BYTES, 'asset byte bound')
         used.add(ref['path'])
         item = json.loads(raw, object_pairs_hook=no_duplicates)
-        need(type(item) is dict and set(item) == {'schema', 'input_id', 'sequence', 'mode', 'input_words', 'dso_sha256', 'reader'}
+        need(type(item) is dict and set(item) == {'schema', 'input_id', 'sequence', 'mode', 'input_words', 'dso_sha256', 'reader', 'state_output_words', 'same_call_rain', 'same_call_asset', 'same_call_asset_sha256', 'rain_record'}
              and item['schema'] == ASSET_SCHEMA
              and (item['input_id'], item['sequence'], item['mode']) == (entry['input_id'], entry['sequence'], 'capture_on_value')
              and item['dso_sha256'] == dso, 'asset call identity')
         need(rs.words(item['input_words'], 624, 'reader input') == inputs[entry['input_id']], 'input words')
+        source = item['same_call_asset']
+        need(type(source) is dict, 'same-call source')
+        replay_result = {'schema': 'kdm6.future_call_raw.v1', 'input_id': entry['input_id'],
+                         'sequence': entry['sequence'], 'mode': 'capture_on_value', 'return_code': 0,
+                         'handle_nonnull': False, 'handle_null_after': True, 'close_rc': None,
+                         'dso_identity_status': 'CALLER_SUPPLIED_UNVERIFIED', 'claimed_dso_sha256': dso,
+                         'input_words': item['input_words'], 'state_output_words': item['state_output_words'],
+                         'same_call_rain': item['same_call_rain'], 'rain_unit_status': 'UNAPPROVED',
+                         'rain_provenance': 'SAME_CALL_CONTEXT_UNVERIFIED', 'sidecar_records': [item['rain_record']],
+                         'condition_v2_asset': source, 'condition_v2_asset_sha256': item['same_call_asset_sha256']}
+        canonical = serialize_same_call(replay_result, planned, inputs[entry['input_id']], dso, ref['path'])
+        need(raw == canonical['bytes'], 'noncanonical or mismatched same-call asset')
+        call = receipt_calls.get((entry['input_id'], 'capture_on_value'))
+        need(type(call) is dict and call['sequence'] == entry['sequence'], 'receipt call binding')
+        output_payload = json.loads(rs.asset(call['output_asset'], assets), object_pairs_hook=no_duplicates)
+        need(output_payload['input_words'] == item['input_words'] and
+             output_payload['state_output_words'] == item['state_output_words'] and
+             output_payload['dso_sha256'] == dso, 'receipt output binding')
         reader = item['reader']
         need(type(reader) is dict and set(reader) == {'status', 'records', 'graph_metadata_only'}
              and reader['status'] == 'SPEC_ONLY_BLOCKED' and reader['graph_metadata_only'] is False, 'reader copy')

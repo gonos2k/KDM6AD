@@ -20,6 +20,10 @@ ASSETS = {
     'a3_snapshot.json': '3d947134a061c992f3cabc1b1309497f3b5cfc18c2a14cb657b23b40f058d01a',
     'a4.patch': '665e70a8d1d204c696f7b2fe861a57bd2fa4ed932984106ae763580e128d7362',
     'a4_snapshot.json': 'fe2d660baf7bb88d8ba9e4ff9afe6692873a197cadb05fb35f21cbf12199dc48',
+    'a5_graph.patch': 'c8f770a2b29b90b041908d8b2148740161e80a206f1d2f7e302a2f496a95536a',
+    'a5_graph_snapshot.json': 'b4ff2a9e2bb95ab19333ea73bbcce030d82f6165b94ab26a85841d489782ee3a',
+    'a7_ledger.patch': '97f17b411075989feac89639f76ccf6f2c7f7eb9966a19936fa4da4865bdd3bd',
+    'a7_ledger_snapshot.json': '033558eb6f771beb76d6ba8ebbc1aa126c4abafd4eb6d53dcabd3361cb8a1038',
 }
 
 
@@ -85,7 +89,8 @@ def apply_layer(root, patch, base, target, validator):
 
 
 @contextmanager
-def reconstructed_tree():
+def reconstructed_tree(layer='a7_ledger'):
+    need(layer in ('a4', 'a5_graph', 'a7_ledger'), 'unknown final layer')
     a5 = load_a5()
     assets = {name: (HERE / name).read_bytes() for name in ASSETS}
     for name, data in assets.items():
@@ -96,12 +101,19 @@ def reconstructed_tree():
     a2 = snapshot(assets['a2_snapshot.json'], 83, validator)
     a3 = snapshot(assets['a3_snapshot.json'], 83, validator)
     a4 = snapshot(assets['a4_snapshot.json'], 84, validator)
+    a5_graph = snapshot(assets['a5_graph_snapshot.json'], 84, validator)
+    a7_ledger = snapshot(assets['a7_ledger_snapshot.json'], 84, validator)
     with a5.reconstructed_tree() as (root, a5_result):
         v2_result = apply_layer(root, assets['v2.patch'], base, v2, validator)
         a2_result = apply_layer(root, assets['a2.patch'], v2, a2, validator)
         a3_result = apply_layer(root, assets['a3.patch'], a2, a3, validator)
         a4_result = apply_layer(root, assets['a4.patch'], a3, a4, validator)
-        yield root, {'a5': a5_result, 'v2': v2_result, 'a2': a2_result, 'a3': a3_result, 'a4': a4_result}
+        result = {'a5': a5_result, 'v2': v2_result, 'a2': a2_result, 'a3': a3_result, 'a4': a4_result}
+        if layer in ('a5_graph', 'a7_ledger'):
+            result['a5_graph'] = apply_layer(root, assets['a5_graph.patch'], a4, a5_graph, validator)
+        if layer == 'a7_ledger':
+            result['a7_ledger'] = apply_layer(root, assets['a7_ledger.patch'], a5_graph, a7_ledger, validator)
+        yield root, result
 
 
 def replay():
