@@ -62,7 +62,7 @@ class WatchdogTopologyTest(unittest.TestCase):
                 os._exit(0)
             os.close(life_r);os.close(ready_w);os.close(release_r)
             try:
-                self.assertEqual(os.read(ready_r,1),b'R');os.write(release_w,b'G')
+                self.assertEqual(os.read(ready_r,1),b'')
                 end=time.monotonic()+12
                 while time.monotonic()<end:
                     done,_=os.waitpid(dog,os.WNOHANG)
@@ -72,6 +72,7 @@ class WatchdogTopologyTest(unittest.TestCase):
                 result=json.loads((pathlib.Path(d)/'armed.result').read_text())
                 self.assertEqual(result['status'],'INCOMPLETE');self.assertIn('helper',result['reason'].lower())
                 self.assertNotEqual(result['census_helper_pid'],result['worker_pid'])
+                self.assertFalse(result['released']);self.assertFalse((pathlib.Path(d)/'armed').exists())
             finally:
                 os.close(ready_r);os.close(release_w)
                 if dog is not None:
@@ -103,7 +104,7 @@ class FailureMatrix(unittest.TestCase):
                     finally:os._exit(0)
                 os.close(lr);os.close(rw);os.close(pr)
                 try:
-                    self.assertEqual(os.read(rr,1),b'R');os.write(pw,b'G');end=time.monotonic()+12
+                    self.assertEqual(os.read(rr,1),b'');end=time.monotonic()+12
                     while time.monotonic()<end:
                         done,_=os.waitpid(dog,os.WNOHANG)
                         if done:dog=None;break
@@ -111,7 +112,8 @@ class FailureMatrix(unittest.TestCase):
                     self.assertIsNone(dog,'watchdog timed out')
                     result=json.loads((pathlib.Path(d)/'armed.result').read_text())
                     self.assertEqual(result['status'],'INCOMPLETE');self.assertIn('helper',result['reason'].lower())
-                    self.assertTrue(result['cleanup_errors'])
+                    self.assertTrue(result['cleanup_errors']);self.assertFalse(result['released'])
+                    self.assertFalse((pathlib.Path(d)/'armed').exists())
                 finally:
                     os.close(rr);os.close(pw)
                     if dog is not None:

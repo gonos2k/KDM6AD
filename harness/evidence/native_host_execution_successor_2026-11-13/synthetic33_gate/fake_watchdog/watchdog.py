@@ -8,6 +8,7 @@ import ctypes, json, os, pathlib, select, signal, time, subprocess, hashlib, sys
 
 ENABLE_REAL33=False
 _CANCEL=[]
+class WorkerExitedDuringSample(RuntimeError):pass
 def _cancel(sig,frame): _CANCEL.append(sig)
 def atomic(path,obj):
     path=pathlib.Path(path);tmp=path.with_name(path.name+'.tmp')
@@ -28,6 +29,19 @@ def process_start(pid):
     obj=ProcBSDInfo(); n=fn(pid,3,0,ctypes.byref(obj),ctypes.sizeof(obj))
     if n!=ctypes.sizeof(obj) or obj.pid!=pid or not obj.start_sec: raise RuntimeError('supervisor identity unavailable')
     return (obj.start_sec,obj.start_usec)
+def checked_rss_sample(reservation,sample,deadline):
+    if time.monotonic()>=deadline or _CANCEL:raise RuntimeError('sample cancelled or deadline')
+    before=reservation()
+    if before[0]!='alive':raise WorkerExitedDuringSample('worker exited before RSS sample')
+    rss=sample()
+    if type(rss) is not int or rss<=0:raise RuntimeError('invalid nonpositive RSS sample')
+    after=reservation()
+    if after!=before:
+        if after==('exited_reserved',before[1]):raise WorkerExitedDuringSample('worker exited during RSS sample')
+        raise RuntimeError('worker identity changed during RSS sample')
+    if time.monotonic()>=deadline or _CANCEL:raise RuntimeError('sample cancelled or deadline')
+    return rss
+
 def release_refusal(supervisor_pid,supervisor_start,life_fd,deadline):
     """Last observation before release; caller holds TERM/INT blocked."""
     if _CANCEL or signal.sigpending() & {signal.SIGTERM,signal.SIGINT}:return 'cancelled'
@@ -196,6 +210,7 @@ def child(worker_ready,release,scenario,mock_outdir=None):
         if kid==0:
             signal.signal(signal.SIGTERM,signal.SIG_IGN)
             while True:time.sleep(1)
+    if scenario=='fast_exit':os._exit(0)
     if scenario=='leader_exits_first':
         kid=os.fork()
         if kid==0:
@@ -205,7 +220,7 @@ def child(worker_ready,release,scenario,mock_outdir=None):
     while True:time.sleep(1)
 
 def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None):
-    if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real'):raise ValueError('fake scenarios only')
+    if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real','fast_exit'):raise ValueError('fake scenarios only')
     if scenario=='fixture33_real' and (use_fake_census_helper or use_native_census_helper):raise ValueError('census helper integration is fake-scope only')
     if use_fake_census_helper and use_native_census_helper:raise ValueError('conflicting helper modes')
     if scenario=='fixture33_real' and (fake_ready_timeout!=10.0 or fake_post_release_timeout is not None):raise ValueError('fake-only timing override')
@@ -280,7 +295,26 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 sampler=fake_census_sampler
             helper=CensusHelper(sampler)
             result['census_helper_pid']=helper.pid;result['census_latencies_seconds']=[]
+        def take_rss_sample():
+            def measure():
+                if helper is not None:
+                    sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,deadline)
+                    result['census_latencies_seconds'].append(time.monotonic()-sample_start)
+                    result['rss_policy']='SAMPLED_STOP_THRESHOLD'
+                    return (sample['rss_bytes']+1023)//1024
+                return group_rss_kib(pid)
+            rss=checked_rss_sample(reservation,measure,deadline)
+            result['peak_group_rss_kib']=max(result['peak_group_rss_kib'],rss)
+            return rss
         kq.control([select.kevent(pid,filter=select.KQ_FILTER_PROC,flags=select.KQ_EV_ADD|select.KQ_EV_ENABLE|select.KQ_EV_ONESHOT,fflags=select.KQ_NOTE_EXIT)],0,0)
+        result['initial_rss_kib']=take_rss_sample()
+        if result['initial_rss_kib']>max_rss_kib:raise RuntimeError('initial RSS stop threshold exceeded')
+        oldmask=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGTERM,signal.SIGINT})
+        try:refusal=release_refusal(supervisor_pid,supervisor_start,life_fd,deadline)
+        finally:signal.pthread_sigmask(signal.SIG_SETMASK,oldmask)
+        if refusal:
+            result['reason']=refusal
+            raise RuntimeError('initial sample before arm: '+refusal)
         atomic(receipt_path,{'status':'ARMED_FAKE_ONLY','supervisor_pid':supervisor_pid,'supervisor_start':supervisor_start,'worker_pid':pid,'scope':result['scope'],'fake_33_call_inventory':result['fake_33_call_inventory'],'actual_33_call_inventory':result.get('actual_33_call_inventory'),'manifest_sha256':result.get('manifest_sha256'),'run_nonce':result.get('run_nonce'),'watchdog_pid':result.get('watchdog_pid')})
         os.write(ready_fd,b'R')
         while time.monotonic()<deadline:
@@ -306,17 +340,16 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 if fake_post_release_timeout is not None:deadline=min(deadline,time.monotonic()+fake_post_release_timeout)
                 kq.control([select.kevent(release_fd,filter=select.KQ_FILTER_READ,flags=select.KQ_EV_DELETE)],0,0)
                 continue
-            if helper is not None:
-                if time.monotonic()<helper.next_sample:continue
-                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,deadline)
-                result['census_latencies_seconds'].append(time.monotonic()-sample_start)
-                rss=(sample['rss_bytes']+1023)//1024
-                result['rss_policy']='SAMPLED_STOP_THRESHOLD'
-            else:rss=group_rss_kib(pid)
-            result['peak_group_rss_kib']=max(result['peak_group_rss_kib'],rss)
+            if helper is not None and time.monotonic()<helper.next_sample:continue
+            try:rss=take_rss_sample()
+            except WorkerExitedDuringSample:
+                if type(result.get('initial_rss_kib')) is not int or result['initial_rss_kib']<=0:raise
+                result['reason']='worker_exit';break
             if rss>max_rss_kib:result['reason']='rss_limit';break
         else:result['reason']='timeout'
-    except BaseException as exc:result['reason']='error:'+repr(exc)
+    except BaseException as exc:
+        if result['reason'] is None:result['reason']='cancelled' if _CANCEL else ('timeout' if time.monotonic()>=deadline else 'error:'+repr(exc))
+        result['error_detail']=repr(exc)
     finally:
         if pid is not None and group_ready:
             def helper_members(_pid):

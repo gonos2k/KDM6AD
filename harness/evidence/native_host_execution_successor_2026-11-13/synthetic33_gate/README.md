@@ -31,3 +31,10 @@ to synthetic test scenarios; real mode remains forbidden. Python no-fork
 guards are a trusted-code convention, not an OS sandbox; RSS polling is a
 sampled stop threshold, not a hard memory limit. Helper stalls, missing census
 or uncertain cleanup remain `INCOMPLETE`.
+
+Before ARMED or the worker's `G` grant, the watchdog now requires one finite,
+positive, leader-bound RSS sample. It then rechecks cancellation, deadline and
+supervisor liveness. A later verified exit of the same reserved leader is
+handled separately from missing or failed resource observations; the latter
+remain `INCOMPLETE`. This fixes a fast mock-worker zero-sample race without
+claiming a hard memory cap or actual A7 model execution.

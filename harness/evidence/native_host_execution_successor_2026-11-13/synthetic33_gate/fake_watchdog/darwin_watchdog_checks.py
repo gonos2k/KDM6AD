@@ -7,7 +7,7 @@ from real33_contract import sha
 from unittest.mock import patch
 
 class WatchdogTest(unittest.TestCase):
-    def harness(self,scenario,action,final_signal=False,timeout=20,max_rss_kib=8*1024*1024,fake_ready_timeout=15.0,fake_post_release_timeout=None,release_injection=None):
+    def harness(self,scenario,action,final_signal=False,timeout=20,max_rss_kib=8*1024*1024,fake_ready_timeout=15.0,fake_post_release_timeout=None,release_injection=None,initial_mode=None,prearm_failure=False,use_helper=False):
         with tempfile.TemporaryDirectory() as t:
             life_r,life_w=os.pipe(); ready_r,ready_w=os.pipe(); rel_r,rel_w=os.pipe()
             sup=os.fork()
@@ -18,7 +18,22 @@ class WatchdogTest(unittest.TestCase):
             dog=os.fork()
             if dog==0:
                 # Deterministic fake RSS; timeout/error path has its own test.
-                watchdog.group_rss_kib=lambda pid:1024
+                def initial_sample(pid):
+                    if initial_mode=='zero':return 0
+                    if initial_mode=='failure':raise RuntimeError('injected RSS failure')
+                    if initial_mode=='cancel':watchdog._cancel(signal.SIGTERM,None)
+                    if initial_mode=='late':
+                        original=watchdog.time.monotonic
+                        watchdog.time.monotonic=lambda:original()+60
+                    return 1024
+                watchdog.group_rss_kib=initial_sample
+                def helper_sampler(request,deadline):
+                    if initial_mode=='failure':raise PermissionError('injected helper failure')
+                    if initial_mode=='cancel':os.kill(os.getppid(),signal.SIGTERM)
+                    if initial_mode=='late':time.sleep(3)
+                    value=0 if initial_mode=='zero' else 1024*1024
+                    return {'request':request,'policy':'SAMPLED_STOP_THRESHOLD','members':[request['leader_pid']],'rss_bytes':value}
+
                 if release_injection:
                     original_kqueue=watchdog.select.kqueue
                     class InjectQueue:
@@ -45,14 +60,17 @@ class WatchdogTest(unittest.TestCase):
                             os.kill(os.getpid(),signal.SIGTERM);os.kill(os.getpid(),signal.SIGTERM)
                         old(path,value)
                     watchdog.atomic=injected
-                try: watchdog.supervise(sup,watchdog.process_start(sup),life_r,rel_r,ready_w,str(pathlib.Path(t)/'armed.json'),scenario,timeout=timeout,max_rss_kib=max_rss_kib,mock_outdir=t,fake_ready_timeout=fake_ready_timeout,fake_post_release_timeout=fake_post_release_timeout)
+                try: watchdog.supervise(sup,watchdog.process_start(sup),life_r,rel_r,ready_w,str(pathlib.Path(t)/'armed.json'),scenario,timeout=timeout,max_rss_kib=max_rss_kib,mock_outdir=t,fake_ready_timeout=fake_ready_timeout,fake_post_release_timeout=fake_post_release_timeout,use_fake_census_helper=use_helper,fake_census_sampler=helper_sampler if use_helper else None)
                 except BaseException:
                     import traceback;traceback.print_exc();os._exit(1)
                 os._exit(0)
             os.close(life_r);os.close(ready_w);os.close(rel_r)
             try:
-                self.assertEqual(os.read(ready_r,1),b'R')
-                action(sup,dog,rel_w,ready_r)
+                initial=os.read(ready_r,1)
+                if prearm_failure:self.assertEqual(initial,b'')
+                else:
+                    self.assertEqual(initial,b'R')
+                    action(sup,dog,rel_w,ready_r)
                 deadline=time.monotonic()+8;status=None
                 while time.monotonic()<deadline:
                     p,s=os.waitpid(dog,os.WNOHANG)
@@ -60,7 +78,8 @@ class WatchdogTest(unittest.TestCase):
                     time.sleep(.03)
                 self.assertIsNotNone(status,'watchdog hung')
                 result=json.loads((pathlib.Path(t)/'armed.json.result').read_text())
-                self.assertEqual(result['status'],'INCOMPLETE');self.assertEqual(result['cleanup_errors'],[])
+                self.assertEqual(result['status'],'INCOMPLETE')
+                if not (prearm_failure and use_helper):self.assertEqual(result['cleanup_errors'],[])
                 if scenario=='fixture33_exec_mock':
                     self.assertGreater(result['exclusive_trace']['bytes'],0)
                     self.assertEqual(result['exclusive_trace']['sha256'],sha(result['exclusive_trace']['path']))
@@ -105,6 +124,39 @@ class WatchdogTest(unittest.TestCase):
     def test_supervisor_death_coincident_with_release_is_not_forwarded(self):
         a=self.harness('term_ignore_descendant',lambda s,d,r,ack:os.write(r,b'G'),release_injection='supervisor_death')
         self.assertFalse(a['released']);self.assertIn(a['reason'],('supervisor_pipe_eof','supervisor_unavailable','supervisor_exit'))
+    def test_later_sample_verified_exit_is_distinct_from_sampling_failure(self):
+        watchdog._CANCEL.clear();identity=(123,456);states=iter([('alive',identity),('exited_reserved',identity)])
+        with self.assertRaises(watchdog.WorkerExitedDuringSample):
+            watchdog.checked_rss_sample(lambda:next(states),lambda:1024,time.monotonic()+2)
+        with self.assertRaisesRegex(RuntimeError,'missing leader'):
+            watchdog.checked_rss_sample(lambda:('alive',identity),lambda:(_ for _ in ()).throw(RuntimeError('missing leader')),time.monotonic()+2)
+        with self.assertRaisesRegex(RuntimeError,'nonpositive'):
+            watchdog.checked_rss_sample(lambda:('alive',identity),lambda:0,time.monotonic()+2)
+    def test_fast_exit_has_initial_positive_rss_before_release(self):
+        def release(s,d,r,ack):os.write(r,b'G');self.assertEqual(os.read(ack,1),b'G')
+        result=self.harness('fast_exit',release)
+        self.assertEqual(result['reason'],'worker_exit');self.assertTrue(result['released'])
+        self.assertGreater(result['initial_rss_kib'],0);self.assertGreater(result['peak_group_rss_kib'],0)
+    def test_initial_rss_failure_never_arms_or_releases(self):
+        for use_helper in (False,True):
+            for mode in ('zero','failure'):
+                with self.subTest(use_helper=use_helper,mode=mode):
+                    result=self.harness('fast_exit',lambda *args:self.fail('must not release'),initial_mode=mode,prearm_failure=True,use_helper=use_helper)
+                    self.assertFalse(result['released']);self.assertEqual(result['peak_group_rss_kib'],0)
+                    self.assertIn('error_detail',result)
+    def test_initial_rss_late_or_cancel_never_arms_or_releases(self):
+        for use_helper in (False,True):
+            for mode in ('late','cancel'):
+                with self.subTest(use_helper=use_helper,mode=mode):
+                    result=self.harness('fast_exit',lambda *args:self.fail('must not release'),initial_mode=mode,prearm_failure=True,use_helper=use_helper)
+                    self.assertFalse(result['released'])
+                    if mode=='cancel':self.assertEqual(result['reason'],'cancelled')
+                    else:self.assertIn('timeout',result['reason'].lower())
+    def test_fast_exit_with_helper_has_initial_sample(self):
+        def release(s,d,r,ack):os.write(r,b'G');self.assertEqual(os.read(ack,1),b'G')
+        result=self.harness('fast_exit',release,use_helper=True)
+        self.assertTrue(result['released']);self.assertGreater(result['initial_rss_kib'],0)
+        self.assertEqual(result['rss_policy'],'SAMPLED_STOP_THRESHOLD')
     def test_supervisor_sigkill_released_descendant(self):
         def action(s,d,r,ack):os.write(r,b'G');self.assertEqual(os.read(ack,1),b'G');os.kill(s,signal.SIGKILL)
         a=self.harness('term_ignore_descendant',action);self.assertTrue(a['released']);self.assertIn(a['reason'],('supervisor_exit','supervisor_pipe_eof'))
@@ -166,8 +218,8 @@ class WatchdogTest(unittest.TestCase):
                 self.assertFalse(witness.exists())
             finally:signal.signal(signal.SIGTERM,old);watchdog._CANCEL.clear()
     def test_rss_cap(self):
-        a=self.harness('term_ignore_descendant',lambda s,d,r,ack:None,max_rss_kib=1)
-        self.assertEqual(a['reason'],'rss_limit')
+        a=self.harness('term_ignore_descendant',lambda *args:self.fail('must not release'),max_rss_kib=1,prearm_failure=True)
+        self.assertFalse(a['released']);self.assertIn('initial RSS stop threshold',a['error_detail'])
     def test_wall_timeout(self):
         def release(s,d,r,ack):os.write(r,b'G');self.assertEqual(os.read(ack,1),b'G')
         a=self.harness('term_ignore_descendant',release,timeout=20,fake_post_release_timeout=.3)
@@ -220,8 +272,8 @@ class WatchdogTest(unittest.TestCase):
         result=self.harness('fixture33_stall',release,timeout=5)
         self.assertIn(result['reason'],('supervisor_exit','supervisor_pipe_eof'))
     def test_mock_33_worker_rss_cap(self):
-        result=self.harness('fixture33_stall',lambda s,d,r,ack:None,max_rss_kib=1)
-        self.assertEqual(result['reason'],'rss_limit')
+        result=self.harness('fixture33_stall',lambda *args:self.fail('must not release'),max_rss_kib=1,prearm_failure=True)
+        self.assertFalse(result['released']);self.assertIn('initial RSS stop threshold',result['error_detail'])
     def test_mock_33_exec_worker_after_watchdog_release(self):
         result=self.harness('fixture33_exec_mock',lambda s,d,r,ack:os.write(r,b'G'),timeout=12)
         self.assertEqual(result['reason'],'worker_exit');self.assertTrue(result['released'])
