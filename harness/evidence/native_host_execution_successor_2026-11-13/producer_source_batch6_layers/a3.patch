@@ -1,0 +1,134 @@
+diff --git a/libtorch/include/kdm6/batch6_a2_named_hooks.h b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+index 7d629887f4e62f673e2d65669dd5fe88e038dee7..0cf9573a586db1a674d6782ceaf7fcca9cba0226 100644
+--- a/libtorch/include/kdm6/batch6_a2_named_hooks.h
++++ b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+@@ -2,6 +2,7 @@
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_conditions_v2.h"
+ #include <map>
++#include <cstring> // A2_DIAG_INCLUDE
+ #include <tuple>
+ namespace kdm6::batch5::a2_named {
+ // Private source-only prototype. Ordinals follow the v2 identity key and reset
+@@ -24,5 +25,20 @@ inline void record(const char* stage,const char* field,const char* source_hook,R
+         ordinals[key]=ord+1;
+     }
+ }
++// Raw declared C++ double; effective tensor-comparison conversion is separate.
++inline void scalar_f64(const char* stage,const char* field,const char* source_hook,double value) {
++    if (!batch5::enabled()) return;
++    using ScalarKey=std::tuple<std::uint64_t,std::uint64_t,std::string,std::uint64_t,std::string,std::string,std::string>;
++    static thread_local std::uint64_t epoch=0;
++    static thread_local std::map<ScalarKey,std::uint64_t> ordinals;
++    auto c=batch5::context_snapshot();
++    if(epoch!=c.epoch){ordinals.clear();epoch=c.epoch;}
++    ScalarKey key{c.one_step_call,c.outer_loop,c.family,c.substep_n,stage,field,source_hook};
++    auto it=ordinals.find(key);const auto ord=it==ordinals.end()?0:it->second;
++    std::uint64_t bits=0; static_assert(sizeof(bits)==sizeof(value),"double size");
++    std::memcpy(&bits,&value,sizeof(bits));
++    control(stage,field,source_hook,Dtype::F64,bits,ord);
++    ordinals[key]=ord+1;
+ }
++} // A2_DIAG_HELPER_END
+ #endif
+diff --git a/libtorch/src/coordinator.cpp b/libtorch/src/coordinator.cpp
+index 9cb7026c5a9fa4f125018ea490d7db1d3b105419..9e3776f7b09fcdb1abd2d9e42dd73c784834a173 100644
+--- a/libtorch/src/coordinator.cpp
++++ b/libtorch/src/coordinator.cpp
+@@ -2787,6 +2787,11 @@ CoordinatorState apply_satadj_step(
+         batch5::full("activation", "xl", xl, false);
+         batch5::full("activation", "sw_percent", sw_percent, false);
+         batch5::full("activation", "sw_ratio", sw_ratio, false);
++        batch5::a2_named::record("activation", "sw_ratio", "src/coordinator.cpp:diag.sw_ratio", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, sw_ratio, false); // A2_DIAG
++        batch5::a2_named::record("activation", "safe_pow_floor_lt", "src/coordinator.cpp:diag.safe_pow_floor_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, sw_ratio < constants::EPS, false); // A2_DIAG
++        batch5::a2_named::record("activation", "safe_pow_floor_eq", "src/coordinator.cpp:diag.safe_pow_floor_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, sw_ratio == constants::EPS, false); // A2_DIAG
++        batch5::a2_named::record("activation", "safe_pow_floor_gt", "src/coordinator.cpp:diag.safe_pow_floor_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, sw_ratio > constants::EPS, false); // A2_DIAG
++        batch5::a2_named::scalar_f64("activation", "safe_pow_eps", "src/coordinator.cpp:control.safe_pow_eps", constants::EPS); // A2_DIAG
+         batch5::full("activation", "fraction_one", batch5_fraction_one, false);
+         batch5::full("activation", "fraction_pow", batch5_fraction_pow, false);
+         batch5::full("activation", "fraction_min", activated_fraction, false);
+@@ -2831,6 +2836,21 @@ CoordinatorState apply_satadj_step(
+         batch5::full("rate_cap", "raw_lt_cap", ncact_raw < batch5_rate_cap, false);
+         batch5::full("rate_cap", "raw_eq_cap", ncact_raw == batch5_rate_cap, false);
+         batch5::full("rate_cap", "raw_gt_cap", ncact_raw > batch5_rate_cap, false);
++        batch5::a2_named::record("rate_cap", "numerator", "src/coordinator.cpp:diag.numerator", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, batch5_nc_numerator, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "nccn", "src/coordinator.cpp:diag.nccn", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, state.nccn, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "raw", "src/coordinator.cpp:diag.raw", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, ncact_raw, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "cap", "src/coordinator.cpp:diag.cap", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, batch5_rate_cap, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "numerator_lt", "src/coordinator.cpp:diag.numerator_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_nc_numerator < 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "numerator_eq", "src/coordinator.cpp:diag.numerator_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_nc_numerator == 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "numerator_gt", "src/coordinator.cpp:diag.numerator_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_nc_numerator > 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "nccn_lt", "src/coordinator.cpp:diag.nccn_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, state.nccn < 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "nccn_eq", "src/coordinator.cpp:diag.nccn_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, state.nccn == 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "nccn_gt", "src/coordinator.cpp:diag.nccn_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, state.nccn > 0.0, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "raw_cap_lt", "src/coordinator.cpp:diag.raw_cap_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, ncact_raw < batch5_rate_cap, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "raw_cap_eq", "src/coordinator.cpp:diag.raw_cap_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, ncact_raw == batch5_rate_cap, false); // A2_DIAG
++        batch5::a2_named::record("rate_cap", "raw_cap_gt", "src/coordinator.cpp:diag.raw_cap_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, ncact_raw > batch5_rate_cap, false); // A2_DIAG
++        batch5::a2_named::scalar_f64("rate_cap", "zero", "src/coordinator.cpp:control.zero", 0.0); // A2_DIAG
++        batch5::a2_named::scalar_f64("rate_cap", "dtcld", "src/coordinator.cpp:control.dtcld", dtcld); // A2_DIAG
+     }
+ #else
+     auto ncact_raw = torch::clamp(
+diff --git a/libtorch/src/runtime.cpp b/libtorch/src/runtime.cpp
+index 57fd6f890e81217829cb2efbb68fdd55ad6914c5..e551c0f58c16aa6278accaa5e341dd6beaeca28f 100644
+--- a/libtorch/src/runtime.cpp
++++ b/libtorch/src/runtime.cpp
+@@ -2,6 +2,7 @@
+ #include "kdm6/runtime.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch6_a2_named_hooks.h" // A2_DIAG_INCLUDE
+ #endif
+ #include "kdm6/fconst.h"
+ #include "kdm6/coordinator.h"
+@@ -550,6 +551,20 @@ FnResult kdm6_fn(const State& state,
+         batch5::full("entry", "nccn_floor_eq", cs.nccn == constants::NCCN_MIN, false);
+         batch5::full("entry", "nccn_cap_gt", cs.nccn > constants::NCCN_MAX, false);
+         batch5::full("entry", "nccn_cap_eq", cs.nccn == constants::NCCN_MAX, false);
++        batch5::a2_named::record("entry", "nc_pre", "src/runtime.cpp:diag.nc_pre", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, cs.nc, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_pre", "src/runtime.cpp:diag.nccn_pre", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, cs.nccn, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nc_floor_lt", "src/runtime.cpp:diag.nc_floor_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nc < 0.0, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nc_floor_eq", "src/runtime.cpp:diag.nc_floor_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nc == 0.0, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nc_floor_gt", "src/runtime.cpp:diag.nc_floor_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nc > 0.0, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_floor_lt", "src/runtime.cpp:diag.nccn_floor_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn < constants::NCCN_MIN, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_floor_eq", "src/runtime.cpp:diag.nccn_floor_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn == constants::NCCN_MIN, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_floor_gt", "src/runtime.cpp:diag.nccn_floor_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn > constants::NCCN_MIN, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_cap_lt", "src/runtime.cpp:diag.nccn_cap_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn < constants::NCCN_MAX, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_cap_eq", "src/runtime.cpp:diag.nccn_cap_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn == constants::NCCN_MAX, false); // A2_DIAG
++        batch5::a2_named::record("entry", "nccn_cap_gt", "src/runtime.cpp:diag.nccn_cap_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, cs.nccn > constants::NCCN_MAX, false); // A2_DIAG
++        batch5::a2_named::scalar_f64("entry", "zero", "src/runtime.cpp:control.zero", 0.0); // A2_DIAG
++        batch5::a2_named::scalar_f64("entry", "nccn_min", "src/runtime.cpp:control.nccn_min", constants::NCCN_MIN); // A2_DIAG
++        batch5::a2_named::scalar_f64("entry", "nccn_max", "src/runtime.cpp:control.nccn_max", constants::NCCN_MAX); // A2_DIAG
+     }
+ #endif
+     auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
+diff --git a/libtorch/src/thermo.cpp b/libtorch/src/thermo.cpp
+index cf1e0cda34292243e7e0f1c055bb709410469910..c098f812d3cdacf06c981c4aa73ce7e6dc571329 100644
+--- a/libtorch/src/thermo.cpp
++++ b/libtorch/src/thermo.cpp
+@@ -1,6 +1,7 @@
+ #include "kdm6/thermo.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch6_a2_named_hooks.h" // A2_DIAG_INCLUDE
+ #endif
+ #include "kdm6/ops.h"
+ 
+@@ -138,6 +139,17 @@ torch::Tensor compute_qs_water(const torch::Tensor& t, const torch::Tensor& pres
+         batch5::full("thermo_qs_water", "es_lt_cap", batch5_es_input < batch5_es_cap, batch5::top_first());
+         batch5::full("thermo_qs_water", "es_eq_cap", batch5_es_input == batch5_es_cap, batch5::top_first());
+         batch5::full("thermo_qs_water", "es_gt_cap", batch5_es_input > batch5_es_cap, batch5::top_first());
++        batch5::a2_named::record("thermo_qs_water", "t_input", "src/thermo.cpp:diag.t_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, t, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "es_input", "src/thermo.cpp:diag.es_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, batch5_es_input, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "es_cap", "src/thermo.cpp:diag.es_cap", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, batch5_es_cap, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "t_floor_lt", "src/thermo.cpp:diag.t_floor_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, t < 1.0, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "t_floor_eq", "src/thermo.cpp:diag.t_floor_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, t == 1.0, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "t_floor_gt", "src/thermo.cpp:diag.t_floor_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, t > 1.0, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "es_cap_lt", "src/thermo.cpp:diag.es_cap_lt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_es_input < batch5_es_cap, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "es_cap_eq", "src/thermo.cpp:diag.es_cap_eq", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_es_input == batch5_es_cap, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::record("thermo_qs_water", "es_cap_gt", "src/thermo.cpp:diag.es_cap_gt", batch5::conditions_v2::Role::DIAGNOSTIC_COMPARISON, batch5::conditions_v2::Scope::LAYER, batch5_es_input > batch5_es_cap, batch5::top_first()); // A2_DIAG
++        batch5::a2_named::scalar_f64("thermo_qs_water", "t_floor", "src/thermo.cpp:control.t_floor", 1.0); // A2_DIAG
++        batch5::a2_named::scalar_f64("thermo_qs_water", "es_factor", "src/thermo.cpp:control.es_factor", 0.99); // A2_DIAG
+     }
+ #else
+     es = torch::minimum(es, 0.99 * pres);

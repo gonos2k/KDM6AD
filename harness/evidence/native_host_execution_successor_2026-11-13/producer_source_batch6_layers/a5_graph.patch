@@ -1,0 +1,117 @@
+diff --git a/libtorch/include/kdm6/batch6_a2_named_hooks.h b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+index 0cf9573a586db1a674d6782ceaf7fcca9cba0226..7899973cd2bc1bb074836d6f3ddd27948aad0628 100644
+--- a/libtorch/include/kdm6/batch6_a2_named_hooks.h
++++ b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+@@ -40,5 +40,20 @@ inline void scalar_f64(const char* stage,const char* field,const char* source_ho
+     control(stage,field,source_hook,Dtype::F64,bits,ord);
+     ordinals[key]=ord+1;
+ }
++// A5_SCALAR_HELPER_BEGIN
++inline void scalar_integral(const char* stage,const char* field,const char* source_hook,
++                            Dtype dtype,std::uint64_t bits) {
++    if (!batch5::enabled()) return;
++    using ScalarKey=std::tuple<std::uint64_t,std::uint64_t,std::string,std::uint64_t,std::string,std::string,std::string,int>;
++    static thread_local std::uint64_t epoch=0;
++    static thread_local std::map<ScalarKey,std::uint64_t> ordinals;
++    auto c=batch5::context_snapshot();
++    if(epoch!=c.epoch){ordinals.clear();epoch=c.epoch;}
++    ScalarKey key{c.one_step_call,c.outer_loop,c.family,c.substep_n,stage,field,source_hook,int(dtype)};
++    auto it=ordinals.find(key);const auto ord=it==ordinals.end()?0:it->second;
++    control(stage,field,source_hook,dtype,bits,ord);
++    ordinals[key]=ord+1;
++}
++// A5_SCALAR_HELPER_END
+ } // A2_DIAG_HELPER_END
+ #endif
+diff --git a/libtorch/src/coordinator.cpp b/libtorch/src/coordinator.cpp
+index 9e3776f7b09fcdb1abd2d9e42dd73c784834a173..4ffc8acb238cc7ef1d6a6d3dcab67d5bf46eaedb 100644
+--- a/libtorch/src/coordinator.cpp
++++ b/libtorch/src/coordinator.cpp
+@@ -1023,6 +1023,7 @@ CoordinatorState kdm62d_one_step(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled()) {
+         batch5::full("nc_snap1", "nc_before", nc_orig1, false);
++        batch5::a2_named::scalar_integral("nc_snap1", "ncmin_present", "src/coordinator.cpp:nc_snap1.ncmin_present", batch5::conditions_v2::Dtype::BOOL, ncmin_for_slope.has_value() ? 1 : 0); // A5_CONTROL
+         batch5::a2_named::record("nc_snap1", "nc_before", "src/coordinator.cpp:nc_snap1.nc_before", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_orig1, false); // A2_HOOK
+         batch5::full("nc_snap1", "nc_candidate", nc_snap1, false);
+         batch5::full("nc_snap1", "nc_selected", working1b.nc, false);
+@@ -1235,6 +1236,7 @@ CoordinatorState kdm62d_one_step(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled()) {
+         batch5::full("nc_snap2", "nc_before", nc_orig2, false);
++        batch5::a2_named::scalar_integral("nc_snap2", "ncmin_present", "src/coordinator.cpp:nc_snap2.ncmin_present", batch5::conditions_v2::Dtype::BOOL, ncmin_for_slope.has_value() ? 1 : 0); // A5_CONTROL
+         batch5::a2_named::record("nc_snap2", "nc_before", "src/coordinator.cpp:nc_snap2.nc_before", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_orig2, false); // A2_HOOK
+         batch5::full("nc_snap2", "nc_candidate", nc_snap2, false);
+         batch5::full("nc_snap2", "nc_selected", working.nc, false);
+@@ -2234,7 +2236,14 @@ CoordinatorState state_update(
+     bool midpoint_trace
+ ) {
+     auto dtype = state.qc.dtype();
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_REPLACE_BEGIN
++    auto batch5_a5_phase_mask_gate = pre.supcol >= 0;
++    auto cold_mask = batch5_a5_phase_mask_gate.to(dtype);
++    batch5::a2_named::record("a5_phase_mask", "gate", "src/coordinator.cpp:a5_phase_mask.gate", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_a5_phase_mask_gate, false);
++    batch5::a2_named::record("a5_phase_mask", "supcol", "src/coordinator.cpp:a5_phase_mask.supcol", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, pre.supcol, false);
++#else // A5_ORIGINAL
+     auto cold_mask = (pre.supcol >= 0).to(dtype);  // Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
++#endif // A5_REPLACE_END
+     auto warm_mask = 1.0 - cold_mask;              // = supcol<0 (Fortran t>t0c)
+     // Stage-A STEP 1: delta2/delta3 are computed from the ENTRY state when the
+     // base `state` is a post-melt/freeze working state (delta_src!=null). This
+@@ -2662,7 +2671,14 @@ CoordinatorState state_update(
+     auto xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c;             // F:2738-2741
+     auto vap_sum_w = warm.prevp + cold.psevp + cold.pgevp;                                    // F:2844
+     auto xlwork2_warm = -pre.xl * vap_sum_w - xlf * (mf.pseml + mf.pgeml);                    // F:2844-2845
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_REPLACE_BEGIN
++    auto batch5_a5_heat_mask_gate = pre.supcol >= 0;
++    auto xlwork2 = torch::where(batch5_a5_heat_mask_gate, xlwork2_cold, xlwork2_warm);
++    batch5::a2_named::record("a5_heat_mask", "gate", "src/coordinator.cpp:a5_heat_mask.gate", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_a5_heat_mask_gate, false);
++    batch5::a2_named::record("a5_heat_mask", "supcol", "src/coordinator.cpp:a5_heat_mask.supcol", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, pre.supcol, false);
++#else // A5_ORIGINAL
+     auto xlwork2 = torch::where(pre.supcol >= 0, xlwork2_cold, xlwork2_warm);                 // cold ⇔ supcol>=0
++#endif // A5_REPLACE_END
+     // D1 melt + D2-D4 freeze AMOUNTS: ZERO at runtime (applied inline via apply_melt_freeze_inline); kept
+     // separate (SEED#5 split: psmlt/pgmlt sequential, xlf0 for D1) for the component/test inline↔state_update identity.
+     auto coef_melt = dtcld * xlf_melt / cpm_safe;
+@@ -2994,6 +3010,7 @@ CoordinatorState apply_threshold_cleanup(
+     auto keep_qc = batch5_keep_qc_mask.to(dtype);
+     if (batch5::enabled()) {
+         batch5::full("cleanup_mask", "qc", state.qc, false);
++        batch5::a2_named::scalar_f64("cleanup_mask", "qmin", "src/coordinator.cpp:cleanup_mask.qmin", qmin); // A5_CONTROL
+         batch5::a2_named::record("cleanup_mask", "qc", "src/coordinator.cpp:cleanup_mask.qc", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, state.qc, false); // A2_HOOK
+         batch5::full("cleanup_mask", "keep_qc", batch5_keep_qc_mask, false);
+         batch5::a2_named::record("cleanup_mask", "keep_qc", "src/coordinator.cpp:cleanup_mask.keep_qc", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_keep_qc_mask, false); // A2_HOOK
+@@ -3254,6 +3271,10 @@ torch::Tensor limit_number_for_lamda(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled() && !batch5::site().empty()) {
+         const char* label = batch5::site().c_str();
++        batch5::a2_named::scalar_f64(label, "q_thresh", "src/coordinator.cpp:lambda.control.q_thresh", q_thresh); // A5_CONTROL
++        batch5::a2_named::scalar_f64(label, "n_thresh", "src/coordinator.cpp:lambda.control.n_thresh", n_thresh); // A5_CONTROL
++        batch5::a2_named::scalar_f64(label, "lamda_min", "src/coordinator.cpp:lambda.control.lamda_min", lamda_min); // A5_CONTROL
++        batch5::a2_named::scalar_f64(label, "lamda_max", "src/coordinator.cpp:lambda.control.lamda_max", lamda_max); // A5_CONTROL
+         batch5::full(label, "qf", qf, batch5::top_first());
+         batch5::a2_named::record(label, "qf", "src/coordinator.cpp:lambda.qf", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, qf, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "nf", nf, batch5::top_first());
+@@ -3375,6 +3396,7 @@ CoordinatorState apply_dsd_number_limiters(
+     auto batch5_dsd_ncmax_gate = nc_new > constants::NCMAX;
+     if (batch5::enabled()) {
+         batch5::full("dsd_inner", "nc_before_max_gate", nc_new, false);
++        batch5::a2_named::scalar_f64("dsd_inner", "ncmax", "src/coordinator.cpp:dsd_inner.ncmax", constants::NCMAX); // A5_CONTROL
+         batch5::a2_named::record("dsd_inner", "nc_before_max_gate", "src/coordinator.cpp:dsd_inner.nc_before_max_gate", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_new, false); // A2_HOOK
+         batch5::full("dsd_inner", "nc_at_max", nc_at_max, false);
+         batch5::full("dsd_inner", "nc_gt_ncmax", batch5_dsd_ncmax_gate, false);
+diff --git a/libtorch/src/runtime.cpp b/libtorch/src/runtime.cpp
+index e551c0f58c16aa6278accaa5e341dd6beaeca28f..ad287837ff754a3591c64f9f32fba4313410712a 100644
+--- a/libtorch/src/runtime.cpp
++++ b/libtorch/src/runtime.cpp
+@@ -666,6 +666,10 @@ FnResult kdm6_fn(const State& state,
+                 /*min=*/1, /*max=*/100).to(w1_qi.dtype());
+             mstepmax_ice = static_cast<int>(mstep_col_ice.max().item<double>());
+         }
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_BLOCK_BEGIN
++        batch5::a2_named::scalar_integral("sedimentation_schedule", "mstepmax_main", "src/runtime.cpp:schedule.mstepmax_main", batch5::conditions_v2::Dtype::I64, static_cast<std::uint64_t>(mstepmax_main));
++        batch5::a2_named::scalar_integral("sedimentation_schedule", "mstepmax_ice", "src/runtime.cpp:schedule.mstepmax_ice", batch5::conditions_v2::Dtype::I64, static_cast<std::uint64_t>(mstepmax_ice));
++#endif // A5_BLOCK_END
+         auto sed = sedimentation_chain(
+             cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+             mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params,

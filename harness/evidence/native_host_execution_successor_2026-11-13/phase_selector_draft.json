@@ -1,0 +1,1654 @@
+{
+  "a7_source_snapshot_sha256": "033558eb6f771beb76d6ba8ebbc1aa126c4abafd4eb6d53dcabd3361cb8a1038",
+  "a7_v1_fields": [
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qr_state",
+      "line": 3535,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.qr",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "nr_state",
+      "line": 3536,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.nr",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qs_state",
+      "line": 3537,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.qs",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qg_state",
+      "line": 3538,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.qg",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "brs_state",
+      "line": 3539,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.brs",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qr_fall",
+      "line": 3540,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_qr",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "nr_fall",
+      "line": 3541,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_nr",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qs_fall",
+      "line": 3542,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_qs",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qg_fall",
+      "line": 3543,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_qg",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "brs_fall",
+      "line": 3544,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_brs",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "brs_before",
+      "line": 3564,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "adv_state.brs",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_progb_reset",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "bg_selected",
+      "line": 3565,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "pre.progb.bg",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_main_progb_reset",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qi_state",
+      "line": 3617,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "ice_state.qi",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_ice_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "ni_state",
+      "line": 3618,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "ice_state.ni",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_ice_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "qi_fall",
+      "line": 3619,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_qi",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_ice_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "ni_fall",
+      "line": 3620,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "fall_ni",
+      "source_file": "src/coordinator.cpp",
+      "stage": "a7_ice_selected",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "brs_before",
+      "line": 641,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "cur_pyc.brs",
+      "source_file": "src/runtime.cpp",
+      "stage": "a7_presed_progb_reset",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    },
+    {
+      "dtype": "f32_or_f64_source",
+      "field": "bg_selected",
+      "line": 642,
+      "role": "v1_tensor",
+      "scope": "layer",
+      "source_expression": "pre_sed.progb.bg",
+      "source_file": "src/runtime.cpp",
+      "stage": "a7_presed_progb_reset",
+      "status": "SOURCE_ONLY_NOT_OBSERVED"
+    }
+  ],
+  "absence": "No NOT_EVALUATED inferred from scalar optional or unentered loop; optional false control proves only its own observed value; vectorized unselected torch.where arms may have executed.",
+  "contexts": {
+    "column": "B=1 b=0 k/native absent",
+    "layer": "B=1 K=39 b=0 k=0..38 native=39-k",
+    "microphysics": {
+      "family": "microphysics unless source switches",
+      "n": "observed",
+      "one_step_call": "observed positive call counter",
+      "outer_loop": "observed"
+    },
+    "ordinal": "contiguous per full source key including phase/scope/level/role; not globally zero",
+    "outer_and_sedimentation": {
+      "family": "observed",
+      "n": "observed; never infer missing n",
+      "one_step_call": 0,
+      "outer_loop": "observed"
+    },
+    "runtime_entry": {
+      "family": "runtime",
+      "n": 0,
+      "one_step_call": 0,
+      "outer_loop": 0
+    },
+    "runtime_exit": {
+      "family": "runtime_exit",
+      "n": 0,
+      "one_step_call": "last observed one-step count, not reset by phase",
+      "outer_loop": "last observed outer"
+    },
+    "scalar": "B/K/b/k/native absent"
+  },
+  "fixture_limits": "A4 CTest 5/5 is five synthetic tests, not five separately verified native columns; current synthetic value parity checks total v2 count and metadata, not per-selector census. A5 source is not executed. No selector required from an already archived stream without per-site evidence.",
+  "graph": "Graph selectors and input/seed linkage unverified; no derivative certification",
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.batch6.phase_selector_draft.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "selector_families": [
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "ncmin_present",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 1026,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap1.ncmin_present",
+      "stage": "nc_snap1"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_before",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1027,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap1.nc_before",
+      "stage": "nc_snap1"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "OPTIONAL_BRANCH",
+      "field": "ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1034,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap1.ncmin",
+      "stage": "nc_snap1"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "OPTIONAL_BRANCH",
+      "field": "nc_ge_ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1036,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap1.nc_ge_ncmin",
+      "stage": "nc_snap1"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "ncmin_present",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 1239,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap2.ncmin_present",
+      "stage": "nc_snap2"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_before",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1240,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap2.nc_before",
+      "stage": "nc_snap2"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "OPTIONAL_BRANCH",
+      "field": "ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1247,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap2.ncmin",
+      "stage": "nc_snap2"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "OPTIONAL_BRANCH",
+      "field": "nc_ge_ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 1249,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:nc_snap2.nc_ge_ncmin",
+      "stage": "nc_snap2"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "gate",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 2242,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:a5_phase_mask.gate",
+      "stage": "a5_phase_mask"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "supcol",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 2243,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:a5_phase_mask.supcol",
+      "stage": "a5_phase_mask"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "gate",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 2677,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:a5_heat_mask.gate",
+      "stage": "a5_heat_mask"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "supcol",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 2678,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:a5_heat_mask.supcol",
+      "stage": "a5_heat_mask"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "sw_ratio",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2806,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.sw_ratio",
+      "stage": "activation"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "safe_pow_floor_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2807,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.safe_pow_floor_lt",
+      "stage": "activation"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "safe_pow_floor_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2808,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.safe_pow_floor_eq",
+      "stage": "activation"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "safe_pow_floor_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2809,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.safe_pow_floor_gt",
+      "stage": "activation"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "safe_pow_eps",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2810,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:control.safe_pow_eps",
+      "stage": "activation"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "numerator",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2855,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.numerator",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2856,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.nccn",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "raw",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2857,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.raw",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "cap",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2858,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.cap",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "numerator_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2859,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.numerator_lt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "numerator_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2860,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.numerator_eq",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "numerator_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2861,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.numerator_gt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2862,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.nccn_lt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2863,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.nccn_eq",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2864,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.nccn_gt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "raw_cap_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2865,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.raw_cap_lt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "raw_cap_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2866,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.raw_cap_eq",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "raw_cap_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2867,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:diag.raw_cap_gt",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "zero",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2868,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:control.zero",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "dtcld",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 2869,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:control.dtcld",
+      "stage": "rate_cap"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "qmin",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3013,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:cleanup_mask.qmin",
+      "stage": "cleanup_mask"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "qc",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3014,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:cleanup_mask.qc",
+      "stage": "cleanup_mask"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "keep_qc",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3016,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:cleanup_mask.keep_qc",
+      "stage": "cleanup_mask"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "q_thresh",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3274,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.control.q_thresh",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "n_thresh",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3275,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.control.n_thresh",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "lamda_min",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3276,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.control.lamda_min",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "lamda_max",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3277,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.control.lamda_max",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "qf",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3279,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.qf",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nf",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3281,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.nf",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "lamda",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3286,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.lamda",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "q_ge_threshold",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3290,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.q_ge_threshold",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "n_ge_threshold",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3292,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.n_ge_threshold",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "lamda_le_min",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3294,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.lamda_le_min",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "lamda_ge_max",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3296,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.lamda_ge_max",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "active",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3301,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.active",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "too_small",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3303,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.too_small",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "too_large",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3305,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:lambda.too_large",
+      "stage": "{runtime_site_label}"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3360,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.nc_input",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3363,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.ncmin",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_ge_ncmin",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3367,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.nc_ge_ncmin",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "ncmax",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 3399,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.ncmax",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_before_max_gate",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3400,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.nc_before_max_gate",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_gt_ncmax",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3403,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:dsd_inner.nc_gt_ncmax",
+      "stage": "dsd_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "active_main",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3513,
+      "role": "consumed_bool",
+      "scope": "column",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:sedimentation_gate.active_main",
+      "stage": "sedimentation_gate"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "mstep_main",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3515,
+      "role": "operand",
+      "scope": "column",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:sedimentation_gate.mstep_main",
+      "stage": "sedimentation_gate"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "active_ice",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3601,
+      "role": "consumed_bool",
+      "scope": "column",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:sedimentation_gate.active_ice",
+      "stage": "sedimentation_gate"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "mstep_ice",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 3603,
+      "role": "operand",
+      "scope": "column",
+      "source_file": "src/coordinator.cpp",
+      "source_hook": "src/coordinator.cpp:sedimentation_gate.mstep_ice",
+      "stage": "sedimentation_gate"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_pre",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 554,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nc_pre",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_pre",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 555,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_pre",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_floor_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 556,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nc_floor_lt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_floor_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 557,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nc_floor_eq",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nc_floor_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 558,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nc_floor_gt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_floor_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 559,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_floor_lt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_floor_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 560,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_floor_eq",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_floor_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 561,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_floor_gt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_cap_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 562,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_cap_lt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_cap_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 563,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_cap_eq",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_cap_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 564,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:diag.nccn_cap_gt",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "zero",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 565,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:control.zero",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_min",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 566,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:control.nccn_min",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "nccn_max",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 567,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:control.nccn_max",
+      "stage": "entry"
+    },
+    {
+      "allowed_dtype": [
+        "i64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "mstepmax_main",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 676,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:schedule.mstepmax_main",
+      "stage": "sedimentation_schedule"
+    },
+    {
+      "allowed_dtype": [
+        "i64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "mstepmax_ice",
+      "fixture_requirement": "PROPOSED_NOT_OBSERVED",
+      "line": 677,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/runtime.cpp",
+      "source_hook": "src/runtime.cpp:schedule.mstepmax_ice",
+      "stage": "sedimentation_schedule"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "t_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 142,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.t_input",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 143,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.es_input",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_cap",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 144,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.es_cap",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "t_floor_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 145,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.t_floor_lt",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "t_floor_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 146,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.t_floor_eq",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "t_floor_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 147,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.t_floor_gt",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_cap_lt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 148,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.es_cap_lt",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_cap_eq",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 149,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.es_cap_eq",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_cap_gt",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 150,
+      "role": "diagnostic_comparison",
+      "scope": "layer",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:diag.es_cap_gt",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "t_floor",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 151,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:control.t_floor",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "es_factor",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 152,
+      "role": "control_scalar",
+      "scope": "scalar",
+      "source_file": "src/thermo.cpp",
+      "source_hook": "src/thermo.cpp:control.es_factor",
+      "stage": "thermo_qs_water"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "qg_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 148,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.qg_input",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "bg_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 150,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.bg_input",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "active",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 152,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.active",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "bg_den",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 156,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.bg_den",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "zero_den",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 158,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.zero_den",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "rhox_op",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 161,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/progb.cpp",
+      "source_hook": "src/progb.cpp:progb.rhox_op",
+      "stage": "progb"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "q_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 88,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.q_input",
+      "stage": "satadj_inner"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "qc_input",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 90,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.qc_input",
+      "stage": "satadj_inner"
+    },
+    {
+      "allowed_dtype": [
+        "f32",
+        "f64"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "work1",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 96,
+      "role": "operand",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.work1",
+      "stage": "satadj_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "is_super",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 100,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.is_super",
+      "stage": "satadj_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "is_sub_with_cloud",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 102,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.is_sub_with_cloud",
+      "stage": "satadj_inner"
+    },
+    {
+      "allowed_dtype": [
+        "bool"
+      ],
+      "condition": "SOURCE_PATH_REQUIRED_WHEN_REACHED",
+      "field": "cloud_complete_evap",
+      "fixture_requirement": "SOURCE_ONLY_NOT_PER_SELECTOR_PROVEN",
+      "line": 105,
+      "role": "consumed_bool",
+      "scope": "layer",
+      "source_file": "src/satadj.cpp",
+      "source_hook": "src/satadj.cpp:satadj_inner.cloud_complete_evap",
+      "stage": "satadj_inner"
+    }
+  ],
+  "source_sha256": {
+    "include/kdm6/batch6_a2_named_hooks.h": "83ead03c848c6b260c7ffc01b7a7c83bbdde9876180c104895ce7f278f210f94",
+    "src/coordinator.cpp": "b701fcbdd3fa9aed0749ec686a6f307a446a55b661403eec30cfc86b1587e831",
+    "src/progb.cpp": "d118534b5280dbe4149b23920c24b58837bf681ac99a4aeaab4ba6894b82b8e5",
+    "src/runtime.cpp": "de72d0ca088cf013c0ce9b524960c01f47c2d87a23250672cab567cb8bc823db",
+    "src/satadj.cpp": "d3bfd8c9919bd5cf5d8c6f7fea320ff5572ba558118bf6affa0df37859b406ab",
+    "src/thermo.cpp": "59adb67b3e1fc915761e42ad39593c80aa48a0686423d8c01035ad8c133325a3"
+  },
+  "status": "DRAFT_BLOCKED"
+}
