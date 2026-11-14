@@ -2,8 +2,8 @@
 """Build and test the reconstructed synthetic-only batch6 source in isolation."""
 import argparse
 import hashlib
+import importlib.util
 import json
-import os
 import platform
 import shlex
 import subprocess
@@ -14,9 +14,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 if __package__:
-    from . import replay
-else:  # direct script execution from this directory
-    import replay
+    from . import replay as a5_replay
+else:
+    import replay as a5_replay
+
+_spec = importlib.util.spec_from_file_location('batch6_layers_replay', Path(__file__).resolve().parent.parent / 'producer_source_batch6_layers' / 'replay.py')
+replay = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(replay)
 
 BASE = set('''kdm6_step_c kdm6_step_ad_c kdm6_step_ad_variant_c kdm6_step_ad_number_c
 kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c
@@ -25,7 +29,9 @@ kdm6_handle_state_forcing_vjp_c kdm6_handle_state_forcing_jvp_c'''.split())
 RESEARCH = {'kdm6_batch5_' + x + '_c' for x in
             ('begin', 'count', 'metadata', 'value_word', 'binding_token', 'graph_primal',
              'result_rain', 'intermediate_jvp', 'intermediate_vjp', 'clear')}
-TARGET_TESTS = {'batch5_intermediate_ad', 'batch5_sidecar', 'batch6_f32_context_rejection'}
+RESEARCH |= {'kdm6_batch5_condition_v2_' + x + '_c' for x in ('count', 'meta', 'raw', 'verify_absences')}
+OFF_TESTS = set('smoke slope progb warm satadj aux_placeholder_gap cold melt_freeze sedimentation thermo coordinator cloud_dsd c_abi state_forcing_abi autograd_endtoend dry_number handle_vjp conservative_interface fortran_smoke fortran_normalized_ad fortran_state_forcing'.split())
+TARGET_TESTS = {'batch5_intermediate_ad', 'batch5_sidecar', 'batch6_f32_context_rejection', 'batch5_conditions_v2', 'batch6_synthetic_capture_parity'}
 
 
 def run(cmd, receipt, cwd=None):
@@ -117,14 +123,14 @@ def build_all(root, work, prefix, receipt):
         receipt['builds'][mode] = {'test_sources_with_assertions': check_flags(build)}
         cmd = ['cmake', '--build', build, '--parallel', '2']
         if mode == 'ON':
-            cmd += ['--target', 'kdm6_c', 'test_batch5_intermediate_ad', 'test_batch5_sidecar', 'test_batch6_f32_context_rejection']
+            cmd += ['--target', 'kdm6_c', 'test_batch5_intermediate_ad', 'test_batch5_sidecar', 'test_batch6_f32_context_rejection', 'test_batch5_conditions_v2', 'test_batch6_synthetic_capture_parity']
         run(cmd, receipt)
         receipt['builds'][mode]['exports'] = exports(build, BASE | (RESEARCH if mode == 'ON' else set()), receipt)
         listing = json.loads(run(['ctest', '--test-dir', build, '--show-only=json-v1'], receipt))
         names = {test['name'] for test in listing['tests']}
         if mode == 'ON' and not TARGET_TESTS <= names:
             raise ValueError('missing research CTests: ' + str(sorted(TARGET_TESTS - names)))
-        if mode == 'OFF' and (not names or names & TARGET_TESTS):
+        if mode == 'OFF' and names != OFF_TESTS:
             raise ValueError('invalid shipped CTest inventory')
         junit = build / 'ctest-results.xml'
         cmd = ['ctest', '--test-dir', build, '--output-on-failure', '--no-tests=error', '--output-junit', junit]
@@ -149,8 +155,11 @@ def main():
                'scope': 'Public C++ tests may run KDM on synthetic fixtures; no registered native host-column batch, WRF/RTTOV execution, scientific validation, or installed-build identity.',
                'commands': [], 'builds': {}, 'platform': platform.platform()}
     try:
-        receipt['source_snapshot_sha256'] = hashlib.sha256((replay.HERE / 'source_snapshot.json').read_bytes()).hexdigest()
-        receipt['source_patch_sha256'] = hashlib.sha256((replay.HERE / 'rain_checkpoint.patch').read_bytes()).hexdigest()
+        receipt['source_asset_sha256'] = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in {
+            'a5_snapshot': a5_replay.HERE / 'source_snapshot.json',
+            'a5_patch': a5_replay.HERE / 'rain_checkpoint.patch',
+            **{name: replay.HERE / name for name in replay.ASSETS},
+        }.items()}
         receipt['git_sha'] = run(['git', 'rev-parse', 'HEAD'], receipt).strip()
         prefix = run([sys.executable, '-c', 'import os,torch; print(os.path.dirname(torch.__file__))'], receipt).strip()
         with replay.reconstructed_tree() as (root, reconstruction), tempfile.TemporaryDirectory(prefix='batch6-ci-') as temp:

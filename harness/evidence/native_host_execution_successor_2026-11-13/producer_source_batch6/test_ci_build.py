@@ -79,7 +79,7 @@ class DriverTests(unittest.TestCase):
             commands.append(cmd)
             if '--show-only=json-v1' in cmd:
                 return json.dumps({'tests': [{'name': x} for x in
-                    (ci.TARGET_TESTS if str(cmd[2]).endswith('/on') else {'smoke'})]})
+                    (ci.TARGET_TESTS if str(cmd[2]).endswith('/on') else ci.OFF_TESTS)]})
             return ''
         with patch.object(ci, 'run', side_effect=fake_run), patch.object(ci, 'check_flags', return_value=['test_x.cpp']), patch.object(ci, 'exports', return_value=[]), patch.object(ci, 'check_junit', return_value={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}):
             ci.build_all(Path('/fake/source'), Path('/fake/build'), '/fake/torch', receipt)
@@ -91,12 +91,12 @@ class DriverTests(unittest.TestCase):
         receipt = {'commands': [], 'builds': {}}
         def fake_run(cmd, receipt):
             if '--show-only=json-v1' in cmd:
-                return json.dumps({'tests': [{'name': 'smoke'}]})
+                return json.dumps({'tests': [{'name': name} for name in ci.OFF_TESTS]})
             return ''
         with patch.object(ci, 'run', side_effect=fake_run), patch.object(ci, 'check_flags', return_value=['test_x.cpp']), patch.object(ci, 'exports', return_value=[]), patch.object(ci, 'check_junit', return_value={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}):
             with self.assertRaisesRegex(ValueError, 'missing research CTests'):
                 ci.build_all(Path('/fake/source'), Path('/fake/build'), '/fake/torch', receipt)
-        self.assertEqual(receipt['builds']['OFF']['passed_ctests'], ['smoke'])
+        self.assertEqual(receipt['builds']['OFF']['passed_ctests'], sorted(ci.OFF_TESTS))
         self.assertNotIn('passed_ctests', receipt['builds']['ON'])
 
 
