@@ -20,6 +20,8 @@
 
 다음 전용 CI 후보는 임시 빌드가 삭제되기 전 macro ON **DSO·미실행 parity 실행 파일·컴파일 명령·JUnit·최종 A7 소스 snapshot·이전 층의 해시 목록·빌드 receipt**를 최대 **64 MiB**의 아티팩트로 보존한다. 업로드 파일이 없으면 CI가 실패한다. 별도 읽기 검증기는 각 파일의 경로·크기·해시와 독립적으로 제공한 source·바이너리·OS/아키텍처·Python ABI·Torch·컴파일러·빌드 옵션을 비교하고 `VERIFIED_BUILD_ASSET_ONLY / NOT_ELIGIBLE`로 끝난다. 이전 층의 전체 파일 바이트는 보존 대상이 아니라 해시 목록이며, 아티팩트 검증은 실제 모델 실행을 인증하지 않는다. 이 보존 경로의 **hosted 결과와 실제 용량은 아직 확인되지 않았다.**
 
+기존 격리 macOS A7 빌드 파일로 보존·읽기 코드를 따로 시험한 묶음은 **1,950,178바이트**였고 `VERIFIED_BUILD_ASSET_ONLY / NOT_ELIGIBLE / CONTAINMENT_PENDING`을 반환했다. DSO·시험 실행 파일의 해시와 ON **4/4** JUnit은 원본 파일과 일치했다. 이 시험의 receipt는 **수동 구성한 로컬 시험 입력**이며, hosted CI 생산자나 실행 출처의 인증으로 사용하지 않는다.
+
 ## 실행을 보류한 이유와 다음 완료 조건
 
 이전 A4 소스의 합성 value-only parity CTest **1건**은 통과했지만, 바뀐 A5+A7 DSO에는 그 결과를 소급하지 않는다. 현재 전용 CI는 A7 parity 실행 파일을 **빌드·목록 검사만** 하고 `CONTAINMENT_PENDING`으로 기록하며, macro ON의 모델 미진입 CTest **4개**만 실행하도록 계획했다. 호스트·RTTOV 호출은 없다.
@@ -32,3 +34,9 @@
 4. A7 수송 자료는 후보→독립 cap→outer 선택→ProgB reset의 **알고리즘 항**으로 먼저 연결한다. 실제 면별 departure/arrival·바닥 export, 밀도·수농도·BG 체적의 단위를 확인하기 전에는 물리 보존이나 미분 수지 합격으로 읽지 않는다.
 
 이 조건과 선택된 synthetic graph 시험이 끝난 뒤에야 별도 `EXECUTION_READY` 계획을 첫 native 호출 전에 커밋할 수 있다. 현재 저장한 코드·소스·합성 시험은 그 승인 근거가 아니다.
+
+## 공개 synthetic33 감독 초안
+
+[synthetic33_gate 패킷](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/README.md)은 3개 합성 fixture × 11호출의 **33슬롯 입력·시작/완료 기록·watchdog·로더 trace·확인 파일** 계약을 소스와 fake 시험으로 묶는다. `Runner`, worker, 감독 진입점과 완료 확인의 실제 DSO 경로는 기본적으로 차단돼 있다. portable fake 시험은 일반·`python -O` 각각 **17/17**, 명시적 Darwin 프로세스 시험은 각각 **34/34**를 통과했다. 후자는 supervisor 강제 종료, TERM을 무시하는 자손, 반복 종료 신호, 제한 시간·RSS, 기록 누락 및 trace 교체를 포함한다. 부하가 걸린 초기 fake 실행에서 readiness 2초 제한으로 실패한 사례가 있었고, 무모델 probe 5회의 최대 2.481초를 근거로 실제 pre-ready 제한을 전체 900초 예산 안의 10초로 조정했다.
+
+별도 [경량 macOS fake CI](../.github/workflows/synthetic33-gate-ci.yml)는 이 패킷의 portable/Darwin 두 시험군을 일반·`-O`로 각각 격리 실행하도록 준비했다. source 빌드 CI의 OFF 21개·ON 4개 및 parity `CONTAINMENT_PENDING` 계약은 바꾸지 않는다. fake 시험은 실제 KDM graph, loader 이미지, 33호출 산출물 또는 native 입력을 인증하지 않는다. private 승인 manifest와 raw dyld trace는 공개 패킷에 포함하지 않았다. 실제 제한 실행을 시작하려면 독립적으로 검토한 source·DSO·interpreter·입력 manifest를 고정하고, 감독자가 낸 33호출 영수증과 로더 기록을 검증한 뒤 별도 완료 확인을 발급해야 한다. 현재 그 실행·완료 경로는 미승인이다.
