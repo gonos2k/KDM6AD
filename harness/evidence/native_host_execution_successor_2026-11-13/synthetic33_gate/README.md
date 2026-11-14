@@ -3,8 +3,10 @@
 This is a source and mock-test candidate, not an execution-ready or scientific
 result. Real worker release and real witness publication are hard-disabled.
 The fixed plan has three synthetic columns and 33 forward slots, a maximum
-900-second whole wall budget and 4 GiB RSS, and one scalar checkpoint, two JVPs
-and one VJP per graph. A completed asset receipt would not certify the
+900-second whole wall budget and a sampled 4 GiB RSS stop threshold. The
+current source proposal names three selectors per center: across three graph
+calls it budgets nine primal, eighteen JVP, and nine VJP queries. The actual
+ABI path and selectors have not been executed. A completed asset receipt would not certify the
 scientific derivatives; separate replay must classify recorded branch changes,
 finite differences, disconnected values, and units.
 
@@ -21,3 +23,11 @@ Portable fake tests run via `python -m unittest discover -s . -p 'test_*.py'`.
 The Darwin-only process tests are named `darwin_*_checks.py` and require an
 explicit macOS invocation. No native host tile, registered batch or RTTOV call
 is permitted by this draft.
+
+A fake-only, separately supervised census helper can bracket group samples with
+the direct-parent watchdog's WNOWAIT/start-identity checks. Its process and
+framed-request deadlines fail closed. The optional native helper is restricted
+to synthetic test scenarios; real mode remains forbidden. Python no-fork
+guards are a trusted-code convention, not an OS sandbox; RSS polling is a
+sampled stop threshold, not a hard memory limit. Helper stalls, missing census
+or uncertain cleanup remain `INCOMPLETE`.

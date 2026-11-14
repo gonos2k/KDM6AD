@@ -5,7 +5,8 @@ import hashlib
 import json
 import os
 import struct
-from fixture_plan import fixture, direction, perturb, TARGET_TOP, NATIVE_LEVEL, schedule, raw_words
+import selector_manifest_spec_v1 as selectors
+from fixture_plan import fixture, direction, perturb, TARGET_TOP, schedule, raw_words
 
 U64=C.c_uint64; I=C.c_int; D=C.c_double; V=C.c_void_p
 class Meta(C.Structure):
@@ -14,10 +15,38 @@ class Cond(C.Structure):
     _fields_=[('abi_version',C.c_uint32),('struct_size',C.c_uint32)]+[(n,C.c_char*s) for n,s in [('input_id',128),('mode',32),('family',32),('stage',64),('field',64),('source_hook',128)]]+[(n,U64) for n in ('context_epoch','runtime_call','one_step_call','outer_loop','substep_n','event_ordinal','causal_index')]+[(n,C.c_int64) for n in ('b_zero','k_zero','native_level_bottom_first','B','K')]+[(n,C.c_uint32) for n in ('role','dtype','scope','reason')]
 def identity(m):
     return (m.family,m.stage,m.field,m.one_step_call,m.outer_loop,m.substep_n,m.event_ordinal,m.b_zero,m.k_zero,m.native_level_bottom_first,m.B,m.K)
+def metadata_dict(m):
+    """Copy full selector metadata before sidecar clear."""
+    strings=('input_id','mode','family','scope','stage','field','record_kind')
+    numbers=('runtime_call','one_step_call','outer_loop','substep_n','event_ordinal','b_zero','k_zero','native_level_bottom_first','B','K')
+    return {**{k:getattr(m,k).decode('ascii') for k in strings},**{k:int(getattr(m,k)) for k in numbers}}
 def condition_key(m):
     return (m.family,m.stage,m.field,m.source_hook,m.one_step_call,m.outer_loop,m.substep_n,m.event_ordinal,m.b_zero,m.k_zero,m.native_level_bottom_first,m.B,m.K,m.role,m.dtype,m.scope,m.reason)
 def word(x): return struct.pack('=d',x)
 def near(a,b,rtol=1e-5,atol=1e-8): return abs(a-b)<=atol+rtol*max(abs(a),abs(b))
+def query_graph_selector(d,h,token,n,vectors):
+    if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
+    primal=U64(0x7ff8000000000000);flag=I(-1);grad=(D*624)(*([float('nan')]*624));mask=C.c_uint16();vs=I(-1)
+    if d.kdm6_batch5_graph_primal_c(h,token,n,C.byref(primal),C.byref(flag)) or flag.value not in (0,1) or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('graph primal')
+    if d.kdm6_batch5_intermediate_vjp_c(h,token,n,1.,grad,624,C.byref(mask),C.byref(vs)): raise RuntimeError('VJP ABI')
+    if vs.value not in (0,1,2) or not all(math.isfinite(g) for g in grad): raise RuntimeError('invalid/nonfinite VJP')
+    js=[];dots=[];statuses=[]
+    for vector in vectors:
+        j=D(float('nan'));status=I(-1);seed=(D*624)(*vector)
+        if d.kdm6_batch5_intermediate_jvp_c(h,token,n,seed,624,C.byref(j),C.byref(status)) or status.value not in (0,1,2) or not math.isfinite(j.value): raise RuntimeError('JVP ABI/status')
+        active={i//39 for i,x in enumerate(vector) if x!=0}
+        statuses.append(status.value if all(mask.value & (1<<i) for i in active) else 2)
+        js.append(j.value);dots.append(sum(a*b for a,b in zip(grad,vector)))
+    return {'status':'SPEC_ONLY','graph_flag':flag.value,'primal':primal.value,'jvps':js,'dots':dots,'jvp_statuses':statuses,'vjp_status':vs.value,'mask':mask.value,'grad_words':[word(x).hex() for x in grad]}
+def query_graph_set(d,h,token,requests,vectors):
+    if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
+    if len(requests)>3 or len(vectors)!=2:raise RuntimeError('graph query budget')
+    return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors)} for name,key,n in requests}
+def release_capture(d,h):
+    try:
+        if h and (d.kdm6_handle_closep_c(C.byref(h))!=0 or h.value): raise RuntimeError('handle close')
+    finally:
+        d.kdm6_batch5_clear_c()
 class Runner:
     def __init__(self, path):
         raise RuntimeError('real DSO loading is hard-disabled')
@@ -73,7 +102,7 @@ class Runner:
                 off_count=U64(0xffffffffffffffff)
                 if d.kdm6_batch5_count_c()!=0 or d.kdm6_batch5_condition_v2_count_c(None,0,C.byref(off_count))==0 or off_count.value!=0xffffffffffffffff: raise RuntimeError('off record access')
                 return result
-            matches=[]
+            metadata=[]
             v1_count=d.kdm6_batch5_count_c()
             if not 0<v1_count<=300000: raise RuntimeError('v1 record limit')
             for n in range(v1_count):
@@ -83,29 +112,27 @@ class Runner:
                 if m.scope==b'layer' and (m.B!=1 or m.K!=39 or m.b_zero!=0 or not 0<=m.k_zero<39 or m.native_level_bottom_first!=39-m.k_zero): raise RuntimeError('v1 layer scope')
                 if m.scope==b'column' and (m.B!=1 or m.K!=-1 or m.b_zero!=0 or m.k_zero!=-1 or m.native_level_bottom_first!=-1): raise RuntimeError('v1 column scope')
                 if m.scope not in (b'layer',b'column'): raise RuntimeError('unknown v1 scope')
-                if m.stage==b'nc_snap1' and m.field==b'nc_before' and m.k_zero==TARGET_TOP and m.native_level_bottom_first==NATIVE_LEVEL and m.record_kind==b'value': matches.append((identity(m),n))
-            if not matches: raise RuntimeError('missing scalar')
-            matches.sort(); key,n=matches[0] if selected is None else next(((k,i) for k,i in matches if k==selected),(None,None))
-            if key is None or len([k for k,_ in matches if k==key])!=1: raise RuntimeError('ambiguous scalar')
-            result['selector']=key
+                metadata.append(metadata_dict(m))
+            result['selectors']={}
+            call={'input_id':case,'mode':mode,'runtime_call':seq}
+            vectors=v if len(v)==2 and all(isinstance(item,list) and len(item)==624 for item in v) else [v]
+            graph_requests=[]
+            for selector in selectors.SELECTORS:
+                match=selectors.resolve(metadata,selector,call)
+                if match['status']!='SPEC_ONLY':
+                    result['selectors'][selector]={'status':'INCONCLUSIVE','reason':match['reason']};continue
+                n=match['record_index'];key={k:val for k,val in match['identity'].items() if k not in ('input_id','mode','runtime_call')}
+                if selected is not None and selected.get(selector)!=key:
+                    result['selectors'][selector]={'status':'INCONCLUSIVE','reason':'selector identity mismatch'};continue
+                if h:
+                    graph_requests.append((selector,key,n))
+                else:
+                    primal=U64(0x7ff8000000000000);kind=I(-1)
+                    if d.kdm6_batch5_value_word_c(n,C.byref(primal),C.byref(kind)) or kind.value!=2 or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('value scalar')
+                    result['selectors'][selector]={'status':'SPEC_ONLY','identity':key,'primal':primal.value}
             if h:
-                primal=U64(0x7ff8000000000000); flag=I(-1); grad=(D*624)(*([float('nan')]*624)); mask=C.c_uint16(); vs=I(-1)
-                vectors=v if len(v)==2 and all(isinstance(item,list) and len(item)==624 for item in v) else [v]
-                if d.kdm6_batch5_graph_primal_c(h,token,n,C.byref(primal),C.byref(flag)) or flag.value not in (0,1) or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('graph primal')
-                if d.kdm6_batch5_intermediate_vjp_c(h,token,n,1.,grad,624,C.byref(mask),C.byref(vs)): raise RuntimeError('VJP ABI')
-                if vs.value not in (0,1,2) or not all(math.isfinite(g) for g in grad): raise RuntimeError('invalid/nonfinite VJP')
-                js=[]; dots=[]; statuses=[]
-                for vector in vectors:
-                    j=D(float('nan')); status=I(-1);seed=(D*624)(*vector)
-                    if d.kdm6_batch5_intermediate_jvp_c(h,token,n,seed,624,C.byref(j),C.byref(status)) or status.value not in (0,1,2) or not math.isfinite(j.value): raise RuntimeError('JVP ABI/status')
-                    active={i//39 for i,x in enumerate(vector) if x!=0}
-                    statuses.append(status.value if all(mask.value & (1<<i) for i in active) else 2)
-                    js.append(j.value);dots.append(sum(a*b for a,b in zip(grad,vector)))
-                result.update(graph_flag=flag.value,primal=primal.value,jvp=js[0],dot=dots[0],jvps=js,dots=dots,jvp_statuses=statuses,vjp_status=vs.value,mask=mask.value,grad_words=[word(x).hex() for x in grad])
-            else:
-                primal=U64(0x7ff8000000000000); kind=I(-1)
-                if d.kdm6_batch5_value_word_c(n,C.byref(primal),C.byref(kind)) or kind.value!=2 or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('value scalar')
-                result['primal']=primal.value
+                result['selectors'].update(query_graph_set(d,h,token,graph_requests,vectors))
+            if not h:
                 count=U64(0xffffffffffffffff); conditions={}; operands={}; unverified_absence=False
                 if d.kdm6_batch5_condition_v2_count_c(None,0,C.byref(count)): raise RuntimeError('condition count')
                 if not 0<count.value<=150000: raise RuntimeError('v2 record limit')
@@ -147,10 +174,7 @@ class Runner:
                 result['conditions']=conditions; result['operands']=operands; result['unverified_absence']=unverified_absence
             return result
         finally:
-            try:
-                if h and (d.kdm6_handle_closep_c(C.byref(h))!=0 or h.value): raise RuntimeError('handle close')
-            finally:
-                d.kdm6_batch5_clear_c()
+            release_capture(d,h)
 def as_double(bits): return struct.unpack('=d',struct.pack('=Q',bits))[0]
 def evaluate_case(*args,**kwargs):
     """Retired 35-call prototype; real33_worker owns the fixed 33-slot plan."""

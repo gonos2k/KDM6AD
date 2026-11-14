@@ -36,8 +36,17 @@ def run(outdir,manifest_path,approved_sha):
     os.close(life_r);os.close(release_r);os.close(ready_w)
     try:
         if not select.select([ready_r],[],[],max(0,deadline-time.monotonic()))[0] or os.read(ready_r,1)!=b'R':raise RuntimeError('watchdog not armed')
-        if _CANCELLED or time.monotonic()>deadline:raise RuntimeError('cancelled or expired before worker release')
-        os.write(release_w,b'G')
+        watchdog_start=watchdog.process_start(pid)
+        oldmask=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGTERM,signal.SIGINT})
+        try:
+            if _CANCELLED or signal.sigpending() & {signal.SIGTERM,signal.SIGINT} or time.monotonic()>=deadline:raise RuntimeError('cancelled or expired before worker release')
+            if watchdog.process_start(pid)!=watchdog_start:raise RuntimeError('watchdog identity changed before worker release')
+            if select.select([ready_r],[],[],0)[0]:raise RuntimeError('watchdog unavailable before worker release')
+            # Linearization point: cancellation, deadline and watchdog
+            # liveness have been observed; later events are post-release.
+            if _CANCELLED or signal.sigpending() & {signal.SIGTERM,signal.SIGINT} or time.monotonic()>=deadline:raise RuntimeError('cancelled or expired before worker release')
+            os.write(release_w,b'G')
+        finally:signal.pthread_sigmask(signal.SIG_SETMASK,oldmask)
         # No automatic retry; a closed liveness FD causes watchdog cleanup.
         while time.monotonic()<deadline:
             waited,status=os.waitpid(pid,os.WNOHANG)

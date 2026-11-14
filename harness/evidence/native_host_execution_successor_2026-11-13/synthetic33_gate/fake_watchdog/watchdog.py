@@ -28,6 +28,22 @@ def process_start(pid):
     obj=ProcBSDInfo(); n=fn(pid,3,0,ctypes.byref(obj),ctypes.sizeof(obj))
     if n!=ctypes.sizeof(obj) or obj.pid!=pid or not obj.start_sec: raise RuntimeError('supervisor identity unavailable')
     return (obj.start_sec,obj.start_usec)
+def release_refusal(supervisor_pid,supervisor_start,life_fd,deadline):
+    """Last observation before release; caller holds TERM/INT blocked."""
+    if _CANCEL or signal.sigpending() & {signal.SIGTERM,signal.SIGINT}:return 'cancelled'
+    if time.monotonic()>=deadline:return 'timeout'
+    try:
+        if process_start(supervisor_pid)!=tuple(supervisor_start):return 'supervisor_identity_changed'
+        readable,_,_=select.select([life_fd],[],[],0)
+        if readable:
+            return 'supervisor_pipe_eof' if os.read(life_fd,1)==b'' else 'unexpected_liveness_data'
+    except (OSError,RuntimeError,ValueError):return 'supervisor_unavailable'
+    # Linearization point: signal, deadline and liveness have been observed.
+    # Events after this observation are handled as post-release cancellation.
+    if _CANCEL or signal.sigpending() & {signal.SIGTERM,signal.SIGINT}:return 'cancelled'
+    if time.monotonic()>=deadline:return 'timeout'
+    return None
+
 def leader_exited(pid):
     # Darwin siginfo_t: si_pid is fourth 32-bit int. WNOWAIT preserves PID.
     libc=ctypes.CDLL(None,use_errno=True);libc.waitid.argtypes=[ctypes.c_int,ctypes.c_uint,ctypes.c_void_p,ctypes.c_int];libc.waitid.restype=ctypes.c_int
@@ -55,7 +71,8 @@ def other_members(pid):
     if not any(process==pid and group==pid for process,group,_ in rows):raise ValueError('leader missing from process census')
     return [(process,group,state) for process,group,state in rows if group==pid and process!=pid]
 
-def cleanup(pid,record=None):
+def cleanup(pid,record=None,members_check=None):
+    check_members=other_members if members_check is None else members_check
     errors=[]
     def reap():
         child,status=os.waitpid(pid,0)
@@ -63,9 +80,9 @@ def cleanup(pid,record=None):
     # A cleanly exited single-member group can yield killpg EPERM on Darwin.
     # Inspect the still-reserved group before any signal and never treat EPERM as absence.
     try:
-        if leader_exited(pid) and not other_members(pid):
+        if leader_exited(pid) and not check_members(pid):
             reap();return []
-    except (OSError,subprocess.SubprocessError,ValueError) as e:
+    except (OSError,subprocess.SubprocessError,ValueError,RuntimeError) as e:
         errors.append(repr(e))  # Failure remains incomplete; still try to kill owned group.
     try:os.killpg(pid,signal.SIGTERM)
     except ProcessLookupError:pass
@@ -86,13 +103,13 @@ def cleanup(pid,record=None):
         reapable(pid)
         until=time.monotonic()+2
         while True:
-            members=other_members(pid)
+            members=check_members(pid)
             if not members:break
             if time.monotonic()>=until:
                 errors.append('residual group members: '+repr(members));break
             time.sleep(.02)
         if not errors:reap()
-    except (OSError,subprocess.SubprocessError,ValueError,TimeoutError) as e:errors.append(repr(e))
+    except (OSError,subprocess.SubprocessError,ValueError,TimeoutError,RuntimeError) as e:errors.append(repr(e))
     return errors
 
 def fake_plan():
@@ -187,8 +204,10 @@ def child(worker_ready,release,scenario,mock_outdir=None):
         os._exit(0)
     while True:time.sleep(1)
 
-def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None):
+def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None):
     if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real'):raise ValueError('fake scenarios only')
+    if scenario=='fixture33_real' and (use_fake_census_helper or use_native_census_helper):raise ValueError('census helper integration is fake-scope only')
+    if use_fake_census_helper and use_native_census_helper:raise ValueError('conflicting helper modes')
     if scenario=='fixture33_real' and (fake_ready_timeout!=10.0 or fake_post_release_timeout is not None):raise ValueError('fake-only timing override')
     if scenario=='fixture33_real' and not ENABLE_REAL33:raise RuntimeError('real33 disabled pending Red review')
     if not 0<fake_ready_timeout<=15 or (fake_post_release_timeout is not None and not 0<fake_post_release_timeout<=2):raise ValueError('invalid fake timing')
@@ -196,7 +215,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
     started=time.monotonic();deadline=started+timeout
     _CANCEL.clear()
     for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,_cancel)
-    kq=select.kqueue();pid=None;group_ready=False;trace=None;result={'status':'INCOMPLETE','scope':'fake only; no KDM, DSO or execution witness','reason':None,'worker_pid':None,'cleanup_errors':[],'released':False,'signals':[],'fake_33_call_inventory':fake_plan(),'peak_group_rss_kib':0}
+    kq=select.kqueue();pid=None;group_ready=False;trace=None;helper=None;result={'status':'INCOMPLETE','scope':'fake only; no KDM, DSO or execution witness','reason':None,'worker_pid':None,'cleanup_errors':[],'released':False,'signals':[],'fake_33_call_inventory':fake_plan(),'peak_group_rss_kib':0}
     try:
         if scenario=='fixture33_real':
             sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
@@ -237,6 +256,30 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             if ar in readable:ready=os.read(ar,1)==b'R';break
         if not ready or os.getpgid(pid)!=pid:raise RuntimeError('worker group identity/ready timeout')
         os.close(ar);group_ready=True;result['worker_pid']=pid
+        worker_start=process_start(pid)
+        def reservation():
+            if leader_exited(pid):return ('exited_reserved',worker_start)
+            current=process_start(pid)
+            if current!=worker_start:raise RuntimeError('worker start changed')
+            return ('alive',current)
+        def abort_worker():
+            errors=[]
+            for sig in (signal.SIGTERM,signal.SIGKILL):
+                try:os.killpg(pid,sig)
+                except ProcessLookupError:pass
+                except OSError as exc:errors.append(repr(exc))
+            if errors:raise RuntimeError('worker termination denied: '+repr(errors))
+        if use_fake_census_helper or use_native_census_helper:
+            sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
+            from census_helper import CensusHelper,native_sampler
+            if use_native_census_helper:
+                if native_census_package is None or native_census_manifest is None:raise RuntimeError('pinned provider required')
+                sampler=native_sampler(native_census_package,native_census_manifest)
+            else:
+                if fake_census_sampler is None:raise RuntimeError('fake sampler required')
+                sampler=fake_census_sampler
+            helper=CensusHelper(sampler)
+            result['census_helper_pid']=helper.pid;result['census_latencies_seconds']=[]
         kq.control([select.kevent(pid,filter=select.KQ_FILTER_PROC,flags=select.KQ_EV_ADD|select.KQ_EV_ENABLE|select.KQ_EV_ONESHOT,fflags=select.KQ_NOTE_EXIT)],0,0)
         atomic(receipt_path,{'status':'ARMED_FAKE_ONLY','supervisor_pid':supervisor_pid,'supervisor_start':supervisor_start,'worker_pid':pid,'scope':result['scope'],'fake_33_call_inventory':result['fake_33_call_inventory'],'actual_33_call_inventory':result.get('actual_33_call_inventory'),'manifest_sha256':result.get('manifest_sha256'),'run_nonce':result.get('run_nonce'),'watchdog_pid':result.get('watchdog_pid')})
         os.write(ready_fd,b'R')
@@ -252,21 +295,48 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             if any(e.filter==select.KQ_FILTER_PROC and e.ident==pid for e in events):result['reason']='worker_exit';break
             if any(e.filter==select.KQ_FILTER_READ and e.ident==release_fd for e in events):
                 if result['released'] or os.read(release_fd,1)!=b'G':result['reason']='invalid_release';break
-                os.write(gw,b'G');os.close(gw);result['released']=True;os.write(ready_fd,b'G')
+                oldmask=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGTERM,signal.SIGINT})
+                try:
+                    refusal=release_refusal(supervisor_pid,supervisor_start,life_fd,deadline)
+                    if refusal:result['reason']=refusal
+                    else:
+                        os.write(gw,b'G');os.close(gw);result['released']=True;os.write(ready_fd,b'G')
+                finally:signal.pthread_sigmask(signal.SIG_SETMASK,oldmask)
+                if refusal:break
                 if fake_post_release_timeout is not None:deadline=min(deadline,time.monotonic()+fake_post_release_timeout)
                 kq.control([select.kevent(release_fd,filter=select.KQ_FILTER_READ,flags=select.KQ_EV_DELETE)],0,0)
                 continue
-            rss=group_rss_kib(pid);result['peak_group_rss_kib']=max(result['peak_group_rss_kib'],rss)
+            if helper is not None:
+                if time.monotonic()<helper.next_sample:continue
+                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,deadline)
+                result['census_latencies_seconds'].append(time.monotonic()-sample_start)
+                rss=(sample['rss_bytes']+1023)//1024
+                result['rss_policy']='SAMPLED_STOP_THRESHOLD'
+            else:rss=group_rss_kib(pid)
+            result['peak_group_rss_kib']=max(result['peak_group_rss_kib'],rss)
             if rss>max_rss_kib:result['reason']='rss_limit';break
         else:result['reason']='timeout'
     except BaseException as exc:result['reason']='error:'+repr(exc)
     finally:
-        if pid is not None and group_ready:result['cleanup_errors']=cleanup(pid,result)
+        if pid is not None and group_ready:
+            def helper_members(_pid):
+                if helper is None or helper.closed:raise RuntimeError('census helper unavailable')
+                # No more than one sample per second; cleanup remains bounded.
+                delay=max(0,helper.next_sample-time.monotonic())
+                if delay>1:raise RuntimeError('invalid cleanup sample rate')
+                if delay:time.sleep(delay)
+                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,time.monotonic()+2.)
+                result['census_latencies_seconds'].append(time.monotonic()-sample_start)
+                return [member for member in sample['members'] if member!=pid]
+            result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None)
         elif pid is not None:
             try:os.kill(pid,signal.SIGKILL)
             except ProcessLookupError:pass
             try:os.waitpid(pid,0)
             except ChildProcessError:pass
+        if helper is not None:
+            try:helper.close()
+            except BaseException as exc:result['cleanup_errors'].append('helper:'+repr(exc))
         try:os.close(ready_fd)
         except OSError:pass
         result['signals']=list(_CANCEL)

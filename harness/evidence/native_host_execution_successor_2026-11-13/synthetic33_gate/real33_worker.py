@@ -4,6 +4,7 @@ import fixture33 as f
 from fixture_plan import FIELDS,K,CENTER,perturb,raw_words
 from graph_runner import Runner,as_double,near
 from real33_contract import preflight
+from selector_manifest_spec_v1 import SELECTORS
 
 def encode(v):
     if isinstance(v,bytes):return v.hex()
@@ -46,24 +47,47 @@ def run(release_fd,outdir):
             append(journal,{**event,'state':'FAILED'});raise
     for case in f.CASES:
         x=f.center(case);dirs=[f.direction(name) for name in f.DIRECTIONS]
-        off=invoke(case,'capture_off_value',x,dirs[0]);on=invoke(case,'capture_on_value',x,dirs[0]);graph=invoke(case,'center_joint_graph',x,dirs,on['selector'])
-        if (off['out'],off['rain'])!=(on['out'],on['rain']) or (graph['out'],graph['rain'])!=(on['out'],on['rain']) or graph['primal']!=on['primal']:raise RuntimeError('same-input raw parity')
+        off=invoke(case,'capture_off_value',x,dirs[0]);on=invoke(case,'capture_on_value',x,dirs[0])
+        selected={name:entry['identity'] for name,entry in on['selectors'].items() if entry['status']=='SPEC_ONLY'}
+        graph=invoke(case,'center_joint_graph',x,dirs,selected)
+        if (off['out'],off['rain'])!=(on['out'],on['rain']) or (graph['out'],graph['rain'])!=(on['out'],on['rain']):raise RuntimeError('same-input raw parity')
+        for selector in SELECTORS:
+            a=on['selectors'][selector];b=graph['selectors'][selector]
+            if a['status']=='SPEC_ONLY' and b['status']=='SPEC_ONLY' and a['primal']!=b['primal']:raise RuntimeError('same-input raw parity')
         per=[]
         for index,name in enumerate(f.DIRECTIONS):
-            j,dot=graph['jvps'][index],graph['dots'][index]
-            directional_status='UNRESOLVED' if graph['jvp_statuses'][index]!=0 or graph['vjp_status']!=0 or abs(j)<1e-8 else ('NUMERIC_MISMATCH' if not near(j,dot) else 'LOCAL_CONSISTENT')
             coordinate=FIELDS.index(name)*K+CENTER
+            by_selector={selector:[] for selector in SELECTORS}
             for h in f.H:
                 xm=perturb(x,dirs[index],-h);xp=perturb(x,dirs[index],h);gap=xp[coordinate]-xm[coordinate]
                 if not math.isfinite(gap) or gap<=0 or any(raw_words([xm[i]])!=raw_words([x[i]]) or raw_words([xp[i]])!=raw_words([x[i]]) for i in range(624) if i!=coordinate):raise RuntimeError('invalid represented direction')
-                minus=invoke(case,'capture_on_value',xm,dirs[index],on['selector']);plus=invoke(case,'capture_on_value',xp,dirs[index],on['selector'])
-                crossing=minus['conditions']!=on['conditions'] or plus['conditions']!=on['conditions']
-                fd=(as_double(plus['primal'])-as_double(minus['primal']))/gap*dirs[index][coordinate]
-                if not math.isfinite(fd):raise RuntimeError('nonfinite FD')
-                status='BRANCH_CROSSING' if crossing else ('UNRESOLVED' if any(r.get('unverified_absence',False) for r in (on,minus,plus)) else directional_status)
-                if not crossing and abs(fd)<1e-8:status='UNRESOLVED'
-                elif not crossing and status=='LOCAL_CONSISTENT' and not near(fd,j):status='NUMERIC_MISMATCH'
-                per.append({'direction':name,'h':h,'represented_gap':gap,'fd':fd,'jvp':j,'vjp_dot':dot,'status':status})
+                minus=invoke(case,'capture_on_value',xm,dirs[index],selected);plus=invoke(case,'capture_on_value',xp,dirs[index],selected)
+                have_conditions=all(isinstance(r.get('conditions'),dict) and bool(r['conditions']) for r in (on,minus,plus))
+                crossing=have_conditions and (minus['conditions']!=on['conditions'] or plus['conditions']!=on['conditions'])
+                incomplete=any(r.get('unverified_absence',False) or not r.get('conditions') for r in (on,minus,plus))
+                branch='CROSS' if crossing else ('INCOMPLETE' if incomplete else 'STABLE')
+                for selector in SELECTORS:
+                    entries=[r['selectors'][selector] for r in (on,graph,minus,plus)]
+                    valid=all(e['status']=='SPEC_ONLY' for e in entries)
+                    if entries[1]['status']=='SPEC_ONLY':
+                        j,dot=entries[1]['jvps'][index],entries[1]['dots'][index]
+                        js,vs=entries[1]['jvp_statuses'][index],entries[1]['vjp_status']
+                        duality='UNCONNECTED' if entries[1]['graph_flag']!=1 or js!=0 or vs!=0 else ('CONSISTENT' if near(j,dot) else 'MISMATCH')
+                    else:
+                        j=dot=js=vs=None;duality='UNCONNECTED'
+                    if valid:
+                        fd=(as_double(entries[3]['primal'])-as_double(entries[2]['primal']))/gap*dirs[index][coordinate]
+                        if not math.isfinite(fd):fd=None
+                    else:
+                        fd=None
+                    fd_signal='UNAVAILABLE' if fd is None else ('UNDER_RESOLUTION' if abs(fd)<1e-8 else 'RESOLVED')
+                    status='NUMERIC_MISMATCH' if duality=='MISMATCH' else ('BRANCH_CROSSING' if branch=='CROSS' else ('UNRESOLVED' if branch=='INCOMPLETE' or duality=='UNCONNECTED' or fd_signal!='RESOLVED' or abs(j)<1e-8 else ('LOCAL_CONSISTENT' if near(fd,j) else 'NUMERIC_MISMATCH')))
+                    record={'selector':selector,'direction':name,'h':h,'represented_gap':gap,'fd':fd,'jvp':j,'vjp_dot':dot,'jvp_status':js,'vjp_status':vs,'ad_duality':duality,'fd_signal':fd_signal,'recorded_branch_schedule':branch,'two_step_stability':'UNKNOWN','status':status,'selector_status':'SPEC_ONLY' if valid and duality!='UNCONNECTED' and fd_signal=='RESOLVED' else 'INCONCLUSIVE'}
+                    per.append(record);by_selector[selector].append(record)
+            for direction_results in by_selector.values():
+                if len(direction_results)==2 and all(v['fd_signal']=='RESOLVED' and v['recorded_branch_schedule']=='STABLE' for v in direction_results):
+                    stability='STABLE' if near(direction_results[0]['fd'],direction_results[1]['fd']) else 'UNSTABLE'
+                    for v in direction_results:v['two_step_stability']=stability
         results.append({'fixture':case,'status':'INCONCLUSIVE','scope':'partial recorded conditions; graph masks and complete census unverified','derivatives':per})
     if seq!=33:raise RuntimeError('incomplete schedule')
     return {'status':'INCONCLUSIVE','calls':seq,'asset_bytes':total,'results':results,'scope':'synthetic only; no native, physical conservation or execution-readiness claim'}

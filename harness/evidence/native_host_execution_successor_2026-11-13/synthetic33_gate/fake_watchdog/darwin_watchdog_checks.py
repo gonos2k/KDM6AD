@@ -7,7 +7,7 @@ from real33_contract import sha
 from unittest.mock import patch
 
 class WatchdogTest(unittest.TestCase):
-    def harness(self,scenario,action,final_signal=False,timeout=20,max_rss_kib=8*1024*1024,fake_ready_timeout=15.0,fake_post_release_timeout=None):
+    def harness(self,scenario,action,final_signal=False,timeout=20,max_rss_kib=8*1024*1024,fake_ready_timeout=15.0,fake_post_release_timeout=None,release_injection=None):
         with tempfile.TemporaryDirectory() as t:
             life_r,life_w=os.pipe(); ready_r,ready_w=os.pipe(); rel_r,rel_w=os.pipe()
             sup=os.fork()
@@ -19,6 +19,24 @@ class WatchdogTest(unittest.TestCase):
             if dog==0:
                 # Deterministic fake RSS; timeout/error path has its own test.
                 watchdog.group_rss_kib=lambda pid:1024
+                if release_injection:
+                    original_kqueue=watchdog.select.kqueue
+                    class InjectQueue:
+                        def __init__(self):self.inner=original_kqueue();self.done=False
+                        def control(self,changes,max_events,timeout=None):
+                            events=self.inner.control(changes,max_events,timeout)
+                            if not self.done and any(e.filter==watchdog.select.KQ_FILTER_READ and e.ident==rel_r for e in events):
+                                self.done=True
+                                if release_injection=='cancel':watchdog._cancel(signal.SIGTERM,None)
+                                elif release_injection=='deadline':
+                                    original=watchdog.time.monotonic
+                                    watchdog.time.monotonic=lambda:original()+60
+                                elif release_injection=='supervisor_death':
+                                    os.kill(sup,signal.SIGKILL)
+                                    watchdog.select.select([life_r],[],[],2)
+                            return events
+                        def close(self):self.inner.close()
+                    watchdog.select.kqueue=InjectQueue
                 os.close(ready_r);os.close(rel_w)
                 if final_signal:
                     old=watchdog.atomic
@@ -78,6 +96,15 @@ class WatchdogTest(unittest.TestCase):
                     except ProcessLookupError:pass
                     try:os.waitpid(p,0)
                     except ChildProcessError:pass
+    def test_cancel_arriving_during_kqueue_release_is_not_forwarded(self):
+        a=self.harness('term_ignore_descendant',lambda s,d,r,ack:os.write(r,b'G'),release_injection='cancel')
+        self.assertFalse(a['released']);self.assertEqual(a['reason'],'cancelled')
+    def test_deadline_expiring_during_kqueue_release_is_not_forwarded(self):
+        a=self.harness('term_ignore_descendant',lambda s,d,r,ack:os.write(r,b'G'),release_injection='deadline')
+        self.assertFalse(a['released']);self.assertEqual(a['reason'],'timeout')
+    def test_supervisor_death_coincident_with_release_is_not_forwarded(self):
+        a=self.harness('term_ignore_descendant',lambda s,d,r,ack:os.write(r,b'G'),release_injection='supervisor_death')
+        self.assertFalse(a['released']);self.assertIn(a['reason'],('supervisor_pipe_eof','supervisor_unavailable','supervisor_exit'))
     def test_supervisor_sigkill_released_descendant(self):
         def action(s,d,r,ack):os.write(r,b'G');self.assertEqual(os.read(ack,1),b'G');os.kill(s,signal.SIGKILL)
         a=self.harness('term_ignore_descendant',action);self.assertTrue(a['released']);self.assertIn(a['reason'],('supervisor_exit','supervisor_pipe_eof'))

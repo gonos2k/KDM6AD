@@ -40,6 +40,24 @@ class TestOrchestrate(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'before worker release'):x.run(d,'/unused','a'*64)
             self.assertFalse(pathlib.Path(d,'calls.jsonl').exists())
             self.assertFalse(pathlib.Path(d,'witness.json').exists())
+    def test_signal_between_readiness_and_release_is_not_forwarded(self):
+        owner=os.getpid();original_supervise=x.watchdog.supervise;original_start=x.watchdog.process_start;calls=[0]
+        def fake_supervise(supervisor,identity,life,release,ready,receipt,scenario,**kwargs):
+            kwargs.pop('run_nonce');kwargs.pop('manifest_sha');kwargs.pop('manifest_path')
+            x.watchdog.group_rss_kib=lambda pid:1024
+            kwargs['fake_ready_timeout']=15
+            return original_supervise(supervisor,identity,life,release,ready,receipt,'fixture33_exec_mock',**kwargs)
+        def signal_in_boundary(pid):
+            result=original_start(pid)
+            if os.getpid()==owner and pid!=owner:
+                calls[0]+=1
+                if calls[0]==2:os.kill(owner,x.signal.SIGTERM)
+            return result
+        with tempfile.TemporaryDirectory() as d,patch.object(x,'REAL33_RELEASE_ENABLED',True),patch.object(x.freeze33,'validate_frozen'),patch.object(x.watchdog,'supervise',side_effect=fake_supervise),patch.object(x.watchdog,'process_start',side_effect=signal_in_boundary):
+            with self.assertRaisesRegex(RuntimeError,'before worker release'):x.run(d,'/unused','a'*64)
+            self.assertEqual(calls[0],2)
+            self.assertFalse(pathlib.Path(d,'calls.jsonl').exists())
+            self.assertFalse(pathlib.Path(d,'witness.json').exists())
     def test_supervise_exception_is_nonzero_and_durable(self):
         with tempfile.TemporaryDirectory() as d,patch.object(x,'REAL33_RELEASE_ENABLED',True),patch.object(x.freeze33,'validate_frozen'),patch.object(x.watchdog,'supervise',side_effect=RuntimeError('injected supervisor failure')):
             with self.assertRaisesRegex(RuntimeError,'not armed'):x.run(d,'/unused','0'*64)

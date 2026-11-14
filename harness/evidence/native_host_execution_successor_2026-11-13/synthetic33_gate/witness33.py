@@ -1,7 +1,7 @@
 """Synthetic evidence postcheck draft; does not load a DSO or run a worker."""
 import hashlib,json,os,pathlib,re,signal,time,math
 import fixture33
-from real33_contract import sha
+from real33_contract import sha,validate_dso_binding
 MAX_CALL=128*1024**2;MAX_TOTAL=4*1024**3
 
 def checked_journal(directory,slots):
@@ -96,6 +96,7 @@ def validate_pinned(directory,watchdog_result,elapsed_seconds,manifest_path,inde
     freeze33.validate_frozen(manifest_path,independent_sha256)
     manifest=json.loads(pathlib.Path(manifest_path).read_text())
     if watchdog_result.get('manifest_sha256')!=independent_sha256 or watchdog_result.get('dyld_trace_enabled') is not True:raise ValueError('watchdog manifest/trace binding')
+    validate_dso_binding(manifest)
     # The manifest must name canonical absolute DSO explicitly; no caller
     # chooses a weaker required subset. Additional observed images fail closed.
     approved=manifest.get('approved_loaded_images')
