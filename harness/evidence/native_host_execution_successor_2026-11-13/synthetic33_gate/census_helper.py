@@ -108,7 +108,8 @@ class CensusHelper:
             if type(sample) is not dict or sample.get('request')!=request or sample.get('policy')!='SAMPLED_STOP_THRESHOLD' or type(sample.get('rss_bytes')) is not int or sample['rss_bytes']<0:raise HelperError('invalid sample')
             members=sample.get('members')
             if not isinstance(members,(list,tuple)) or leader not in members or len(set(members))!=len(members) or any(type(p) is not int or p<=0 for p in members):raise HelperError('invalid group inventory')
-            if reservation()!=(state,identity):raise HelperError('parent reservation changed')
+            after_state,after_identity=reservation()
+            if after_identity!=identity or not (after_state==state or (state=='alive' and after_state=='exited_reserved')):raise HelperError('parent reservation changed')
             return sample
         except BaseException:
             # Signal worker before waiting for a stuck helper.

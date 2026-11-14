@@ -4,7 +4,7 @@ import threading
 from unittest.mock import patch
 import real33_worker as w
 from fixture_plan import FIELDS,K,CENTER
-from selector_manifest_spec_v1 import SELECTORS
+from selector_manifest_spec_v1 import SELECTORS,LAYER
 
 def bits(x):return struct.unpack('=Q',struct.pack('=d',x))[0]
 class FakeRunner:
@@ -15,12 +15,17 @@ class FakeRunner:
         p=x[FIELDS.index('nc')*K+CENTER]/1e8+x[FIELDS.index('th')*K+CENTER]
         out={'out':bytes(468*8),'rain':0}
         if mode=='capture_off_value':return out
-        out.update(selector=('same',),primal=bits(p))
-        if mode=='center_joint_graph':out.update(graph_flag=1,jvps=[.01,1.],dots=[.01,1.],jvp_statuses=[0,0],vjp_status=0,mask=257,grad_words=['0000000000000000']*624)
-        else:out.update(conditions={('gate',):1},operands={})
-        out['selectors']={name:{'status':'SPEC_ONLY','identity':dict(spec),'primal':bits(p),**({'graph_flag':out['graph_flag'],'jvps':out['jvps'],'dots':out['dots'],'jvp_statuses':out['jvp_statuses'],'vjp_status':out['vjp_status']} if mode=='center_joint_graph' else {})} for name,spec in SELECTORS.items()}
+        out['selectors']={}
+        for name,spec in SELECTORS.items():
+            entry={'status':'SPEC_ONLY','identity':{**spec,**LAYER,'record_kind':'value'},'primal':bits(p)}
+            if mode=='center_joint_graph':entry.update(graph_flag=1,jvps=[.01,1.],dots=[.01,1.],jvp_statuses=[0,0],vjp_status=0,mask=257,grad_words=['0000000000000000']*624)
+            out['selectors'][name]=entry
         if mode=='center_joint_graph':
-            FakeRunner.graph_queries['primal']+=len(out['selectors']);FakeRunner.graph_queries['jvp']+=len(out['selectors'])*2;FakeRunner.graph_queries['vjp']+=len(out['selectors'])
+            out['query_counts']={'graph_primal':3,'jvp':6,'vjp':3}
+            FakeRunner.graph_queries['primal']+=3;FakeRunner.graph_queries['jvp']+=6;FakeRunner.graph_queries['vjp']+=3
+        else:out.update(conditions={(b'microphysics',b'example',b'gate',b'source',1,0,0,0,0,15,24,1,39,1,1,1,0):1,
+            (b'sedimentation_main',b'sedimentation_schedule',b'mstepmax_main',b'source',0,0,0,0,-1,-1,-1,-1,-1,4,4,3,0):1,
+            (b'sedimentation_ice',b'sedimentation_schedule',b'mstepmax_ice',b'source',0,0,0,0,-1,-1,-1,-1,-1,4,4,3,0):1},operands={},unverified_absence=False)
         return out
 class WorkerTest(unittest.TestCase):
     def test_fake_abi_graph_queries_and_cleanup(self):
@@ -94,7 +99,8 @@ class WorkerTest(unittest.TestCase):
         class Unconnected(FakeRunner):
             def _call(self,case,mode,x,v,selected,seq):
                 out=super()._call(case,mode,x,v,selected,seq)
-                if case=='baseline' and mode=='center_joint_graph':out['jvp_statuses'][0]=2
+                if case=='baseline' and mode=='center_joint_graph':
+                    for entry in out['selectors'].values():entry['jvp_statuses'][0]=2
                 return out
         a,b=os.pipe();os.write(b,b'G');os.close(b)
         with tempfile.TemporaryDirectory() as t,patch.object(w,'preflight',return_value={'dso_path':'fake'}),patch.object(w,'Runner',Unconnected):
@@ -104,7 +110,8 @@ class WorkerTest(unittest.TestCase):
         class Zero(FakeRunner):
             def _call(self,case,mode,x,v,selected,seq):
                 out=super()._call(case,mode,x,v,selected,seq)
-                if case=='baseline' and mode=='center_joint_graph':out['jvps'][0]=0.;out['dots'][0]=0.
+                if case=='baseline' and mode=='center_joint_graph':
+                    for entry in out['selectors'].values():entry['jvps'][0]=0.;entry['dots'][0]=0.
                 return out
         a,b=os.pipe();os.write(b,b'G');os.close(b)
         with tempfile.TemporaryDirectory() as t,patch.object(w,'preflight',return_value={'dso_path':'fake'}),patch.object(w,'Runner',Zero):
@@ -116,7 +123,8 @@ class WorkerTest(unittest.TestCase):
                 out=super()._call(case,mode,x,v,selected,seq)
                 if case=='baseline' and mode!='capture_off_value':
                     for entry in out['selectors'].values():entry['primal']=bits(1.)
-                if case=='baseline' and mode=='center_joint_graph':out['jvps'][0]=.01;out['dots'][0]=3.
+                if case=='baseline' and mode=='center_joint_graph':
+                    for entry in out['selectors'].values():entry['jvps'][0]=.01;entry['dots'][0]=3.
                 return out
         a,b=os.pipe();os.write(b,b'G');os.close(b)
         with tempfile.TemporaryDirectory() as t,patch.object(w,'preflight',return_value={'dso_path':'fake'}),patch.object(w,'Runner',Mismatch):
@@ -139,7 +147,8 @@ class WorkerTest(unittest.TestCase):
         class ZeroCross(FakeRunner):
             def _call(self,case,mode,x,v,selected,seq):
                 out=super()._call(case,mode,x,v,selected,seq)
-                if case=='baseline' and mode=='center_joint_graph':out['jvps'][0]=0.;out['dots'][0]=0.
+                if case=='baseline' and mode=='center_joint_graph':
+                    for entry in out['selectors'].values():entry['jvps'][0]=0.;entry['dots'][0]=0.
                 if case=='baseline' and mode=='capture_on_value' and seq>3:out['conditions']={('changed',):1}
                 return out
         a,b=os.pipe();os.write(b,b'G');os.close(b)

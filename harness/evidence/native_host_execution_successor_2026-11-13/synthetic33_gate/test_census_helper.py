@@ -28,9 +28,36 @@ class HelperTests(unittest.TestCase):
                 h=CensusHelper(fn);calls=[]
                 with self.assertRaises(HelperError):h.sample(101,lambda:('alive',(1000,123456)),lambda:calls.append(1),time.monotonic()+4)
                 self.assertEqual(calls,[1])
+        for before,after in ((('alive',(1000,123456)),('exited_reserved',(1000,123457))), (('exited_reserved',(1000,123456)),('alive',(1000,123456))), (('alive',(1000,123456)),('unknown',(1000,123456)))):
+            with self.subTest(before=before,after=after):
+                h=CensusHelper(sample);calls=[];state=iter([before,after])
+                with self.assertRaisesRegex(HelperError,'reservation'):h.sample(101,lambda:next(state),lambda:calls.append(1),time.monotonic()+4)
+                self.assertEqual(calls,[1])
+    def test_worker_exit_after_valid_sample_does_not_abort(self):
         h=CensusHelper(sample);calls=[];state=iter([('alive',(1000,123456)),('exited_reserved',(1000,123456))])
-        with self.assertRaisesRegex(HelperError,'reservation'):h.sample(101,lambda:next(state),lambda:calls.append(1),time.monotonic()+4)
+        try:
+            result=h.sample(101,lambda:next(state),lambda:calls.append(1),time.monotonic()+4)
+            self.assertEqual(result['rss_bytes'],64);self.assertEqual(calls,[])
+        finally:h.close()
+    def test_worker_exit_does_not_override_invalid_rss(self):
+        def bad_rss(request,deadline):return {'request':request,'policy':'SAMPLED_STOP_THRESHOLD','members':[request['leader_pid']],'rss_bytes':None}
+        h=CensusHelper(bad_rss);calls=[];state=iter([('alive',(1000,123456)),('exited_reserved',(1000,123456))])
+        with self.assertRaisesRegex(HelperError,'invalid sample'):h.sample(101,lambda:next(state),lambda:calls.append(1),time.monotonic()+4)
         self.assertEqual(calls,[1])
+    def test_watchdog_detects_exit_after_valid_helper_sample(self):
+        import importlib.util
+        from pathlib import Path
+        path=Path(__file__).parent/'fake_watchdog'/'watchdog.py'
+        spec=importlib.util.spec_from_file_location('watchdog_exit_regression',path)
+        watchdog=importlib.util.module_from_spec(spec);spec.loader.exec_module(watchdog)
+        h=CensusHelper(sample);aborts=[]
+        states=iter([('alive',(1000,123456)),('alive',(1000,123456)),('exited_reserved',(1000,123456)),('exited_reserved',(1000,123456))])
+        reservation=lambda:next(states)
+        try:
+            def measure():return h.sample(101,reservation,lambda:aborts.append(True),time.monotonic()+4)['rss_bytes']
+            with self.assertRaises(watchdog.WorkerExitedDuringSample):watchdog.checked_rss_sample(reservation,measure,time.monotonic()+4)
+            self.assertEqual(aborts,[])
+        finally:h.close()
     def test_start_float_and_ambiguous_values(self):
         self.assertEqual(start_float((1000,123456)),1000.123456)
         for value in ((0,0),(1,1000000),(1,-1),(1.0,1)):

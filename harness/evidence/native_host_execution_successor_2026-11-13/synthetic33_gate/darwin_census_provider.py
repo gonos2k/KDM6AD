@@ -241,5 +241,10 @@ class DarwinProvider:
         group = os.getpgid(pid)
         rss = p.memory_info().rss
         require(p.status() != self.psutil.STATUS_ZOMBIE, "member became zombie")
-        require(p.create_time() == start and os.getpgid(pid) == group, "inspect race")
+        # psutil 5.9.4 caches Process.create_time() on each Process object.
+        # A second call on p would only repeat that cached value even if the
+        # PID had been reused during memory_info(). A fresh Process performs a
+        # new OS start-time lookup; group identity alone cannot detect reuse.
+        later_start = self.psutil.Process(pid).create_time()
+        require(later_start == start and os.getpgid(pid) == group, "inspect race")
         return start, group, rss

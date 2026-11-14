@@ -24,24 +24,28 @@ def condition_key(m):
     return (m.family,m.stage,m.field,m.source_hook,m.one_step_call,m.outer_loop,m.substep_n,m.event_ordinal,m.b_zero,m.k_zero,m.native_level_bottom_first,m.B,m.K,m.role,m.dtype,m.scope,m.reason)
 def word(x): return struct.pack('=d',x)
 def near(a,b,rtol=1e-5,atol=1e-8): return abs(a-b)<=atol+rtol*max(abs(a),abs(b))
-def query_graph_selector(d,h,token,n,vectors):
+def query_graph_selector(d,h,token,n,vectors,counts):
     if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
     primal=U64(0x7ff8000000000000);flag=I(-1);grad=(D*624)(*([float('nan')]*624));mask=C.c_uint16();vs=I(-1)
+    counts['graph_primal']+=1
     if d.kdm6_batch5_graph_primal_c(h,token,n,C.byref(primal),C.byref(flag)) or flag.value not in (0,1) or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('graph primal')
+    counts['vjp']+=1
     if d.kdm6_batch5_intermediate_vjp_c(h,token,n,1.,grad,624,C.byref(mask),C.byref(vs)): raise RuntimeError('VJP ABI')
     if vs.value not in (0,1,2) or not all(math.isfinite(g) for g in grad): raise RuntimeError('invalid/nonfinite VJP')
     js=[];dots=[];statuses=[]
     for vector in vectors:
         j=D(float('nan'));status=I(-1);seed=(D*624)(*vector)
+        counts['jvp']+=1
         if d.kdm6_batch5_intermediate_jvp_c(h,token,n,seed,624,C.byref(j),C.byref(status)) or status.value not in (0,1,2) or not math.isfinite(j.value): raise RuntimeError('JVP ABI/status')
         active={i//39 for i,x in enumerate(vector) if x!=0}
-        statuses.append(status.value if all(mask.value & (1<<i) for i in active) else 2)
+        statuses.append(status.value if status.value!=0 or all(mask.value & (1<<i) for i in active) else 2)
         js.append(j.value);dots.append(sum(a*b for a,b in zip(grad,vector)))
     return {'status':'SPEC_ONLY','graph_flag':flag.value,'primal':primal.value,'jvps':js,'dots':dots,'jvp_statuses':statuses,'vjp_status':vs.value,'mask':mask.value,'grad_words':[word(x).hex() for x in grad]}
-def query_graph_set(d,h,token,requests,vectors):
+def query_graph_set(d,h,token,requests,vectors,counts=None):
     if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
     if len(requests)>3 or len(vectors)!=2:raise RuntimeError('graph query budget')
-    return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors)} for name,key,n in requests}
+    if counts is None:counts={'graph_primal':0,'jvp':0,'vjp':0}
+    return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors,counts)} for name,key,n in requests}
 def release_capture(d,h):
     try:
         if h and (d.kdm6_handle_closep_c(C.byref(h))!=0 or h.value): raise RuntimeError('handle close')
@@ -131,7 +135,9 @@ class Runner:
                     if d.kdm6_batch5_value_word_c(n,C.byref(primal),C.byref(kind)) or kind.value!=2 or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('value scalar')
                     result['selectors'][selector]={'status':'SPEC_ONLY','identity':key,'primal':primal.value}
             if h:
-                result['selectors'].update(query_graph_set(d,h,token,graph_requests,vectors))
+                counts={'graph_primal':0,'jvp':0,'vjp':0}
+                result['selectors'].update(query_graph_set(d,h,token,graph_requests,vectors,counts))
+                result['query_counts']=counts
             if not h:
                 count=U64(0xffffffffffffffff); conditions={}; operands={}; unverified_absence=False
                 if d.kdm6_batch5_condition_v2_count_c(None,0,C.byref(count)): raise RuntimeError('condition count')

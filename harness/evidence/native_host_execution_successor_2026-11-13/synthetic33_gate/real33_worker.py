@@ -34,7 +34,7 @@ def run(release_fd,outdir):
         seq+=1;append(journal,{**event,'state':'STARTED'})
         try:
             result=r._call(case,mode,x,v,selected,seq)
-            payload=json.dumps({'slot':event,'input_words':raw_words(x).hex(),'result':encode(result)},sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
+            payload=json.dumps({'schema':'kdm6.synthetic33.call_asset.v2','slot':event,'input_words':raw_words(x).hex(),'result':encode(result)},sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
             if len(payload)>128*1024*1024 or total+len(payload)>4*1024**3:raise RuntimeError('serialized byte cap')
             target=outdir/f'call_{seq:02}.json';tmp=outdir/f'.call_{seq:02}.tmp'
             with open(tmp,'xb') as stream:stream.write(payload);stream.flush();os.fsync(stream.fileno())

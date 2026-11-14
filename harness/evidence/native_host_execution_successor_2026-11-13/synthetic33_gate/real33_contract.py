@@ -2,6 +2,16 @@
 import hashlib,json,os,pathlib,re
 import fixture33
 
+# Include the optional census machinery conservatively even while its real-mode
+# activation remains blocked; the manifest pins every selectable local helper.
+EXECUTION_SOURCE_FILES=(
+    'fixture_plan.py','fixture33.py','selector_manifest_spec_v1.py',
+    'graph_runner.py','real33_worker.py','real33_entry.py','real33_contract.py',
+    'real33_supervisor_draft.py','real33_orchestrate.py','witness33.py',
+    'trace33.py','freeze33.py','fake_watchdog/watchdog.py',
+    'census_helper.py','darwin_census_provider.py',
+)
+
 def sha(path):
     h=hashlib.sha256()
     with open(path,'rb') as f:
@@ -31,7 +41,6 @@ def preflight():
     for name,digest in assets.items():
         p=pathlib.Path(name)
         if not p.is_absolute() or str(p.resolve(strict=True))!=name or not re.fullmatch('[0-9a-f]{64}',digest) or sha(p)!=digest:raise ValueError('asset pin mismatch')
-    required=('fixture_plan.py','fixture33.py','graph_runner.py','real33_worker.py','real33_entry.py','real33_contract.py','real33_supervisor_draft.py','real33_orchestrate.py','witness33.py','trace33.py','freeze33.py','fake_watchdog/watchdog.py')
     root=pathlib.Path(__file__).resolve().parent
-    if any(str((root/q).resolve(strict=True)) not in assets for q in required):raise ValueError('missing script pins')
+    if any(str((root/q).resolve(strict=True)) not in assets for q in EXECUTION_SOURCE_FILES):raise ValueError('missing script pins')
     return {'status':'SPEC_ONLY_UNVERIFIED_RUNTIME_LOADER','dso_path':dso,'dso_sha256':dso_digest,'interpreter':interpreter,'calls':manifest['slots']}

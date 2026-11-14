@@ -8,6 +8,7 @@ import hashlib
 import tempfile
 from unittest.mock import patch
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 
 PATH = Path(__file__).resolve().parent.parent / "darwin_census_provider.py"
@@ -106,6 +107,37 @@ class CensusChecks(unittest.TestCase):
         f.inspect = denied
         with self.assertRaises(PermissionError):
             m.sample_group(f, request(f), 10, clock=lambda: 1)
+
+    def test_same_pid_and_group_reuse_during_inspect_is_rejected(self):
+        current = {100: 10.0, 101: 11.0}
+        reuse = [True]
+
+        class CachedProcess:
+            def __init__(self, pid):
+                self.pid = pid
+                # Simulate psutil 5.9.4's per-Process cached create_time.
+                self.cached_start = current[pid]
+
+            def status(self):
+                return 'running'
+
+            def create_time(self):
+                return self.cached_start
+
+            def memory_info(self):
+                if self.pid == 101 and reuse[0]:
+                    current[101] = 12.0
+                    reuse[0] = False
+                return SimpleNamespace(rss=1024 if self.pid == 100 else 2048)
+
+        provider = m.DarwinProvider.__new__(m.DarwinProvider)
+        provider.psutil = SimpleNamespace(Process=CachedProcess, STATUS_ZOMBIE='zombie')
+        provider.list_group = lambda group, capacity: (8, [100, 101])
+        with patch.object(m.os, 'getpgid', return_value=100):
+            with self.assertRaisesRegex(m.CensusError, 'inspect race'):
+                m.sample_group(provider, request(Fake()), 10, clock=lambda: 1)
+            # On stable identities both observations still use sampled RSS.
+            self.assertEqual(m.sample_group(provider, request(Fake()), 10, clock=lambda: 1)['rss_bytes'], 3072)
 
     def test_package_inventory_precheck(self):
         with tempfile.TemporaryDirectory() as tmp:

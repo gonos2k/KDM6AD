@@ -38,3 +38,14 @@ supervisor liveness. A later verified exit of the same reserved leader is
 handled separately from missing or failed resource observations; the latter
 remain `INCOMPLETE`. This fixes a fast mock-worker zero-sample race without
 claiming a hard memory cap or actual A7 model execution.
+
+The next source-only connection candidate labels serialized calls as
+`kdm6.synthetic33.call_asset.v2`. Its fake worker stores the three selector
+records under `result.selectors`; the witness checks that shape, finite raw
+words, condition-row structure, graph status/connection masks and actual query
+counts. Missing or disconnected selectors remain `INCONCLUSIVE`. Required
+source pins include the selector manifest and census helper/provider. A valid
+helper sample may span the same leader's `alive` to `exited_reserved` transition;
+the Darwin provider uses a fresh PID start-time observation after RSS. These
+checks are sampled and fake-tested. They do not make the real worker, A7 graph,
+or completion witness executable.
