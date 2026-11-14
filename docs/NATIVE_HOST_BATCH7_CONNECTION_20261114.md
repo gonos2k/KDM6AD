@@ -12,9 +12,13 @@
 | 단계·selector | [phase 초안](../harness/evidence/native_host_execution_successor_2026-11-13/phase_selector_draft.py)은 98개 v2 소스 위치와 별도 A7 v1 필드 18개를 고정하고, 검토된 family/step·좌표·ordinal 구조를 검사한다. | 모든 호출·층·substep에서 실제 방출됐는지, optional/미실행의 이유, 원래 조건과 같은 source인지에 대한 완전한 census는 없다. 결과는 `STRUCTURE_ONLY_INCOMPLETE`다. |
 | graph checkpoint | 중복된 rain/primal 조회를 하나로 줄이고 같은 selector의 서로 다른 seed가 primal cache를 공유하게 했다. 동일 selector·seed/cotangent 요청의 중복은 ABI 호출 전에 거부한다. | 실제 KDM graph에서 중간 primal·JVP·VJP와 독립 FD를 연결한 결과는 없다. |
 
+후속 phase 구조 보강은 고정된 runtime 경로에서 microphysics 기록의 **`one_step_call == outer + 1`**을 요구한다. 호출·epoch·반복·ordinal은 Boolean을 배제한 정확한 정수이며 C++ `uint64_t` 범위를 넘을 수 없다. 소스에서 확인되지 않은 phase는 계속 거부한다. 이 검사는 입력 구조의 모순을 막지만 실제 기록의 완전한 동적 census는 아니다.
+
 소스 계보는 기존 A4 84파일에 [A5 조건 hook 층과 A7 선택량 층](../harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6_layers/README.md)을 순서대로 적용한다. A5는 warm/cold의 **원래 두 소비 Boolean**과 scalar·loop 제어값 14곳을, A7은 일곱 수송 변수의 outer gate가 선택한 상태·fall 및 별도의 ProgB BG 재설정 18곳을 보존한다. A5/A7은 추가 원시 기록 지점이며 완료된 19조건 동적 coverage나 실제 보존 flux 수가 아니다. 마지막 층은 여전히 84파일이고 macro OFF에서 이전 소스로 돌아가는 정적 검사를 통과했다.
 
 격리 macOS A5+A7 소스는 DSO 빌드·로드와 export **28개**, 모델 미진입 연구용 CTest **4/4**를 통과했다. 소스 snapshot SHA-256은 `033558eb6f771beb76d6ba8ebbc1aa126c4abafd4eb6d53dcabd3361cb8a1038`, DSO SHA-256은 `175a75c7b33638d802fe3d28144d1301a4fc6ac86f79fabfc433b666b0b4d6b8`, 비공개 빌드 영수증 SHA-256은 `e397671ef60139064cd135fcfc7ec156c153a07420c3380642d0641440eaacb4`다. 첫 CTest 명령은 PATH에 실행 파일이 없어 시험 전에 실패했고, 절대 경로 재실행 **4/4**가 영수증에 남아 있다.
+
+다음 전용 CI 후보는 임시 빌드가 삭제되기 전 macro ON **DSO·미실행 parity 실행 파일·컴파일 명령·JUnit·최종 A7 소스 snapshot·이전 층의 해시 목록·빌드 receipt**를 최대 **64 MiB**의 아티팩트로 보존한다. 업로드 파일이 없으면 CI가 실패한다. 별도 읽기 검증기는 각 파일의 경로·크기·해시와 독립적으로 제공한 source·바이너리·OS/아키텍처·Python ABI·Torch·컴파일러·빌드 옵션을 비교하고 `VERIFIED_BUILD_ASSET_ONLY / NOT_ELIGIBLE`로 끝난다. 이전 층의 전체 파일 바이트는 보존 대상이 아니라 해시 목록이며, 아티팩트 검증은 실제 모델 실행을 인증하지 않는다. 이 보존 경로의 **hosted 결과와 실제 용량은 아직 확인되지 않았다.**
 
 ## 실행을 보류한 이유와 다음 완료 조건
 

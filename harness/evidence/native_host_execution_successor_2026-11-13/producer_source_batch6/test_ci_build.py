@@ -1,4 +1,5 @@
 import json
+import hashlib
 import io
 import subprocess
 import tempfile
@@ -71,6 +72,49 @@ class DriverTests(unittest.TestCase):
                 ci.check_junit(path, {'a'})
             with self.assertRaisesRegex(ValueError, 'inventory mismatch'):
                 ci.check_junit(path, {'a', 'b'})
+
+    def test_preserve_regular_artifacts_and_reject_mutations(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            build = root / 'build'
+            build.mkdir()
+            source = root / 'source'
+            source.mkdir()
+            snapshot = source / 'a7_ledger_snapshot.json'
+            snapshot.write_bytes(b'snapshot')
+            for name in ('libkdm6_c.so.2.0.0', 'test_batch6_synthetic_capture_parity', 'compile_commands.json', 'ctest-results.xml'):
+                (build / name).write_bytes(name.encode())
+            receipt = {'status': 'passed', 'source_asset_sha256': {'a7_ledger_snapshot.json': hashlib.sha256(b'snapshot').hexdigest()},
+                       'unrun_tests': dict(ci.UNRUN_TESTS), 'builds': {'ON': {'exports': ['example'], 'passed_ctests': sorted(ci.RUN_TESTS)}}}
+            with patch.object(ci.replay, 'HERE', source), patch.dict(ci.replay.ASSETS, {'a7_ledger_snapshot.json': hashlib.sha256(b'snapshot').hexdigest()}):
+                with patch.dict(ci.FILE_LIMITS, {'libkdm6_c.so.2.0.0': 1}):
+                    with self.assertRaisesRegex(ValueError, 'artifact file size bound'):
+                        ci.preserve_artifacts(build, root / 'oversized', receipt, {'system': 'Linux'})
+                    self.assertFalse((root / 'oversized').exists())
+                dest = root / 'out'
+                manifest = ci.preserve_artifacts(build, dest, receipt, {'system': 'Linux', 'architecture': 'fake'})
+                self.assertEqual(manifest['parity_status'], 'CONTAINMENT_PENDING')
+                self.assertEqual((dest / 'test_batch6_synthetic_capture_parity').read_bytes(), b'test_batch6_synthetic_capture_parity')
+                for name, meta in manifest['files'].items():
+                    self.assertEqual(hashlib.sha256((dest / name).read_bytes()).hexdigest(), meta['sha256'])
+                with self.assertRaisesRegex(ValueError, 'unsafe artifact destination'):
+                    ci.preserve_artifacts(build, root / 'other' / '..' / 'escape', receipt, {'system': 'Linux'})
+                with self.assertRaisesRegex(ValueError, 'already exists'):
+                    ci.preserve_artifacts(build, dest, receipt, {'system': 'Linux'})
+                executable = build / 'test_batch6_synthetic_capture_parity'
+                executable.unlink()
+                with self.assertRaisesRegex(ValueError, 'missing or unsafe'):
+                    ci.preserve_artifacts(build, root / 'missing', receipt, {'system': 'Linux'})
+                outside = root / 'outside'
+                outside.write_bytes(b'fake')
+                executable.symlink_to(outside)
+                with self.assertRaisesRegex(ValueError, 'missing or unsafe'):
+                    ci.preserve_artifacts(build, root / 'link', receipt, {'system': 'Linux'})
+                executable.unlink()
+                executable.write_bytes(b'fake')
+                snapshot.write_bytes(b'changed')
+                with self.assertRaisesRegex(ValueError, 'snapshot changed'):
+                    ci.preserve_artifacts(build, root / 'changed', receipt, {'system': 'Linux'})
 
     def test_research_build_includes_shared_library(self):
         receipt = {'commands': [], 'builds': {}}

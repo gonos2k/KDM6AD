@@ -44,7 +44,7 @@ class PhaseSelectorTests(unittest.TestCase):
         repeated = {**base, "ordinal": 1}
         micro = {
             **base,
-            "one_step_call": 1,
+            "one_step_call": 2,
             "family": "microphysics",
             "n": 0,
             "scope": "layer",
@@ -68,7 +68,34 @@ class PhaseSelectorTests(unittest.TestCase):
             {**micro, "source_hook": "unknown"},
             {**micro, "dtype": "f64"},
             {**micro, "role": "not_evaluated"},
+            {**micro, "outer": 0},
+            {**micro, "one_step_call": 1},
+            {**micro, "outer": 2},
+            {**micro, "one_step_call": 3},
+            {**micro, "runtime_call": 0},
+            {**micro, "runtime_call": True},
+            {**micro, "epoch": 0},
+            {**micro, "outer": -1},
+            {**micro, "n": -1},
+            {**micro, "ordinal": -1},
+            {**micro, "ordinal": False},
+            {**micro, "k": 0.0},
+            {**micro, "B": True},
+            {**micro, "K": "39"},
+            {**micro, "native": True},
         ]
+        bads.extend(
+            {**micro, field: 1 << 64}
+            for field in (
+                "runtime_call",
+                "epoch",
+                "outer",
+                "one_step_call",
+                "n",
+                "ordinal",
+            )
+        )
+        bads.append({**micro, "outer": (1 << 64) - 1, "one_step_call": (1 << 64) - 1})
         for bad in bads:
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 draft.validate_observed([base, bad], self.manifest)

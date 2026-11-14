@@ -44,10 +44,11 @@ jobs:
       - name: Test CI driver
         run: |
           python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6 -p test_ci_build.py -v
+          python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6 -p test_validate_build_artifact.py -v
           python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6_layers -p 'test_*.py' -v
       # Synthetic parity is built and inventoried but not run pending containment.
       - name: Reconstruct and test source (parity containment pending)
-        run: python harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6/ci_build.py --receipt "$RUNNER_TEMP/batch6-receipt.json"
+        run: python harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6/ci_build.py --receipt "$RUNNER_TEMP/batch6-receipt.json" --artifact-dir "$RUNNER_TEMP/batch6-artifacts"
       - name: Upload receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,4 +56,12 @@ jobs:
           name: batch6-source-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/batch6-receipt.json
           if-no-files-found: warn
+          retention-days: 14
+      - name: Upload built A7 artifacts (parity unrun)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: batch6-a7-build-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/batch6-artifacts/
+          if-no-files-found: error
           retention-days: 14

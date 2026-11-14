@@ -207,6 +207,40 @@ def validate_observed(records, manifest):
             in ("consumed_bool", "diagnostic_comparison", "operand", "control_scalar"),
             "unsupported absence or role",
         )
+        integer_fields = (
+            "runtime_call",
+            "epoch",
+            "outer",
+            "one_step_call",
+            "n",
+            "ordinal",
+            "B",
+            "K",
+            "b",
+            "k",
+            "native",
+        )
+        need(all(type(r[name]) is int for name in integer_fields), "integer identity")
+        need(r["runtime_call"] > 0 and r["epoch"] > 0, "positive context")
+        need(
+            all(r[name] >= 0 for name in ("outer", "one_step_call", "n", "ordinal")),
+            "negative counter",
+        )
+        uint64_max = (1 << 64) - 1
+        need(
+            all(
+                r[name] <= uint64_max
+                for name in (
+                    "runtime_call",
+                    "epoch",
+                    "outer",
+                    "one_step_call",
+                    "n",
+                    "ordinal",
+                )
+            ),
+            "uint64 overflow",
+        )
         scope = r["scope"]
         need(scope in ("layer", "column", "scalar"), "scope")
         if scope == "layer":
@@ -269,7 +303,10 @@ def validate_observed(records, manifest):
             "satadj_inner",
         }:
             need(
-                family == "microphysics" and step >= 1 and n == 0,
+                family == "microphysics"
+                and r["outer"] < uint64_max
+                and step == r["outer"] + 1
+                and n == 0,
                 "microphysics selector phase",
             )
         else:

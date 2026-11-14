@@ -29,3 +29,11 @@ OFF tests execute KDM on synthetic fixtures. No registered
 45-input batch or host/RTTOV run is authorized by this packet. The successor
 remains `DRAFT_BLOCKED`; scientific and physical-unit statuses remain
 `INCONCLUSIVE`.
+
+The A7 CI build bundle preserves the final A7 source snapshot and a hash list
+for the earlier source assets; it does not include every earlier source byte.
+The parity executable is included without execution and remains
+`CONTAINMENT_PENDING`.
+
+Each build bundle is limited to 64 MiB total, with individual file ceilings;
+oversized artifacts fail the job and are not uploaded as successful bundles.
