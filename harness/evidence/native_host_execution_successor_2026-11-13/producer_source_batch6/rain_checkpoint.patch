@@ -1,0 +1,522 @@
+diff --git a/libtorch/CMakeLists.txt b/libtorch/CMakeLists.txt
+index 59670d01..33bd4e18 100644
+--- a/libtorch/CMakeLists.txt
++++ b/libtorch/CMakeLists.txt
+@@ -106,7 +106,7 @@ if(APPLE)
+             string(APPEND _kdm6_capture_exports "\n_kdm6_moment_trace_context_c\n_kdm6_native_fp64_value_c\n")
+         endif()
+         if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-            string(APPEND _kdm6_capture_exports "\n_kdm6_batch5_begin_c\n_kdm6_batch5_count_c\n_kdm6_batch5_metadata_c\n_kdm6_batch5_value_word_c\n_kdm6_batch5_binding_token_c\n_kdm6_batch5_intermediate_jvp_c\n_kdm6_batch5_intermediate_vjp_c\n_kdm6_batch5_clear_c\n")
++            string(APPEND _kdm6_capture_exports "\n_kdm6_batch5_begin_c\n_kdm6_batch5_count_c\n_kdm6_batch5_metadata_c\n_kdm6_batch5_value_word_c\n_kdm6_batch5_binding_token_c\n_kdm6_batch5_graph_primal_c\n_kdm6_batch5_result_rain_c\n_kdm6_batch5_intermediate_jvp_c\n_kdm6_batch5_intermediate_vjp_c\n_kdm6_batch5_clear_c\n")
+         endif()
+         set(_kdm6_c_exports "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.exports")
+         file(WRITE "${_kdm6_c_exports}" "${_kdm6_capture_exports}")
+@@ -122,7 +122,7 @@ elseif(UNIX)
+             string(APPEND _kdm6_capture_symbols "    kdm6_moment_trace_context_c;\n    kdm6_native_fp64_value_c;\n")
+         endif()
+         if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-            string(APPEND _kdm6_capture_symbols "    kdm6_batch5_begin_c;\n    kdm6_batch5_count_c;\n    kdm6_batch5_metadata_c;\n    kdm6_batch5_value_word_c;\n    kdm6_batch5_binding_token_c;\n    kdm6_batch5_intermediate_jvp_c;\n    kdm6_batch5_intermediate_vjp_c;\n    kdm6_batch5_clear_c;\n")
++            string(APPEND _kdm6_capture_symbols "    kdm6_batch5_begin_c;\n    kdm6_batch5_count_c;\n    kdm6_batch5_metadata_c;\n    kdm6_batch5_value_word_c;\n    kdm6_batch5_binding_token_c;\n    kdm6_batch5_graph_primal_c;\n    kdm6_batch5_result_rain_c;\n    kdm6_batch5_intermediate_jvp_c;\n    kdm6_batch5_intermediate_vjp_c;\n    kdm6_batch5_clear_c;\n")
+         endif()
+         string(REPLACE "  local:" "${_kdm6_capture_symbols}  local:" _kdm6_capture_map "${_kdm6_capture_map}")
+         set(_kdm6_c_version_script "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.map")
+@@ -163,6 +163,11 @@ if(KDM6_BATCH5_RESEARCH_CAPTURE)
+     target_compile_options(test_batch5_intermediate_ad PRIVATE -UNDEBUG)
+     target_link_libraries(test_batch5_intermediate_ad PRIVATE kdm6)
+     add_test(NAME batch5_intermediate_ad COMMAND test_batch5_intermediate_ad)
++    add_executable(test_batch6_f32_context_rejection tests/test_batch6_f32_context_rejection.cpp)
++    target_include_directories(test_batch6_f32_context_rejection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bridge)
++    target_compile_options(test_batch6_f32_context_rejection PRIVATE -UNDEBUG)
++    target_link_libraries(test_batch6_f32_context_rejection PRIVATE kdm6_c)
++    add_test(NAME batch6_f32_context_rejection COMMAND test_batch6_f32_context_rejection)
+     add_executable(test_batch5_sidecar tests/test_batch5_sidecar.cpp bridge/batch5_sidecar.cpp)
+     target_include_directories(test_batch5_sidecar PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bridge)
+     target_compile_definitions(test_batch5_sidecar PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE KDM6_C_BUILD=1)
+diff --git a/libtorch/bridge/batch5_sidecar.cpp b/libtorch/bridge/batch5_sidecar.cpp
+index f27f85d5..2a8fa78b 100644
+--- a/libtorch/bridge/batch5_sidecar.cpp
++++ b/libtorch/bridge/batch5_sidecar.cpp
+@@ -74,6 +74,25 @@ extern "C" KDM6_C_API int kdm6_batch5_value_word_c(std::uint64_t n,std::uint64_t
+ extern "C" KDM6_C_API int kdm6_batch5_binding_token_c(const void* handle,std::uint64_t* output) {
+     try { if(!output)return -1; auto token=kdm6::batch5::binding_token(handle); *output=token; return 0; } catch (...) { return -1; }
+ }
++// Explicit diagnostic checkpoint: copies a scalar's primal bits after forward;
++// the original graph tensor remains owned and unchanged by this operation.
++extern "C" KDM6_C_API int kdm6_batch5_graph_primal_c(const void* handle,std::uint64_t token,std::uint64_t n,std::uint64_t* output,int* graph_flag) {
++    try {
++        FpEnvGuard fpenv_guard;
++        if (!effective_singlethread() || !output || !graph_flag ||
++            !disjoint_ranges(output,sizeof(*output),graph_flag,sizeof(*graph_flag))) return -1;
++        auto lock=kdm6::batch5::lock_bound_handle(handle,token);
++        const auto& records=kdm6::batch5::records();
++        if(n>=records.size() || records[n].mode!="center_joint_graph" || records[n].record_kind!="value") return -1;
++        const auto& t=records[n].tensor;
++        if(!t.defined() || !t.device().is_cpu() || t.scalar_type()!=torch::kFloat64 || t.numel()!=1 || !t.is_contiguous()) return -1;
++        const double value=*t.data_ptr<double>();
++        if(!std::isfinite(value)) return -1;
++        std::uint64_t word=0;std::memcpy(&word,&value,sizeof(value));
++        const int flag=t.requires_grad()?1:0;
++        *output=word;*graph_flag=flag;return 0;
++    } catch (...) { return -1; }
++}
+ extern "C" KDM6_C_API int kdm6_batch5_intermediate_jvp_c(const void* handle,std::uint64_t token,std::uint64_t n,const double* direction,std::size_t count,double* output,int* status) {
+     try {
+         FpEnvGuard fpenv_guard;
+@@ -134,5 +153,23 @@ extern "C" KDM6_C_API int kdm6_batch5_intermediate_vjp_c(const void* handle,std:
+         std::memcpy(output,staged.data(),sizeof(double)*staged.size()); *connected_mask=mask; *status=code; return 0;
+     } catch (...) { return -1; }
+ }
++// Same-call result checkpoint: graph values are copied only as a diagnostic,
++// without replacing, detaching, or mutating the original result tensor.
++extern "C" KDM6_C_API int kdm6_batch5_result_rain_c(const void* handle,std::uint64_t token,const char* input,const char* mode,std::uint64_t call,std::uint64_t* output,int* graph_flag) {
++    try {
++        FpEnvGuard fpenv_guard;
++        if(!effective_singlethread() || !input || !mode || !output || !graph_flag ||
++           !disjoint_ranges(output,sizeof(*output),graph_flag,sizeof(*graph_flag))) return -1;
++        std::string selected_mode(mode);
++        std::unique_lock<std::mutex> lock;
++        if(selected_mode=="center_joint_graph") lock=kdm6::batch5::lock_bound_handle(handle,token);
++        else if((selected_mode!="capture_on_value" && selected_mode!="capture_off_value") || handle || token) return -1;
++        const auto& rain=kdm6::batch5::result_rain(input,selected_mode,call);
++        if(!rain.defined() || !rain.device().is_cpu() || rain.scalar_type()!=torch::kFloat64 || rain.dim()!=1 || rain.size(0)!=1 || !rain.is_contiguous()) return -1;
++        const double value=*rain.data_ptr<double>(); if(!std::isfinite(value)) return -1;
++        std::uint64_t bits=0;std::memcpy(&bits,&value,sizeof(value)); const int flag=rain.requires_grad()?1:0;
++        *output=bits;*graph_flag=flag;return 0;
++    } catch (...) {return -1;}
++}
+ extern "C" KDM6_C_API void kdm6_batch5_clear_c(){kdm6::batch5::clear();}
+ #endif
+diff --git a/libtorch/bridge/kdm6_batch5_sidecar.h b/libtorch/bridge/kdm6_batch5_sidecar.h
+index 4416b200..3e3ca205 100644
+--- a/libtorch/bridge/kdm6_batch5_sidecar.h
++++ b/libtorch/bridge/kdm6_batch5_sidecar.h
+@@ -26,11 +26,19 @@ int kdm6_batch5_value_word_c(uint64_t,uint64_t*,int*);
+  * Exactly 624 field-major f64 directions, one result; caller retains live joint handle.
+  * Direction, output and status must occupy disjoint address ranges. */
+ int kdm6_batch5_binding_token_c(const void*,uint64_t*);
++/* Diagnostic value-only checkpoint of the exact retained graph-mode f64 scalar.
++ * Does not detach, mutate or replace the graph tensor. graph_flag reports only
++ * requires_grad, not leaf connectivity. Outputs must have disjoint ranges. */
++int kdm6_batch5_graph_primal_c(const void*,uint64_t,uint64_t,uint64_t*,int*);
+ int kdm6_batch5_intermediate_jvp_c(const void*,uint64_t,uint64_t,const double*,size_t,double*,int*);
+ /* Exactly 624 output f64s; bit i says gradient leaf i was defined. Undefined
+  * slots are zero-filled but are not certified physical zero derivatives. The
+  * gradient array, mask and status buffers must occupy disjoint address ranges. */
+ int kdm6_batch5_intermediate_vjp_c(const void*,uint64_t,uint64_t,double,double*,size_t,uint16_t*,int*);
++/* Same-call raw total-rain diagnostic: exact input/mode/runtime sequence.
++ * Graph requires its bound handle/token; value modes require NULL/zero. No
++ * physical unit approval. Output word and graph flag ranges must be disjoint. */
++int kdm6_batch5_result_rain_c(const void*,uint64_t,const char*,const char*,uint64_t,uint64_t*,int*);
+ void kdm6_batch5_clear_c(void);
+ #ifdef __cplusplus
+ }
+diff --git a/libtorch/bridge/kdm6_c_api.cpp b/libtorch/bridge/kdm6_c_api.cpp
+index 9f6bd396..86d0fdaa 100644
+--- a/libtorch/bridge/kdm6_c_api.cpp
++++ b/libtorch/bridge/kdm6_c_api.cpp
+@@ -277,6 +277,11 @@ extern "C" int kdm6_step_c(
+         invalid_operational_ncmin(ncmin_sea))
+         return KDM6_ERR_INVALID_ARG;
+ 
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++    // This sidecar context is f64-only, including result-only capture-off.
++    // Reject before tensor creation or writes to model output buffers.
++    if (kdm6::batch5::has_active_context()) return KDM6_ERR_INVALID_ARG;
++#endif
+     // RAII: restore the caller's (Fortran host) FP env on every return path.
+     // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
+     // verified a no-op on this build (ARM FPCR unchanged), kept to insulate the host dynamics.
+@@ -430,6 +435,9 @@ extern "C" int kdm6_native_fp64_value_c(
+         invalid_operational_ncmin(ncmin_sea))
+         return KDM6_ERR_INVALID_ARG;
+ 
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++    if (kdm6::batch5::has_active_context()) return KDM6_ERR_INVALID_ARG;
++#endif
+     // RAII: restore the caller's (Fortran host) FP env on every return path.
+     // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
+     // verified a no-op on this build (ARM FPCR unchanged), kept to insulate the host dynamics.
+@@ -639,6 +647,9 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
+     kdm6::PhysicsOptions physics;
+     physics.variant = static_cast<kdm6::PhysicsVariant>(physics_variant);
+ 
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++    if (kdm6::batch5::has_active_context()) return KDM6_ERR_INVALID_ARG;
++#endif
+     FpEnvGuard kdm6_fpenv_guard;
+     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
+ 
+@@ -862,6 +873,16 @@ static int kdm6_step_ad_variant_impl(
+         physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_NORMALIZED)
+         return KDM6_ERR_INVALID_ARG;
+     if (dry_number < 0 || dry_number > 1) return KDM6_ERR_INVALID_ARG;
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++    // The batch6 prototype binds only the predeclared B=1, K=39 Legacy joint
++    // f64 call. Reject before unpack/tensor work or model-output writes.
++    if (kdm6::batch5::has_active_context() &&
++        (!state_forcing_ad || im!=1 || kme!=39 || jme!=1 ||
++         physics_variant!=(uint32_t)KDM6_PHYSICS_LEGACY || dry_number!=0 ||
++         dt!=20.0 || ncmin_land!=10.0 || ncmin_sea!=10.0 ||
++         !xland || xland[0]!=2.0f || !kdm6::batch5::accepts_f64_call(value_only!=0)))
++        return KDM6_ERR_INVALID_ARG;
++#endif
+     kdm6::PhysicsOptions physics;
+     physics.variant = static_cast<kdm6::PhysicsVariant>(physics_variant);
+     // Same FP-env insulation as the operational kdm6_step_c: this fp64 DA entry also
+@@ -905,6 +926,12 @@ static int kdm6_step_ad_variant_impl(
+         pack_packed_state(result.state_out, state_out_packed, im, kme, jme);
+ 
+         if (value_only != 0) {
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++            if (kdm6::batch5::has_active_context()) {
++                if (im!=1 || kme!=39 || jme!=1) throw std::runtime_error("batch5 narrow rain shape");
++                kdm6::batch5::commit_rain(result.rain_increment);
++            }
++#endif
+             *handle = nullptr;
+         } else {
+             auto* h = new kdm6_handle_t{};
+@@ -918,8 +945,9 @@ static int kdm6_step_ad_variant_impl(
+                     if (!state_forcing_ad || im != 1 || kme != 39 || jme != 1)
+                         throw std::runtime_error("batch5 requires narrow joint graph");
+                     kdm6::batch5::bind_handle(h);
++                    kdm6::batch5::commit_rain(result.rain_increment);
+                 }
+-            } catch (...) { delete h; throw; }
++            } catch (...) { kdm6::batch5::invalidate_handle(h); delete h; throw; }
+ #endif
+             *handle = h;
+         }
+diff --git a/libtorch/include/kdm6/batch5_capture.h b/libtorch/include/kdm6/batch5_capture.h
+index 815ca0b9..b3697481 100644
+--- a/libtorch/include/kdm6/batch5_capture.h
++++ b/libtorch/include/kdm6/batch5_capture.h
+@@ -32,7 +32,11 @@ void bind_handle(const void* handle);
+ void invalidate_handle(const void* handle);
+ std::unique_lock<std::mutex> lock_bound_handle(const void* handle, std::uint64_t token);
+ std::uint64_t binding_token(const void* handle);
+-bool enabled();
++bool enabled(); // internal hooks only; false for capture_off_value
++bool has_active_context();  // lifecycle context, including capture_off_value
++bool accepts_f64_call(bool value_only);
++void commit_rain(const torch::Tensor& rain);
++const torch::Tensor& result_rain(const std::string& input_id, const std::string& mode, std::uint64_t runtime_call);
+ // Counts all actual runtime entries in this OS thread, even if capture is off.
+ // If a context is active it must match the caller-supplied expected sequence.
+ void enter_runtime(bool value_only);
+diff --git a/libtorch/src/batch5_capture.cpp b/libtorch/src/batch5_capture.cpp
+index dc01d247..238c0943 100644
+--- a/libtorch/src/batch5_capture.cpp
++++ b/libtorch/src/batch5_capture.cpp
+@@ -20,6 +20,8 @@ struct Context {
+     std::uint64_t runtime_call = 0, one_step_call = 0, outer_loop = 0, substep_n = 0;
+     std::vector<Record> data;
+     InputLeaves leaves;
++    torch::Tensor result_rain;
++    bool rain_committed = false;
+     const void* handle = nullptr;
+     std::uint64_t token = 0;
+     std::shared_ptr<std::atomic<bool>> valid;
+@@ -43,7 +45,7 @@ void add(const char* stage, const char* field, const char* scope,
+ }
+ }
+ void begin(const std::string& input_id,const std::string& mode,std::uint64_t runtime_call) {
+-    if (input_id.empty() || input_id.size()>=128 || (mode!="capture_on_value" && mode!="center_joint_graph") || runtime_call==0)
++    if (input_id.empty() || input_id.size()>=128 || (mode!="capture_on_value" && mode!="capture_off_value" && mode!="center_joint_graph") || runtime_call==0)
+         throw std::invalid_argument("batch5 capture context invalid");
+     if (ctx.on) throw std::runtime_error("batch5 prior context must be explicitly cleared");
+     ctx=Context{}; ctx.on=true;ctx.input_id=input_id;ctx.mode=mode;ctx.runtime_call=runtime_call;
+@@ -86,11 +88,26 @@ std::uint64_t binding_token(const void* handle) {
+     return token;
+ }
+ 
+-bool enabled(){return ctx.on;}
++bool has_active_context(){return ctx.on;}
++bool accepts_f64_call(bool value_only){
++    return ctx.on && !ctx.entered && (value_only==(ctx.mode!="center_joint_graph"));
++}
++bool enabled(){return ctx.on && ctx.mode!="capture_off_value";}
++void commit_rain(const torch::Tensor& rain) {
++    if (!ctx.on || !ctx.entered || ctx.rain_committed || !rain.defined() || !rain.device().is_cpu() ||
++        rain.scalar_type()!=torch::kFloat64 || rain.dim()!=1 || rain.size(0)!=1)
++        throw std::runtime_error("batch5 invalid or duplicate same-call rain");
++    ctx.result_rain=rain; ctx.rain_committed=true;
++}
++const torch::Tensor& result_rain(const std::string& input_id,const std::string& mode,std::uint64_t runtime_call) {
++    if(!ctx.on || !ctx.entered || !ctx.rain_committed || ctx.input_id!=input_id || ctx.mode!=mode || ctx.runtime_call!=runtime_call)
++        throw std::runtime_error("batch5 same-call rain context mismatch or absent");
++    return ctx.result_rain;
++}
+ void enter_runtime(bool value_only){
+     const auto observed=++runtime_sequence;
+     if(ctx.on) {
+-        if(ctx.entered || observed!=ctx.runtime_call || value_only!=(ctx.mode=="capture_on_value"))
++        if(ctx.entered || observed!=ctx.runtime_call || value_only!=(ctx.mode!="center_joint_graph"))
+             throw std::runtime_error("batch5 actual runtime sequence, lifecycle or mode mismatch");
+         ctx.entered=true;
+     }
+@@ -106,7 +123,7 @@ bool top_first(){return ctx.is_top_first;}
+ void site(const char* name){if(ctx.on)ctx.source_site=name ? name : "";}
+ const std::string& site(){return ctx.source_site;}
+ void full(const char* stage,const char* field,const torch::Tensor& t,bool top_first){
+-    if(!ctx.on)return;
++    if(!enabled())return;
+     if(t.dim()!=2 || t.size(0)!=1 || t.size(1)!=39)
+         throw std::runtime_error("batch5 narrow capture requires rank-2 B=1 K=39");
+     auto B=t.size(0),K=t.size(1);
+@@ -116,12 +133,12 @@ void full(const char* stage,const char* field,const torch::Tensor& t,bool top_fi
+     }
+ }
+ void column(const char* stage,const char* field,const torch::Tensor& t){
+-    if(!ctx.on)return;
++    if(!enabled())return;
+     if(t.dim()!=1 || t.size(0)!=1)throw std::runtime_error("batch5 narrow capture requires B=1 column tensor");
+     for(std::int64_t b=0;b<t.size(0);++b)add(stage,field,"column",b,-1,-1,t.size(0),-1,t.select(0,b));
+ }
+ void layer(const char* stage,const char* field,const torch::Tensor& t,std::int64_t k,std::int64_t K){
+-    if(!ctx.on)return;
++    if(!enabled())return;
+     if(t.dim()!=1 || t.size(0)!=1 || K!=39 || k<0 || k>=K)throw std::runtime_error("batch5 narrow capture requires B=1 K=39 layer tensor");
+     for(std::int64_t b=0;b<t.size(0);++b)add(stage,field,"layer",b,k,K-k,t.size(0),K,t.select(0,b));
+ }
+diff --git a/libtorch/src/coordinator.cpp b/libtorch/src/coordinator.cpp
+index 01037423..db29e52c 100644
+--- a/libtorch/src/coordinator.cpp
++++ b/libtorch/src/coordinator.cpp
+@@ -2582,13 +2582,43 @@ CoordinatorState state_update(
+     // brs + delta_brs_freeze + (delta_brs_melt + dbrs_cold_sum + dbrs_warm_sum)*dtcld,
+     // accumulating each *dtcld as a separate two-rounding fma_acc (mul rounds, add rounds).
+     auto brs_acc = state.brs + mf.delta_brs_freeze;
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_brs", "entry", state.brs, false);
++        batch5::full("a5_brs", "freeze_operand", mf.delta_brs_freeze, false);
++        batch5::full("a5_brs", "after_freeze", brs_acc, false);
++    }
++#endif // A5_HOOK_END
+     brs_acc = ops::fma_acc(brs_acc, mf.delta_brs_melt, dt_t);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_brs", "melt_operand", mf.delta_brs_melt, false);
++        batch5::full("a5_brs", "after_melt", brs_acc, false);
++    }
++#endif // A5_HOOK_END
+     brs_acc = ops::fma_acc(brs_acc, dbrs_cold_sum, dt_t);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_brs", "cold_sum", dbrs_cold_sum, false);
++        batch5::full("a5_brs", "after_cold", brs_acc, false);
++    }
++#endif // A5_HOOK_END
+     brs_acc = ops::fma_acc(brs_acc, dbrs_warm_sum, dt_t);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_brs", "warm_sum", dbrs_warm_sum, false);
++        batch5::full("a5_brs", "after_warm", brs_acc, false);
++    }
++#endif // A5_HOOK_END
+     // §53b: Fortran `max(...,0.)` (F:2767/F:2875) lowers to fmaxnm on aarch64 — NaN→0, -Inf→0,
+     // +Inf→+Inf. torch::clamp PROPAGATES NaN; torch::fmax has IEEE maxnum semantics. This is
+     // what collapses the melt-block ±Inf/qNaN brs (F:1384 pgmlt/rhox=0) to Fortran's exact 0.
+     auto brs_new = torch::fmax(brs_acc, torch::zeros_like(brs_acc));
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_brs", "after_fmax", brs_new, false);
++    }
++#endif // A5_HOOK_END
+ 
+     // ── Energy balance (T) — review3#4 / review4#4 / review5#1 ──────────────
+     auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);
+@@ -2633,6 +2663,24 @@ CoordinatorState state_update(
+                    - xlf_melt / cpm_safe * mf.pimlt_qi
+                    + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr);
+     auto t_new = state.t - xlwork2 / cpm_safe * dtcld + dT_amount;                            // F:2742/2846
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_heat", "t_entry", state.t, false);
++        batch5::full("a5_heat", "cpm_safe", cpm_safe, false);
++        batch5::full("a5_heat", "xl", pre.xl, false);
++        batch5::full("a5_heat", "xlf", xlf, false);
++        batch5::full("a5_heat", "supcol", pre.supcol, false);
++        batch5::full("a5_heat", "dep_sum_c", dep_sum_c, false);
++        batch5::full("a5_heat", "frz_sum_c", frz_sum_c, false);
++        batch5::full("a5_heat", "vap_sum_w", vap_sum_w, false);
++        batch5::full("a5_heat", "xlwork2_cold", xlwork2_cold, false);
++        batch5::full("a5_heat", "xlwork2_warm", xlwork2_warm, false);
++        batch5::full("a5_heat", "xlwork2_selected", xlwork2, false);
++        batch5::full("a5_heat", "coef_melt", coef_melt, false);
++        batch5::full("a5_heat", "dt_amount", dT_amount, false);
++        batch5::full("a5_heat", "t_new", t_new, false);
++    }
++#endif // A5_HOOK_END
+     // nccn: only rain_complete_evap adds back here (warm.rain_complete_evap is a
+     // B4 output, applied with the warm rates). cloud_complete_evap and
+     // nccn_activation are part of the deferred satadj step (see dqv comment),
+@@ -2852,6 +2900,21 @@ CoordinatorState apply_satadj_step(
+ 
+     // Step 9: reservoir clamps (preserve NCCN_MIN/MAX band).
+     auto nccn_final = torch::clamp(nccn_final_raw, constants::NCCN_MIN, constants::NCCN_MAX);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A5_HOOK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a5_satadj", "qv_entry", state.qv, false);
++        batch5::full("a5_satadj", "qc_entry", state.qc, false);
++        batch5::full("a5_satadj", "nc_entry", state.nc, false);
++        batch5::full("a5_satadj", "nccn_entry", state.nccn, false);
++        batch5::full("a5_satadj", "t_entry", state.t, false);
++        batch5::full("a5_satadj", "pcact_raw", pcact_raw, false);
++        batch5::full("a5_satadj", "qv_pp_raw", qv_pp_raw, false);
++        batch5::full("a5_satadj", "qv_pp", qv_pp, false);
++        batch5::full("a5_satadj", "qc_pp", qc_pp, false);
++        batch5::full("a5_satadj", "qv_final", qv_final, false);
++        batch5::full("a5_satadj", "qc_final", qc_final, false);
++    }
++#endif // A5_HOOK_END
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled()) {
+         batch5::full("activation_applied", "nc_pp", nc_pp, false);
+diff --git a/libtorch/tests/test_batch5_sidecar.cpp b/libtorch/tests/test_batch5_sidecar.cpp
+index 0f7dea51..5174dfc5 100644
+--- a/libtorch/tests/test_batch5_sidecar.cpp
++++ b/libtorch/tests/test_batch5_sidecar.cpp
+@@ -91,6 +91,24 @@ int main(){
+     std::thread getter([&] { std::uint64_t z=77;wrong_thread_token_rejected=kdm6_batch5_binding_token_c(&synthetic_handle,&z)!=0 && z==77; });getter.join();assert(wrong_thread_token_rejected);
+     double seed[624]{}; seed[38]=1.; double tangent=99.;int derivative_status=99;
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)==0 && tangent==2. && derivative_status==0);
++    std::uint64_t primal=0; int graph_flag=-1;
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,&graph_flag)==0 && primal==UINT64_C(0x4010000000000000) && graph_flag==1);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,78,&primal,&graph_flag)==0 && primal==UINT64_C(0x3ff0000000000000) && graph_flag==0);
++    primal=123;graph_flag=77;
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token+1,39,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&wrong_handle,token,39,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,9999,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,156,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,195,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,nullptr,&graph_flag)!=0 && graph_flag==77);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,reinterpret_cast<int*>(&primal))!=0 && primal==123);
++    bool foreign_primal_rejected=false;
++    std::thread wrong_primal([&] { std::uint64_t a=42;int b=42;foreign_primal_rejected=kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&a,&b)!=0 && a==42 && b==42; });wrong_primal.join();assert(foreign_primal_rejected);
++    assert(fesetround(FE_DOWNWARD)==0);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,&graph_flag)==0 && fegetround()==FE_DOWNWARD);
++    primal=123;graph_flag=77;
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token+1,39,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77 && fegetround()==FE_DOWNWARD);
++    assert(fesetround(original_round)==0);
+     double joint_seed[624]{}; joint_seed[38]=1.;joint_seed[12*39+38]=2.;
+     double joint_jvp=0.;int joint_status=-1;
+     assert(fesetround(FE_DOWNWARD)==0);
+@@ -127,6 +145,8 @@ int main(){
+     assert(fesetround(original_round)==0);
+     at::set_num_threads(2);
+     assert(at::get_num_threads()==2 && at::get_num_interop_threads()==1);
++    primal=123;graph_flag=77;
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
+     joint_jvp=99.; joint_status=99; for(double& x:grad)x=99.; mask=77; vstatus=77;
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)!=0 && joint_jvp==99. && joint_status==99);
+     assert(kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,1.,grad,624,&mask,&vstatus)!=0 && grad[0]==99. && mask==77 && vstatus==77);
+@@ -134,6 +154,7 @@ int main(){
+     bool foreign_vjp_rejected=false;
+     std::thread wrong_vjp([&] { double a[624];for(double& z:a)z=42.;std::uint16_t b=42;int c=42;foreign_vjp_rejected=kdm6_batch5_intermediate_vjp_c(&synthetic_handle,token,39,1.,a,624,&b,&c)!=0 && a[0]==42. && b==42 && c==42; });wrong_vjp.join();assert(foreign_vjp_rejected);
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,39,joint_seed,624,&joint_jvp,&joint_status)==0 && joint_jvp==8.);
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,&graph_flag)==0 && primal==UINT64_C(0x4010000000000000) && graph_flag==1);
+     tangent=99.;derivative_status=99;
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token+1,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,623,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+@@ -145,6 +166,8 @@ int main(){
+     bool foreign_thread_rejected=false;
+     std::thread wrong([&] { double a=42.;int b=42;foreign_thread_rejected=kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&a,&b)!=0 && a==42. && b==42; });wrong.join();assert(foreign_thread_rejected);
+     kdm6::batch5::invalidate_handle(&synthetic_handle);
++    primal=123;graph_flag=77;
++    assert(kdm6_batch5_graph_primal_c(&synthetic_handle,token,39,&primal,&graph_flag)!=0 && primal==123 && graph_flag==77);
+     assert(kdm6_batch5_intermediate_jvp_c(&synthetic_handle,token,0,seed,624,&tangent,&derivative_status)!=0 && tangent==99. && derivative_status==99);
+     bits=123;kind=77;
+     assert(kdm6_batch5_value_word_c(0,&bits,&kind)!=0 && bits==123 && kind==77);
+@@ -195,9 +218,48 @@ int main(){
+         double g[624];for(double& a:g)a=91.;std::uint16_t cm=91;int st=91;
+         assert(kdm6_batch5_intermediate_vjp_c(&reused_handle,old_token.load(),0,1.,g,624,&cm,&st)!=0 && g[0]==91. && cm==91 && st==91);
+         assert(kdm6_batch5_intermediate_vjp_c(&reused_handle,t,0,1.,g,624,&cm,&st)==0 && cm==1 && st==0 && g[38]==2.);
++        std::uint64_t bits=123;int flag=77;
++        assert(kdm6_batch5_graph_primal_c(&reused_handle,old_token.load(),0,&bits,&flag)!=0 && bits==123 && flag==77);
++        assert(kdm6_batch5_graph_primal_c(&reused_handle,t,0,&bits,&flag)==0 && bits==UINT64_C(0x4010000000000000) && flag==1);
+         kdm6_batch5_clear_c();
+     });
+     old_owner.join();new_owner.join();assert(survived);
++    // Same-call rain lifecycle without any KDM call; isolated TLS sequence.
++    bool rain_lifecycle=false;
++    std::thread rain_test([&] {
++        std::uint64_t raw=99;int graph=99;
++        assert(kdm6_batch5_begin_c("rain_off","capture_off_value",1)==0);
++        kdm6::batch5::enter_runtime(true);assert(!kdm6::batch5::enabled() && kdm6::batch5::has_active_context());
++        auto x=torch::ones({1,39},torch::kFloat64);
++        kdm6::batch5::full("forbidden","hook",x,false);assert(kdm6_batch5_count_c()==0);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_off_value",1,&raw,&graph)!=0 && raw==99 && graph==99);
++        bool bad=false;try{kdm6::batch5::commit_rain(x);}catch(const std::runtime_error&){bad=true;}assert(bad);
++        auto rain=torch::full({1},2.0,torch::kFloat64);kdm6::batch5::commit_rain(rain);
++        bad=false;try{kdm6::batch5::commit_rain(rain);}catch(const std::runtime_error&){bad=true;}assert(bad);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_off_value",1,&raw,&graph)==0 && raw==UINT64_C(0x4000000000000000) && graph==0);
++        raw=99;graph=99;
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"wrong","capture_off_value",1,&raw,&graph)!=0 && raw==99 && graph==99);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_on_value",1,&raw,&graph)!=0 && raw==99 && graph==99);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_off_value",2,&raw,&graph)!=0 && raw==99 && graph==99);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_off_value",1,&raw,reinterpret_cast<int*>(&raw))!=0 && raw==99);
++        kdm6_batch5_clear_c();assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_off","capture_off_value",1,&raw,&graph)!=0);
++        assert(kdm6_batch5_begin_c("rain_on","capture_on_value",2)==0);kdm6::batch5::enter_runtime(true);
++        assert(kdm6::batch5::enabled());kdm6::batch5::commit_rain(rain);
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_on","capture_on_value",2,&raw,&graph)==0 && raw==UINT64_C(0x4000000000000000) && graph==0);kdm6_batch5_clear_c();
++        assert(kdm6_batch5_begin_c("rain_graph","center_joint_graph",3)==0);kdm6::batch5::enter_runtime(false);
++        auto leaf=torch::ones({1},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));auto graph_rain=leaf*2.;
++        const int handle=11;kdm6::batch5::bind_handle(&handle);std::uint64_t token=0;assert(kdm6_batch5_binding_token_c(&handle,&token)==0);
++        kdm6::batch5::commit_rain(graph_rain);raw=99;graph=99;
++        assert(kdm6_batch5_result_rain_c(&handle,token+1,"rain_graph","center_joint_graph",3,&raw,&graph)!=0 && raw==99 && graph==99);
++        bool foreign=false;std::thread other([&]{std::uint64_t a=42;int b=42;foreign=kdm6_batch5_result_rain_c(&handle,token,"rain_graph","center_joint_graph",3,&a,&b)!=0 && a==42 && b==42;});other.join();assert(foreign);
++        assert(kdm6_batch5_result_rain_c(&handle,token,"rain_graph","center_joint_graph",3,&raw,&graph)==0 && raw==UINT64_C(0x4000000000000000) && graph==1);
++        kdm6::batch5::invalidate_handle(&handle);raw=99;graph=99;
++        assert(kdm6_batch5_result_rain_c(&handle,token,"rain_graph","center_joint_graph",3,&raw,&graph)!=0 && raw==99 && graph==99);kdm6_batch5_clear_c();
++        assert(kdm6_batch5_begin_c("rain_nan","capture_off_value",4)==0);kdm6::batch5::enter_runtime(true);
++        kdm6::batch5::commit_rain(torch::full({1},std::numeric_limits<double>::quiet_NaN(),torch::kFloat64));raw=99;graph=99;
++        assert(kdm6_batch5_result_rain_c(nullptr,0,"rain_nan","capture_off_value",4,&raw,&graph)!=0 && raw==99 && graph==99);kdm6_batch5_clear_c();
++        rain_lifecycle=true;
++    });rain_test.join();assert(rain_lifecycle);
+ }
+ 
+ #endif
+diff --git a/libtorch/tests/test_batch6_f32_context_rejection.cpp b/libtorch/tests/test_batch6_f32_context_rejection.cpp
+new file mode 100644
+index 00000000..99994e1c
+--- /dev/null
++++ b/libtorch/tests/test_batch6_f32_context_rejection.cpp
+@@ -0,0 +1,36 @@
++// Synthetic pre-entry ABI rejection: no KDM calculation is executed.
++#include "kdm6_c_api.h"
++#include "kdm6_batch5_sidecar.h"
++#include <array>
++#include <cassert>
++#include <cstdint>
++int main() {
++    for(const char* mode : {"capture_off_value","capture_on_value","center_joint_graph"}) {
++        assert(kdm6_batch5_begin_c("f32_reject",mode,1)==0);
++        std::array<float,39> in{};in.fill(1.f);std::array<float,39> out{};out.fill(123.f);
++        float land=2.f,rain=456.f,snow=456.f,graupel=456.f;
++        kdm6_handle_t* handle=reinterpret_cast<kdm6_handle_t*>(static_cast<std::uintptr_t>(1));
++        int rc=kdm6_step_c(in.data(),in.data(),in.data(),in.data(),in.data(),in.data(),
++            in.data(),in.data(),in.data(),in.data(),in.data(),in.data(),
++            in.data(),in.data(),in.data(),in.data(),1,39,1,20.,0,1,
++            out.data(),out.data(),out.data(),out.data(),out.data(),out.data(),
++            out.data(),out.data(),out.data(),out.data(),out.data(),out.data(),
++            &handle,&land,10.,10.,&rain,&snow,&graupel,out.data());
++        assert(rc==KDM6_ERR_INVALID_ARG && handle==nullptr);
++        for(float x:out) assert(x==123.f);
++        assert(rain==456.f && snow==456.f && graupel==456.f && kdm6_batch5_count_c()==0);
++        std::array<double,624> d_in{}; d_in.fill(1.);std::array<double,468> d_out{};d_out.fill(789.);
++        const int value_only=(mode[0]=='c' && mode[1]=='e') ? 0 : 1;
++        handle=reinterpret_cast<kdm6_handle_t*>(static_cast<std::uintptr_t>(1));
++        rc=kdm6_step_ad_c(d_in.data(),d_in.data()+468,1,39,1,20.,value_only,d_out.data(),&handle,&land,10.,10.);
++        assert(rc==KDM6_ERR_INVALID_ARG && handle==nullptr);for(double x:d_out)assert(x==789.);
++        handle=reinterpret_cast<kdm6_handle_t*>(static_cast<std::uintptr_t>(1));
++        rc=kdm6_step_ad_state_forcing_c(d_in.data(),d_in.data()+468,1,38,1,20.,value_only,d_out.data(),&handle,&land,10.,10.,KDM6_PHYSICS_LEGACY,0);
++        assert(rc==KDM6_ERR_INVALID_ARG && handle==nullptr);for(double x:d_out)assert(x==789.);
++        handle=reinterpret_cast<kdm6_handle_t*>(static_cast<std::uintptr_t>(1));
++        rc=kdm6_step_ad_state_forcing_c(d_in.data(),d_in.data()+468,1,39,1,21.,value_only,d_out.data(),&handle,&land,10.,10.,KDM6_PHYSICS_LEGACY,0);
++        assert(rc==KDM6_ERR_INVALID_ARG && handle==nullptr);for(double x:d_out)assert(x==789.);
++        assert(kdm6_batch5_count_c()==0);
++        kdm6_batch5_clear_c();
++    }
++}

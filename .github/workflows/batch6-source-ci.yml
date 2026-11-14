@@ -1,0 +1,54 @@
+name: batch6-source-ci
+permissions:
+  contents: read
+on:
+  pull_request:
+    branches: [main, research/east_ice_radius_floor_packet]
+    paths:
+      - 'harness/evidence/native_host_execution_successor_2026-11-13/producer_source/**'
+      - 'harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6/**'
+      - '.github/workflows/batch6-source-ci.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  synthetic-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_THREAD_LIMIT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran
+          python -m pip install 'torch==2.8.0' --index-url https://download.pytorch.org/whl/cpu
+      - name: Install dependencies (macOS arm64)
+        if: runner.os == 'macOS'
+        run: |
+          test "$(uname -m)" = arm64
+          brew install gcc
+          python -m pip install 'torch==2.8.0'
+      - name: Test CI driver
+        run: python -m unittest discover -s harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6 -p test_ci_build.py -v
+      - name: Reconstruct and test source
+        run: python harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6/ci_build.py --receipt "$RUNNER_TEMP/batch6-receipt.json"
+      - name: Upload receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: batch6-source-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/batch6-receipt.json
+          if-no-files-found: warn
+          retention-days: 14

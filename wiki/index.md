@@ -177,6 +177,7 @@ date_modified: 2026-10-26
 
 - [[sources/native-host-capture-preflight-2026-11-12]] — Exact 45-input SPEC_ONLY plan, prospective numeric gate and seven-group field inventory, with no DSO build or execution claim.
 - [[sources/native-host-atomic-consumer-correction-2026-11-13]] — Separates contextual source lines from two checked source uses in the blocked 191-atom host capture catalog; execution and derivatives remain unverified.
+- [[sources/native-host-batch6-capture-contract-2026-11-14]] — Incremental isolated source and synthetic same-graph/rain contracts, six-entry selector draft and conditional ledger; actual execution remains blocked.
 
 - [[sources/native-host-gate-receipt-2026-11-12]] — Diagnostic versus acceptance FD steps and source-only future receipt/seed/field/budget bridge; execution and scientific admission remain blocked.
 

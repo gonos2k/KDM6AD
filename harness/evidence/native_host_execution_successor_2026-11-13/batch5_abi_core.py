@@ -10,7 +10,7 @@ import os
 import struct
 import threading
 from types import MappingProxyType
-from batch5_preflight import words_sha, load_inputs, seed_specs
+from batch5_preflight import words_sha, load_inputs, seed_specs, DEFAULT_PLAN, DEFAULT_SELECTED, DEFAULT_CONTRACT
 
 D=C.c_double; HANDLE=C.c_void_p; PD=C.POINTER(D); PH=C.POINTER(HANDLE)
 STATE=468; FORCING=156; MAX_RECORDS=2_000_000; META_VERSION=1
@@ -98,6 +98,52 @@ def bind_graph_sidecar(lib):
     jvp=lib.kdm6_batch5_intermediate_jvp_c;jvp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,PD,C.c_size_t,PD,C.POINTER(C.c_int)];jvp.restype=C.c_int
     return token,jvp
 
+def bind_checkpoints(lib):
+    rain=lib.kdm6_batch5_result_rain_c
+    rain.argtypes=[HANDLE,C.c_uint64,C.c_char_p,C.c_char_p,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
+    rain.restype=C.c_int
+    primal=lib.kdm6_batch5_graph_primal_c
+    primal.argtypes=[HANDLE,C.c_uint64,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
+    primal.restype=C.c_int
+    return rain,primal
+
+def _checkpoint_word(function,*args):
+    bits=C.c_uint64();flag=C.c_int(-1)
+    if function(*args,C.byref(bits),C.byref(flag))!=0 or flag.value not in (0,1):raise RuntimeError('checkpoint failure or invalid graph flag')
+    word=f'{bits.value:016x}'
+    if not math.isfinite(decode(word)):raise RuntimeError('nonfinite checkpoint')
+    return {'raw_hex':word,'graph_flag':flag.value}
+
+def _fnresult_index(records):
+    matches=[i for i,row in enumerate(records) if row['stage']=='fnresult' and row['field']=='rain_increment']
+    if len(matches)!=1:raise RuntimeError('FnResult rain record missing or ambiguous')
+    row=records[matches[0]]
+    if row['scope']!='column' or row['record_kind']!='value' or (row['b_zero'],row['k_zero'],row['native_level_bottom_first'],row['B'],row['K'])!=(0,-1,-1,1,-1):raise RuntimeError('FnResult rain record identity mismatch')
+    return matches[0]
+
+def bind_checkpoints(lib):
+    rain=lib.kdm6_batch5_result_rain_c
+    rain.argtypes=[HANDLE,C.c_uint64,C.c_char_p,C.c_char_p,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
+    rain.restype=C.c_int
+    primal=lib.kdm6_batch5_graph_primal_c
+    primal.argtypes=[HANDLE,C.c_uint64,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
+    primal.restype=C.c_int
+    return rain,primal
+
+def _checkpoint_word(function,*args):
+    bits=C.c_uint64();flag=C.c_int(-1)
+    if function(*args,C.byref(bits),C.byref(flag))!=0 or flag.value not in (0,1):raise RuntimeError('checkpoint failure or invalid graph flag')
+    word=f'{bits.value:016x}'
+    if not math.isfinite(decode(word)):raise RuntimeError('nonfinite checkpoint')
+    return {'raw_hex':word,'graph_flag':flag.value}
+
+def _fnresult_index(records):
+    matches=[i for i,row in enumerate(records) if row['stage']=='fnresult' and row['field']=='rain_increment']
+    if len(matches)!=1:raise RuntimeError('FnResult rain record missing or ambiguous')
+    row=records[matches[0]]
+    if row['scope']!='column' or row['record_kind']!='value' or (row['b_zero'],row['k_zero'],row['native_level_bottom_first'],row['B'],row['K'])!=(0,-1,-1,1,-1):raise RuntimeError('FnResult rain record identity mismatch')
+    return matches[0]
+
 def bind_intermediate_vjp(lib):
     vjp=lib.kdm6_batch5_intermediate_vjp_c
     vjp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,D,PD,C.c_size_t,C.POINTER(C.c_uint16),C.POINTER(C.c_int)]
@@ -149,7 +195,7 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     process, without skipped/retried calls; any failure poisons it. Sidecar v1
     is copied only in capture_on_value mode, then cleared even on step/copy error.
     """
-    mode=call['mode'];installed=mode=='installed_value_optional';graph=mode=='center_joint_graph';capture=mode=='capture_on_value'
+    mode=call['mode'];installed=mode=='installed_value_optional';graph=mode=='center_joint_graph';capture=mode=='capture_on_value';off=mode=='capture_off_value';off=mode=='capture_off_value'
     if mode not in ('capture_off_value','capture_on_value','center_joint_graph','installed_value_optional'):raise ValueError('unsupported call mode')
     if not isinstance(sequence_guard,InstrumentedSequence):raise RuntimeError('persistent canonical sequence guard required')
     try:
@@ -175,7 +221,7 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     begun=False;h=HANDLE();result=None;close_attempted=False;success=False
     try:
         step,close=bind(lib,installed);state=vector(input_words[:STATE],STATE);forcing=vector(input_words[STATE:],FORCING);out=(D*STATE)(*[float('nan')]*STATE);xland=C.c_float(2)
-        if capture or graph:
+        if capture or off or graph:
             begin,count,meta,value,clear=bind_sidecar(lib)
             if begin(call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence'])!=0:raise RuntimeError('sidecar begin failed')
             begun=True
@@ -184,32 +230,58 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
         if rc!=0 or had!=graph:raise RuntimeError('forward status/handle mismatch')
         if not all(math.isfinite(v) for v in out):raise RuntimeError('nonfinite state output')
         result={'schema':'kdm6.future_call_raw.v1','sequence':call['sequence'],'input_id':call['input_id'],'mode':mode,'claimed_dso_sha256':dso_sha256,'dso_identity_status':'CALLER_SUPPLIED_UNVERIFIED','input_words':input_words,'return_code':rc,'handle_nonnull':had,'state_output_words':[encode(v) for v in out]}
-        if capture:result['sidecar_records']=_copy_records(call,count,meta,value,max_records)
+        if installed:result['rain_comparison_status']='STATE_ONLY_NO_RAIN'
+        if capture or off:
+            rain_fn,_=bind_checkpoints(lib)
+            rain=_checkpoint_word(rain_fn,None,0,call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence'])
+            if rain['graph_flag']!=0:raise RuntimeError('value-only rain graph flag must be zero')
+            if off:
+                if count()!=0:raise RuntimeError('result-only off context contains internal records')
+                result['sidecar_records']=[]
+            else:
+                records=_copy_records(call,count,meta,value,max_records);ri=_fnresult_index(records)
+                if records[ri]['dtype']!='f64' or records[ri]['raw_hex']!=rain['raw_hex']:raise RuntimeError('FnResult rain mismatch')
+                result['sidecar_records']=records
+            result['same_call_rain']=rain;result['rain_unit_status']='UNAPPROVED';result['rain_provenance']='SAME_CALL_CONTEXT_UNVERIFIED'
         if graph:
             token_fn,intermediate_jvp=bind_graph_sidecar(lib);token=C.c_uint64()
             if token_fn(h,C.byref(token))!=0 or token.value==0:raise RuntimeError('graph handle binding token failed')
             metadata=_copy_records(call,count,meta,None,max_records);result['graph_metadata']=metadata;result['graph_binding_token']=token.value;result['selector_registry_status']='CALLER_SUPPLIED_UNVERIFIED';result['intermediate_jvps']=[]
+            rain_fn,primal_fn=bind_checkpoints(lib);rain=_checkpoint_word(rain_fn,h,token.value,call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence']);rain_index=_fnresult_index(metadata);primals={}
+            def primal_at(index):
+                if index not in primals:primals[index]=_checkpoint_word(primal_fn,h,token.value,index)
+                return primals[index]
+            rain_primal=primal_at(rain_index)
+            if rain_primal!=rain:raise RuntimeError('graph FnResult rain checkpoint mismatch')
+            result['same_call_rain']=rain;result['rain_unit_status']='UNAPPROVED';result['rain_provenance']='SAME_CALL_CONTEXT_UNVERIFIED';result['graph_fnresult_primal']=rain_primal
+            rain_fn,primal_fn=bind_checkpoints(lib);rain=_checkpoint_word(rain_fn,h,token.value,call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence']);rain_index=_fnresult_index(metadata);primals={}
+            def primal_at(index):
+                if index not in primals:primals[index]=_checkpoint_word(primal_fn,h,token.value,index)
+                return primals[index]
+            rain_primal=primal_at(rain_index)
+            if rain_primal!=rain:raise RuntimeError('graph FnResult rain checkpoint mismatch')
+            result['same_call_rain']=rain;result['rain_unit_status']='UNAPPROVED';result['rain_provenance']='SAME_CALL_CONTEXT_UNVERIFIED';result['graph_fnresult_primal']=rain_primal
             for request in requests:
                 matches=[i for i,row in enumerate(metadata) if all(type(row[k]) is type(request['selector'][k]) and row[k]==request['selector'][k] for k in SELECTOR_FIELDS)]
                 if len(matches)!=1:raise RuntimeError('intermediate selector missing or ambiguous')
-                seed=sequence_guard.effective_seed(request['seed_id'],call['input_id']); tangent=D(float('nan'));status=C.c_int(-1)
+                primal=primal_at(matches[0]);seed=sequence_guard.effective_seed(request['seed_id'],call['input_id']); tangent=D(float('nan'));status=C.c_int(-1)
                 irc=intermediate_jvp(h,token.value,matches[0],vector(seed,624),624,C.byref(tangent),C.byref(status))
                 if irc!=0 or status.value not in (0,1,2) or not math.isfinite(tangent.value):raise RuntimeError('intermediate JVP failed or nonfinite')
-                result['intermediate_jvps'].append({'selector':dict(request['selector']),'record_index':matches[0],'seed_id':request['seed_id'],'seed_sha256':words_sha(seed),'handle_token':token.value,'return_code':irc,'status':status.value,'output_f64_word':encode(tangent.value)})
+                result['intermediate_jvps'].append({'selector':dict(request['selector']),'record_index':matches[0],'primal':primal,'seed_id':request['seed_id'],'seed_sha256':words_sha(seed),'handle_token':token.value,'return_code':irc,'status':status.value,'output_f64_word':encode(tangent.value)})
             result['intermediate_vjps']=[]
             if vjp_requests:
                 intermediate_vjp=bind_intermediate_vjp(lib)
                 for request in vjp_requests:
                     matches=[i for i,row in enumerate(metadata) if all(type(row[k]) is type(request['selector'][k]) and row[k]==request['selector'][k] for k in SELECTOR_FIELDS)]
                     if len(matches)!=1:raise RuntimeError('intermediate VJP selector missing or ambiguous')
-                    gradients=(D*624)(*[float('nan')]*624);mask=C.c_uint16(0);status=C.c_int(-1)
+                    primal=primal_at(matches[0]);gradients=(D*624)(*[float('nan')]*624);mask=C.c_uint16(0);status=C.c_int(-1)
                     vrc=intermediate_vjp(h,token.value,matches[0],1.0,gradients,624,C.byref(mask),C.byref(status))
                     if vrc!=0 or status.value not in (0,1,2) or not all(math.isfinite(v) for v in gradients):raise RuntimeError('intermediate VJP failed or nonfinite')
                     if (status.value==0 and mask.value==0) or (status.value in (1,2) and mask.value!=0):raise RuntimeError('intermediate VJP status/mask mismatch')
                     words=[encode(v) for v in gradients]
                     for field in range(16):
                         if not (mask.value & (1<<field)) and any(w!='0000000000000000' for w in words[field*39:(field+1)*39]):raise RuntimeError('undefined intermediate VJP slot is not positive zero')
-                    result['intermediate_vjps'].append({'selector':dict(request['selector']),'record_index':matches[0],'cotangent_id':'intermediate_scalar:unit','cotangent_word':'3ff0000000000000','cotangent_sha256':words_sha(['3ff0000000000000']),'handle_token':token.value,'return_code':vrc,'status':status.value,'connected_field_mask':mask.value,'gradient_words':words,'gradient_sha256':words_sha(words),'state_gradient_words':words[:STATE],'forcing_gradient_words':words[STATE:]})
+                    result['intermediate_vjps'].append({'selector':dict(request['selector']),'record_index':matches[0],'primal':primal,'cotangent_id':'intermediate_scalar:unit','cotangent_word':'3ff0000000000000','cotangent_sha256':words_sha(['3ff0000000000000']),'handle_token':token.value,'return_code':vrc,'status':status.value,'connected_field_mask':mask.value,'gradient_words':words,'gradient_sha256':words_sha(words),'state_gradient_words':words[:STATE],'forcing_gradient_words':words[STATE:]})
             handle_id=f"graph:{call['sequence']}:{call['input_id']}";result['graph_handle_id']=handle_id;outputs={};payloads={}
             for ident,entry in effective.items():
                 seed=entry['effective_direction_words'];tan=(D*STATE)(*[float('nan')]*STATE);jrc=lib.kdm6_handle_state_forcing_jvp_c(h,vector(seed[:STATE],STATE),vector(seed[STATE:],FORCING),tan);jwords=[encode(v) for v in tan]
@@ -247,6 +319,41 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
             sequence_guard.fail()
             raise
         if success:sequence_guard.complete()
+
+def compare_same_input_calls(off,on,*,graph=None,installed=None):
+    """Compare pinned caller-supplied raw words, without claiming execution proof."""
+    plan,_,_=load_inputs(DEFAULT_PLAN,DEFAULT_SELECTED,DEFAULT_CONTRACT)
+    calls={c['sequence']:c for c in plan['calls']};inputs={v['id']:v['words'] for v in plan['inputs']}
+    def validate_call(value,mode):
+        if type(value) is not dict or value.get('mode')!=mode or type(value.get('sequence')) is not int:raise RuntimeError('call mode/identity mismatch')
+        c=calls.get(value['sequence'])
+        if c is None or (c['input_id'],c['mode'])!=(value.get('input_id'),mode) or value.get('input_words')!=inputs[c['input_id']]:raise RuntimeError('call differs from canonical plan')
+        if type(value.get('return_code')) is not int or value['return_code']!=0 or value.get('handle_null_after') is not True or value.get('dso_identity_status')!='CALLER_SUPPLIED_UNVERIFIED':raise RuntimeError('call status/provenance mismatch')
+        vector(value.get('state_output_words',[]),STATE)
+    validate_call(off,'capture_off_value');validate_call(on,'capture_on_value')
+    def check(a,b):
+        if a.get('input_id')!=b.get('input_id') or a.get('input_words')!=b.get('input_words') or a.get('state_output_words')!=b.get('state_output_words'):raise RuntimeError('same-input state mismatch')
+    check(off,on)
+    if on['sequence']!=off['sequence']+1 or off.get('sidecar_records')!=[]:raise RuntimeError('off/on sequence or off record mismatch')
+    for item in (off,on):
+        if item.get('rain_provenance')!='SAME_CALL_CONTEXT_UNVERIFIED' or item.get('rain_unit_status')!='UNAPPROVED':raise RuntimeError('rain provenance/unit status mismatch')
+        rain=item.get('same_call_rain')
+        if type(rain) is not dict or set(rain)!={'raw_hex','graph_flag'} or type(rain['graph_flag']) is not int or rain['graph_flag']!=0 or not math.isfinite(decode(rain['raw_hex'])):raise RuntimeError('invalid value rain')
+    ri=_fnresult_index(on['sidecar_records'])
+    if on['sidecar_records'][ri].get('input_id')!=on['input_id'] or on['sidecar_records'][ri].get('mode')!=on['mode'] or on['sidecar_records'][ri].get('runtime_call')!=on['sequence'] or on['sidecar_records'][ri].get('dtype')!='f64' or on['sidecar_records'][ri].get('raw_hex')!=on['same_call_rain']['raw_hex']:raise RuntimeError('on FnResult rain mismatch')
+    if off['claimed_dso_sha256']!=on['claimed_dso_sha256'] or off['same_call_rain']['raw_hex']!=on['same_call_rain']['raw_hex']:raise RuntimeError('same-call rain/DSO mismatch')
+    if graph is not None:
+        validate_call(graph,'center_joint_graph');check(off,graph)
+        rain=graph.get('same_call_rain')
+        if graph.get('rain_provenance')!='SAME_CALL_CONTEXT_UNVERIFIED' or graph.get('rain_unit_status')!='UNAPPROVED' or type(graph.get('graph_binding_token')) is not int or graph['graph_binding_token']<=0:raise RuntimeError('graph rain provenance/token mismatch')
+        gi=_fnresult_index(graph.get('graph_metadata',[]));grow=graph['graph_metadata'][gi]
+        if grow.get('input_id')!=graph['input_id'] or grow.get('mode')!=graph['mode'] or grow.get('runtime_call')!=graph['sequence']:raise RuntimeError('graph FnResult identity mismatch')
+        if graph.get('claimed_dso_sha256')!=off['claimed_dso_sha256'] or type(rain) is not dict or set(rain)!={'raw_hex','graph_flag'} or type(rain['graph_flag']) is not int or rain['graph_flag'] not in (0,1) or not math.isfinite(decode(rain['raw_hex'])) or graph.get('graph_fnresult_primal')!=rain or rain['raw_hex']!=off['same_call_rain']['raw_hex']:raise RuntimeError('graph same-call rain mismatch')
+    if installed is not None:
+        validate_call(installed,'installed_value_optional')
+        if installed.get('rain_comparison_status')!='STATE_ONLY_NO_RAIN' or 'same_call_rain' in installed:raise RuntimeError('installed optional must be state only')
+        check(off,installed)
+    return {'status':'CALLER_SUPPLIED_UNVERIFIED','off_on_state_and_rain':'RAW_WORD_EQUAL','graph_state_and_rain':'RAW_WORD_EQUAL' if graph is not None else 'NOT_SUPPLIED','installed':'STATE_ONLY' if installed is not None else 'SKIPPED_NOT_SUPPLIED','unit_status':'UNAPPROVED','execution_ready':False}
 
 def run_registered(*_args, **_kwargs):
     raise RuntimeError('BLOCKED: no committed EXECUTION_READY successor, new DSO, live sidecar ABI or reviewed atomic field catalog')
