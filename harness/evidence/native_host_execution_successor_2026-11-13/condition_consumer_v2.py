@@ -13,6 +13,8 @@ import json
 import math
 import re
 import struct
+import sys
+from pathlib import Path
 
 MASKS = frozenset(
     (
@@ -205,6 +207,10 @@ def validate(contract, capture, call):
                     expected.add((site["id"], loop, family, n, k))
     records = capture["records"]
     need(type(records) is list, "records")
+    need(
+        all(type(r) is dict and r.get("one_step_call") == call["one_step_call"] for r in records),
+        "UNSUPPORTED: mixed one_step_call phases require a reviewed phase census",
+    )
     seen = {}
     comparisons = {}
     observed_masks = set()
@@ -366,15 +372,15 @@ def validate(contract, capture, call):
     }
 
 
-def add_conditions(gate_input, bindings, captures, contract):
-    """Draft adapter for an already receipt-validated v1 gate input.
+def _add_conditions(gate_input, bindings, captures, contract, expected_bindings, expected_calls):
+    """Synthetic-only internal crossing exercise, never evidence or a public adapter.
 
     It preserves all existing masks/schedules. Bindings associate each role with
     input_id and capture call; aliased IDs must have identical planned input.
-    The caller must independently validate v1 receipt and assets before use.
+    Arbitrary expected bindings are accepted; none of this establishes provenance.
     """
     data = copy.deepcopy(gate_input)
-    need(type(bindings) is dict and set(bindings) == {"center", "samples"}, "bindings")
+    need(type(bindings) is dict and bindings == expected_bindings, "canonical role binding")
     samples, steps = data["samples"], data["plan"]["steps"]
     ids = [s["id"] for s in samples]
     pids = [p["id"] for p in steps]
@@ -414,6 +420,7 @@ def add_conditions(gate_input, bindings, captures, contract):
             and item["call"]["input_id"] == cid,
             "capture binding",
         )
+        need(item["call"]["sequence"] == expected_calls[cid], "canonical call sequence")
         parsed[cid] = validate(contract, item["capture"], item["call"])
         declared = {(s["mask"], s["role"]) for s in contract["sites"] if s["role"] in ("consumed_bool", "diagnostic_bool")}
         need(parsed[cid]["observed_masks"] == declared, "NOT_OBSERVED: incomplete Boolean condition coverage")
@@ -444,3 +451,62 @@ def add_conditions(gate_input, bindings, captures, contract):
             {PREFIX + str(i): signatures[cid] == v for i, v in enumerate(variants)}
         )
     return data
+
+
+def add_conditions(gate_input, bindings, captures, contract, *, receipt, assets):
+    """Revalidate the v1 receipt and bind every condition to its canonical role.
+
+    The supplemental records and their source mappings remain unverified draft
+    assertions; validation does not confer execution or scientific eligibility.
+    """
+    preflight = Path(__file__).resolve().parent.parent / "native_host_preflight_2026-11-12"
+    if str(preflight) not in sys.path:
+        sys.path.insert(0, str(preflight))
+    import fd_input_adapter as adapter
+    import receipt_schema as rs
+
+    need(Path(adapter.__file__).resolve() == preflight / "fd_input_adapter.py" and
+         Path(rs.__file__).resolve() == preflight / "receipt_schema.py", "preflight module identity")
+    receipt = copy.deepcopy(receipt)
+    assets = dict(assets)
+    center = gate_input["center_name"]
+    direction = gate_input["direction"]
+    output_index = gate_input["plan"]["output_index"]
+    checked = adapter.adapt(receipt, assets, center, direction, output_index)
+    need(gate_input == checked["gate_input"], "gate input differs from validated receipt")
+    canonical, _ = rs.load_plan()
+    inputs = canonical["inputs"]
+    calls = canonical["calls"]
+    expected = {"center": center, "samples": {}}
+    for step in gate_input["plan"]["steps"]:
+        h = adapter.fd_gate.val(step["h_word"])
+        def lookup(multiple):
+            found = [x for x in inputs if x["center"] == center and x["direction"] == direction
+                     and x["h"] == h and x["multiple"] == multiple]
+            need(len(found) == 1, "canonical endpoint")
+            return found[0]["id"]
+        entry = {"lower": center if step["stencil"] == "forward" else lookup(-1),
+                 "upper": lookup(1)}
+        if "plus2_input_words" in step:
+            entry["plus2"] = lookup(2)
+        expected["samples"][step["id"]] = entry
+    by_id = {x["id"]: x for x in inputs}
+    for step in gate_input["plan"]["steps"]:
+        for role, cid in expected["samples"][step["id"]].items():
+            need(by_id[cid]["words"] == step[role + "_input_words"], "canonical endpoint words")
+    need(by_id[center]["words"] == gate_input["plan"]["center_input_words"], "canonical center words")
+    selected = {expected["center"]} | {cid for v in expected["samples"].values() for cid in v.values()}
+    expected_calls = {}
+    for cid in selected:
+        matches = [x for x in calls if x["input_id"] == cid and x["mode"] == "capture_on_value"]
+        need(len(matches) == 1, "canonical capture call")
+        expected_calls[cid] = matches[0]["sequence"]
+    # Payloads remain caller-supplied: even a rehashed receipt cannot prove
+    # that a relabelled condition stream came from this call. Do not hand any
+    # v2-augmented input to the FD gate until that linkage is independently
+    # verifiable; a digest alone establishes consistency, not provenance.
+    need(bindings == expected, "canonical role binding")
+    need(type(captures) is dict and set(captures) == selected, "capture inventory")
+    for cid, item in captures.items():
+        need(item["call"]["input_id"] == cid and item["call"]["sequence"] == expected_calls[cid], "canonical call sequence")
+    raise ValueError("UNRESOLVED: v2 call-to-payload provenance not independently verified")

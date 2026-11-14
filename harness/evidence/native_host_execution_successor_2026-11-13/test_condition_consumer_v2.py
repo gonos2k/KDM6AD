@@ -1,5 +1,6 @@
 import copy
 import importlib.util
+import sys
 from pathlib import Path
 import unittest
 
@@ -113,10 +114,66 @@ def setup(stencil="central"):
     return d, bindings, captures
 
 
+def synthetic_add(data, bindings, captures, schema):
+    calls = {cid: item["call"]["sequence"] for cid, item in captures.items()}
+    return m._add_conditions(data, bindings, captures, schema, copy.deepcopy(bindings), calls)
+
+
 class ContractTests(unittest.TestCase):
+    def test_canonical_endpoint_and_call_binding(self):
+        preflight = str(HERE.parent / "native_host_preflight_2026-11-12")
+        if preflight not in sys.path:
+            sys.path.insert(0, preflight)
+        import fd_input_adapter as adapter
+        import receipt_schema as rs
+        from test_receipt_schema import synthetic_bundle
+
+        receipt, assets = synthetic_bundle()
+        data = adapter.adapt(receipt, assets, "upper", "pii", 0)["gate_input"]
+        plan, _ = rs.load_plan()
+        bindings = {"center": "upper", "samples": {}}
+        for step in data["plan"]["steps"]:
+            h = adapter.fd_gate.val(step["h_word"])
+            found = {x["multiple"]: x["id"] for x in plan["inputs"] if
+                     x["center"] == "upper" and x["direction"] == "pii" and x["h"] == h}
+            bindings["samples"][step["id"]] = {"lower": found[-1], "upper": found[1]}
+        ids = {"upper"} | {cid for x in bindings["samples"].values() for cid in x.values()}
+        calls = {x["input_id"]: x["sequence"] for x in plan["calls"] if x["mode"] == "capture_on_value"}
+        captures = {cid: capture(cid, calls[cid]) for cid in ids}
+        with self.assertRaisesRegex(ValueError, "UNRESOLVED"):
+            m.add_conditions(data, bindings, captures, contract(), receipt=receipt, assets=assets)
+        first_step = data["plan"]["steps"][0]["id"]
+        target = bindings["samples"][first_step]["upper"]
+        captures[target]["capture"]["records"][0]["raw"] = False
+        with self.assertRaisesRegex(ValueError, "UNRESOLVED"):
+            m.add_conditions(data, bindings, captures, contract(), receipt=receipt, assets=assets)
+        swapped = copy.deepcopy(bindings)
+        a, b = list(swapped["samples"])[:2]
+        relabelled = copy.deepcopy(captures)
+        aid, bid = bindings["samples"][a]["upper"], bindings["samples"][b]["upper"]
+        for dst, src in ((aid, bid), (bid, aid)):
+            for row in relabelled[dst]["capture"]["records"]:
+                row["raw"] = captures[src]["capture"]["records"][0]["raw"]
+        with self.assertRaisesRegex(ValueError, "UNRESOLVED"):
+            m.add_conditions(data, bindings, relabelled, contract(), receipt=receipt, assets=assets)
+        swapped["samples"][a]["upper"], swapped["samples"][b]["upper"] = (
+            swapped["samples"][b]["upper"], swapped["samples"][a]["upper"])
+        with self.assertRaisesRegex(ValueError, "canonical role binding"):
+            m.add_conditions(data, swapped, captures, contract(), receipt=receipt, assets=assets)
+        swapped = copy.deepcopy(bindings)
+        swapped["center"], swapped["samples"][a]["upper"] = swapped["samples"][a]["upper"], swapped["center"]
+        with self.assertRaisesRegex(ValueError, "canonical role binding"):
+            m.add_conditions(data, swapped, captures, contract(), receipt=receipt, assets=assets)
+        bad = copy.deepcopy(captures)
+        cid = bindings["samples"][a]["upper"]
+        bad[cid]["call"]["sequence"] += 1
+        bad[cid]["capture"]["call"]["sequence"] += 1
+        with self.assertRaisesRegex(ValueError, "canonical call sequence"):
+            m.add_conditions(data, bindings, bad, contract(), receipt=receipt, assets=assets)
+
     def test_gate_mask_and_schedule_and_preserve_v1(self):
         d, x, c = setup()
-        a = m.add_conditions(d, x, c, contract())
+        a = synthetic_add(d, x, c, contract())
         self.assertEqual(
             f.m.evaluate(a, allow_synthetic=True)["tag"], "LOCAL_NUMERIC_CONSISTENT"
         )
@@ -132,14 +189,14 @@ class ContractTests(unittest.TestCase):
         cid = x["samples"]["0"]["upper"]
         c[cid]["capture"]["records"][0]["raw"] = False
         self.assertEqual(
-            f.m.evaluate(m.add_conditions(d, x, c, contract()), allow_synthetic=True)[
+            f.m.evaluate(synthetic_add(d, x, c, contract()), allow_synthetic=True)[
                 "tag"
             ],
             "BRANCH_CROSSING",
         )
         c[cid] = capture(cid, c[cid]["call"]["sequence"], 2)
         self.assertEqual(
-            f.m.evaluate(m.add_conditions(d, x, c, contract()), allow_synthetic=True)[
+            f.m.evaluate(synthetic_add(d, x, c, contract()), allow_synthetic=True)[
                 "tag"
             ],
             "BRANCH_CROSSING",
@@ -168,6 +225,12 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             m.validate(contract(), entry["capture"], entry["call"])
 
+    def test_mixed_phases_are_explicitly_unsupported(self):
+        entry = capture("center", 0)
+        entry["capture"]["records"][0]["one_step_call"] = 0
+        with self.assertRaisesRegex(ValueError, "mixed one_step_call phases"):
+            m.validate(contract(), entry["capture"], entry["call"])
+
     def test_missing_duplicates_wrong_binding_and_nonfinite(self):
         for mutation in ("missing", "duplicate", "wrong_call", "nonfinite", "wrong_shape"):
             entry = capture("center", 0)
@@ -192,7 +255,7 @@ class ContractTests(unittest.TestCase):
         d, x, c = setup()
         x["samples"]["0"]["upper"] = x["center"]
         with self.assertRaisesRegex(ValueError, "call alias"):
-            m.add_conditions(d, x, c, contract())
+            synthetic_add(d, x, c, contract())
 
     def test_nonfinite_word_rejected(self):
         with self.assertRaisesRegex(ValueError, "nonfinite"):
@@ -203,7 +266,7 @@ class ContractTests(unittest.TestCase):
         cid = x["samples"]["0"]["plus2"]
         c[cid]["capture"]["records"][0]["raw"] = False
         result = f.m.evaluate(
-            m.add_conditions(d, x, c, contract()), allow_synthetic=True
+            synthetic_add(d, x, c, contract()), allow_synthetic=True
         )
         self.assertEqual(result["tag"], "BRANCH_CROSSING")
 
@@ -212,7 +275,7 @@ class ContractTests(unittest.TestCase):
         for cid, item in list(captures.items()):
             captures[cid] = capture(cid, item["call"]["sequence"], 0)
         with self.assertRaisesRegex(ValueError, "NOT_OBSERVED"):
-            m.add_conditions(d, bindings, captures, contract())
+            synthetic_add(d, bindings, captures, contract())
 
     def test_diagnostic_only_stability_and_crossing(self):
         d, bindings, captures = setup()
@@ -220,11 +283,11 @@ class ContractTests(unittest.TestCase):
         ct["sites"][1]["role"] = "diagnostic_bool"
         for item in captures.values():
             item["capture"]["records"][1]["role"] = "diagnostic_bool"
-        data = m.add_conditions(d, bindings, captures, ct)
+        data = synthetic_add(d, bindings, captures, ct)
         self.assertEqual(f.m.evaluate(data, allow_synthetic=True)["tag"], "LOCAL_NUMERIC_CONSISTENT")
         cid = bindings["samples"]["0"]["upper"]
         captures[cid]["capture"]["records"][1]["raw"] = False
-        data = m.add_conditions(d, bindings, captures, ct)
+        data = synthetic_add(d, bindings, captures, ct)
         self.assertEqual(f.m.evaluate(data, allow_synthetic=True)["tag"], "BRANCH_CROSSING")
 
 

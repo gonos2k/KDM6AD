@@ -175,8 +175,19 @@ class PreflightTest(unittest.TestCase):
   self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
  def test_intermediate_scalar_vjp_is_distinct_from_final_state_vjp(self):
   guard,call,sub,selector=self.graph_setup();lib=FakeABI();request={'selector':selector,'cotangent_id':'intermediate_scalar:unit'}
-  result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[request,request])
-  self.assertEqual(len(result['intermediate_vjps']),2);row=result['intermediate_vjps'][0];self.assertEqual(row['cotangent_word'],'3ff0000000000000');self.assertEqual(row['cotangent_sha256'],preflight.words_sha(['3ff0000000000000']));self.assertEqual(row['connected_field_mask'],(1<<0)|(1<<11)|(1<<12)|(1<<15));self.assertEqual(row['gradient_words'][0],'0000000000000000');self.assertEqual(row['gradient_sha256'],preflight.words_sha(row['gradient_words']));self.assertEqual(len(row['state_gradient_words']),468);self.assertEqual(len(row['forcing_gradient_words']),156);self.assertEqual(row['handle_token'],567);self.assertEqual(row['status'],0);self.assertEqual(len(result['vjps']['state:nc:15']['seed_words']),468);self.assertEqual(lib.events[-2:],['close','clear']);self.assertNotIn(('value',0),lib.events)
+  result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[request])
+  self.assertEqual(len(result['intermediate_vjps']),1);row=result['intermediate_vjps'][0];self.assertEqual(row['cotangent_word'],'3ff0000000000000');self.assertEqual(row['cotangent_sha256'],preflight.words_sha(['3ff0000000000000']));self.assertEqual(row['connected_field_mask'],(1<<0)|(1<<11)|(1<<12)|(1<<15));self.assertEqual(row['gradient_words'][0],'0000000000000000');self.assertEqual(row['gradient_sha256'],preflight.words_sha(row['gradient_words']));self.assertEqual(len(row['state_gradient_words']),468);self.assertEqual(len(row['forcing_gradient_words']),156);self.assertEqual(row['handle_token'],567);self.assertEqual(row['status'],0);self.assertEqual(len(result['vjps']['state:nc:15']['seed_words']),468);self.assertEqual(lib.events[-2:],['close','clear']);self.assertNotIn(('value',0),lib.events)
+ def test_duplicate_intermediate_requests_rejected_before_abi(self):
+  for kind in ('jvp','vjp'):
+   guard,call,sub,selector=self.graph_setup();lib=FakeABI();seed_id=next(iter(sub))
+   request={'selector':selector,'seed_id':seed_id} if kind=='jvp' else {'selector':selector,'cotangent_id':'intermediate_scalar:unit'}
+   kwargs={'intermediate_requests':[request,copy.deepcopy(request)]} if kind=='jvp' else {'intermediate_vjp_requests':[request,copy.deepcopy(request)]}
+   with self.assertRaisesRegex(RuntimeError,'duplicate intermediate'):abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,**kwargs)
+   self.assertEqual(lib.events,[]);self.assertTrue(guard.poisoned)
+ def test_distinct_seeds_share_primal(self):
+  guard,call,sub,selector=self.graph_setup();lib=FakeABI();ids=list(sub)[:2]
+  result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':i} for i in ids])
+  self.assertEqual(len(result['intermediate_jvps']),2);self.assertEqual(lib.events.count(('primal',123,567,0)),1);self.assertEqual(lib.events.count(('intermediate',123,567,0,624)),2)
  def test_intermediate_vjp_unconnected_status_is_explicit(self):
   for status in (1,2):
    guard,call,sub,selector=self.graph_setup();lib=FakeABI(vjp_status=status);r=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}]);row=r['intermediate_vjps'][0];self.assertEqual(row['status'],status);self.assertEqual(row['connected_field_mask'],0);self.assertEqual(set(row['gradient_words']),{'0000000000000000'})
@@ -206,7 +217,7 @@ class PreflightTest(unittest.TestCase):
  def test_a3_graph_primal_and_result_are_same_handle_before_derivatives(self):
   guard,call,sub,selector=self.graph_setup();lib=FakeABI(graph_flag=0);seed_id=next(k for k,v in sub.items() if v['direction']=='th')
   result=abi_core._execute_bound(lib,call,self.center['words'],sub,self.nom,self.vjp,'a'*64,sequence_guard=guard,intermediate_requests=[{'selector':selector,'seed_id':seed_id}],intermediate_vjp_requests=[{'selector':selector,'cotangent_id':'intermediate_scalar:unit'}])
-  self.assertEqual(result['same_call_rain'],{'raw_hex':'4000000000000000','graph_flag':0});self.assertEqual(result['graph_fnresult_primal'],result['same_call_rain']);self.assertEqual(result['intermediate_jvps'][0]['primal']['graph_flag'],0);self.assertEqual(result['intermediate_vjps'][0]['primal'],result['intermediate_jvps'][0]['primal']);self.assertLess(lib.events.index(('primal',123,567,0)),lib.events.index(('intermediate',123,567,0,624)));self.assertEqual(lib.events.count(('primal',123,567,0)),1);self.assertEqual(lib.events[-2:],['close','clear'])
+  self.assertEqual(result['same_call_rain'],{'raw_hex':'4000000000000000','graph_flag':0});self.assertEqual(result['graph_fnresult_primal'],result['same_call_rain']);self.assertEqual(result['intermediate_jvps'][0]['primal']['graph_flag'],0);self.assertEqual(result['intermediate_vjps'][0]['primal'],result['intermediate_jvps'][0]['primal']);self.assertLess(lib.events.index(('primal',123,567,0)),lib.events.index(('intermediate',123,567,0,624)));self.assertEqual(lib.events.count(('primal',123,567,0)),1);self.assertEqual(lib.events.count(('primal',123,567,2)),1);self.assertEqual(lib.events.count(('rain',b'baseline',b'center_joint_graph',91,567)),1);self.assertEqual(lib.events[-2:],['close','clear'])
  def test_a3_graph_checkpoint_failures_close_clear_and_poison(self):
   for options in ({'rain_rc':True},{'rain_nan':True},{'rain_flag_bad':True},{'rain_mismatch':True},{'missing_rain':True},{'duplicate_rain':True},{'primal_rc':True},{'primal_nan':True}):
    guard,call,sub,selector=self.graph_setup();lib=FakeABI(**options)

@@ -121,29 +121,6 @@ def _fnresult_index(records):
     if row['scope']!='column' or row['record_kind']!='value' or (row['b_zero'],row['k_zero'],row['native_level_bottom_first'],row['B'],row['K'])!=(0,-1,-1,1,-1):raise RuntimeError('FnResult rain record identity mismatch')
     return matches[0]
 
-def bind_checkpoints(lib):
-    rain=lib.kdm6_batch5_result_rain_c
-    rain.argtypes=[HANDLE,C.c_uint64,C.c_char_p,C.c_char_p,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
-    rain.restype=C.c_int
-    primal=lib.kdm6_batch5_graph_primal_c
-    primal.argtypes=[HANDLE,C.c_uint64,C.c_uint64,C.POINTER(C.c_uint64),C.POINTER(C.c_int)]
-    primal.restype=C.c_int
-    return rain,primal
-
-def _checkpoint_word(function,*args):
-    bits=C.c_uint64();flag=C.c_int(-1)
-    if function(*args,C.byref(bits),C.byref(flag))!=0 or flag.value not in (0,1):raise RuntimeError('checkpoint failure or invalid graph flag')
-    word=f'{bits.value:016x}'
-    if not math.isfinite(decode(word)):raise RuntimeError('nonfinite checkpoint')
-    return {'raw_hex':word,'graph_flag':flag.value}
-
-def _fnresult_index(records):
-    matches=[i for i,row in enumerate(records) if row['stage']=='fnresult' and row['field']=='rain_increment']
-    if len(matches)!=1:raise RuntimeError('FnResult rain record missing or ambiguous')
-    row=records[matches[0]]
-    if row['scope']!='column' or row['record_kind']!='value' or (row['b_zero'],row['k_zero'],row['native_level_bottom_first'],row['B'],row['K'])!=(0,-1,-1,1,-1):raise RuntimeError('FnResult rain record identity mismatch')
-    return matches[0]
-
 def bind_intermediate_vjp(lib):
     vjp=lib.kdm6_batch5_intermediate_vjp_c
     vjp.argtypes=[HANDLE,C.c_uint64,C.c_uint64,D,PD,C.c_size_t,C.POINTER(C.c_uint16),C.POINTER(C.c_int)]
@@ -195,7 +172,7 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
     process, without skipped/retried calls; any failure poisons it. Sidecar v1
     is copied only in capture_on_value mode, then cleared even on step/copy error.
     """
-    mode=call['mode'];installed=mode=='installed_value_optional';graph=mode=='center_joint_graph';capture=mode=='capture_on_value';off=mode=='capture_off_value';off=mode=='capture_off_value'
+    mode=call['mode'];installed=mode=='installed_value_optional';graph=mode=='center_joint_graph';capture=mode=='capture_on_value';off=mode=='capture_off_value'
     if mode not in ('capture_off_value','capture_on_value','center_joint_graph','installed_value_optional'):raise ValueError('unsupported call mode')
     if not isinstance(sequence_guard,InstrumentedSequence):raise RuntimeError('persistent canonical sequence guard required')
     try:
@@ -207,14 +184,21 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
             sequence_guard.check_graph_seeds(call,effective,nominal,cotangents)
             effective={k:{'id':k,'center':v[0],'direction':v[1],'step_id':v[2],'evaluation_input_words':v[3],'effective_direction_words':v[4],'seed_sha256':words_sha(v[4])} for k,v in sequence_guard._effective.items() if v[0]==call['input_id']}
             nominal=dict(sequence_guard._nominal);cotangents=dict(sequence_guard._cotangents)
+            seen_jvps=[];seen_vjps=[]
             for request in requests:
                 if type(request) is not dict or set(request)!={'selector','seed_id'} or type(request['selector']) is not dict or set(request['selector'])!=set(SELECTOR_FIELDS):raise RuntimeError('full intermediate selector required')
                 if request['selector']['record_kind']!='value':raise RuntimeError('intermediate selector must identify a value')
                 sequence_guard.effective_seed(request['seed_id'],call['input_id'])
+                key=tuple((type(request['selector'][k]),request['selector'][k]) for k in SELECTOR_FIELDS)+(request['seed_id'],)
+                if key in seen_jvps:raise RuntimeError('duplicate intermediate JVP request')
+                seen_jvps.append(key)
             for request in vjp_requests:
                 if type(request) is not dict or set(request)!={'selector','cotangent_id'} or type(request['selector']) is not dict or set(request['selector'])!=set(SELECTOR_FIELDS):raise RuntimeError('full intermediate VJP selector required')
                 if request['selector']['record_kind']!='value':raise RuntimeError('intermediate VJP selector must identify a value')
                 if request['cotangent_id']!='intermediate_scalar:unit':raise RuntimeError('unknown intermediate scalar cotangent')
+                key=tuple((type(request['selector'][k]),request['selector'][k]) for k in SELECTOR_FIELDS)+(request['cotangent_id'],)
+                if key in seen_vjps:raise RuntimeError('duplicate intermediate VJP request')
+                seen_vjps.append(key)
     except BaseException:
         sequence_guard.fail()
         raise
@@ -247,13 +231,6 @@ def _execute_bound(lib,call,input_words,effective,nominal,cotangents,dso_sha256,
             token_fn,intermediate_jvp=bind_graph_sidecar(lib);token=C.c_uint64()
             if token_fn(h,C.byref(token))!=0 or token.value==0:raise RuntimeError('graph handle binding token failed')
             metadata=_copy_records(call,count,meta,None,max_records);result['graph_metadata']=metadata;result['graph_binding_token']=token.value;result['selector_registry_status']='CALLER_SUPPLIED_UNVERIFIED';result['intermediate_jvps']=[]
-            rain_fn,primal_fn=bind_checkpoints(lib);rain=_checkpoint_word(rain_fn,h,token.value,call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence']);rain_index=_fnresult_index(metadata);primals={}
-            def primal_at(index):
-                if index not in primals:primals[index]=_checkpoint_word(primal_fn,h,token.value,index)
-                return primals[index]
-            rain_primal=primal_at(rain_index)
-            if rain_primal!=rain:raise RuntimeError('graph FnResult rain checkpoint mismatch')
-            result['same_call_rain']=rain;result['rain_unit_status']='UNAPPROVED';result['rain_provenance']='SAME_CALL_CONTEXT_UNVERIFIED';result['graph_fnresult_primal']=rain_primal
             rain_fn,primal_fn=bind_checkpoints(lib);rain=_checkpoint_word(rain_fn,h,token.value,call['input_id'].encode('ascii'),mode.encode('ascii'),call['sequence']);rain_index=_fnresult_index(metadata);primals={}
             def primal_at(index):
                 if index not in primals:primals[index]=_checkpoint_word(primal_fn,h,token.value,index)
