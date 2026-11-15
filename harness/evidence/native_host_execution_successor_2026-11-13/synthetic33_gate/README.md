@@ -58,3 +58,12 @@ RSS. A disabled real-mode wiring candidate requires a separately SHA-pinned
 private census package inventory and rechecks the manifest before release.
 These checks are sampled and fake-tested. They do not make the real worker,
 A7 graph, or completion witness executable.
+
+Darwin may report `EPERM` when the reserved direct child exits and its group
+becomes empty between observations. Cleanup treats this as resolved only after
+WNOWAIT confirms that child's exit on both sides of a complete empty-group
+census; live, unknown, denied and incomplete cases remain errors. A bounded
+start-time lookup retry similarly recognizes only a WNOWAIT-confirmed exit.
+Failed reaping is recorded as incomplete. These paths have fake repeated-run
+tests, but do not establish a hard wall or memory guarantee for arbitrary OS
+syscall stalls.

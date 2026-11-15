@@ -4,7 +4,7 @@ The watchdog is the worker leader's direct parent and never reaps that PID
 until group termination is complete. It cannot stop setsid escapes or survive
 its own SIGKILL. No completion witness or model interface is implemented.
 """
-import ctypes, json, os, pathlib, select, signal, time, subprocess, hashlib, sys
+import ctypes, errno, json, os, pathlib, select, signal, time, subprocess, hashlib, sys
 
 ENABLE_REAL33=False
 _CANCEL=[]
@@ -65,6 +65,24 @@ def leader_exited(pid):
     if libc.waitid(os.P_PID,pid,buf,os.WEXITED|os.WNOWAIT|os.WNOHANG):raise OSError(ctypes.get_errno(),'waitid')
     return ctypes.c_int.from_buffer(buf,12).value==pid
 
+def worker_reservation(pid,worker_start,deadline=None):
+    """Reobserve WNOWAIT briefly if exit races the start-time lookup."""
+    if leader_exited(pid):return ('exited_reserved',worker_start)
+    try:current=process_start(pid)
+    except (OSError,RuntimeError):
+        # proc_pidinfo can stop reporting just before waitid exposes exit.
+        # Preserve the child reservation, never infer exit from lookup failure,
+        # and fail closed if the short observation window is exhausted.
+        until=time.monotonic()+.5
+        if deadline is not None:until=min(until,deadline)
+        while True:
+            if leader_exited(pid):return ('exited_reserved',worker_start)
+            left=until-time.monotonic()
+            if left<=0:raise
+            time.sleep(min(.01,left))
+    if current!=worker_start:raise RuntimeError('worker start changed')
+    return ('alive',current)
+
 def reapable(pid):
     deadline=time.monotonic()+3.0
     while time.monotonic()<deadline:
@@ -72,8 +90,8 @@ def reapable(pid):
         time.sleep(.02)
     raise TimeoutError('leader exit unobserved; no reap')
 
-def other_members(pid):
-    report=subprocess.run(['/bin/ps','-A','-o','pid=,pgid=,stat='],capture_output=True,text=True,check=True,timeout=10.0)
+def other_members(pid,timeout=10.0):
+    report=subprocess.run(['/bin/ps','-A','-o','pid=,pgid=,stat='],capture_output=True,text=True,check=True,timeout=timeout)
     rows=[]
     for line in report.stdout.splitlines():
         if not line.strip():continue
@@ -85,32 +103,85 @@ def other_members(pid):
     if not any(process==pid and group==pid for process,group,_ in rows):raise ValueError('leader missing from process census')
     return [(process,group,state) for process,group,state in rows if group==pid and process!=pid]
 
-def cleanup(pid,record=None,members_check=None):
+EPERM_RECHECK_SECONDS=1.0
+EPERM_RECHECK_INTERVAL=.05
+
+def cleanup(pid,record=None,members_check=None,whole_deadline=None):
     check_members=other_members if members_check is None else members_check
     errors=[]
     def reap():
         child,status=os.waitpid(pid,0)
         if record is not None:record.update(worker_reaped_pid=child,worker_wait_status=status)
+    def reap_reconciled():
+        try:
+            reap()
+        except OSError as exc:
+            errors.append('reconciled reap: '+repr(exc))
+        return errors
+    eperm_deadline=None
+    def denied_but_exited_empty(exc,operation):
+        nonlocal eperm_deadline
+        if not isinstance(exc,PermissionError) and getattr(exc,'errno',None)!=errno.EPERM:
+            errors.append(repr(exc));return False
+        if eperm_deadline is None:
+            eperm_deadline=time.monotonic()+EPERM_RECHECK_SECONDS
+            if whole_deadline is not None:eperm_deadline=min(eperm_deadline,whole_deadline)
+        observations=[]
+        if record is not None:record.setdefault('eperm_observations',[]).append({'operation':operation,'attempts':observations})
+        while True:
+            remaining=eperm_deadline-time.monotonic()
+            if remaining<=0 and observations:break
+            if remaining<=0 and whole_deadline is not None:break
+            sample={'leader_before':None,'members':None,'leader_after':None}
+            try:
+                sample['leader_before']=leader_exited(pid)
+                if members_check is None:
+                    members=check_members(pid,timeout=max(.001,remaining))
+                else:
+                    members=check_members(pid,deadline=eperm_deadline)
+                if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
+                sample['members']=members
+                sample['leader_after']=leader_exited(pid)
+                if type(sample['leader_before']) is not bool or type(sample['leader_after']) is not bool:raise ValueError('invalid reservation state')
+                observations.append(sample)
+                if sample['leader_before'] and not members and sample['leader_after']:
+                    return True
+            except (OSError,subprocess.SubprocessError,ValueError,RuntimeError,TimeoutError) as check_error:
+                sample['error']=repr(check_error);observations.append(sample)
+                errors.append('EPERM recheck: '+repr(check_error));break
+            remaining=eperm_deadline-time.monotonic()
+            if remaining<=0:break
+            time.sleep(min(EPERM_RECHECK_INTERVAL,remaining))
+        errors.append('EPERM '+operation+' unresolved: '+repr(exc)+' observations='+repr(observations[-1:]));return False
     # A cleanly exited single-member group can yield killpg EPERM on Darwin.
     # Inspect the still-reserved group before any signal and never treat EPERM as absence.
     try:
-        if leader_exited(pid) and not check_members(pid):
-            reap();return []
+        if leader_exited(pid):
+            members=check_members(pid)
+            if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
+            if not members and leader_exited(pid):
+                reap();return []
     except (OSError,subprocess.SubprocessError,ValueError,RuntimeError) as e:
         errors.append(repr(e))  # Failure remains incomplete; still try to kill owned group.
     try:os.killpg(pid,signal.SIGTERM)
     except ProcessLookupError:pass
-    except OSError as e:errors.append(repr(e))
+    except OSError as e:
+        if denied_but_exited_empty(e,'SIGTERM') and not errors:
+            return reap_reconciled()
     deadline=time.monotonic()+.3
     while time.monotonic()<deadline:
         try:
             if not alive(pid):break
         except OSError as e:
-            errors.append(repr(e));break
+            if denied_but_exited_empty(e,'probe') and not errors:
+                return reap_reconciled()
+            break
         time.sleep(.02)
     try:os.killpg(pid,signal.SIGKILL)
     except ProcessLookupError:pass
-    except OSError as e:errors.append(repr(e))
+    except OSError as e:
+        if denied_but_exited_empty(e,'SIGKILL') and not errors:
+            return reap_reconciled()
     # Keep the direct child unreaped while checking the owned group. Never probe
     # the numeric group ID after reap, when reuse could redirect the query.
     try:
@@ -118,6 +189,7 @@ def cleanup(pid,record=None,members_check=None):
         until=time.monotonic()+2
         while True:
             members=check_members(pid)
+            if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
             if not members:break
             if time.monotonic()>=until:
                 errors.append('residual group members: '+repr(members));break
@@ -338,10 +410,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         os.close(ar);group_ready=True;result['worker_pid']=pid
         worker_start=process_start(pid)
         def reservation():
-            if leader_exited(pid):return ('exited_reserved',worker_start)
-            current=process_start(pid)
-            if current!=worker_start:raise RuntimeError('worker start changed')
-            return ('alive',current)
+            return worker_reservation(pid,worker_start,deadline)
         def abort_worker():
             errors=[]
             for sig in (signal.SIGTERM,signal.SIGKILL):
@@ -418,16 +487,19 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         result['error_detail']=repr(exc)
     finally:
         if pid is not None and group_ready:
-            def helper_members(_pid):
+            def helper_members(_pid,deadline=None):
                 if helper is None or helper.closed:raise RuntimeError('census helper unavailable')
                 # No more than one sample per second; cleanup remains bounded.
                 delay=max(0,helper.next_sample-time.monotonic())
                 if delay>1:raise RuntimeError('invalid cleanup sample rate')
+                if deadline is not None and time.monotonic()+delay>=deadline:raise RuntimeError('cleanup census deadline')
                 if delay:time.sleep(delay)
-                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,time.monotonic()+2.)
+                sample_deadline=time.monotonic()+2.
+                if deadline is not None:sample_deadline=min(sample_deadline,deadline)
+                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,sample_deadline)
                 result['census_latencies_seconds'].append(time.monotonic()-sample_start)
                 return [member for member in sample['members'] if member!=pid]
-            result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None)
+            result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None,whole_deadline=deadline)
         elif pid is not None:
             result['cleanup_errors']=pre_ready_cleanup(pid,result)
         if helper is not None:

@@ -93,7 +93,8 @@ class WatchdogTest(unittest.TestCase):
                         image=(pathlib.Path(t)/f'fake{i}.dylib').resolve();image.write_bytes(f'fake{i}'.encode());images.append(image)
                     log=pathlib.Path(t)/'loader.log';log.write_text(''.join(f'dyld[{result["worker_pid"]}]: <A000-{i}> {image}\n' for i,image in enumerate(images)))
                     allowed={str(image):sha(image) for image in images};required=[str(image) for image in images]
-                    verified=witness33.validate(t,result,1.,fixture33.plan(),allowed,required,log,{})
+                    try:verified=witness33.validate(t,result,1.,fixture33.plan(),allowed,required,log,{})
+                    except ValueError as exc:self.fail('fake witness failed: '+str(exc)+' watchdog result='+repr(result))
                     self.assertEqual(verified['status'],'EXECUTION_COMPLETED_ASSETS_ONLY')
                     with self.assertRaisesRegex(ValueError,'loaded image'):
                         witness33.validate(t,result,1.,fixture33.plan(),{},required,log,{})
@@ -248,6 +249,94 @@ class WatchdogTest(unittest.TestCase):
                 except ProcessLookupError:pass
                 try:os.waitpid(leader,0)
                 except ChildProcessError:pass
+    def test_worker_exit_during_start_lookup_rechecks_reservation(self):
+        identity=(1000,12)
+        with patch.object(watchdog,'leader_exited',side_effect=[False,True]) as exited, \
+             patch.object(watchdog,'process_start',side_effect=RuntimeError('identity unavailable')):
+            self.assertEqual(watchdog.worker_reservation(123,identity),('exited_reserved',identity))
+            self.assertEqual(exited.call_count,2)
+        with patch.object(watchdog,'leader_exited',side_effect=[False,False,True]), \
+             patch.object(watchdog,'process_start',side_effect=RuntimeError('identity unavailable')), \
+             patch.object(watchdog.time,'sleep'):
+            self.assertEqual(watchdog.worker_reservation(123,identity),('exited_reserved',identity))
+        with patch.object(watchdog,'leader_exited',side_effect=[False,False]), \
+             patch.object(watchdog,'process_start',side_effect=RuntimeError('identity unavailable')):
+            with self.assertRaisesRegex(RuntimeError,'identity unavailable'):
+                watchdog.worker_reservation(123,identity,deadline=0)
+        with patch.object(watchdog,'leader_exited',side_effect=[False,OSError('waitid unavailable')]), \
+             patch.object(watchdog,'process_start',side_effect=RuntimeError('identity unavailable')):
+            with self.assertRaisesRegex(OSError,'waitid unavailable'):
+                watchdog.worker_reservation(123,identity)
+        with patch.object(watchdog,'leader_exited',return_value=False), \
+             patch.object(watchdog,'process_start',return_value=(1000,13)):
+            with self.assertRaisesRegex(RuntimeError,'worker start changed'):
+                watchdog.worker_reservation(123,identity)
+
+    @patch.object(watchdog,'EPERM_RECHECK_SECONDS',0)
+    def test_eperm_transition_requires_reserved_exited_empty_group(self):
+        for stage in ('term','probe','kill'):
+            with self.subTest(stage=stage):
+                signals = ([PermissionError('denied')] if stage == 'term' else
+                           [None] if stage == 'probe' else [None, PermissionError('denied')])
+                probe = PermissionError('denied') if stage == 'probe' else False
+                with patch.object(watchdog,'leader_exited',side_effect=[False, True, True]) as reserved, \
+                     patch.object(watchdog,'other_members',return_value=[]) as census, \
+                     patch.object(watchdog.os,'killpg',side_effect=signals), \
+                     patch.object(watchdog,'alive',side_effect=probe if isinstance(probe,Exception) else None,return_value=False), \
+                     patch.object(watchdog.os,'waitpid',return_value=(123,0)) as reap:
+                    self.assertEqual(watchdog.cleanup(123),[])
+                    self.assertEqual(reserved.call_count,3)
+                    self.assertEqual(census.call_count,1)
+                    self.assertEqual(census.call_args.args,(123,))
+                    reap.assert_called_once_with(123,0)
+        for kind in ('live_leader','live_member','reservation_lost','census_error','unknown_inventory'):
+            with self.subTest(kind=kind):
+                states={'live_leader':[False,False,False], 'live_member':[False,True,True],
+                        'reservation_lost':[False,True,False], 'census_error':[False,True,True],
+                        'unknown_inventory':[False,True,True]}[kind]
+                members=ValueError('truncated census') if kind=='census_error' else (None if kind=='unknown_inventory' else ([(456,123,'R')] if kind=='live_member' else []))
+                with patch.object(watchdog,'leader_exited',side_effect=states), \
+                     patch.object(watchdog,'other_members',side_effect=members if isinstance(members,Exception) else None,return_value=members), \
+                     patch.object(watchdog.os,'killpg',side_effect=[PermissionError('denied'),None]), \
+                     patch.object(watchdog,'alive',return_value=False), \
+                     patch.object(watchdog,'reapable',return_value=None), \
+                     patch.object(watchdog.os,'waitpid') as reap:
+                    self.assertTrue(watchdog.cleanup(123))
+                    reap.assert_not_called()
+
+    def test_eperm_reobserves_exit_and_records_diagnostics(self):
+        record={}
+        with patch.object(watchdog,'leader_exited',side_effect=[False,False,False,True,True]), \
+             patch.object(watchdog,'other_members',return_value=[]), \
+             patch.object(watchdog.os,'killpg',side_effect=PermissionError('denied')), \
+             patch.object(watchdog.time,'sleep'), \
+             patch.object(watchdog.os,'waitpid',return_value=(123,0)) as reap:
+            self.assertEqual(watchdog.cleanup(123,record),[])
+        attempts=record['eperm_observations'][0]['attempts']
+        self.assertEqual([(a['leader_before'],a['leader_after'],a['members']) for a in attempts],
+                         [(False,False,[]),(True,True,[])])
+        reap.assert_called_once_with(123,0)
+
+    @patch.object(watchdog,'EPERM_RECHECK_SECONDS',0)
+    def test_eperm_reconciled_waitpid_failure_is_recorded(self):
+        for stage in ('term','probe','kill'):
+            with self.subTest(stage=stage):
+                signals=([PermissionError('denied')] if stage=='term' else
+                         [None] if stage=='probe' else [None,PermissionError('denied')])
+                probe=PermissionError('denied') if stage=='probe' else False
+                record={}
+                with patch.object(watchdog,'leader_exited',side_effect=[False,True,True]), \
+                     patch.object(watchdog,'other_members',return_value=[]), \
+                     patch.object(watchdog.os,'killpg',side_effect=signals), \
+                     patch.object(watchdog,'alive',side_effect=probe if isinstance(probe,Exception) else None,return_value=False), \
+                     patch.object(watchdog.os,'waitpid',side_effect=OSError('injected wait failure')) as reap:
+                    errors=watchdog.cleanup(123,record)
+                    self.assertEqual(len(errors),1)
+                    self.assertIn('reconciled reap',errors[0])
+                    self.assertIn('injected wait failure',errors[0])
+                    self.assertNotIn('worker_reaped_pid',record)
+                    reap.assert_called_once_with(123,0)
+
     def test_denied_kill_does_not_block_cleanup(self):
         ready_r,ready_w=os.pipe();p=os.fork()
         if p==0:
@@ -297,10 +386,10 @@ class WatchdogTest(unittest.TestCase):
             os.write(w,str(kid).encode());os.close(w);os._exit(0)
         os.close(w);kid=int(os.read(r,64));os.close(r);watchdog.reapable(leader)
         original=watchdog.other_members;counter=[0]
-        def fail_once(pid):
+        def fail_once(pid,**kwargs):
             counter[0]+=1
             if counter[0]==1:raise ValueError('injected census failure')
-            return original(pid)
+            return original(pid,**kwargs)
         try:
             with patch.object(watchdog,'other_members',side_effect=fail_once):errors=watchdog.cleanup(leader)
             self.assertTrue(any('injected census failure' in e for e in errors))
