@@ -80,3 +80,13 @@ fake scalar `s = nc/10^8 + th`의 624개 gradient는 선택 위치의 `nc=10^-8`
 완료 후검사 초안은 33개 자산·journal·loader trace·worker 결과의 hash를 묶고 read-only replay를 다시 수행한다. selector가 정당하게 없거나 연결되지 않은 경우에는 수치 판정을 `INCONCLUSIVE`로 남긴다. 직접 완료 파일을 게시하는 공개 함수는 거부하며, 현재 orchestrator가 만들 수 있는 파일은 **`CANDIDATE_UNVERIFIED` 후보**뿐이다. 독립 부모가 실제 자식의 정상 종료·전체 시간·정리 결과와 후보를 확인한 최종 witness는 아직 없다.
 
 현재 로컬 Python 3.12 fake 검사는 portable **86/86**, Darwin **64/64**가 일반·`-O` 모두 통과했다. 실제 `ctypes.CDLL` 호출·A7 ABI 실행·세 selector의 값 또는 도함수·33회 합성 배치는 수행하지 않았다. 이전 비공개 `REVIEW_REQUIRED` manifest는 변경된 실행 소스를 포함하지 않으므로 승인 근거로 사용할 수 없다. 실모드 release와 watchdog 전역 차단은 유지한다. 독립 실행 manifest, 실제 worker의 loader/ABI 관측, 독립 부모 witness의 검토가 끝나기 전에는 `NOT READY`가 맞다.
+
+## 저장 replay 진단과 900초 전체 예산의 후속 정리
+
+현재 저장 자산 replay는 이전부터 유효한 중심·graph·FD 끝점 selector 누락을 `INCONCLUSIVE` 또는 `UNAVAILABLE` 행으로 남기고, 다른 selector의 분석을 계속한다. 이번 후속 수정은 판정 축을 더 분리했다. JVP와 재계산한 VJP 내적이 모두 0이어도 같은 기록된 분기에서 두 보폭 FD가 유의하게 해상되고 약 0.01이라면 AD 쌍대성은 `CONSISTENT`, FD–AD 비교는 **`MISMATCH`**, 전체 과학 상태는 계속 `INCONCLUSIVE`다. 누락·미연결·분기 교차는 각자의 이유로 남기며 손상된 v3 자산 형식은 계속 거부한다.
+
+실모드 시간 정책은 private manifest의 `cleanup_reserve_seconds=28`을 요구한다. 총 wall 한도가 900초일 때 실행·후검사는 시작 후 **872초**까지, 정리·회수는 원래 시작 후 **900초**까지다. orchestrator는 deadline 뒤에 새로운 28초를 시작하지 않는다. watchdog과 helper도 실행 마감과 총 마감을 구분해 정리 신호를 보내되, 전체 마감 안에 잔존 그룹·회수 확인을 끝내지 못하면 `INCOMPLETE`로 기록한다. OS 호출 자체가 임의로 멈추는 경우의 hard wall 보증은 이 정책에 포함되지 않는다.
+
+고정한 psutil 5.9.4 패키지로 KDM 없이 직접 자식의 live·reserved-exited census를 별도 확인했다. 한 관측에서 live 그룹은 한 멤버와 약 2 MB RSS를 기록했고, 예약 종료는 0 RSS로 기록했으며 잘못된 PID·시작 시각을 거부하고 자식을 회수했다. 첫 시도에서 확인한 `getpgid`와 종료의 경합은 직접 부모의 WNOWAIT 종료를 제한 시간 안에 다시 확인한 경우에만 수용하도록 고쳤다. 이 시간 수치는 단일 무모델 관측값이지 응답 지연의 보증이 아니다.
+
+수정 후 로컬 Python 3.12 fake 전체 검사는 portable **89/89**, Darwin **67/67**이 일반·`-O` 모두 통과했다. 고정 A7 C++ 소스는 바꾸지 않았고 A7 parity·graph·33회 호출은 여전히 실행하지 않았다. 이전 private manifest 후보에는 28초 정리 예약과 이 변경의 Python 해시가 없어 새로 고정해야 한다. 실제 실행 차단과 최종 witness의 미완료 상태는 유지한다.

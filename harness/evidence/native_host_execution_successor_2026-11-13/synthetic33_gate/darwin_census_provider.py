@@ -109,24 +109,39 @@ def sample_group(provider, request, deadline, *, clock=time.monotonic):
     }
 
 
-def parent_reservation(leader, leader_start, inspect):
-    """Run only in the direct parent; WNOWAIT retains the child PID reservation."""
-    require(
-        type(leader) is int and leader > 0 and leader_start is not None,
-        "leader identity",
-    )
+def parent_reservation(leader, leader_start, inspect, *, deadline=None, clock=time.monotonic):
+    """Direct parent only: WNOWAIT holds the child PID throughout observation."""
+    require(type(leader) is int and leader > 0 and leader_start is not None, "leader identity")
     libc = ctypes.CDLL(None, use_errno=True)
     libc.waitid.argtypes = (ctypes.c_int, ctypes.c_uint, ctypes.c_void_p, ctypes.c_int)
     libc.waitid.restype = ctypes.c_int
-    buf = ctypes.create_string_buffer(512)
-    ctypes.set_errno(0)
-    if libc.waitid(os.P_PID, leader, buf, os.WEXITED | os.WNOWAIT | os.WNOHANG):
-        raise CensusError("parent waitid failed: errno " + str(ctypes.get_errno()))
-    observed_pid = ctypes.c_int.from_buffer(buf, 12).value
-    require(observed_pid in (0, leader), "unexpected waitid child")
-    if observed_pid == leader:
+
+    def exited_reserved():
+        buf = ctypes.create_string_buffer(512)
+        ctypes.set_errno(0)
+        if libc.waitid(os.P_PID, leader, buf, os.WEXITED | os.WNOWAIT | os.WNOHANG):
+            raise CensusError("parent waitid failed: errno " + str(ctypes.get_errno()))
+        observed_pid = ctypes.c_int.from_buffer(buf, 12).value
+        require(observed_pid in (0, leader), "unexpected waitid child")
+        return observed_pid == leader
+
+    if exited_reserved():
         return "exited_reserved"
-    start, group, _ = inspect(leader)
+    try:
+        start, group, _ = inspect(leader)
+    except Exception:
+        # The process can exit between WNOWAIT and a fresh proc lookup. Only a
+        # later WNOWAIT-confirmed exit is accepted; lookup failure is not proof.
+        until = clock() + .5
+        if deadline is not None:
+            until = min(until, deadline)
+        while True:
+            if exited_reserved():
+                return "exited_reserved"
+            remaining = until - clock()
+            if remaining <= 0:
+                raise
+            time.sleep(min(.01, remaining))
     require(start == leader_start and group == leader, "live leader identity")
     return "alive"
 

@@ -42,6 +42,7 @@ def fake_manifest(root):
             "jvp": 18,
             "vjp": 9,
             "wall_seconds": 900,
+            "cleanup_reserve_seconds": 28,
             "rss_bytes": 4 * 1024**3,
             "serialized_call_bytes": 128 * 1024**2,
             "serialized_total_bytes": 4 * 1024**3,
@@ -66,6 +67,8 @@ def fake_supervisor(original, *, attach_result):
         kwargs.pop("native_census_package")
         kwargs.pop("native_census_manifest")
         kwargs.pop("real_capability")
+        kwargs.pop("execution_deadline")
+        kwargs.pop("total_deadline")
         x.watchdog.group_rss_kib = lambda pid: 1024
         kwargs["fake_ready_timeout"] = 15
         result = original(

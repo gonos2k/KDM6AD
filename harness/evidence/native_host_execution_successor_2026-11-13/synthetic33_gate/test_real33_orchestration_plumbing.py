@@ -42,6 +42,7 @@ class PlumbingTest(unittest.TestCase):
                 "jvp": 18,
                 "vjp": 9,
                 "wall_seconds": 900,
+            "cleanup_reserve_seconds": 28,
                 "rss_bytes": 4 * 1024**3,
                 "serialized_call_bytes": 128 * 1024**2,
                 "serialized_total_bytes": 4 * 1024**3,
@@ -53,6 +54,22 @@ class PlumbingTest(unittest.TestCase):
     def write_manifest(self):
         self.path.write_text(json.dumps(self.manifest))
         self.digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
+
+    def test_whole_wall_reserves_cleanup_and_bounded_parent_wait(self):
+        bounds=orchestrator.deadline_bounds(100.0,900,28)
+        self.assertEqual(bounds,{'execution_deadline':972.0,'total_deadline':1000.0})
+        for wall,reserve in ((28,28),(27,28),(900,True),(900,27),(901,28)):
+            with self.assertRaises(ValueError):orchestrator.deadline_bounds(100.0,wall,reserve)
+        now=[999.97];sleeps=[];waits=[]
+        def clock():return now[0]
+        def sleep(dt):sleeps.append(dt);now[0]+=dt
+        def waitpid(pid,flags):waits.append((pid,flags));return (0,0)
+        self.assertFalse(orchestrator.wait_for_watchdog(22,1000.,clock=clock,waitpid=waitpid,sleep=sleep))
+        self.assertLessEqual(now[0],1000.)
+        self.assertTrue(waits);self.assertAlmostEqual(sum(sleeps),.03,places=8)
+        waits.clear();now[0]=1000.
+        self.assertFalse(orchestrator.wait_for_watchdog(22,1000.,clock=clock,waitpid=waitpid,sleep=sleep))
+        self.assertEqual(waits,[])
 
     def test_missing_dso_digest_fails_as_value_error(self):
         del self.manifest['dso_sha256'];self.write_manifest()
@@ -251,7 +268,10 @@ class PlumbingTest(unittest.TestCase):
             self.assertIs(kwargs["real_capability"], self.issued.return_value)
             self.assertEqual(kwargs["max_rss_kib"], 4 * 1024**2)
             self.assertEqual(kwargs["manifest_sha"], self.digest)
-            self.assertLessEqual(kwargs["timeout"], 900)
+            self.assertLessEqual(kwargs["timeout"], 872)
+            self.assertEqual(kwargs["total_deadline"]-kwargs["execution_deadline"],28)
+            self.assertEqual(self.issued.call_args.kwargs["execution_deadline"],kwargs["execution_deadline"])
+            self.assertEqual(self.issued.call_args.kwargs["deadline"],kwargs["total_deadline"])
         finally:
             for fd in pipes:
                 try:

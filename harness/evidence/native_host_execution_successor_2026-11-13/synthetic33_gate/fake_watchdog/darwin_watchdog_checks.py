@@ -434,6 +434,29 @@ class WatchdogTest(unittest.TestCase):
     def test_real_default_readiness_bound_is_ten_seconds(self):
         import inspect
         self.assertEqual(inspect.signature(watchdog.supervise).parameters['fake_ready_timeout'].default,10.0)
+    def test_cleanup_can_verify_during_reserved_window(self):
+        # Fake time is after execution cutoff (19) but before total deadline (30).
+        record={}
+        with patch.object(watchdog.time,'monotonic',return_value=20), \
+             patch.object(watchdog,'leader_exited',return_value=True), \
+             patch.object(watchdog,'other_members',return_value=[]) as census, \
+             patch.object(watchdog.os,'waitpid',return_value=(123,0)) as reap:
+            self.assertEqual(watchdog.cleanup(123,record,whole_deadline=30),[])
+        self.assertEqual(census.call_args.kwargs,{'timeout':10.0})
+        reap.assert_called_once_with(123,0)
+        self.assertEqual(record['worker_reaped_pid'],123)
+
+    def test_expired_total_deadline_still_signals_without_unverified_reap(self):
+        record={}
+        with patch.object(watchdog,'leader_exited',return_value=False), \
+             patch.object(watchdog.os,'killpg') as kill, \
+             patch.object(watchdog.os,'waitpid') as reap:
+            errors=watchdog.cleanup(123,record,whole_deadline=time.monotonic()-1)
+        self.assertEqual([call.args[1] for call in kill.call_args_list],[signal.SIGTERM,signal.SIGKILL])
+        self.assertTrue(errors)
+        self.assertNotIn('worker_reaped_pid',record)
+        reap.assert_not_called()
+
     def test_pre_ready_cleanup_freezes_before_group_or_pid_signal(self):
         import ctypes
         from types import SimpleNamespace
@@ -460,16 +483,21 @@ class WatchdogTest(unittest.TestCase):
             (root/'run_nonce').write_text(nonce)
             inventory={'__init__.py':'a'*64}
             inventory_raw=json.dumps(inventory,sort_keys=True,separators=(',',':')).encode('ascii')
-            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,
+            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,'budgets':{'cleanup_reserve_seconds':28,'wall_seconds':900},
                    'census_provider':{'package':str(package),'inventory':inventory,'inventory_sha256':hashlib.sha256(inventory_raw).hexdigest()}}
             path=root/'manifest.json';path.write_text(json.dumps(value));digest=hashlib.sha256(path.read_bytes()).hexdigest()
             args={'manifest_path':path,'approved_sha':digest,'dso_sha256':'c'*64,'run_nonce':nonce,
                   'supervisor_pid':111,'supervisor_start':(100,1),'output_dir':root,'package':package,
                   'inventory':inventory,'deadline':time.monotonic()+60}
+            args['execution_deadline']=args['deadline']-28
             with patch.object(watchdog.os,'getpid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)):
+                wrong_reserve=dict(args);wrong_reserve['execution_deadline']=args['deadline']-27
+                with self.assertRaisesRegex(ValueError,'execution/cleanup deadline'):
+                    watchdog.issue_real_capability(**wrong_reserve)
                 capability=watchdog.issue_real_capability(**args)
                 rejected=watchdog.issue_real_capability(**args)
-            binding={k:args[k] for k in ('supervisor_pid','supervisor_start','manifest_path','approved_sha','run_nonce','output_dir','package','inventory','deadline')}
+            binding={k:args[k] for k in ('supervisor_pid','supervisor_start','manifest_path','approved_sha','run_nonce','output_dir','package','inventory')}
+            binding.update(deadline=args['execution_deadline'],total_deadline=args['deadline'])
             with patch.object(watchdog.os,'getpid',return_value=222),patch.object(watchdog.os,'getppid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)),patch.object(watchdog,'worker_reservation',return_value=('alive',(200,2))):
                 wrong=dict(binding);wrong['run_nonce']='d'*64
                 with self.assertRaisesRegex(ValueError,'binding'):rejected.consume_pre_fork(**wrong)
@@ -477,6 +505,10 @@ class WatchdogTest(unittest.TestCase):
                 capability.consume_pre_fork(**binding)
                 with self.assertRaisesRegex(RuntimeError,'already consumed'):capability.consume_pre_fork(**binding)
                 child=copy.deepcopy(capability)
+                expired_execution=copy.deepcopy(capability)
+                with patch.object(watchdog.time,'monotonic',return_value=args['execution_deadline']):
+                    with self.assertRaisesRegex(RuntimeError,'execution deadline expired'):
+                        expired_execution.check_worker_fork()
                 bad_release=copy.deepcopy(capability)
                 tampered=copy.deepcopy(capability)
                 stale_worker=copy.deepcopy(capability)
@@ -510,12 +542,13 @@ class WatchdogTest(unittest.TestCase):
             (root/'run_nonce').write_text(nonce)
             inventory={'__init__.py':'a'*64}
             inventory_raw=json.dumps(inventory,sort_keys=True,separators=(',',':')).encode('ascii')
-            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,
+            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,'budgets':{'cleanup_reserve_seconds':28,'wall_seconds':900},
                    'census_provider':{'package':str(package),'inventory':inventory,'inventory_sha256':hashlib.sha256(inventory_raw).hexdigest()}}
             path=root/'manifest.json';path.write_text(json.dumps(value));digest=hashlib.sha256(path.read_bytes()).hexdigest()
             args={'manifest_path':path,'approved_sha':digest,'dso_sha256':'c'*64,'run_nonce':nonce,
                   'supervisor_pid':111,'supervisor_start':(100,1),'output_dir':root,'package':package,
                   'inventory':inventory,'deadline':time.monotonic()+60}
+            args['execution_deadline']=args['deadline']-28
             with patch.object(watchdog.os,'getpid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)):
                 capability=watchdog.issue_real_capability(**args)
             events=[];fds=[];original_pipe=os.pipe
@@ -524,7 +557,7 @@ class WatchdogTest(unittest.TestCase):
             class Helper:
                 pid=444;closed=False
                 def __init__(self,*a,**kw):events.append('helper_ready')
-                def close(self):events.append('helper_close');self.closed=True
+                def close(self,*,deadline=None):events.append('helper_close');self.closed=True
             class Queue:
                 def control(self,*a,**kw):return []
                 def close(self):pass
@@ -548,7 +581,7 @@ class WatchdogTest(unittest.TestCase):
                 result=watchdog.supervise(111,(100,1),-1,-1,-1,str(root/'armed'),'fixture33_real',timeout=10,
                     mock_outdir=str(root),manifest_path=path,manifest_sha=digest,run_nonce=nonce,
                     use_native_census_helper=True,native_census_package=package,native_census_manifest=inventory,
-                    real_capability=capability)
+                    real_capability=capability,execution_deadline=args['execution_deadline'],total_deadline=args['deadline'])
             self.assertEqual(events,['helper_ready','worker_fork','helper_close'],result)
             self.assertEqual(result['status'],'INCOMPLETE');self.assertFalse(result['released'])
             self.assertIn('fake fork refusal',result['error_detail'])

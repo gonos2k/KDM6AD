@@ -98,7 +98,7 @@ class CensusHelper:
             self.group_ready=True
         except BaseException:
             self.close();raise
-    def sample(self,leader,reservation,abort_worker,whole_deadline):
+    def sample(self,leader,reservation,abort_worker,whole_deadline,*,cleanup_deadline=None):
         """Parent reservation() -> (alive|exited_reserved, (sec,usec))."""
         try:
             now=self.clock()
@@ -120,9 +120,9 @@ class CensusHelper:
         except BaseException:
             # Signal worker before waiting for a stuck helper.
             try:abort_worker()
-            finally:self.close()
+            finally:self.close(deadline=whole_deadline if cleanup_deadline is None else cleanup_deadline)
             raise
-    def close(self):
+    def close(self,*,deadline=None):
         if self.closed:return
         self.closed=True;errors=[]
         try:
@@ -138,6 +138,7 @@ class CensusHelper:
         finally:self.sock.close()
         if errors:raise HelperError('; '.join(errors)+'; helper remains unreaped')
         end=time.monotonic()+2.;reaped=False
+        if deadline is not None:end=min(end,deadline)
         while time.monotonic()<end:
             try:
                 p,_=os.waitpid(self.pid,os.WNOHANG)

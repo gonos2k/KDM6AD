@@ -83,8 +83,10 @@ def worker_reservation(pid,worker_start,deadline=None):
     if current!=worker_start:raise RuntimeError('worker start changed')
     return ('alive',current)
 
-def reapable(pid):
-    deadline=time.monotonic()+3.0
+def reapable(pid,deadline=None):
+    limit=time.monotonic()+3.0
+    if deadline is not None:limit=min(limit,deadline)
+    deadline=limit
     while time.monotonic()<deadline:
         if leader_exited(pid):return
         time.sleep(.02)
@@ -109,13 +111,23 @@ EPERM_RECHECK_INTERVAL=.05
 def cleanup(pid,record=None,members_check=None,whole_deadline=None):
     check_members=other_members if members_check is None else members_check
     errors=[]
+    def checked_time():
+        if whole_deadline is not None and time.monotonic()>=whole_deadline:raise TimeoutError('cleanup total deadline expired')
+    def members_at(limit=None):
+        bound=whole_deadline if limit is None else limit if whole_deadline is None else min(limit,whole_deadline)
+        if bound is None:return check_members(pid)
+        remaining=bound-time.monotonic()
+        if remaining<=0:raise TimeoutError('cleanup census deadline expired')
+        if members_check is None:return check_members(pid,timeout=min(10.,remaining))
+        return check_members(pid,deadline=bound)
     def reap():
+        checked_time()
         child,status=os.waitpid(pid,0)
         if record is not None:record.update(worker_reaped_pid=child,worker_wait_status=status)
     def reap_reconciled():
         try:
             reap()
-        except OSError as exc:
+        except (OSError,TimeoutError) as exc:
             errors.append('reconciled reap: '+repr(exc))
         return errors
     eperm_deadline=None
@@ -135,10 +147,7 @@ def cleanup(pid,record=None,members_check=None,whole_deadline=None):
             sample={'leader_before':None,'members':None,'leader_after':None}
             try:
                 sample['leader_before']=leader_exited(pid)
-                if members_check is None:
-                    members=check_members(pid,timeout=max(.001,remaining))
-                else:
-                    members=check_members(pid,deadline=eperm_deadline)
+                members=members_at(eperm_deadline) if whole_deadline is not None or remaining>0 else (check_members(pid,timeout=.001) if members_check is None else check_members(pid,deadline=eperm_deadline))
                 if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
                 sample['members']=members
                 sample['leader_after']=leader_exited(pid)
@@ -157,7 +166,7 @@ def cleanup(pid,record=None,members_check=None,whole_deadline=None):
     # Inspect the still-reserved group before any signal and never treat EPERM as absence.
     try:
         if leader_exited(pid):
-            members=check_members(pid)
+            members=members_at()
             if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
             if not members and leader_exited(pid):
                 reap();return []
@@ -169,6 +178,7 @@ def cleanup(pid,record=None,members_check=None,whole_deadline=None):
         if denied_but_exited_empty(e,'SIGTERM') and not errors:
             return reap_reconciled()
     deadline=time.monotonic()+.3
+    if whole_deadline is not None:deadline=min(deadline,whole_deadline)
     while time.monotonic()<deadline:
         try:
             if not alive(pid):break
@@ -185,10 +195,12 @@ def cleanup(pid,record=None,members_check=None,whole_deadline=None):
     # Keep the direct child unreaped while checking the owned group. Never probe
     # the numeric group ID after reap, when reuse could redirect the query.
     try:
-        reapable(pid)
+        if whole_deadline is None:reapable(pid)
+        else:reapable(pid,deadline=whole_deadline)
         until=time.monotonic()+2
+        if whole_deadline is not None:until=min(until,whole_deadline)
         while True:
-            members=check_members(pid)
+            members=members_at(until)
             if not isinstance(members,(list,tuple)):raise ValueError('invalid group inventory')
             if not members:break
             if time.monotonic()>=until:
@@ -198,7 +210,7 @@ def cleanup(pid,record=None,members_check=None,whole_deadline=None):
     except (OSError,subprocess.SubprocessError,ValueError,TimeoutError,RuntimeError) as e:errors.append(repr(e))
     return errors
 
-def pre_ready_cleanup(pid, record=None):
+def pre_ready_cleanup(pid, record=None, whole_deadline=None):
     """Freeze the unreaped direct child, then choose safe group or PID cleanup.
 
     A stop/exit observation uses WNOWAIT, preserving PID ownership. If group
@@ -211,6 +223,7 @@ def pre_ready_cleanup(pid, record=None):
         libc=ctypes.CDLL(None,use_errno=True)
         libc.waitid.argtypes=[ctypes.c_int,ctypes.c_uint,ctypes.c_void_p,ctypes.c_int];libc.waitid.restype=ctypes.c_int
         deadline=time.monotonic()+2.
+        if whole_deadline is not None:deadline=min(deadline,whole_deadline)
         while True:
             buf=ctypes.create_string_buffer(512)
             if libc.waitid(os.P_PID,pid,buf,os.WEXITED|os.WSTOPPED|os.WNOWAIT|os.WNOHANG):
@@ -222,12 +235,14 @@ def pre_ready_cleanup(pid, record=None):
             time.sleep(.02)
         group=os.getpgid(pid)
         if group==pid:
-            return cleanup(pid,record)
+            return cleanup(pid,record) if whole_deadline is None else cleanup(pid,record,whole_deadline=whole_deadline)
         # The stopped, unreaped child has not formed its own group. Do not
         # signal the parent's group; only the owned child PID is targeted.
         try:os.kill(pid,signal.SIGKILL)
         except ProcessLookupError:pass
-        reapable(pid)
+        if whole_deadline is None:reapable(pid)
+        else:reapable(pid,deadline=whole_deadline)
+        if whole_deadline is not None and time.monotonic()>=whole_deadline:raise TimeoutError('pre-ready cleanup total deadline expired')
         child,status=os.waitpid(pid,0)
         if record is not None:record.update(worker_reaped_pid=child,worker_wait_status=status)
         return []
@@ -264,20 +279,21 @@ def _valid_start_identity(value):
 
 class RealLaunchCapability:
     """Process-local, one-shot consistency guard; not proof of independent approval."""
-    def __init__(self,*,manifest_path,approved_sha,dso_sha256,run_nonce,supervisor_pid,supervisor_start,output_dir,package,inventory,deadline):
+    def __init__(self,*,manifest_path,approved_sha,dso_sha256,run_nonce,supervisor_pid,supervisor_start,output_dir,package,inventory,deadline,execution_deadline):
         if type(supervisor_pid) is not int or supervisor_pid<=0 or supervisor_pid!=os.getpid():raise ValueError('issuer/supervisor PID')
         if not _valid_start_identity(supervisor_start) or process_start(supervisor_pid)!=supervisor_start:raise ValueError('supervisor start identity')
         if type(run_nonce) is not str or len(run_nonce)!=64 or any(c not in '0123456789abcdef' for c in run_nonce):raise ValueError('run nonce')
         if type(dso_sha256) is not str or len(dso_sha256)!=64 or any(c not in '0123456789abcdef' for c in dso_sha256):raise ValueError('DSO SHA')
         if type(deadline) not in (int,float) or not math.isfinite(deadline) or not 0<deadline-time.monotonic()<=900:raise ValueError('capability deadline')
+        if type(execution_deadline) not in (int,float) or not math.isfinite(execution_deadline) or execution_deadline<=time.monotonic() or deadline-execution_deadline!=28:raise ValueError('capability execution/cleanup deadline')
         self.manifest_path=pathlib.Path(manifest_path)
         self.approved_sha=approved_sha;self.dso_sha256=dso_sha256;self.run_nonce=run_nonce
         self.supervisor_pid=supervisor_pid;self.supervisor_start=supervisor_start
         self.output_dir=pathlib.Path(output_dir);self.package=package;self.inventory=dict(inventory)
-        self.deadline=deadline;self.state='ISSUED';self.watchdog_pid=None;self.watchdog_start=None;self.worker_pid=None;self.worker_start=None
+        self.deadline=deadline;self.execution_deadline=execution_deadline;self.state='ISSUED';self.watchdog_pid=None;self.watchdog_start=None;self.worker_pid=None;self.worker_start=None
         self._verify_pins()
     def _verify_pins(self):
-        if time.monotonic()>=self.deadline:raise RuntimeError('capability expired')
+        if time.monotonic()>=self.execution_deadline:raise RuntimeError('capability execution deadline expired')
         if not self.output_dir.is_absolute() or self.output_dir.is_symlink() or self.output_dir.resolve(strict=True)!=self.output_dir or not self.output_dir.is_dir():raise ValueError('capability output directory')
         nonce_file=self.output_dir/'run_nonce'
         if nonce_file.is_symlink() or not nonce_file.is_file() or nonce_file.stat().st_size!=64 or nonce_file.read_text()!=self.run_nonce:raise ValueError('nonce file binding')
@@ -286,12 +302,16 @@ class RealLaunchCapability:
         if hashlib.sha256(raw).hexdigest()!=self.approved_sha:raise ValueError('private manifest changed')
         doc=json.loads(raw)
         if doc.get('dso_sha256')!=self.dso_sha256:raise ValueError('manifest DSO binding')
-    def consume_pre_fork(self,*,supervisor_pid,supervisor_start,manifest_path,approved_sha,run_nonce,output_dir,package,inventory,deadline):
+        budgets=doc.get('budgets')
+        if type(budgets) is not dict or type(budgets.get('cleanup_reserve_seconds')) is not int or budgets['cleanup_reserve_seconds']!=28:raise ValueError('manifest cleanup reserve')
+        wall=budgets.get('wall_seconds')
+        if type(wall) not in (int,float) or not math.isfinite(wall) or not 28<wall<=900 or self.deadline-time.monotonic()>wall:raise ValueError('manifest wall budget')
+    def consume_pre_fork(self,*,supervisor_pid,supervisor_start,manifest_path,approved_sha,run_nonce,output_dir,package,inventory,deadline,total_deadline):
         if self.state!='ISSUED':raise RuntimeError('capability already consumed')
         self.state='PRE_FORK_REJECTED'
         if os.getppid()!=self.supervisor_pid or os.getpid()==self.supervisor_pid:raise RuntimeError('watchdog parent identity')
         if (supervisor_pid,supervisor_start,pathlib.Path(manifest_path),approved_sha,run_nonce,pathlib.Path(output_dir),package,inventory)!=(self.supervisor_pid,self.supervisor_start,self.manifest_path,self.approved_sha,self.run_nonce,self.output_dir,self.package,self.inventory):raise ValueError('capability binding')
-        if type(deadline) not in (int,float) or not math.isfinite(deadline) or deadline>self.deadline or deadline<=time.monotonic():raise ValueError('watchdog deadline binding')
+        if type(deadline) not in (int,float) or not math.isfinite(deadline) or deadline!=self.execution_deadline or total_deadline!=self.deadline or deadline<=time.monotonic():raise ValueError('watchdog deadline binding')
         self._verify_pins()
         self.watchdog_pid=os.getpid();self.watchdog_start=process_start(self.watchdog_pid);self.state='PRE_FORK_CONSUMED'
     def check_worker_fork(self):
@@ -309,7 +329,7 @@ class RealLaunchCapability:
         self.state='ARM_REJECTED'
         if process_start(self.watchdog_pid)!=self.watchdog_start:raise RuntimeError('watchdog identity changed')
         if type(worker_pid) is not int or worker_pid<=0 or worker_pid in (self.watchdog_pid,self.supervisor_pid) or not _valid_start_identity(worker_start):raise ValueError('worker identity')
-        if worker_reservation(worker_pid,worker_start,self.deadline)!=('alive',worker_start):raise RuntimeError('worker reservation changed')
+        if worker_reservation(worker_pid,worker_start,self.execution_deadline)!=('alive',worker_start):raise RuntimeError('worker reservation changed')
         self._verify_pins();self.worker_pid=worker_pid;self.worker_start=worker_start;self.state='ARMED'
     def consume_release(self,worker_pid,worker_start):
         if self.state!='ARMED' or self.watchdog_pid!=os.getpid():raise RuntimeError('capability release state')
@@ -416,7 +436,7 @@ def child(worker_ready,release,scenario,mock_outdir=None):
         os._exit(0)
     while True:time.sleep(1)
 
-def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None,real_capability=None):
+def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None,real_capability=None,execution_deadline=None,total_deadline=None):
     if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real','fast_exit'):raise ValueError('fake scenarios only')
     if scenario=='fixture33_real' and use_fake_census_helper:raise ValueError('real path requires native census helper')
     if use_fake_census_helper and use_native_census_helper:raise ValueError('conflicting helper modes')
@@ -428,8 +448,15 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
     if not 0<fake_ready_timeout<=15 or (fake_post_release_timeout is not None and not 0<fake_post_release_timeout<=2):raise ValueError('invalid fake timing')
     if scenario in ('fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real') and not mock_outdir:raise ValueError('fake output directory required')
     if type(timeout) not in (int,float) or not math.isfinite(timeout) or timeout<=0:raise ValueError('invalid watchdog timeout')
-    started=time.monotonic();deadline=started+timeout
-    if scenario=='fixture33_real':deadline=min(deadline,real_capability.deadline)
+    started=time.monotonic();deadline=started+timeout;cleanup_deadline=None
+    if scenario=='fixture33_real':
+        if (type(execution_deadline) not in (int,float) or type(total_deadline) not in (int,float)
+            or not math.isfinite(execution_deadline) or not math.isfinite(total_deadline)
+            or execution_deadline!=real_capability.execution_deadline or total_deadline!=real_capability.deadline
+            or execution_deadline<=started or total_deadline-execution_deadline!=28):raise ValueError('real execution/cleanup deadline binding')
+        deadline=execution_deadline;cleanup_deadline=total_deadline
+    elif execution_deadline is not None or total_deadline is not None:raise ValueError('real deadlines on fake path')
+    reservation_deadline=[deadline]
     _CANCEL.clear()
     for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,_cancel)
     kq=select.kqueue();pid=None;group_ready=False;trace=None;helper=None;ar=aw=gr=gw=None;result={'status':'INCOMPLETE','scope':'fake only; no KDM, DSO or execution witness','reason':None,'worker_pid':None,'cleanup_errors':[],'released':False,'signals':[],'fake_33_call_inventory':fake_plan(),'peak_group_rss_kib':0}
@@ -439,7 +466,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             import freeze33,fixture33
             freeze33.validate_frozen(manifest_path,manifest_sha)
             validate_real_census_config(manifest_path,manifest_sha,native_census_package,native_census_manifest)
-            real_capability.consume_pre_fork(supervisor_pid=supervisor_pid,supervisor_start=tuple(supervisor_start),manifest_path=manifest_path,approved_sha=manifest_sha,run_nonce=run_nonce,output_dir=mock_outdir,package=native_census_package,inventory=native_census_manifest,deadline=deadline)
+            real_capability.consume_pre_fork(supervisor_pid=supervisor_pid,supervisor_start=tuple(supervisor_start),manifest_path=manifest_path,approved_sha=manifest_sha,run_nonce=run_nonce,output_dir=mock_outdir,package=native_census_package,inventory=native_census_manifest,deadline=deadline,total_deadline=cleanup_deadline)
             result.update(scope='synthetic research execution path; provider and provenance unverified until independent witness',manifest_sha256=manifest_sha,run_nonce=run_nonce,supervisor_pid=supervisor_pid,supervisor_start=list(supervisor_start),watchdog_pid=os.getpid(),watchdog_start=list(real_capability.watchdog_start),dyld_trace_enabled=True,actual_33_call_inventory=fixture33.plan())
         if process_start(supervisor_pid)!=tuple(supervisor_start):raise RuntimeError("stale supervisor identity")
         # Register before forking; disappearance/ESRCH fails closed.
@@ -503,7 +530,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         worker_start=process_start(pid)
         if scenario=='fixture33_real':result['worker_start']=list(worker_start)
         def reservation():
-            return worker_reservation(pid,worker_start,deadline)
+            return worker_reservation(pid,worker_start,reservation_deadline[0])
         def abort_worker():
             errors=[]
             for sig in (signal.SIGTERM,signal.SIGKILL):
@@ -526,7 +553,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         def take_rss_sample():
             def measure():
                 if helper is not None:
-                    sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,deadline)
+                    sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,deadline) if cleanup_deadline is None else helper.sample(pid,reservation,abort_worker,deadline,cleanup_deadline=cleanup_deadline)
                     result['census_latencies_seconds'].append(time.monotonic()-sample_start)
                     result['rss_policy']='SAMPLED_STOP_THRESHOLD'
                     return (sample['rss_bytes']+1023)//1024
@@ -586,6 +613,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         if result['reason'] is None:result['reason']='cancelled' if _CANCEL else ('timeout' if time.monotonic()>=deadline else 'error:'+repr(exc))
         result['error_detail']=repr(exc)
     finally:
+        if cleanup_deadline is not None:reservation_deadline[0]=cleanup_deadline
         if pid is not None and group_ready:
             def helper_members(_pid,deadline=None):
                 if helper is None or helper.closed:raise RuntimeError('census helper unavailable')
@@ -596,14 +624,14 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 if delay:time.sleep(delay)
                 sample_deadline=time.monotonic()+2.
                 if deadline is not None:sample_deadline=min(sample_deadline,deadline)
-                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,sample_deadline)
+                sample_start=time.monotonic();sample=helper.sample(pid,reservation,abort_worker,sample_deadline) if cleanup_deadline is None else helper.sample(pid,reservation,abort_worker,sample_deadline,cleanup_deadline=cleanup_deadline)
                 result['census_latencies_seconds'].append(time.monotonic()-sample_start)
                 return [member for member in sample['members'] if member!=pid]
-            result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None,whole_deadline=deadline)
+            result['cleanup_errors']=cleanup(pid,result,helper_members if helper is not None else None,whole_deadline=cleanup_deadline)
         elif pid is not None:
-            result['cleanup_errors']=pre_ready_cleanup(pid,result)
+            result['cleanup_errors']=pre_ready_cleanup(pid,result) if cleanup_deadline is None else pre_ready_cleanup(pid,result,whole_deadline=cleanup_deadline)
         if helper is not None:
-            try:helper.close()
+            try:helper.close() if cleanup_deadline is None else helper.close(deadline=cleanup_deadline)
             except BaseException as exc:result['cleanup_errors'].append('helper:'+repr(exc))
         for fd in (ar,aw,gr,gw,ready_fd):
             if fd is not None:

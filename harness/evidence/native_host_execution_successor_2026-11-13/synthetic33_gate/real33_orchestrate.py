@@ -5,6 +5,7 @@ import freeze33, witness33
 import fixture33
 import replay33_assets
 import selector_manifest_spec_v1 as selectors
+from real33_supervisor_draft import CLEANUP_RESERVE_SECONDS, deadline_bounds
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "fake_watchdog"))
 import watchdog
@@ -53,7 +54,9 @@ def reviewed_configuration(manifest_path, approved_sha):
     if (
         type(policy.get("wall_seconds")) not in (int, float)
         or not math.isfinite(policy["wall_seconds"])
-        or not 0 < policy["wall_seconds"] <= 900
+        or not CLEANUP_RESERVE_SECONDS < policy["wall_seconds"] <= 900
+        or type(policy.get("cleanup_reserve_seconds")) is not int
+        or policy["cleanup_reserve_seconds"] != CLEANUP_RESERVE_SECONDS
         or type(policy.get("rss_bytes")) is not int
         or not 0 < policy["rss_bytes"] <= 4 * 1024**3
         or policy["rss_bytes"] % 1024
@@ -122,6 +125,21 @@ def validate_consumed_marker(path, armed, result):
         if not valid or type(armed.get(key)) is not type(value) or type(result.get(key)) is not type(value) or armed[key]!=value or result[key]!=value or (key.endswith('_start') and any(type(x) is not int for row in (armed[key],result[key]) for x in row)):raise RuntimeError('consumed marker identity mismatch')
     return hashlib.sha256(raw).hexdigest()
 
+
+def wait_for_watchdog(pid,total_deadline,*,clock=None,waitpid=None,sleep=None):
+    """Bound parent wait by the original wall deadline, without assuming cleanup."""
+    clock=time.monotonic if clock is None else clock
+    waitpid=os.waitpid if waitpid is None else waitpid
+    sleep=time.sleep if sleep is None else sleep
+    while clock()<total_deadline:
+        try:
+            done,_=waitpid(pid,os.WNOHANG)
+            if done:return True
+        except ChildProcessError:return True
+        remaining=total_deadline-clock()
+        if remaining>0:sleep(min(.02,remaining))
+    return False
+
 def run(outdir, manifest_path, approved_sha):
     if not REAL33_RELEASE_ENABLED:
         raise RuntimeError("real33 execution disabled pending Red review")
@@ -140,7 +158,9 @@ def run(outdir, manifest_path, approved_sha):
     # A nonce alone is not an execution or completion receipt; preflight failure
     # leaves no ARMED or completion witness.
     configuration = reviewed_configuration(manifest_path, approved_sha)
-    deadline = started + configuration["policy"]["wall_seconds"]
+    bounds = deadline_bounds(started, configuration["policy"]["wall_seconds"], configuration["policy"]["cleanup_reserve_seconds"])
+    deadline = bounds["execution_deadline"]
+    total_deadline = bounds["total_deadline"]
     if time.monotonic() >= deadline:
         raise RuntimeError("preflight wall limit")
     supervisor = os.getpid()
@@ -149,7 +169,8 @@ def run(outdir, manifest_path, approved_sha):
         manifest_path=manifest_path, approved_sha=approved_sha,
         dso_sha256=configuration["dso_sha256"], run_nonce=nonce,
         supervisor_pid=supervisor, supervisor_start=identity, output_dir=out,
-        package=configuration["package"], inventory=configuration["inventory"], deadline=deadline,
+        package=configuration["package"], inventory=configuration["inventory"], deadline=total_deadline,
+        execution_deadline=deadline,
     )
     opened = []
     old_handlers = {}
@@ -187,6 +208,8 @@ def run(outdir, manifest_path, approved_sha):
                 str(out / "armed.json"),
                 "fixture33_real",
                 timeout=max(0, deadline - time.monotonic()),
+                execution_deadline=deadline,
+                total_deadline=total_deadline,
                 max_rss_kib=configuration["policy"]["rss_bytes"] // 1024,
                 mock_outdir=str(out),
                 manifest_path=manifest_path,
@@ -300,18 +323,7 @@ def run(outdir, manifest_path, approved_sha):
             os.close(life_w)
         except OSError:
             pass
-        until = time.monotonic() + 28
-        reaped = False
-        while time.monotonic() < until:
-            try:
-                done, _ = os.waitpid(pid, os.WNOHANG)
-                if done:
-                    reaped = True
-                    break
-            except ChildProcessError:
-                reaped = True
-                break
-            time.sleep(0.02)
+        reaped = wait_for_watchdog(pid,total_deadline)
         if not reaped:
             try:
                 watchdog.atomic(

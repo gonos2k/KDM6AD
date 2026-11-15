@@ -252,9 +252,18 @@ def replay(directory):
                             else "STABLE"
                         )
                     )
+                    fd_ad_agreement = (
+                        "UNAVAILABLE"
+                        if not center_available
+                        or resolution != "RESOLVED"
+                        or jvp is None
+                        or connectivity != "CONNECTED"
+                        or gd["graph_flag"] != 1
+                        else ("CONSISTENT" if near(fd, jvp) else "MISMATCH")
+                    )
                     status = (
                         "NUMERIC_MISMATCH"
-                        if duality == "MISMATCH"
+                        if duality == "MISMATCH" or fd_ad_agreement == "MISMATCH"
                         else (
                             "BRANCH_CROSSING"
                             if branch == "CROSS"
@@ -284,6 +293,8 @@ def replay(directory):
                             else None,
                             "output_ulp_signal": ulp_signal,
                             "resolution": resolution,
+                            "ad_duality": duality,
+                            "fd_ad_agreement": fd_ad_agreement,
                             "recorded_branch_schedule": branch,
                             "status": status,
                         }
@@ -310,6 +321,29 @@ def replay(directory):
                     )
                 else:
                     pair_status = "UNRESOLVED"
+                pair_fd_agreement = (
+                    "MISMATCH"
+                    if any(row["fd_ad_agreement"] == "MISMATCH" for row in rows)
+                    else "CONSISTENT"
+                    if all(row["fd_ad_agreement"] == "CONSISTENT" for row in rows)
+                    else "UNAVAILABLE"
+                )
+                pair_resolution = (
+                    "RESOLVED"
+                    if all(row["resolution"] == "RESOLVED" for row in rows)
+                    else "UNAVAILABLE"
+                    if any(row["resolution"] == "UNAVAILABLE" for row in rows)
+                    else "UNRESOLVED"
+                )
+                pair_branch = (
+                    "CROSS"
+                    if any(row["recorded_branch_schedule"] == "CROSS" for row in rows)
+                    else "INCOMPLETE"
+                    if any(
+                        row["recorded_branch_schedule"] == "INCOMPLETE" for row in rows
+                    )
+                    else "STABLE"
+                )
                 results.append(
                     {
                         "fixture": case,
@@ -318,6 +352,9 @@ def replay(directory):
                         "jvp": jvp,
                         "vjp_dot": dot,
                         "duality": duality,
+                        "fd_resolution": pair_resolution,
+                        "fd_ad_agreement": pair_fd_agreement,
+                        "recorded_branch_schedule": pair_branch,
                         "selector_status": "SPEC_ONLY"
                         if center_available
                         and graph_available

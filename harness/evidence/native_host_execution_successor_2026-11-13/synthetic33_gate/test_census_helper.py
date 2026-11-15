@@ -8,6 +8,19 @@ def denied(request,deadline):raise PermissionError('fake denied')
 def stalled(request,deadline):time.sleep(20)
 def churn(request,deadline):return {'request':{**request,'nonce':'wrong'},'policy':'SAMPLED_STOP_THRESHOLD','members':[request['leader_pid']],'rss_bytes':1}
 class HelperTests(unittest.TestCase):
+    def test_expired_cleanup_deadline_signals_but_does_not_claim_reap(self):
+        from unittest.mock import MagicMock
+        h=CensusHelper.__new__(CensusHelper)
+        h.closed=False;h.group_ready=True;h.pid=123;h.sock=MagicMock()
+        with patch('census_helper.time.monotonic',return_value=11), \
+             patch('census_helper.os.killpg') as kill, \
+             patch('census_helper.os.waitpid') as wait:
+            with self.assertRaisesRegex(HelperError,'helper not reaped'):
+                h.close(deadline=10)
+        kill.assert_called_once_with(123,signal.SIGKILL)
+        wait.assert_not_called()
+        h.sock.close.assert_called_once_with()
+
     def test_success_and_rate_limit(self):
         h=CensusHelper(sample);aborts=[]
         try:
@@ -17,11 +30,13 @@ class HelperTests(unittest.TestCase):
             self.assertEqual(aborts,['worker'])
         finally:h.close()
     def test_stall_aborts_worker_before_reap(self):
-        h=CensusHelper(stalled);events=[];old=h.close
-        def close():events.append('helper');old()
+        h=CensusHelper(stalled);events=[];deadlines=[];old=h.close
+        def close(*,deadline=None):events.append('helper');deadlines.append(deadline);old(deadline=deadline)
         h.close=close
-        with self.assertRaisesRegex(HelperError,'timeout'):h.sample(101,lambda:('alive',(1000,123456)),lambda:events.append('worker'),time.monotonic()+4)
+        execution_deadline=time.monotonic()+4;cleanup_deadline=execution_deadline+28
+        with self.assertRaisesRegex(HelperError,'timeout'):h.sample(101,lambda:('alive',(1000,123456)),lambda:events.append('worker'),execution_deadline,cleanup_deadline=cleanup_deadline)
         self.assertEqual(events,['worker','helper'])
+        self.assertEqual(deadlines,[cleanup_deadline])
     def test_denied_churn_and_changed_parent_reservation(self):
         for fn in (denied,churn):
             with self.subTest(fn=fn.__name__):

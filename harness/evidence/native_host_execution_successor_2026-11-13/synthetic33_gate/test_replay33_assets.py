@@ -73,6 +73,55 @@ class Replay33Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "gradient"):
             replay.replay(self.path)
 
+    def test_zero_ad_does_not_hide_resolved_fd_mismatch(self):
+        name = next(
+            iter(
+                json.loads((self.path / "call_03.json").read_text())["result"][
+                    "selectors"
+                ]
+            )
+        )
+
+        def zero_nc(data):
+            entry = data["result"]["selectors"][name]
+            entry["grad_words"][8 * 39 + 23] = "0000000000000000"
+            entry["jvps"][0] = entry["dots"][0] = 0.0
+
+        self.mutate(3, zero_nc)
+        result = replay.replay(self.path)
+        row = next(
+            row
+            for row in result["rows"]
+            if row["fixture"] == "baseline"
+            and row["selector"] == name
+            and row["direction"] == "nc"
+        )
+        self.assertEqual(result["status"], "INCONCLUSIVE")
+        self.assertEqual(
+            (
+                row["duality"],
+                row["fd_resolution"],
+                row["fd_ad_agreement"],
+                row["recorded_branch_schedule"],
+                row["two_step_stability"],
+                row["pair_status"],
+            ),
+            (
+                "CONSISTENT",
+                "RESOLVED",
+                "MISMATCH",
+                "STABLE",
+                "STABLE",
+                "NUMERIC_MISMATCH",
+            ),
+        )
+        self.assertTrue(
+            all(
+                abs(step["fd"] - 0.01) < 1e-6 and step["fd_ad_agreement"] == "MISMATCH"
+                for step in row["steps"]
+            )
+        )
+
     def test_rehashed_stored_dot_mutation_fails(self):
         def dot(data):
             selector = next(iter(data["result"]["selectors"].values()))

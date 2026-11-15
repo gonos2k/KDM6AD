@@ -77,3 +77,13 @@ publication is refused; the postcheck may only write a
 `CANDIDATE_UNVERIFIED` file pending an independently observed parent witness.
 Local fake tests and an A7 build do not prove that the actual ABI, three
 selectors, derivatives, or complete branch schedule work in the DSO.
+
+The proposed real-mode manifest now specifies a 28-second cleanup reserve
+inside the 900-second whole wall budget. At that limit execution and postcheck
+end by 872 seconds, while group cleanup and reaping retain the remaining time;
+uncertain or unfinished cleanup remains `INCOMPLETE`. The offline replay
+reports FD–AD agreement separately from JVP–VJP duality and FD resolution, so
+a stable, resolved FD can disagree with a zero AD signal without changing the
+overall `INCONCLUSIVE` status. A pinned psutil provider was sampled with a
+non-model direct child, including live and reserved-exited states. These fake
+and no-model checks do not authorize real A7 execution.

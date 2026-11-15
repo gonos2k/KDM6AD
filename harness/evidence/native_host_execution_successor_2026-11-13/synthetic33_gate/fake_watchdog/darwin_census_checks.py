@@ -1,6 +1,7 @@
 """Explicit Darwin census checks, using injected process providers only."""
 
 import importlib.util
+import ctypes
 import os
 import py_compile
 import struct
@@ -8,7 +9,7 @@ import sys
 import time
 import hashlib
 import tempfile
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import unittest
 from types import SimpleNamespace
 from pathlib import Path
@@ -187,6 +188,25 @@ class CensusChecks(unittest.TestCase):
                     census_helper.CensusHelper(sampler, startup_timeout=.5, helper_kind='native')
         finally:
             sys.path.pop(0)
+
+    def test_parent_reservation_rechecks_wnowait_after_lookup_race(self):
+        def fake_wait(states):
+            values=iter(states)
+            def waitid(kind,pid,buf,options):
+                self.assertTrue(options & os.WNOWAIT)
+                ctypes.c_int.from_buffer(buf,12).value=next(values)
+                return 0
+            return SimpleNamespace(waitid=MagicMock(side_effect=waitid))
+        with patch.object(m.ctypes,'CDLL',return_value=fake_wait([0,0,100])),patch.object(m.time,'sleep'):
+            result=m.parent_reservation(100,10,lambda pid: (_ for _ in ()).throw(ProcessLookupError('gone')))
+            self.assertEqual(result,'exited_reserved')
+        with patch.object(m.ctypes,'CDLL',return_value=fake_wait([0,0])):
+            with self.assertRaises(ProcessLookupError):
+                m.parent_reservation(100,10,lambda pid: (_ for _ in ()).throw(ProcessLookupError('denied')),deadline=0)
+        bad=SimpleNamespace(waitid=MagicMock(side_effect=[0,-1]))
+        with patch.object(m.ctypes,'CDLL',return_value=bad):
+            with self.assertRaisesRegex(m.CensusError,'waitid failed'):
+                m.parent_reservation(100,10,lambda pid: (_ for _ in ()).throw(ProcessLookupError('gone')))
 
     def test_package_inventory_precheck(self):
         with tempfile.TemporaryDirectory() as tmp:

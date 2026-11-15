@@ -4,18 +4,26 @@ No DSO load/model call is permitted from this module. The eventual supervisor
 must use watchdog.py's direct-parent unreaped leader and group cleanup, and an
 independent witness must audit actual loaded images and the entire journal.
 """
-import os,pathlib
+import math,os,pathlib
 import fixture33
 import selector_manifest_spec_v1 as selectors
 from real33_contract import preflight
 EXECUTION_ENABLED=False
+CLEANUP_RESERVE_SECONDS=28
+
+def deadline_bounds(started,wall_seconds,reserve_seconds):
+    """Reserve full cleanup time within the externally pinned whole wall."""
+    if type(started) not in (int,float) or not math.isfinite(started) or type(wall_seconds) not in (int,float) or not math.isfinite(wall_seconds) or type(reserve_seconds) is not int or reserve_seconds!=CLEANUP_RESERVE_SECONDS or not reserve_seconds<wall_seconds<=900:raise ValueError('invalid wall/cleanup budget')
+    total=started+wall_seconds
+    return {'execution_deadline':total-reserve_seconds,'total_deadline':total}
+
 
 def prepare(outdir):
     contract=preflight();rows=fixture33.plan();target=pathlib.Path(outdir).resolve(strict=True)
     if len(rows)!=33 or any(x['state']!='UNSTARTED' for x in rows):raise RuntimeError('invalid fixed inventory')
     queries=selectors.query_budget(rows)
     if not fixture33.same_plan_exact(contract.get('calls')):raise RuntimeError('preflight plan mismatch')
-    return {'status':'DRAFT_BLOCKED','scope':'synthetic; watchdog survival and no setsid escape assumed','output_dir':str(target),'contract':contract,'calls':rows,'limits':{'wall_seconds':900,'rss_bytes':4*1024**3,'forwards':33,'graph_primal':queries['total']['graph_primal'],'jvp':queries['total']['jvp'],'vjp':queries['total']['vjp'],'query_per_fixture':queries['per_fixture'],'serialized_total_bytes':4*1024**3,'serialized_call_bytes':128*1024**2}}
+    return {'status':'DRAFT_BLOCKED','scope':'synthetic; watchdog survival and no setsid escape assumed','output_dir':str(target),'contract':contract,'calls':rows,'limits':{'wall_seconds':900,'cleanup_reserve_seconds':CLEANUP_RESERVE_SECONDS,'rss_bytes':4*1024**3,'forwards':33,'graph_primal':queries['total']['graph_primal'],'jvp':queries['total']['jvp'],'vjp':queries['total']['vjp'],'query_per_fixture':queries['per_fixture'],'serialized_total_bytes':4*1024**3,'serialized_call_bytes':128*1024**2}}
 
 def child_after_fork(ready_fd,release_fd,outdir,capability=None):
     # Real code is intentionally unreachable until a separate reviewed change.
