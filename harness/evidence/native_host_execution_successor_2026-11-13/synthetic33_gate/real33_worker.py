@@ -2,7 +2,7 @@
 import hashlib,json,math,os,pathlib
 import fixture33 as f
 from fixture_plan import FIELDS,K,CENTER,perturb,raw_words
-from graph_runner import Runner,as_double,near
+from graph_runner import Runner,as_double,near,issue_authority
 from real33_contract import preflight
 import selector_manifest_spec_v1 as selectors
 from selector_manifest_spec_v1 import SELECTORS
@@ -21,12 +21,18 @@ def append(path,event):
         stream.write(json.dumps(event,sort_keys=True,separators=(',',':'),allow_nan=False)+'\n');stream.flush();os.fsync(stream.fileno())
 
 def run(release_fd,outdir):
-    if getattr(Runner,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real worker is hard-disabled')
+    fake=getattr(Runner,'FAKE_ONLY_NO_CDLL',False) is True
+    if not fake:
+        from real33_orchestrate import REAL33_RELEASE_ENABLED
+        if not REAL33_RELEASE_ENABLED or release_fd<0:raise RuntimeError('real worker is hard-disabled')
     outdir=pathlib.Path(outdir).resolve(strict=True)
-    if os.read(release_fd,1)!=b'G':raise RuntimeError('watchdog release required')
-    os.close(release_fd)
+    if fake:
+        if os.read(release_fd,1)!=b'G':raise RuntimeError('watchdog release required')
+        os.close(release_fd);contract=preflight();r=Runner(contract['dso_path'])
+    else:
+        authority=issue_authority(release_fd,outdir);contract=authority.contract;r=Runner(authority)
     # This is the first point after release at which the DSO may be loaded.
-    contract=preflight();plan=f.plan();selectors.query_budget(plan);r=Runner(contract['dso_path']);journal=outdir/'calls.jsonl';total=0;results=[];seq=0
+    plan=f.plan();selectors.query_budget(plan);journal=outdir/'calls.jsonl';total=0;results=[];seq=0
     def invoke(case,mode,x,v,selected=None):
         nonlocal seq,total
         if seq>=len(plan):raise RuntimeError('forward budget exhausted')

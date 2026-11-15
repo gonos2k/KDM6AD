@@ -131,52 +131,64 @@ def replay(directory):
         )
         for selector in SELECTORS:
             center, gd = on["selectors"][selector], graph["selectors"][selector]
-            need(
-                center["status"] == gd["status"] == "SPEC_ONLY"
-                and center["primal"] == gd["primal"],
-                "selector primal parity",
-            )
-            words = gd["grad_words"]
-            need(
-                len(words) == 624
-                and all(isinstance(x, str) and len(x) == 16 for x in words),
-                "gradient inventory",
-            )
-            gradient = [struct.unpack("=d", bytes.fromhex(x))[0] for x in words]
-            need(all(math.isfinite(x) for x in gradient), "gradient finite")
+            center_available = center["status"] == "SPEC_ONLY"
+            graph_available = gd["status"] == "SPEC_ONLY"
+            if center_available and graph_available:
+                need(center["primal"] == gd["primal"], "selector primal parity")
+            gradient = None
+            if graph_available:
+                words = gd["grad_words"]
+                need(
+                    len(words) == 624
+                    and all(isinstance(x, str) and len(x) == 16 for x in words),
+                    "gradient inventory",
+                )
+                gradient = [struct.unpack("=d", bytes.fromhex(x))[0] for x in words]
+                need(all(math.isfinite(x) for x in gradient), "gradient finite")
             for direction_index, direction in enumerate(fixtures.DIRECTIONS):
                 seed = fixtures.direction(direction)
-                dot = sum(g * v for g, v in zip(gradient, seed))
-                jvp, stored_dot = (
-                    gd["jvps"][direction_index],
-                    gd["dots"][direction_index],
-                )
-                need(
-                    finite(dot) and finite(jvp) and finite(stored_dot),
-                    "gradient result finite",
-                )
-                need(
-                    near(dot, stored_dot, 1e-12, 1e-14),
-                    "stored dot differs from gradient",
-                )
-                need(gd["abi_jvp_statuses"][direction_index] in (0, 1, 2), "ABI status")
-                abi_status = gd["abi_jvp_statuses"][direction_index]
-                mask = gd["mask"]
-                need(type(mask) is int and 0 <= mask < (1 << 16), "gradient mask")
-                bit = 1 << FIELDS.index(direction)
-                connectivity = (
-                    "NO_GRAPH_PATH"
-                    if abi_status == 1
-                    else (
-                        "CONNECTED"
-                        if abi_status == 0 and (mask & bit)
-                        else "UNCONNECTED"
+                jvp = dot = None
+                connectivity = "UNAVAILABLE"
+                duality = "UNAVAILABLE"
+                if graph_available:
+                    dot = sum(g * v for g, v in zip(gradient, seed))
+                    jvp, stored_dot = (
+                        gd["jvps"][direction_index],
+                        gd["dots"][direction_index],
                     )
-                )
-                need(
-                    gd["direction_connectivity"][direction_index] == connectivity,
-                    "connectivity",
-                )
+                    need(
+                        finite(dot) and finite(jvp) and finite(stored_dot),
+                        "gradient result finite",
+                    )
+                    need(
+                        near(dot, stored_dot, 1e-12, 1e-14),
+                        "stored dot differs from gradient",
+                    )
+                    abi_status = gd["abi_jvp_statuses"][direction_index]
+                    need(abi_status in (0, 1, 2), "ABI status")
+                    mask = gd["mask"]
+                    need(type(mask) is int and 0 <= mask < (1 << 16), "gradient mask")
+                    bit = 1 << FIELDS.index(direction)
+                    connectivity = (
+                        "NO_GRAPH_PATH"
+                        if abi_status == 1
+                        else (
+                            "CONNECTED"
+                            if abi_status == 0 and (mask & bit)
+                            else "UNCONNECTED"
+                        )
+                    )
+                    need(
+                        gd["direction_connectivity"][direction_index] == connectivity,
+                        "connectivity",
+                    )
+                    duality = (
+                        "UNCONNECTED"
+                        if connectivity != "CONNECTED"
+                        or gd["graph_flag"] != 1
+                        or gd["vjp_status"] != 0
+                        else ("CONSISTENT" if near(jvp, dot) else "MISMATCH")
+                    )
                 rows = []
                 for step_index, h in enumerate(fixtures.H):
                     base_index = 3 + direction_index * 4 + step_index * 2
@@ -200,16 +212,28 @@ def replay(directory):
                         lower["result"]["selectors"][selector],
                         upper["result"]["selectors"][selector],
                     )
-                    need(
-                        low_entry["status"] == high_entry["status"] == "SPEC_ONLY",
-                        "endpoint selector",
+                    endpoint_available = (
+                        low_entry["status"] == high_entry["status"] == "SPEC_ONLY"
                     )
-                    low = struct.unpack("=d", struct.pack("=Q", low_entry["primal"]))[0]
-                    high = struct.unpack("=d", struct.pack("=Q", high_entry["primal"]))[
-                        0
-                    ]
-                    fd = (high - low) / gap * seed[idx]
-                    need(math.isfinite(fd), "FD finite")
+                    fd = ulp_signal = None
+                    resolution = "UNAVAILABLE"
+                    if endpoint_available:
+                        low = struct.unpack(
+                            "=d", struct.pack("=Q", low_entry["primal"])
+                        )[0]
+                        high = struct.unpack(
+                            "=d", struct.pack("=Q", high_entry["primal"])
+                        )[0]
+                        fd = (high - low) / gap * seed[idx]
+                        need(math.isfinite(fd), "FD finite")
+                        ulp_signal = abs(high - low) / max(
+                            math.ulp(low), math.ulp(high)
+                        )
+                        resolution = (
+                            "RESOLVED"
+                            if ulp_signal >= 16 and abs(fd) >= 1e-8
+                            else "UNRESOLVED"
+                        )
                     conditions = [
                         r.get("conditions")
                         for r in (on, lower["result"], upper["result"])
@@ -228,19 +252,6 @@ def replay(directory):
                             else "STABLE"
                         )
                     )
-                    ulp_signal = abs(high - low) / max(math.ulp(low), math.ulp(high))
-                    resolution = (
-                        "RESOLVED"
-                        if ulp_signal >= 16 and abs(fd) >= 1e-8
-                        else "UNRESOLVED"
-                    )
-                    duality = (
-                        "UNCONNECTED"
-                        if connectivity != "CONNECTED"
-                        or gd["graph_flag"] != 1
-                        or gd["vjp_status"] != 0
-                        else ("CONSISTENT" if near(jvp, dot) else "MISMATCH")
-                    )
                     status = (
                         "NUMERIC_MISMATCH"
                         if duality == "MISMATCH"
@@ -250,8 +261,10 @@ def replay(directory):
                             else (
                                 "UNRESOLVED"
                                 if branch == "INCOMPLETE"
-                                or duality == "UNCONNECTED"
-                                or resolution == "UNRESOLVED"
+                                or duality in ("UNCONNECTED", "UNAVAILABLE")
+                                or not center_available
+                                or resolution in ("UNRESOLVED", "UNAVAILABLE")
+                                or jvp is None
                                 or abs(jvp) < 1e-8
                                 else (
                                     "LOCAL_NUMERIC_CONSISTENT"
@@ -266,7 +279,9 @@ def replay(directory):
                             "h": h,
                             "represented_gap": gap,
                             "fd": fd,
-                            "fd_minus_jvp": fd - jvp,
+                            "fd_minus_jvp": fd - jvp
+                            if fd is not None and jvp is not None
+                            else None,
                             "output_ulp_signal": ulp_signal,
                             "resolution": resolution,
                             "recorded_branch_schedule": branch,
@@ -302,11 +317,12 @@ def replay(directory):
                         "direction": direction,
                         "jvp": jvp,
                         "vjp_dot": dot,
-                        "duality": "UNCONNECTED"
-                        if connectivity != "CONNECTED"
-                        or gd["graph_flag"] != 1
-                        or gd["vjp_status"] != 0
-                        else ("CONSISTENT" if near(jvp, dot) else "MISMATCH"),
+                        "duality": duality,
+                        "selector_status": "SPEC_ONLY"
+                        if center_available
+                        and graph_available
+                        and all(row["resolution"] != "UNAVAILABLE" for row in rows)
+                        else "INCONCLUSIVE",
                         "connectivity": connectivity,
                         "steps": rows,
                         "two_step_stability": stability,

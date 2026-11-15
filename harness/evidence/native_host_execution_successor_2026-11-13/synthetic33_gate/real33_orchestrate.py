@@ -3,6 +3,7 @@
 import hashlib, json, math, os, pathlib, select, signal, sys, time, secrets
 import freeze33, witness33
 import fixture33
+import replay33_assets
 import selector_manifest_spec_v1 as selectors
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "fake_watchdog"))
@@ -26,6 +27,9 @@ def reviewed_configuration(manifest_path, approved_sha):
     if hashlib.sha256(raw).hexdigest() != approved_sha:
         raise ValueError("private manifest SHA changed")
     obj = json.loads(raw)
+    dso_sha256 = obj.get("dso_sha256")
+    if type(dso_sha256) is not str or len(dso_sha256) != 64 or any(c not in '0123456789abcdef' for c in dso_sha256):
+        raise ValueError("missing or invalid DSO SHA256")
     config = obj.get("census_provider")
     if type(config) is not dict or set(config) != {
         "package",
@@ -64,6 +68,7 @@ def reviewed_configuration(manifest_path, approved_sha):
         "inventory": verified["inventory"],
         "inventory_sha256": config["inventory_sha256"],
         "policy": dict(policy),
+        "dso_sha256": dso_sha256,
     }
 
 
@@ -71,6 +76,9 @@ def validate_before_publication(
     out, result, started, deadline, manifest_path, approved_sha, trace_path
 ):
     """Reject cancellation or elapsed budget after the complete postcheck."""
+    directory = pathlib.Path(out)
+    paths = [directory / 'calls.jsonl', directory / 'worker_result.json', pathlib.Path(trace_path)] + [directory / f'call_{i:02}.json' for i in range(1, len(fixture33.plan()) + 1)]
+    before = {str(path): witness33.sha(path) for path in paths}
     verified = witness33.validate_pinned(
         out, result, time.monotonic() - started, manifest_path, approved_sha, trace_path
     )
@@ -80,8 +88,39 @@ def validate_before_publication(
         or time.monotonic() >= deadline
     ):
         raise RuntimeError("cancelled or expired during postcheck")
-    return verified
+    # Snapshot exact assets around offline replay; no source/physical authenticity is
+    # implied by these hashes. Same-UID concurrent mutation remains out of scope.
+    replay = replay33_assets.replay(directory)
+    if replay.get('status') != 'INCONCLUSIVE' or replay.get('calls') != len(fixture33.plan()):
+        raise RuntimeError('invalid offline replay')
+    after = {str(path): witness33.sha(path) for path in paths}
+    if before != after:
+        raise RuntimeError('asset changed during offline replay')
+    if _CANCELLED or signal.sigpending() & {signal.SIGTERM, signal.SIGINT} or time.monotonic() >= deadline:
+        raise RuntimeError('cancelled or expired during offline replay')
+    return {**verified, 'offline_replay': replay, 'asset_sha256': before}
 
+
+
+def validate_consumed_marker(path, armed, result):
+    """Bind canonical one-shot marker to the actual watchdog and worker identities."""
+    keys=('run_nonce','manifest_sha256','worker_pid','worker_start','watchdog_pid','watchdog_start','supervisor_pid','supervisor_start')
+    marker_path=pathlib.Path(path)
+    if marker_path.is_symlink() or not marker_path.is_file():raise RuntimeError('missing or unsafe consumed marker')
+    raw=marker_path.read_bytes();marker=json.loads(raw)
+    if type(marker) is not dict or set(marker)!=set(keys)|{'schema','output_dir'} or marker.get('schema')!='kdm6.synthetic33.authority_consumed.v1':raise RuntimeError('consumed marker schema')
+    if type(marker['output_dir']) is not str or not marker_path.parent.is_absolute() or marker_path.parent.is_symlink() or str(marker_path.parent.resolve(strict=True))!=str(marker_path.parent) or marker['output_dir']!=str(marker_path.parent):raise RuntimeError('consumed marker output directory mismatch')
+    if json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')!=raw:raise RuntimeError('consumed marker canonical bytes')
+    for key in keys:
+        value=marker[key]
+        if key.endswith('_pid'):
+            valid=type(value) is int and value>0
+        elif key.endswith('_start'):
+            valid=type(value) is list and len(value)==2 and all(type(x) is int and x>=0 for x in value)
+        else:
+            valid=type(value) is str and len(value)==64 and all(c in '0123456789abcdef' for c in value)
+        if not valid or type(armed.get(key)) is not type(value) or type(result.get(key)) is not type(value) or armed[key]!=value or result[key]!=value or (key.endswith('_start') and any(type(x) is not int for row in (armed[key],result[key]) for x in row)):raise RuntimeError('consumed marker identity mismatch')
+    return hashlib.sha256(raw).hexdigest()
 
 def run(outdir, manifest_path, approved_sha):
     if not REAL33_RELEASE_ENABLED:
@@ -106,6 +145,12 @@ def run(outdir, manifest_path, approved_sha):
         raise RuntimeError("preflight wall limit")
     supervisor = os.getpid()
     identity = watchdog.process_start(supervisor)
+    launch_capability = watchdog.issue_real_capability(
+        manifest_path=manifest_path, approved_sha=approved_sha,
+        dso_sha256=configuration["dso_sha256"], run_nonce=nonce,
+        supervisor_pid=supervisor, supervisor_start=identity, output_dir=out,
+        package=configuration["package"], inventory=configuration["inventory"], deadline=deadline,
+    )
     opened = []
     old_handlers = {}
     try:
@@ -150,6 +195,7 @@ def run(outdir, manifest_path, approved_sha):
                 use_native_census_helper=True,
                 native_census_package=configuration["package"],
                 native_census_manifest=configuration["inventory"],
+                real_capability=launch_capability,
             )
             rc = 0
         except BaseException as exc:
@@ -224,11 +270,30 @@ def run(outdir, manifest_path, approved_sha):
             raise RuntimeError("missing exclusive trace")
         if witness33.sha(trace["path"]) != trace["sha256"]:
             raise RuntimeError("trace digest changed")
-        validate_before_publication(
-            out, result, started, deadline, manifest_path, approved_sha, trace["path"]
-        )
-        # Real publication is deliberately disabled; fake-only link tests exist.
-        raise RuntimeError("real witness publication disabled pending Red review")
+        armed = json.loads((out / "armed.json").read_text())
+        identity_fields = ("manifest_sha256", "run_nonce", "supervisor_pid", "supervisor_start", "watchdog_pid", "watchdog_start", "worker_pid", "worker_start")
+        if armed.get("status") != "ARMED_UNVERIFIED" or any(armed.get(k) != result.get(k) or type(armed.get(k)) is not type(result.get(k)) for k in identity_fields):
+            raise RuntimeError("armed/final identity mismatch")
+        if (result.get("supervisor_pid"), result.get("supervisor_start"), result.get("watchdog_pid"), result.get("watchdog_start")) != (supervisor, list(identity), pid, list(watchdog_start)):
+            raise RuntimeError("supervisor/watchdog identity mismatch")
+        worker_start = result.get("worker_start")
+        if type(result.get("worker_pid")) is not int or result["worker_pid"] <= 0 or type(worker_start) is not list or len(worker_start) != 2 or any(type(x) is not int or x < 0 for x in worker_start):
+            raise RuntimeError("worker start identity missing")
+        marker_path=out / "authority_consumed.json"
+        marker_sha=validate_consumed_marker(marker_path,armed,result)
+        verified = validate_before_publication(out, result, started, deadline, manifest_path, approved_sha, trace["path"])
+        receipts = {str(path): witness33.sha(path) for path in (out / "armed.json", out / "armed.json.result", marker_path)}
+        if receipts[str(marker_path)]!=marker_sha:raise RuntimeError("consumed marker changed")
+        payload = {"schema": "kdm6.synthetic33.completion_candidate.v1", "status": "CANDIDATE_UNVERIFIED", "validated_assets": verified, "manifest_sha256": approved_sha, "run_nonce": nonce, "worker_pid": result["worker_pid"], "worker_start": worker_start, "watchdog_pid": pid, "watchdog_start": list(watchdog_start), "receipt_sha256": receipts, "authority_scope": "candidate only; independent supervisor witness required"}
+        def recheck():
+            if _CANCELLED or signal.sigpending() & {signal.SIGINT, signal.SIGTERM} or time.monotonic() >= deadline:
+                raise RuntimeError("cancelled or expired before completion")
+            if reviewed_configuration(manifest_path, approved_sha) != configuration:
+                raise RuntimeError("manifest changed before completion")
+            if any(witness33.sha(path) != digest for path, digest in {**verified["asset_sha256"], **receipts}.items()):
+                raise RuntimeError("completion input changed")
+        witness33.publish_candidate(out / "completion_candidate.json", payload, deadline, recheck)
+        return payload
     finally:
         # Closing liveness asks the independent watchdog to clean up.
         try:

@@ -4,7 +4,7 @@ The watchdog is the worker leader's direct parent and never reaps that PID
 until group termination is complete. It cannot stop setsid escapes or survive
 its own SIGKILL. No completion witness or model interface is implemented.
 """
-import ctypes, errno, json, os, pathlib, select, signal, time, subprocess, hashlib, sys
+import ctypes, errno, json, math, os, pathlib, select, signal, time, subprocess, hashlib, sys
 
 ENABLE_REAL33=False
 _CANCEL=[]
@@ -258,6 +258,71 @@ def validate_real_census_config(manifest_path,manifest_sha,package,inventory):
     if hashlib.sha256(encoded).hexdigest()!=config['inventory_sha256']:raise ValueError('census inventory SHA')
     return {'package':package,'inventory':dict(inventory),'manifest_sha256':manifest_sha}
 
+def _valid_start_identity(value):
+    return type(value) is tuple and len(value)==2 and all(type(x) is int for x in value) and value[0]>0 and 0<=value[1]<1000000
+
+
+class RealLaunchCapability:
+    """Process-local, one-shot consistency guard; not proof of independent approval."""
+    def __init__(self,*,manifest_path,approved_sha,dso_sha256,run_nonce,supervisor_pid,supervisor_start,output_dir,package,inventory,deadline):
+        if type(supervisor_pid) is not int or supervisor_pid<=0 or supervisor_pid!=os.getpid():raise ValueError('issuer/supervisor PID')
+        if not _valid_start_identity(supervisor_start) or process_start(supervisor_pid)!=supervisor_start:raise ValueError('supervisor start identity')
+        if type(run_nonce) is not str or len(run_nonce)!=64 or any(c not in '0123456789abcdef' for c in run_nonce):raise ValueError('run nonce')
+        if type(dso_sha256) is not str or len(dso_sha256)!=64 or any(c not in '0123456789abcdef' for c in dso_sha256):raise ValueError('DSO SHA')
+        if type(deadline) not in (int,float) or not math.isfinite(deadline) or not 0<deadline-time.monotonic()<=900:raise ValueError('capability deadline')
+        self.manifest_path=pathlib.Path(manifest_path)
+        self.approved_sha=approved_sha;self.dso_sha256=dso_sha256;self.run_nonce=run_nonce
+        self.supervisor_pid=supervisor_pid;self.supervisor_start=supervisor_start
+        self.output_dir=pathlib.Path(output_dir);self.package=package;self.inventory=dict(inventory)
+        self.deadline=deadline;self.state='ISSUED';self.watchdog_pid=None;self.watchdog_start=None;self.worker_pid=None;self.worker_start=None
+        self._verify_pins()
+    def _verify_pins(self):
+        if time.monotonic()>=self.deadline:raise RuntimeError('capability expired')
+        if not self.output_dir.is_absolute() or self.output_dir.is_symlink() or self.output_dir.resolve(strict=True)!=self.output_dir or not self.output_dir.is_dir():raise ValueError('capability output directory')
+        nonce_file=self.output_dir/'run_nonce'
+        if nonce_file.is_symlink() or not nonce_file.is_file() or nonce_file.stat().st_size!=64 or nonce_file.read_text()!=self.run_nonce:raise ValueError('nonce file binding')
+        validate_real_census_config(self.manifest_path,self.approved_sha,self.package,self.inventory)
+        raw=self.manifest_path.read_bytes()
+        if hashlib.sha256(raw).hexdigest()!=self.approved_sha:raise ValueError('private manifest changed')
+        doc=json.loads(raw)
+        if doc.get('dso_sha256')!=self.dso_sha256:raise ValueError('manifest DSO binding')
+    def consume_pre_fork(self,*,supervisor_pid,supervisor_start,manifest_path,approved_sha,run_nonce,output_dir,package,inventory,deadline):
+        if self.state!='ISSUED':raise RuntimeError('capability already consumed')
+        self.state='PRE_FORK_REJECTED'
+        if os.getppid()!=self.supervisor_pid or os.getpid()==self.supervisor_pid:raise RuntimeError('watchdog parent identity')
+        if (supervisor_pid,supervisor_start,pathlib.Path(manifest_path),approved_sha,run_nonce,pathlib.Path(output_dir),package,inventory)!=(self.supervisor_pid,self.supervisor_start,self.manifest_path,self.approved_sha,self.run_nonce,self.output_dir,self.package,self.inventory):raise ValueError('capability binding')
+        if type(deadline) not in (int,float) or not math.isfinite(deadline) or deadline>self.deadline or deadline<=time.monotonic():raise ValueError('watchdog deadline binding')
+        self._verify_pins()
+        self.watchdog_pid=os.getpid();self.watchdog_start=process_start(self.watchdog_pid);self.state='PRE_FORK_CONSUMED'
+    def check_worker_fork(self):
+        if self.state!='PRE_FORK_CONSUMED' or self.watchdog_pid!=os.getpid():raise RuntimeError('capability fork state')
+        if process_start(self.watchdog_pid)!=self.watchdog_start:raise RuntimeError('watchdog identity changed')
+        self._verify_pins()
+    def verify_child(self,*,manifest_path,approved_sha,run_nonce,output_dir):
+        if self.state!='PRE_FORK_CONSUMED' or self.watchdog_pid!=os.getppid():raise RuntimeError('child capability identity')
+        self.state='CHILD_REJECTED'
+        if process_start(self.watchdog_pid)!=self.watchdog_start:raise RuntimeError('child watchdog identity changed')
+        if (pathlib.Path(manifest_path),approved_sha,run_nonce,pathlib.Path(output_dir))!=(self.manifest_path,self.approved_sha,self.run_nonce,self.output_dir):raise ValueError('child capability binding')
+        self._verify_pins();self.state='CHILD_CONSUMED'
+    def arm(self,worker_pid,worker_start):
+        if self.state!='PRE_FORK_CONSUMED' or self.watchdog_pid!=os.getpid():raise RuntimeError('capability arm state')
+        self.state='ARM_REJECTED'
+        if process_start(self.watchdog_pid)!=self.watchdog_start:raise RuntimeError('watchdog identity changed')
+        if type(worker_pid) is not int or worker_pid<=0 or worker_pid in (self.watchdog_pid,self.supervisor_pid) or not _valid_start_identity(worker_start):raise ValueError('worker identity')
+        if worker_reservation(worker_pid,worker_start,self.deadline)!=('alive',worker_start):raise RuntimeError('worker reservation changed')
+        self._verify_pins();self.worker_pid=worker_pid;self.worker_start=worker_start;self.state='ARMED'
+    def consume_release(self,worker_pid,worker_start):
+        if self.state!='ARMED' or self.watchdog_pid!=os.getpid():raise RuntimeError('capability release state')
+        self.state='RELEASE_REJECTED'
+        if process_start(self.watchdog_pid)!=self.watchdog_start:raise RuntimeError('watchdog identity changed')
+        if (worker_pid,worker_start)!=(self.worker_pid,self.worker_start):raise RuntimeError('capability worker identity')
+        self._verify_pins();self.state='RELEASE_CONSUMED'
+
+
+def issue_real_capability(**kwargs):
+    """Create a guard from separately approved inputs; never grants authorization."""
+    return RealLaunchCapability(**kwargs)
+
 def fake_plan():
     rows=[]
     for case in ('baseline','warm_vertical','ice_vertical'):
@@ -351,26 +416,31 @@ def child(worker_ready,release,scenario,mock_outdir=None):
         os._exit(0)
     while True:time.sleep(1)
 
-def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None):
+def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receipt_path,scenario,timeout=5,max_rss_kib=8*1024*1024,mock_outdir=None,manifest_path=None,manifest_sha=None,run_nonce=None,fake_ready_timeout=10.0,fake_post_release_timeout=None,use_fake_census_helper=False,fake_census_sampler=None,use_native_census_helper=False,native_census_package=None,native_census_manifest=None,real_capability=None):
     if scenario not in ('term_ignore_descendant','leader_exits_first','fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real','fast_exit'):raise ValueError('fake scenarios only')
     if scenario=='fixture33_real' and use_fake_census_helper:raise ValueError('real path requires native census helper')
     if use_fake_census_helper and use_native_census_helper:raise ValueError('conflicting helper modes')
     if scenario=='fixture33_real' and (fake_ready_timeout!=10.0 or fake_post_release_timeout is not None):raise ValueError('fake-only timing override')
     if scenario=='fixture33_real' and not ENABLE_REAL33:raise RuntimeError('real33 disabled pending Red review')
     if scenario=='fixture33_real' and not use_native_census_helper:raise RuntimeError('real path requires pinned native census helper')
+    if scenario=='fixture33_real' and type(real_capability) is not RealLaunchCapability:raise RuntimeError('one-shot real capability required')
+    if scenario!='fixture33_real' and real_capability is not None:raise ValueError('real capability on fake path')
     if not 0<fake_ready_timeout<=15 or (fake_post_release_timeout is not None and not 0<fake_post_release_timeout<=2):raise ValueError('invalid fake timing')
     if scenario in ('fixture33_mock','fixture33_stall','fixture33_exec_mock','fixture33_real') and not mock_outdir:raise ValueError('fake output directory required')
+    if type(timeout) not in (int,float) or not math.isfinite(timeout) or timeout<=0:raise ValueError('invalid watchdog timeout')
     started=time.monotonic();deadline=started+timeout
+    if scenario=='fixture33_real':deadline=min(deadline,real_capability.deadline)
     _CANCEL.clear()
     for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,_cancel)
-    kq=select.kqueue();pid=None;group_ready=False;trace=None;helper=None;result={'status':'INCOMPLETE','scope':'fake only; no KDM, DSO or execution witness','reason':None,'worker_pid':None,'cleanup_errors':[],'released':False,'signals':[],'fake_33_call_inventory':fake_plan(),'peak_group_rss_kib':0}
+    kq=select.kqueue();pid=None;group_ready=False;trace=None;helper=None;ar=aw=gr=gw=None;result={'status':'INCOMPLETE','scope':'fake only; no KDM, DSO or execution witness','reason':None,'worker_pid':None,'cleanup_errors':[],'released':False,'signals':[],'fake_33_call_inventory':fake_plan(),'peak_group_rss_kib':0}
     try:
         if scenario=='fixture33_real':
             sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
             import freeze33,fixture33
             freeze33.validate_frozen(manifest_path,manifest_sha)
             validate_real_census_config(manifest_path,manifest_sha,native_census_package,native_census_manifest)
-            result.update(manifest_sha256=manifest_sha,run_nonce=run_nonce,watchdog_pid=os.getpid(),dyld_trace_enabled=True,actual_33_call_inventory=fixture33.plan())
+            real_capability.consume_pre_fork(supervisor_pid=supervisor_pid,supervisor_start=tuple(supervisor_start),manifest_path=manifest_path,approved_sha=manifest_sha,run_nonce=run_nonce,output_dir=mock_outdir,package=native_census_package,inventory=native_census_manifest,deadline=deadline)
+            result.update(scope='synthetic research execution path; provider and provenance unverified until independent witness',manifest_sha256=manifest_sha,run_nonce=run_nonce,supervisor_pid=supervisor_pid,supervisor_start=list(supervisor_start),watchdog_pid=os.getpid(),watchdog_start=list(real_capability.watchdog_start),dyld_trace_enabled=True,actual_33_call_inventory=fixture33.plan())
         if process_start(supervisor_pid)!=tuple(supervisor_start):raise RuntimeError("stale supervisor identity")
         # Register before forking; disappearance/ESRCH fails closed.
         kq.control([select.kevent(supervisor_pid,filter=select.KQ_FILTER_PROC,flags=select.KQ_EV_ADD|select.KQ_EV_ENABLE|select.KQ_EV_ONESHOT,fflags=select.KQ_NOTE_EXIT),select.kevent(life_fd,filter=select.KQ_FILTER_READ,flags=select.KQ_EV_ADD|select.KQ_EV_ENABLE),select.kevent(release_fd,filter=select.KQ_FILTER_READ,flags=select.KQ_EV_ADD|select.KQ_EV_ENABLE)],0,0)
@@ -379,14 +449,35 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
             from trace33 import Trace
             trace=Trace(mock_outdir)
-        ar,aw=os.pipe();gr,gw=os.pipe();pid=os.fork()
+        if scenario=='fixture33_real':
+            # The helper must initialize and verify its pinned native provider
+            # before a real worker exists; failure cannot release a worker.
+            sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
+            from census_helper import CensusHelper,native_sampler
+            sampler=native_sampler(native_census_package,native_census_manifest)
+            remaining=deadline-time.monotonic()
+            if remaining<=0:raise RuntimeError('native helper deadline')
+            helper=CensusHelper(sampler,startup_timeout=min(10.,remaining),helper_kind='native')
+            result['census_helper_mode']='PINNED_NATIVE';result['census_helper_pid']=helper.pid;result['census_latencies_seconds']=[]
+        ar,aw=os.pipe();gr,gw=os.pipe()
+        if scenario=='fixture33_real':
+            oldmask=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGTERM,signal.SIGINT})
+            try:
+                refusal=release_refusal(supervisor_pid,supervisor_start,life_fd,deadline)
+                if refusal:raise RuntimeError('worker fork refused: '+refusal)
+                if helper is None or helper.closed or leader_exited(helper.pid):raise RuntimeError('native helper unavailable before worker fork')
+                real_capability.check_worker_fork()
+                if _CANCEL or signal.sigpending() & {signal.SIGTERM,signal.SIGINT} or time.monotonic()>=deadline:raise RuntimeError('worker fork cancelled or expired')
+                pid=os.fork()
+            finally:signal.pthread_sigmask(signal.SIG_SETMASK,oldmask)
+        else:pid=os.fork()
         if pid==0:
             try:
                 os.close(ar);os.close(gw);os.close(life_fd);os.close(release_fd);os.close(ready_fd);kq.close()
                 if scenario=='fixture33_real':
                     trace.bind_child_stderr()
                     import real33_supervisor_draft
-                    real33_supervisor_draft.child_after_fork(aw,gr,mock_outdir)
+                    real33_supervisor_draft.child_after_fork(aw,gr,mock_outdir,real_capability)
                     os._exit(99)
                 if scenario=='fixture33_exec_mock':
                     os.setsid();os.set_inheritable(aw,True);os.set_inheritable(gr,True);trace.bind_child_stderr()
@@ -397,7 +488,8 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 child(aw,gr,scenario,mock_outdir);os._exit(99)
             except BaseException:
                 os._exit(99)
-        os.close(aw);os.close(gr)
+        os.close(aw);aw=None
+        os.close(gr);gr=None
         if trace is not None:trace.parent_after_fork()
         # Drain stderr while awaiting readiness so dyld cannot fill the pipe.
         ready_deadline=min(deadline,time.monotonic()+fake_ready_timeout);ready=False
@@ -407,8 +499,9 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
             if trace is not None and trace.readfd in readable:trace.drain()
             if ar in readable:ready=os.read(ar,1)==b'R';break
         if not ready or os.getpgid(pid)!=pid:raise RuntimeError('worker group identity/ready timeout')
-        os.close(ar);group_ready=True;result['worker_pid']=pid
+        os.close(ar);ar=None;group_ready=True;result['worker_pid']=pid
         worker_start=process_start(pid)
+        if scenario=='fixture33_real':result['worker_start']=list(worker_start)
         def reservation():
             return worker_reservation(pid,worker_start,deadline)
         def abort_worker():
@@ -418,7 +511,7 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                 except ProcessLookupError:pass
                 except OSError as exc:errors.append(repr(exc))
             if errors:raise RuntimeError('worker termination denied: '+repr(errors))
-        if use_fake_census_helper or use_native_census_helper:
+        if (use_fake_census_helper or use_native_census_helper) and helper is None:
             sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
             from census_helper import CensusHelper,native_sampler
             if use_native_census_helper:
@@ -450,7 +543,10 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         if refusal:
             result['reason']=refusal
             raise RuntimeError('initial sample before arm: '+refusal)
-        atomic(receipt_path,{'status':'ARMED_FAKE_ONLY','supervisor_pid':supervisor_pid,'supervisor_start':supervisor_start,'worker_pid':pid,'scope':result['scope'],'fake_33_call_inventory':result['fake_33_call_inventory'],'actual_33_call_inventory':result.get('actual_33_call_inventory'),'manifest_sha256':result.get('manifest_sha256'),'run_nonce':result.get('run_nonce'),'watchdog_pid':result.get('watchdog_pid')})
+        if scenario=='fixture33_real':real_capability.arm(pid,worker_start)
+        armed={'status':'ARMED_UNVERIFIED' if scenario=='fixture33_real' else 'ARMED_FAKE_ONLY','supervisor_pid':supervisor_pid,'supervisor_start':supervisor_start,'worker_pid':pid,'scope':result['scope'],'fake_33_call_inventory':result['fake_33_call_inventory'],'actual_33_call_inventory':result.get('actual_33_call_inventory'),'manifest_sha256':result.get('manifest_sha256'),'run_nonce':result.get('run_nonce'),'watchdog_pid':result.get('watchdog_pid')}
+        if scenario=='fixture33_real':armed.update(worker_start=list(worker_start),watchdog_start=result['watchdog_start'])
+        atomic(receipt_path,armed)
         os.write(ready_fd,b'R')
         while time.monotonic()<deadline:
             if trace is not None:trace.drain()
@@ -469,7 +565,11 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
                     refusal=release_refusal(supervisor_pid,supervisor_start,life_fd,deadline)
                     if refusal:result['reason']=refusal
                     else:
-                        os.write(gw,b'G');os.close(gw);result['released']=True;os.write(ready_fd,b'G')
+                        if scenario=='fixture33_real':
+                            if helper is None or helper.closed or leader_exited(helper.pid):raise RuntimeError('native helper unavailable before release')
+                            if reservation()!=('alive',worker_start):raise RuntimeError('worker identity unavailable before release')
+                            real_capability.consume_release(pid,worker_start)
+                        os.write(gw,b'G');os.close(gw);gw=None;result['released']=True;os.write(ready_fd,b'G')
                 finally:signal.pthread_sigmask(signal.SIG_SETMASK,oldmask)
                 if refusal:break
                 if fake_post_release_timeout is not None:deadline=min(deadline,time.monotonic()+fake_post_release_timeout)
@@ -505,8 +605,10 @@ def supervise(supervisor_pid,supervisor_start,life_fd,release_fd,ready_fd,receip
         if helper is not None:
             try:helper.close()
             except BaseException as exc:result['cleanup_errors'].append('helper:'+repr(exc))
-        try:os.close(ready_fd)
-        except OSError:pass
+        for fd in (ar,aw,gr,gw,ready_fd):
+            if fd is not None:
+                try:os.close(fd)
+                except OSError:pass
         result['signals']=list(_CANCEL)
         if trace is not None:
             try:result['exclusive_trace']=trace.snapshot()

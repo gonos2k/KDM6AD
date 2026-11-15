@@ -53,7 +53,7 @@
 
 ## 네 연결 결함의 수정 후보와 실측 경계
 
-세 selector 생산자와 witness의 결과 형식을 `kdm6.synthetic33.call_asset.v2`로 통일했다. worker가 저장한 33개 자산과 66개 journal event를 구형 최상위 selector 필드 없이 witness까지 통과시키는 fake 통합 시험을 추가했다. witness는 실제 기록한 조회 횟수와 각 selector의 상태를 검사하며, 모두 유일하고 조회가 성공한 경우에만 **9 primal·18 JVP·9 VJP**를 집계한다. 누락·미연결은 명시적인 `INCONCLUSIVE`로 보존하고, 원시 출력·강수·gradient의 비유한값, 모순된 graph 상태·연결 mask, 조건 기록의 형식·absence flag 불일치, 잘못된 정수형·범위는 거부한다. 이 검사는 제출된 자산의 내부 구조이며 과학적 미분 정확도나 완전한 동적 조건 census를 승인하지 않는다.
+`f4444380` 단계에서는 세 selector 생산자와 witness의 결과 형식을 `kdm6.synthetic33.call_asset.v2`로 통일했다. 이후 원시 ABI 상태와 방향별 연결을 분리하면서 현재 저장 형식은 **`call_asset.v3`**가 됐다. worker가 저장한 33개 자산과 66개 journal event를 구형 최상위 selector 필드 없이 witness까지 통과시키는 fake 통합 시험을 추가했다. witness는 실제 기록한 조회 횟수와 각 selector의 상태를 검사하며, 모두 유일하고 조회가 성공한 경우에만 **9 primal·18 JVP·9 VJP**를 집계한다. 누락·미연결은 명시적인 `INCONCLUSIVE`로 보존하고, 원시 출력·강수·gradient의 비유한값, 모순된 graph 상태·연결 mask, 조건 기록의 형식·absence flag 불일치, 잘못된 정수형·범위는 거부한다. 이 검사는 제출된 자산의 내부 구조이며 과학적 미분 정확도나 완전한 동적 조건 census를 승인하지 않는다.
 
 실행 소스의 필수 해시 목록에는 selector 명세, census helper, Darwin provider를 포함한다. 유효한 helper 표본 도중 부모 예약이 같은 PID·시작 시각에서 `alive → exited_reserved`로 바뀌면 정상 종료 확인으로 연결하고, 잘못된 RSS·신원 변경은 거부한다. Darwin provider는 psutil 5.9.4의 객체별 `create_time()` 캐시를 재사용하지 않도록 RSS 뒤 새 `Process` 객체로 PID 시작 시각을 조회한다. 이는 표본 확인이며 순간 4 GiB 하드 상한이나 관측 사이의 모든 PID 경합을 배제한다는 뜻은 아니다.
 
@@ -72,3 +72,11 @@ fake scalar `s = nc/10^8 + th`의 624개 gradient는 선택 위치의 `nc=10^-8`
 고정 계획·journal·call asset의 슬롯은 필드 존재, 정확한 자료형과 값 및 부호 있는 0을 포함한 f64 보폭 원시 비트를 대조한다. 따라서 `seq=true`를 정수 1처럼 수용하거나 `+0.0`과 `-0.0`을 같은 슬롯으로 취급하지 않는다. 현재 후보의 로컬 Python 3.12 fake 검사는 portable **72/72**, Darwin **61/61**이 일반·`-O` 모두 통과했다. 이 수치는 이전 head `f4444380`의 hosted 결과와 구분해야 한다. 기존 격리 A7 DSO·빌드 영수증 및 84개 소스 해시는 일치해 재사용 **후보**이지만, A7 물리 parity는 실행하지 않았다. 변경된 Python 소스·33개 슬롯·9/18/9 예산·interpreter·Torch/loader 허용 이미지·census package를 담은 독립 검토 manifest와 그 별도 SHA는 아직 없다. 실제 worker의 PID-bound dyld trace, 성공·실패 전체 journal, 정상 종료·정리 및 완료 witness도 아직 생성되지 않았다. 기존 `REVIEW_REQUIRED` manifest를 상태만 바꿔 승인할 수 없으므로 33회 KDM 실측은 **NOT READY**다.
 
 중간 head `b5895edf`의 [hosted fake CI](https://github.com/gonos2k/KDM6AD/actions/runs/43655352189)는 일반 모드를 통과했지만 Darwin `-O`의 mock worker 정리에서 `EPERM`을 세 번 기록해 실패했다. 나머지 비최종 CI는 중단했다. 반복 진단에서 worker 종료가 첫 WNOWAIT 확인과 `proc_pidinfo` 조회 사이에 일어나 생존 판정이 어긋나는 경로도 확인했다. 현재 후보는 `EPERM`을 곧바로 성공으로 취급하지 않는다. 직접 자식의 종료를 WNOWAIT로 보존한 상태에서 **완전한 그룹 census 앞뒤로 종료를 확인**한 경우에만 빈 그룹을 회수하며, 확인되지 않으면 1초의 공통 재관측 한도 후 `INCOMPLETE`로 남긴다. `proc_pidinfo` 조회가 실패한 경우에만 전체 deadline 안에서 최대 0.5초 WNOWAIT 종료를 재확인한다. 후속 `waitpid` 실패도 정리 오류로 기록하며 회수 성공을 주장하지 않는다. 이 경계의 fake exec·fork worker는 각각 10회씩 일반·`-O`로 반복 통과했다. OS 호출 자체의 임의 지연, `setsid` 이탈 자손, 실제 모델 실행까지 이 시험이 보증하지는 않는다.
+
+## 실제 실행 경로 연결의 차단된 후보
+
+후속 Python 후보는 기존 33슬롯 worker journal을 유지하면서, watchdog의 `G` 이후에만 manifest·DSO·run nonce·프로세스와 thread 신원을 확인한 Runner 권한을 한 번 발급하도록 구성했다. Runner는 처음 로드하기 직전에 DSO 해시를 다시 확인하고, 같은 graph handle·token과 thread에서만 세 selector 조회를 허용한다. ARMED 기록과 `authority_consumed.json`은 worker·watchdog·supervisor의 PID/시작 시각, manifest, nonce와 출력 디렉터리를 결합하며 두 번째 권한 발급은 거부한다. 이들은 신뢰한 Python 실행 흐름의 일관성 검사이지 악의적인 같은 사용자 프로세스에 대한 OS 인증이 아니다.
+
+완료 후검사 초안은 33개 자산·journal·loader trace·worker 결과의 hash를 묶고 read-only replay를 다시 수행한다. selector가 정당하게 없거나 연결되지 않은 경우에는 수치 판정을 `INCONCLUSIVE`로 남긴다. 직접 완료 파일을 게시하는 공개 함수는 거부하며, 현재 orchestrator가 만들 수 있는 파일은 **`CANDIDATE_UNVERIFIED` 후보**뿐이다. 독립 부모가 실제 자식의 정상 종료·전체 시간·정리 결과와 후보를 확인한 최종 witness는 아직 없다.
+
+현재 로컬 Python 3.12 fake 검사는 portable **86/86**, Darwin **64/64**가 일반·`-O` 모두 통과했다. 실제 `ctypes.CDLL` 호출·A7 ABI 실행·세 selector의 값 또는 도함수·33회 합성 배치는 수행하지 않았다. 이전 비공개 `REVIEW_REQUIRED` manifest는 변경된 실행 소스를 포함하지 않으므로 승인 근거로 사용할 수 없다. 실모드 release와 watchdog 전역 차단은 유지한다. 독립 실행 manifest, 실제 worker의 loader/ABI 관측, 독립 부모 witness의 검토가 끝나기 전에는 `NOT READY`가 맞다.

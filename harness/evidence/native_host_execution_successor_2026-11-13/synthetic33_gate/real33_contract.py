@@ -8,7 +8,7 @@ EXECUTION_SOURCE_FILES=(
     'fixture_plan.py','fixture33.py','selector_manifest_spec_v1.py',
     'graph_runner.py','real33_worker.py','real33_entry.py','real33_contract.py',
     'real33_supervisor_draft.py','real33_orchestrate.py','witness33.py',
-    'trace33.py','freeze33.py','fake_watchdog/watchdog.py',
+    'trace33.py','freeze33.py','replay33_assets.py','fake_watchdog/watchdog.py',
     'census_helper.py','darwin_census_provider.py',
 )
 

@@ -24,7 +24,11 @@ class PlumbingTest(unittest.TestCase):
                 inventory, sort_keys=True, separators=(",", ":"), allow_nan=False
             ).encode("ascii")
         ).hexdigest()
+        self.issuer = patch.object(orchestrator.watchdog, "issue_real_capability", return_value=object())
+        self.issued = self.issuer.start()
+        self.addCleanup(self.issuer.stop)
         self.manifest = {
+            "dso_sha256": "c" * 64,
             "schema": "kdm6.synthetic33.private.v1",
             "status": "REVIEWED_PINNED",
             "census_provider": {
@@ -49,6 +53,12 @@ class PlumbingTest(unittest.TestCase):
     def write_manifest(self):
         self.path.write_text(json.dumps(self.manifest))
         self.digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
+
+    def test_missing_dso_digest_fails_as_value_error(self):
+        del self.manifest['dso_sha256'];self.write_manifest()
+        with patch.object(orchestrator.freeze33,'validate_frozen'):
+            with self.assertRaisesRegex(ValueError,'DSO SHA256'):
+                orchestrator.reviewed_configuration(self.path,self.digest)
 
     def test_reviewed_config_binds_exact_manifest_and_policy(self):
         with patch.object(orchestrator.freeze33, "validate_frozen") as freeze:
@@ -141,6 +151,7 @@ class PlumbingTest(unittest.TestCase):
     def test_delayed_postcheck_cannot_reach_publication(self):
         with (
             patch.object(orchestrator, "_CANCELLED", []),
+            patch.object(orchestrator.witness33, "sha", return_value="a"*64),
             patch.object(orchestrator.time, "monotonic", side_effect=[5.0, 11.0]),
             patch.object(
                 orchestrator.witness33,
@@ -153,6 +164,21 @@ class PlumbingTest(unittest.TestCase):
                     "out", {}, 0.0, 10.0, "manifest", "pin", "trace"
                 )
         self.assertEqual(validate.call_args.args[2], 5.0)
+
+    def test_offline_replay_binds_assets_and_rejects_mutation(self):
+        out=self.root/'snapshot';out.mkdir()
+        for name in ['calls.jsonl','worker_result.json','worker_dyld.stderr']+[f'call_{i:02}.json' for i in range(1,34)]:
+            (out/name).write_bytes(name.encode())
+        trace=out/'worker_dyld.stderr'
+        def replay(_):return {'status':'INCONCLUSIVE','calls':33,'rows':[]}
+        with patch.object(orchestrator.witness33,'validate_pinned',return_value={'status':'EXECUTION_COMPLETED_ASSETS_ONLY'}),patch.object(orchestrator.replay33_assets,'replay',side_effect=replay):
+            result=orchestrator.validate_before_publication(out,{},0,float('inf'),'manifest','pin',trace)
+            self.assertEqual(len(result['asset_sha256']),36)
+        def mutate(_):
+            (out/'call_01.json').write_bytes(b'tampered')
+            return replay(None)
+        with patch.object(orchestrator.witness33,'validate_pinned',return_value={}),patch.object(orchestrator.replay33_assets,'replay',side_effect=mutate):
+            with self.assertRaisesRegex(RuntimeError,'asset changed'):orchestrator.validate_before_publication(out,{},0,float('inf'),'manifest','pin',trace)
 
     def test_preflight_failure_leaves_only_non_evidence_nonce(self):
         out = self.root / "failed-preflight"
@@ -222,6 +248,7 @@ class PlumbingTest(unittest.TestCase):
                 kwargs["native_census_manifest"],
                 self.manifest["census_provider"]["inventory"],
             )
+            self.assertIs(kwargs["real_capability"], self.issued.return_value)
             self.assertEqual(kwargs["max_rss_kib"], 4 * 1024**2)
             self.assertEqual(kwargs["manifest_sha"], self.digest)
             self.assertLessEqual(kwargs["timeout"], 900)
@@ -240,6 +267,7 @@ class PlumbingTest(unittest.TestCase):
             "inventory": {"__init__.py": "a" * 64},
             "inventory_sha256": "b" * 64,
             "policy": self.manifest["budgets"],
+            "dso_sha256": self.manifest["dso_sha256"],
         }
         writes = []
         original_write = os.write

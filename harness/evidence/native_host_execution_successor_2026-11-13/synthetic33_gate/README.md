@@ -67,3 +67,13 @@ start-time lookup retry similarly recognizes only a WNOWAIT-confirmed exit.
 Failed reaping is recorded as incomplete. These paths have fake repeated-run
 tests, but do not establish a hard wall or memory guarantee for arbitrary OS
 syscall stalls.
+
+The next candidate adds a trusted-code real Runner capability tied to a reviewed
+manifest, ARMED worker/watchdog/supervisor identities, a fixed nonce, and an
+exclusive consumed marker. It binds graph queries to one live handle and token.
+These public Python checks do not authenticate a malicious same-user process.
+The real orchestrator and watchdog flags remain off. Direct definitive witness
+publication is refused; the postcheck may only write a
+`CANDIDATE_UNVERIFIED` file pending an independently observed parent witness.
+Local fake tests and an A7 build do not prove that the actual ABI, three
+selectors, derivatives, or complete branch schedule work in the DSO.

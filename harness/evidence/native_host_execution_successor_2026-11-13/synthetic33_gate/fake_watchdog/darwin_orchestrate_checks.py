@@ -24,7 +24,11 @@ def fake_manifest(root):
             inventory, sort_keys=True, separators=(",", ":"), allow_nan=False
         ).encode("ascii")
     ).hexdigest()
+    fake_dso = (root / "fake_dso").resolve()
+    fake_dso.write_bytes(b"synthetic dso never loaded")
     manifest = {
+        "dso_path": str(fake_dso),
+        "dso_sha256": hashlib.sha256(fake_dso.read_bytes()).hexdigest(),
         "schema": "kdm6.synthetic33.private.v1",
         "status": "REVIEWED_PINNED",
         "census_provider": {
@@ -61,6 +65,7 @@ def fake_supervisor(original, *, attach_result):
             raise AssertionError("expected pinned native provider request")
         kwargs.pop("native_census_package")
         kwargs.pop("native_census_manifest")
+        kwargs.pop("real_capability")
         x.watchdog.group_rss_kib = lambda pid: 1024
         kwargs["fake_ready_timeout"] = 15
         result = original(
@@ -124,7 +129,7 @@ class TestOrchestrate(unittest.TestCase):
                     x.witness33, "validate_pinned", return_value={"status": "FAKE_ONLY"}
                 ),
             ):
-                with self.assertRaisesRegex(RuntimeError, "publication disabled"):
+                with self.assertRaisesRegex(RuntimeError, "armed/final identity mismatch"):
                     x.run(out, manifest, digest)
             rows = (out / "calls.jsonl").read_text().splitlines()
             self.assertEqual(len(rows), 66)

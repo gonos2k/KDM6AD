@@ -189,3 +189,31 @@ def validate_pinned(directory,watchdog_result,elapsed_seconds,manifest_path,inde
     if not set(system.items())<=observed or trace['classified_status_lines']<minimum:raise ValueError('truncated baseline trace')
     result['loader_scope']='trusted pinned-worker stderr; cache UUID/path baseline and later lazy closure partial'
     return result
+
+def publish_verified(*_args, **_kwargs):
+    """File-only callers cannot create a definitive completion witness."""
+    raise RuntimeError('completion publication requires independent supervisor witness')
+
+
+def publish_candidate(path,payload,deadline,check):
+    """Publish an explicitly unverified candidate; a file alone proves no completion."""
+    import tempfile
+    target=pathlib.Path(path);mask={signal.SIGINT,signal.SIGTERM}
+    if target.name!='completion_candidate.json' or type(payload) is not dict or payload.get('schema')!='kdm6.synthetic33.completion_candidate.v1' or payload.get('status')!='CANDIDATE_UNVERIFIED' or not callable(check):raise RuntimeError('candidate-only contract')
+    data=(json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)+'\n').encode('ascii')
+    fd,name=tempfile.mkstemp(prefix='.candidate.',dir=target.parent)
+    try:
+        with os.fdopen(fd,'wb') as f:f.write(data);f.flush();os.fsync(f.fileno())
+        old=signal.pthread_sigmask(signal.SIG_BLOCK,mask)
+        try:
+            if signal.sigpending() & mask or time.monotonic()>=deadline:raise RuntimeError('cancelled or expired before candidate')
+            check()
+            if signal.sigpending() & mask or time.monotonic()>=deadline:raise RuntimeError('cancelled or expired before candidate')
+            os.link(name,target)
+            dfd=os.open(target.parent,os.O_RDONLY)
+            try:os.fsync(dfd)
+            finally:os.close(dfd)
+        finally:signal.pthread_sigmask(signal.SIG_SETMASK,old)
+    finally:
+        try:os.unlink(name)
+        except FileNotFoundError:pass

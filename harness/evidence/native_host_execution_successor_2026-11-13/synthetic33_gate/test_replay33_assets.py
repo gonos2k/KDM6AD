@@ -160,6 +160,90 @@ class Replay33Tests(unittest.TestCase):
         self.assertTrue(bad)
         self.assertTrue(all(row["pair_status"] == "NUMERIC_MISMATCH" for row in bad))
 
+    def test_valid_missing_selector_and_crossing_remain_inconclusive(self):
+        names = list(
+            json.loads((self.path / "call_02.json").read_text())["result"]["selectors"]
+        )
+        name = names[0]
+
+        def missing(data):
+            data["result"]["selectors"][name] = {
+                "status": "INCONCLUSIVE",
+                "reason": "missing or ambiguous full selector",
+            }
+            if data["slot"]["mode"] == "center_joint_graph":
+                data["result"]["query_counts"] = {"graph_primal": 2, "jvp": 4, "vjp": 2}
+
+        self.mutate(2, missing)
+        self.mutate(3, missing)
+        self.mutate(
+            4, lambda data: data["result"]["conditions"][0].__setitem__("raw", 0)
+        )
+        result = replay.replay(self.path)
+        rows = [
+            row
+            for row in result["rows"]
+            if row["fixture"] == "baseline" and row["selector"] == name
+        ]
+        self.assertEqual(
+            (result["calls"], result["status"], len(rows)), (33, "INCONCLUSIVE", 2)
+        )
+        self.assertTrue(
+            all(
+                row["selector_status"] == "INCONCLUSIVE"
+                and row["jvp"] is None
+                and row["vjp_dot"] is None
+                for row in rows
+            )
+        )
+        self.assertTrue(
+            any(
+                step["recorded_branch_schedule"] == "CROSS"
+                for row in rows
+                for step in row["steps"]
+            )
+        )
+        self.assertTrue(
+            all(row["pair_status"] != "LOCAL_NUMERIC_CONSISTENT" for row in rows)
+        )
+
+    def test_missing_endpoint_and_unconnected_direction(self):
+        name = next(
+            iter(
+                json.loads((self.path / "call_03.json").read_text())["result"][
+                    "selectors"
+                ]
+            )
+        )
+
+        def disconnected(data):
+            entry = data["result"]["selectors"][name]
+            entry["mask"] = 1
+            entry["grad_words"][8 * 39 + 23] = "0000000000000000"
+            entry["jvps"][0] = entry["dots"][0] = 0.0
+            entry["direction_connectivity"][0] = "UNCONNECTED"
+
+        self.mutate(3, disconnected)
+
+        def missing(data):
+            data["result"]["selectors"][name] = {
+                "status": "INCONCLUSIVE",
+                "reason": "selector identity mismatch",
+            }
+
+        self.mutate(6, missing)
+        rows = [
+            row
+            for row in replay.replay(self.path)["rows"]
+            if row["fixture"] == "baseline" and row["selector"] == name
+        ]
+        nc = next(row for row in rows if row["direction"] == "nc")
+        self.assertEqual(
+            (nc["connectivity"], nc["pair_status"], nc["selector_status"]),
+            ("UNCONNECTED", "UNRESOLVED", "INCONCLUSIVE"),
+        )
+        self.assertIsNone(nc["steps"][1]["fd"])
+
     def test_rehashed_boolean_sequence_rejected(self):
         path = self.path / "call_01.json"
         data = json.loads(path.read_bytes())

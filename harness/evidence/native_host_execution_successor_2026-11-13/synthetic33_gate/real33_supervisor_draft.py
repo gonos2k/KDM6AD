@@ -17,11 +17,14 @@ def prepare(outdir):
     if not fixture33.same_plan_exact(contract.get('calls')):raise RuntimeError('preflight plan mismatch')
     return {'status':'DRAFT_BLOCKED','scope':'synthetic; watchdog survival and no setsid escape assumed','output_dir':str(target),'contract':contract,'calls':rows,'limits':{'wall_seconds':900,'rss_bytes':4*1024**3,'forwards':33,'graph_primal':queries['total']['graph_primal'],'jvp':queries['total']['jvp'],'vjp':queries['total']['vjp'],'query_per_fixture':queries['per_fixture'],'serialized_total_bytes':4*1024**3,'serialized_call_bytes':128*1024**2}}
 
-def child_after_fork(ready_fd,release_fd,outdir):
+def child_after_fork(ready_fd,release_fd,outdir,capability=None):
     # Real code is intentionally unreachable until a separate reviewed change.
     # When authorized, child establishes a new session; watchdog verifies
     # pid==pgid and writes ARMED before it releases this exact pipe.
     if not EXECUTION_ENABLED:raise RuntimeError('real worker release disabled')
+    if capability is None:raise RuntimeError('one-shot watchdog capability required')
+    nonce=(pathlib.Path(outdir)/'run_nonce').read_text()
+    capability.verify_child(manifest_path=os.environ['RESEARCH_PRIVATE_MANIFEST'],approved_sha=os.environ['RESEARCH_MANIFEST_SHA256'],run_nonce=nonce,output_dir=outdir)
     os.setsid()
     os.set_inheritable(ready_fd,True);os.set_inheritable(release_fd,True)
     from real33_contract import preflight

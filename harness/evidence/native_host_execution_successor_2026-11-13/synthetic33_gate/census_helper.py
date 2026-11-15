@@ -57,6 +57,8 @@ class CensusHelper:
         """Start a separately bounded helper; the native sampler validates its own pins."""
         if helper_kind not in ('fake','native'):raise HelperError('unknown helper kind')
         ready_label='FAKE_HELPER_ONLY' if helper_kind=='fake' else 'PINNED_NATIVE_HELPER'
+        initializer=getattr(sampler,'prepare',None) if helper_kind=='native' else None
+        if helper_kind=='native' and not callable(initializer):raise HelperError('native initializer required')
         self.clock=clock;self.nonce=secrets.token_hex(32);self.seq=0;self.next_sample=0.;self.closed=False
         parent,child=socket.socketpair();parent.setblocking(False);child.setblocking(False);self.sock=parent;self.group_ready=False;pid=os.fork()
         if pid==0:
@@ -77,7 +79,9 @@ class CensusHelper:
                 if hasattr(os,'posix_spawnp'):os.posix_spawnp=forbidden
                 subprocess.Popen=forbidden
                 if fake_startup_stall:time.sleep(20)
-                os.setsid();_send(child,{'ready':ready_label},time.monotonic()+startup_timeout)
+                os.setsid()
+                if initializer is not None:initializer()
+                _send(child,{'ready':ready_label},time.monotonic()+startup_timeout)
                 while True:
                     request=_recv(child,time.monotonic()+900.)
                     try:
@@ -146,9 +150,13 @@ class CensusHelper:
 def native_sampler(package,manifest):
     """Lazy provider construction executes only inside the guarded helper."""
     provider=None
-    def sample(request,deadline):
+    def prepare():
         nonlocal provider
-        from darwin_census_provider import DarwinProvider,sample_group
+        from darwin_census_provider import DarwinProvider
         if provider is None:provider=DarwinProvider(package,manifest)
+    def sample(request,deadline):
+        from darwin_census_provider import sample_group
+        prepare()
         return sample_group(provider,request,deadline)
+    sample.prepare=prepare
     return sample

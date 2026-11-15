@@ -1,4 +1,4 @@
-import json, os, pathlib, signal, tempfile, time, unittest, subprocess, hashlib
+import copy, json, os, pathlib, signal, tempfile, time, unittest, subprocess, hashlib
 import watchdog
 import sys
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
@@ -453,6 +453,109 @@ class WatchdogTest(unittest.TestCase):
         with patch.object(watchdog.ctypes,'CDLL',return_value=libc),patch.object(watchdog.os,'kill'),patch.object(watchdog.os,'getpgid',side_effect=PermissionError('unknown group')),patch.object(watchdog.os,'waitpid') as reap:
             self.assertIn('pre-ready cleanup unresolved',watchdog.pre_ready_cleanup(pid)[0])
             reap.assert_not_called()
+
+    def test_real_capability_binds_nonce_manifest_worker_and_is_one_shot(self):
+        with tempfile.TemporaryDirectory() as t:
+            root=pathlib.Path(t).resolve();package=root/'psutil';package.mkdir();nonce='b'*64
+            (root/'run_nonce').write_text(nonce)
+            inventory={'__init__.py':'a'*64}
+            inventory_raw=json.dumps(inventory,sort_keys=True,separators=(',',':')).encode('ascii')
+            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,
+                   'census_provider':{'package':str(package),'inventory':inventory,'inventory_sha256':hashlib.sha256(inventory_raw).hexdigest()}}
+            path=root/'manifest.json';path.write_text(json.dumps(value));digest=hashlib.sha256(path.read_bytes()).hexdigest()
+            args={'manifest_path':path,'approved_sha':digest,'dso_sha256':'c'*64,'run_nonce':nonce,
+                  'supervisor_pid':111,'supervisor_start':(100,1),'output_dir':root,'package':package,
+                  'inventory':inventory,'deadline':time.monotonic()+60}
+            with patch.object(watchdog.os,'getpid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)):
+                capability=watchdog.issue_real_capability(**args)
+                rejected=watchdog.issue_real_capability(**args)
+            binding={k:args[k] for k in ('supervisor_pid','supervisor_start','manifest_path','approved_sha','run_nonce','output_dir','package','inventory','deadline')}
+            with patch.object(watchdog.os,'getpid',return_value=222),patch.object(watchdog.os,'getppid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)),patch.object(watchdog,'worker_reservation',return_value=('alive',(200,2))):
+                wrong=dict(binding);wrong['run_nonce']='d'*64
+                with self.assertRaisesRegex(ValueError,'binding'):rejected.consume_pre_fork(**wrong)
+                with self.assertRaisesRegex(RuntimeError,'already consumed'):rejected.consume_pre_fork(**binding)
+                capability.consume_pre_fork(**binding)
+                with self.assertRaisesRegex(RuntimeError,'already consumed'):capability.consume_pre_fork(**binding)
+                child=copy.deepcopy(capability)
+                bad_release=copy.deepcopy(capability)
+                tampered=copy.deepcopy(capability)
+                stale_worker=copy.deepcopy(capability)
+                with patch.object(watchdog,'worker_reservation',return_value=('exited_reserved',(200,2))):
+                    with self.assertRaisesRegex(RuntimeError,'worker reservation changed'):
+                        stale_worker.arm(333,(200,2))
+                with self.assertRaisesRegex(RuntimeError,'arm state'):stale_worker.arm(333,(200,2))
+                capability.arm(333,(200,2))
+                bad_release.arm(333,(200,2))
+                tampered.arm(333,(200,2))
+                (root/'run_nonce').write_text('d'*64)
+                with self.assertRaisesRegex(ValueError,'nonce file'):tampered.consume_release(333,(200,2))
+                (root/'run_nonce').write_text(nonce)
+                with self.assertRaisesRegex(RuntimeError,'release state'):tampered.consume_release(333,(200,2))
+                with self.assertRaisesRegex(RuntimeError,'worker identity'):bad_release.consume_release(333,(200,3))
+                with self.assertRaisesRegex(RuntimeError,'release state'):bad_release.consume_release(333,(200,2))
+                capability.consume_release(333,(200,2))
+                with self.assertRaisesRegex(RuntimeError,'release state'):capability.consume_release(333,(200,2))
+            with patch.object(watchdog.os,'getppid',return_value=222),patch.object(watchdog,'process_start',return_value=(100,1)):
+                child.verify_child(manifest_path=path,approved_sha=digest,run_nonce=nonce,output_dir=root)
+                with self.assertRaisesRegex(RuntimeError,'child capability identity'):
+                    child.verify_child(manifest_path=path,approved_sha=digest,run_nonce=nonce,output_dir=root)
+            with patch.object(watchdog.os,'getpid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)):
+                (root/'run_nonce').write_text('d'*64)
+                with self.assertRaisesRegex(ValueError,'nonce file'):watchdog.issue_real_capability(**args)
+
+    def test_real_pre_fork_orders_pinned_helper_and_closes_pipes_on_failure(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as t:
+            root=pathlib.Path(t).resolve();package=root/'psutil';package.mkdir();nonce='b'*64
+            (root/'run_nonce').write_text(nonce)
+            inventory={'__init__.py':'a'*64}
+            inventory_raw=json.dumps(inventory,sort_keys=True,separators=(',',':')).encode('ascii')
+            value={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','dso_sha256':'c'*64,
+                   'census_provider':{'package':str(package),'inventory':inventory,'inventory_sha256':hashlib.sha256(inventory_raw).hexdigest()}}
+            path=root/'manifest.json';path.write_text(json.dumps(value));digest=hashlib.sha256(path.read_bytes()).hexdigest()
+            args={'manifest_path':path,'approved_sha':digest,'dso_sha256':'c'*64,'run_nonce':nonce,
+                  'supervisor_pid':111,'supervisor_start':(100,1),'output_dir':root,'package':package,
+                  'inventory':inventory,'deadline':time.monotonic()+60}
+            with patch.object(watchdog.os,'getpid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)):
+                capability=watchdog.issue_real_capability(**args)
+            events=[];fds=[];original_pipe=os.pipe
+            def pipe():
+                pair=original_pipe();fds.extend(pair);return pair
+            class Helper:
+                pid=444;closed=False
+                def __init__(self,*a,**kw):events.append('helper_ready')
+                def close(self):events.append('helper_close');self.closed=True
+            class Queue:
+                def control(self,*a,**kw):return []
+                def close(self):pass
+            class Trace:
+                def __init__(self,*a):pass
+                def snapshot(self):return {}
+                def close(self):pass
+            def stop_before_fork():
+                events.append('worker_fork');raise RuntimeError('fake fork refusal')
+            fake_modules={'freeze33':SimpleNamespace(validate_frozen=lambda *a:None),
+                          'fixture33':SimpleNamespace(plan=lambda:[]),
+                          'trace33':SimpleNamespace(Trace=Trace),
+                          'census_helper':SimpleNamespace(CensusHelper=Helper,native_sampler=lambda *a:None)}
+            with patch.object(watchdog,'ENABLE_REAL33',True),patch.object(watchdog.os,'getpid',return_value=222), \
+                 patch.object(watchdog.os,'getppid',return_value=111),patch.object(watchdog,'process_start',return_value=(100,1)), \
+                 patch.object(watchdog.select,'kqueue',return_value=Queue()),patch.object(watchdog.select,'kevent',return_value=None),patch.object(watchdog.signal,'signal'), \
+                 patch.object(watchdog.signal,'pthread_sigmask',return_value=set()),patch.object(watchdog.signal,'sigpending',return_value=set()), \
+                 patch.object(watchdog,'release_refusal',return_value=None),patch.object(watchdog,'leader_exited',return_value=False), \
+                 patch.object(watchdog.os,'pipe',side_effect=pipe),patch.object(watchdog.os,'fork',side_effect=stop_before_fork), \
+                 patch.object(watchdog,'atomic') as atomic,patch.dict(sys.modules,fake_modules):
+                result=watchdog.supervise(111,(100,1),-1,-1,-1,str(root/'armed'),'fixture33_real',timeout=10,
+                    mock_outdir=str(root),manifest_path=path,manifest_sha=digest,run_nonce=nonce,
+                    use_native_census_helper=True,native_census_package=package,native_census_manifest=inventory,
+                    real_capability=capability)
+            self.assertEqual(events,['helper_ready','worker_fork','helper_close'],result)
+            self.assertEqual(result['status'],'INCOMPLETE');self.assertFalse(result['released'])
+            self.assertIn('fake fork refusal',result['error_detail'])
+            self.assertEqual(atomic.call_count,1)
+            self.assertTrue(str(atomic.call_args.args[0]).endswith('.result'))
+            for fd in fds:
+                with self.assertRaises(OSError):os.fstat(fd)
 
     def test_real_path_stays_disabled_and_requires_native_helper_before_fork(self):
         args=(1,(1,1),-1,-1,-1,'unused','fixture33_real')

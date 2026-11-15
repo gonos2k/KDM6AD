@@ -5,11 +5,99 @@ import hashlib
 import json
 import os
 import struct
+import pathlib
+import re
+import stat
+import threading
 import selector_manifest_spec_v1 as selectors
 import fixture33
+from real33_contract import preflight, sha
+from fake_watchdog.watchdog import process_start
 from fixture_plan import fixture, direction, perturb, TARGET_TOP, schedule, raw_words
 
 U64=C.c_uint64; I=C.c_int; D=C.c_double; V=C.c_void_p
+_SEAL=object()
+MARKER_SCHEMA='kdm6.synthetic33.authority_consumed.v1'
+MARKER_NAME='authority_consumed.json'
+
+def _read_armed(path):
+    def unique(pairs):
+        result={}
+        for key,value in pairs:
+            if key in result:raise RuntimeError('duplicate receipt key')
+            result[key]=value
+        return result
+    fd=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
+    try:
+        info=os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_size>1048576:raise RuntimeError('invalid armed receipt')
+        with os.fdopen(fd,'rb') as stream:
+            fd=-1;return json.load(stream,object_pairs_hook=unique)
+    finally:
+        if fd>=0:os.close(fd)
+
+def _armed_binding(root,manifest_sha,nonce):
+    receipt=_read_armed(root/'armed.json')
+    if type(receipt) is not dict or receipt.get('status')!='ARMED_UNVERIFIED' or receipt.get('run_nonce')!=nonce or receipt.get('manifest_sha256')!=manifest_sha:raise RuntimeError('armed receipt binding')
+    ids={}
+    for role in ('worker','watchdog','supervisor'):
+        pid=receipt.get(role+'_pid');start=receipt.get(role+'_start')
+        if type(pid) is not int or pid<=0 or type(start) is not list or len(start)!=2 or any(type(x) is not int for x in start) or start[0]<=0 or not 0<=start[1]<1000000:raise RuntimeError('armed process identity')
+        ids[role+'_pid']=pid;ids[role+'_start']=start
+    if len({ids[x+'_pid'] for x in ('worker','watchdog','supervisor')})!=3 or ids['worker_pid']!=os.getpid() or ids['watchdog_pid']!=os.getppid():raise RuntimeError('armed parent/worker identity')
+    for role in ('worker','watchdog','supervisor'):
+        if process_start(ids[role+'_pid'])!=tuple(ids[role+'_start']):raise RuntimeError('armed process start mismatch')
+    return {'schema':MARKER_SCHEMA,'output_dir':str(root),'run_nonce':nonce,'manifest_sha256':manifest_sha,**ids}
+
+def _consume_armed(root,binding):
+    raw=json.dumps(binding,sort_keys=True,separators=(',',':'),allow_nan=False).encode('ascii')
+    fd=os.open(root/MARKER_NAME,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,'O_NOFOLLOW',0),0o600)
+    try:
+        with os.fdopen(fd,'wb') as stream:
+            fd=-1;stream.write(raw);stream.flush();os.fsync(stream.fileno())
+    finally:
+        if fd>=0:os.close(fd)
+    directory=os.open(root,os.O_RDONLY)
+    try:os.fsync(directory)
+    finally:os.close(directory)
+
+class _Authority:
+    """Trusted-code workflow token, not an OS security boundary."""
+    def __init__(self,seal,contract,manifest_path,manifest_sha,nonce_path,nonce):
+        if seal is not _SEAL:raise RuntimeError('authority issuance required')
+        self.contract=contract;self.manifest_path=manifest_path;self.manifest_sha=manifest_sha
+        self.nonce_path=nonce_path;self.nonce=nonce;self.pid=os.getpid();self.thread=threading.get_ident();self.used=False;self.library=None;self.active_graph=None;self.binding=None
+    def check(self):
+        if self.pid!=os.getpid() or self.thread!=threading.get_ident():raise RuntimeError('authority process/thread')
+        if sha(self.manifest_path)!=self.manifest_sha or sha(self.contract['dso_path'])!=self.contract['dso_sha256'] or self.nonce_path.is_symlink() or self.nonce_path.read_text()!=self.nonce:raise RuntimeError('authority pin changed')
+        if not fixture33.same_plan_exact(self.contract['calls']):raise RuntimeError('authority plan changed')
+        if self.binding is not None:
+            marker=_read_armed(self.nonce_path.parent/MARKER_NAME)
+            if _armed_binding(self.nonce_path.parent,self.manifest_sha,self.nonce)!=self.binding or json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False)!=json.dumps(self.binding,sort_keys=True,separators=(',',':'),allow_nan=False):raise RuntimeError('authority receipt changed')
+
+def issue_authority(release_fd,outdir):
+    """Consume watchdog G before any DSO access; revalidate pinned workflow."""
+    try:
+        from real33_orchestrate import REAL33_RELEASE_ENABLED
+        if not REAL33_RELEASE_ENABLED:raise RuntimeError('real authority is hard-disabled')
+        if os.read(release_fd,1)!=b'G':raise RuntimeError('watchdog release required')
+    finally:os.close(release_fd)
+    root=pathlib.Path(outdir).resolve(strict=True);nonce_path=root/'run_nonce'
+    if nonce_path.is_symlink():raise RuntimeError('run nonce path')
+    nonce=nonce_path.read_text()
+    if re.fullmatch('[0-9a-f]{64}',nonce) is None:raise RuntimeError('run nonce')
+    manifest_path=pathlib.Path(os.environ['RESEARCH_PRIVATE_MANIFEST']).resolve(strict=True)
+    manifest_sha=os.environ['RESEARCH_MANIFEST_SHA256']
+    if re.fullmatch('[0-9a-f]{64}',manifest_sha) is None:raise RuntimeError('manifest SHA')
+    contract=preflight()
+    authority=_Authority(_SEAL,contract,manifest_path,manifest_sha,nonce_path,nonce)
+    authority.check();binding=_armed_binding(root,manifest_sha,nonce);_consume_armed(root,binding);authority.binding=binding;return authority
+
+def _permitted(d,authority,h,token):
+    if getattr(d,'FAKE_ONLY_NO_CDLL',False) is True:return
+    if not isinstance(authority,_Authority) or not authority.used:raise RuntimeError('real graph query is hard-disabled')
+    authority.check()
+    if d is not authority.library or authority.active_graph!=(h.value,token.value):raise RuntimeError('graph handle/token binding')
 class Meta(C.Structure):
     _fields_=[('abi_version',C.c_uint32),('struct_size',C.c_uint32)]+[(n,C.c_char*s) for n,s in [('input_id',128),('mode',32),('family',32),('scope',16),('stage',64),('field',64),('record_kind',16),('derivative_mode',16),('direction_id',128),('seed_sha256',65),('cotangent_id',128)]]+[(n,U64) for n in ('runtime_call','one_step_call','outer_loop','substep_n','event_ordinal')]+[(n,C.c_int64) for n in ('b_zero','k_zero','native_level_bottom_first','B','K')]
 class Cond(C.Structure):
@@ -25,8 +113,8 @@ def condition_key(m):
     return (m.family,m.stage,m.field,m.source_hook,m.one_step_call,m.outer_loop,m.substep_n,m.event_ordinal,m.b_zero,m.k_zero,m.native_level_bottom_first,m.B,m.K,m.role,m.dtype,m.scope,m.reason)
 def word(x): return struct.pack('=d',x)
 def near(a,b,rtol=1e-5,atol=1e-8): return abs(a-b)<=atol+rtol*max(abs(a),abs(b))
-def query_graph_selector(d,h,token,n,vectors,counts):
-    if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
+def query_graph_selector(d,h,token,n,vectors,counts,authority=None):
+    _permitted(d,authority,h,token)
     primal=U64(0x7ff8000000000000);flag=I(-1);grad=(D*624)(*([float('nan')]*624));mask=C.c_uint16();vs=I(-1)
     counts['graph_primal']+=1
     if d.kdm6_batch5_graph_primal_c(h,token,n,C.byref(primal),C.byref(flag)) or flag.value not in (0,1) or primal.value==0x7ff8000000000000 or not math.isfinite(as_double(primal.value)): raise RuntimeError('graph primal')
@@ -43,23 +131,25 @@ def query_graph_selector(d,h,token,n,vectors,counts):
         connectivity.append('NO_GRAPH_PATH' if status.value==1 else ('CONNECTED' if status.value==0 and all(mask.value & (1<<i) for i in active) else 'UNCONNECTED'))
         js.append(j.value);dots.append(sum(a*b for a,b in zip(grad,vector)))
     return {'status':'SPEC_ONLY','graph_flag':flag.value,'primal':primal.value,'jvps':js,'dots':dots,'abi_jvp_statuses':statuses,'direction_connectivity':connectivity,'vjp_status':vs.value,'mask':mask.value,'grad_words':[word(x).hex() for x in grad]}
-def query_graph_set(d,h,token,requests,vectors,counts=None):
-    if getattr(d,'FAKE_ONLY_NO_CDLL',False) is not True:raise RuntimeError('real graph query is hard-disabled')
+def query_graph_set(d,h,token,requests,vectors,counts=None,authority=None):
+    _permitted(d,authority,h,token)
     limits=selectors.query_budget(fixture33.plan())['per_fixture']
     if len(requests)>limits['graph_primal'] or len(vectors)!=len(selectors.DIRECTIONS):raise RuntimeError('graph query budget')
     if counts is None:counts={'graph_primal':0,'jvp':0,'vjp':0}
     increments={'graph_primal':len(requests),'jvp':len(requests)*len(vectors),'vjp':len(requests)}
     if type(counts) is not dict or set(counts)!=set(limits) or any(type(counts[k]) is not int or counts[k]<0 or counts[k]+increments[k]>limits[k] for k in limits):raise RuntimeError('graph query budget')
-    return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors,counts)} for name,key,n in requests}
+    return {name:{'identity':key,**query_graph_selector(d,h,token,n,vectors,counts,authority)} for name,key,n in requests}
 def release_capture(d,h):
     try:
         if h and (d.kdm6_handle_closep_c(C.byref(h))!=0 or h.value): raise RuntimeError('handle close')
     finally:
         d.kdm6_batch5_clear_c()
 class Runner:
-    def __init__(self, path):
-        raise RuntimeError('real DSO loading is hard-disabled')
-        self.d=C.CDLL(path); self.calls=0
+    def __init__(self, authority):
+        if not isinstance(authority,_Authority) or authority.used:raise RuntimeError('real DSO loading is hard-disabled')
+        authority.check();authority.used=True;self.authority=authority;self.calls=0
+        self.d=C.CDLL(authority.contract['dso_path'])
+        authority.library=self.d
         sig={
           'kdm6_batch5_begin_c':([C.c_char_p,C.c_char_p,U64],I),
           'kdm6_step_ad_state_forcing_c':([C.POINTER(D),C.POINTER(D),I,I,I,D,I,C.POINTER(D),C.POINTER(V),C.POINTER(C.c_float),D,D,C.c_uint32,C.c_int64],I),
@@ -77,6 +167,7 @@ class Runner:
         for name,(args,ret) in sig.items():
             f=getattr(self.d,name);f.argtypes=args;f.restype=ret
     def call(self,case,mode,x,v,selected=None):
+        raise RuntimeError('obsolete 35-call runner disabled')
         if self.calls>=35: raise RuntimeError('forward budget exhausted')
         journal=os.environ.get('BATCH6_SYNTHETIC_JOURNAL')
         if not journal: raise RuntimeError('launcher journal required')
@@ -94,11 +185,21 @@ class Runner:
             append('FAILED'); raise
         append('COMPLETED'); return result
     def _call(self,case,mode,x,v,selected,seq):
-        raise RuntimeError('real ABI calls are hard-disabled')
+        authority=getattr(self,'authority',None)
+        if not isinstance(authority,_Authority) or not authority.used:raise RuntimeError('real ABI calls are hard-disabled')
+        authority.check()
+        plan=authority.contract['calls']
+        if self.calls>=len(plan) or type(seq) is not int or seq!=self.calls+1:raise RuntimeError('forward budget/order')
+        slot=plan[self.calls]
+        if (slot['fixture'],slot['mode'])!=(case,mode) or hashlib.sha256(raw_words(x)).hexdigest()!=slot['input_sha256']:raise RuntimeError('plan/input mismatch')
+        expected_vectors=[fixture33.direction(name) for name in fixture33.DIRECTIONS] if mode=='center_joint_graph' else [fixture33.direction(slot['direction'] or fixture33.DIRECTIONS[0])]
+        vectors=v if mode=='center_joint_graph' else [v]
+        if type(vectors) is not list or len(vectors)!=len(expected_vectors) or any(type(a) is not list or len(a)!=624 or raw_words(a)!=raw_words(b) for a,b in zip(vectors,expected_vectors)):raise RuntimeError('plan/direction mismatch')
+        self.calls+=1
         d=self.d; h=V(); token=U64(); name=case.encode(); modeb=mode.encode()
         arr=(D*624)(*x); orig=bytes(arr); out=(D*468)(*([float('nan')]*468)); land=C.c_float(2)
-        if d.kdm6_batch5_begin_c(name,modeb,seq)!=0: raise RuntimeError('begin')
         try:
+            if d.kdm6_batch5_begin_c(name,modeb,seq)!=0: raise RuntimeError('begin')
             forcing=C.cast(C.byref(arr,468*C.sizeof(D)),C.POINTER(D))
             rc=d.kdm6_step_ad_state_forcing_c(arr,forcing,1,39,1,20.,int(mode!='center_joint_graph'),out,C.byref(h),C.byref(land),10.,10.,0,0)
             if rc or bool(h.value)!=(mode=='center_joint_graph') or bytes(arr)!=orig or not all(math.isfinite(a) for a in out): raise RuntimeError('forward/handle/input/output')
@@ -141,7 +242,8 @@ class Runner:
                     result['selectors'][selector]={'status':'SPEC_ONLY','identity':key,'primal':primal.value}
             if h:
                 counts={'graph_primal':0,'jvp':0,'vjp':0}
-                result['selectors'].update(query_graph_set(d,h,token,graph_requests,vectors,counts))
+                authority.active_graph=(h.value,token.value)
+                result['selectors'].update(query_graph_set(d,h,token,graph_requests,vectors,counts,authority))
                 result['query_counts']=counts
             if not h:
                 count=U64(0xffffffffffffffff); conditions={}; operands={}; unverified_absence=False
@@ -185,6 +287,7 @@ class Runner:
                 result['conditions']=conditions; result['operands']=operands; result['unverified_absence']=unverified_absence
             return result
         finally:
+            authority.active_graph=None
             release_capture(d,h)
 def as_double(bits): return struct.unpack('=d',struct.pack('=Q',bits))[0]
 def evaluate_case(*args,**kwargs):

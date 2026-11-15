@@ -166,6 +166,28 @@ class CensusChecks(unittest.TestCase):
         finally:
             sys.path.pop(0)
 
+    def test_native_initializer_finishes_before_helper_ready(self):
+        sys.path.insert(0, str(PATH.parent))
+        try:
+            import census_helper
+            with tempfile.TemporaryDirectory() as tmp:
+                marker = Path(tmp) / 'initialized'
+                def sampler(request, deadline):
+                    raise RuntimeError('not sampled')
+                sampler.prepare = lambda: marker.write_text('ready')
+                helper = census_helper.CensusHelper(sampler, helper_kind='native')
+                try:
+                    self.assertEqual(marker.read_text(), 'ready')
+                finally:
+                    helper.close()
+                def fail_initializer():
+                    raise RuntimeError('provider validation failed')
+                sampler.prepare = fail_initializer
+                with self.assertRaises(census_helper.HelperError):
+                    census_helper.CensusHelper(sampler, startup_timeout=.5, helper_kind='native')
+        finally:
+            sys.path.pop(0)
+
     def test_package_inventory_precheck(self):
         with tempfile.TemporaryDirectory() as tmp:
             package = Path(tmp).resolve() / "psutil"
