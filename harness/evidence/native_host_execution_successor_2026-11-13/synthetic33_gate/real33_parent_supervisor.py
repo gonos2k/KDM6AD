@@ -130,6 +130,7 @@ def run(outdir,manifest_path,approved_sha):
         payload={'schema':'kdm6.synthetic33.parent_witness.v1','status':'PARENT_OBSERVED_ASSETS_ONLY','scientific_status':'INCONCLUSIVE','manifest_sha256':approved_sha,'run_nonce':token['run_nonce'],'child_pid':pid,'child_exit_code':0,'candidate_sha256':token['candidate_sha256'],'receipt_sha256':receipts,'asset_sha256':before['asset_sha256'],'worker_pid':candidate['worker_pid'],'worker_start':candidate['worker_start'],'watchdog_pid':candidate['watchdog_pid'],'watchdog_start':candidate['watchdog_start'],'parent_source_sha256':witness33.sha(__file__),'postcheck_elapsed_seconds':time.monotonic()-started,'observed_wall_limit_seconds':config['policy']['wall_seconds'],'publication_scope':'publication is separate from observed model wall; same-UID trust and escaped groups remain limitations'}
         raw=_canonical(payload)
         fd,tmp=tempfile.mkstemp(prefix='.parent-witness.',dir=out)
+        temp_removed=False
         try:
             with os.fdopen(fd,'wb') as stream:stream.write(raw);stream.flush();os.fsync(stream.fileno())
             old=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGINT,signal.SIGTERM})
@@ -143,6 +144,8 @@ def run(outdir,manifest_path,approved_sha):
                     directory_fd=os.open(out,os.O_RDONLY)
                     try:os.fsync(directory_fd)
                     finally:os.close(directory_fd)
+                    # A synchronous failure here must retract the final link.
+                    os.unlink(tmp);temp_removed=True
                 except BaseException as publication_error:
                     if linked:
                         try:
@@ -155,8 +158,9 @@ def run(outdir,manifest_path,approved_sha):
                     raise
             finally:signal.pthread_sigmask(signal.SIG_SETMASK,old)
         finally:
-            try:os.unlink(tmp)
-            except FileNotFoundError:pass
+            if not temp_removed:
+                try:os.unlink(tmp)
+                except OSError:pass  # The final link is already retracted or uncertain.
         return {'status':'PARENT_OBSERVED_ASSETS_ONLY','witness_sha256':_sha_bytes(raw),'publication_seconds':time.monotonic()-publication_started}
     except Exception as exc:
         return {'status':'UNWITNESSED','reason':repr(exc),'cleanup':'UNVERIFIED'}

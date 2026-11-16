@@ -100,7 +100,7 @@ AD 내부 쌍대성이 이미 불일치하면 해당 FD–AD 비교는 `AD_DUALI
 
 ## 독립 부모의 성공 전용 완료 확인 후보
 
-새 [부모 감독 초안](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/real33_parent_supervisor.py)은 orchestrator를 직접 자식으로 시작하고, 전체 wall 안에서 그 자식의 반환 토큰과 정상 종료 코드 0을 직접 관측한다. 이후 후보·run nonce·ARMED/최종 기록·일회성 권한 표식·loader trace·33개 자산·journal·offline replay를 부모 프로세스에서 다시 대조한다. 검증이 모두 끝난 성공 경로에 한해 원자적 링크를 최종 witness의 확정 시점으로 삼으며, 모델·후검사·정리의 관측 wall과 witness 게시 시간은 별도로 기록한다. 링크 뒤 디렉터리 동기화가 실패하면 파일 제거를 시도하고, 제거를 확인하지 못하면 게시 상태를 불확실로 남긴다.
+새 [부모 감독 초안](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/real33_parent_supervisor.py)은 orchestrator를 직접 자식으로 시작하고, 전체 wall 안에서 그 자식의 반환 토큰과 정상 종료 코드 0을 직접 관측한다. 이후 후보·run nonce·ARMED/최종 기록·일회성 권한 표식·loader trace·33개 자산·journal·offline replay를 부모 프로세스에서 다시 대조한다. 검증이 모두 끝난 성공 경로에 한해 원자적 링크를 최종 witness의 확정 시점으로 삼으며, 모델·후검사·정리의 관측 wall과 witness 게시 시간은 별도로 기록한다. 링크 뒤 디렉터리 동기화나 임시파일 삭제가 동기적으로 실패하면 최종 파일 제거와 디렉터리 동기화를 시도한다. 제거를 확인하지 못하면 게시 상태를 불확실로 남긴다.
 
 조기 종료·비영 종료·반환 토큰 부재·후보 변조·시간 초과에는 확정 witness를 내지 않는다. 부모는 소유한 직접 자식에게만 종료 신호를 보내며, watchdog이 죽은 뒤 예약을 잃은 worker 그룹 번호로 신호를 보내지 않는다. 이런 실패에서는 worker 정리가 독립적으로 증명되지 않아 `UNWITNESSED / cleanup UNVERIFIED`로 남는다. 부모가 게시 링크 뒤 갑자기 중단되면 이미 완료한 검증에 근거한 파일이 남을 수 있고, 같은 사용자 프로세스의 임의 변조와 `setsid` 이탈 자손은 이 계약의 OS 보안 보증 범위에 없다.
 

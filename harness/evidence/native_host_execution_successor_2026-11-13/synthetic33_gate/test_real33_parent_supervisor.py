@@ -33,7 +33,7 @@ class ParentTest(unittest.TestCase):
         (root/'completion_candidate.json').write_text(json.dumps(candidate));return candidate
 
     def patches(self,run=None):
-        return (patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.child,'run',side_effect=run or self.fake_run),patch.object(parent.child,'validate_consumed_marker',side_effect=lambda path,a,b:sha(path)),patch.object(parent.child,'validate_before_publication',side_effect=lambda out,*args:json.loads((Path(out)/'completion_candidate.json').read_text())['validated_assets']),patch.object(parent.replay33_assets,'replay',return_value={'status':'INCONCLUSIVE','calls':33}))
+        return (patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child.watchdog,'process_start',side_effect=lambda pid:(pid,1)),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.child,'run',side_effect=run or self.fake_run),patch.object(parent.child,'validate_consumed_marker',side_effect=lambda path,a,b:sha(path)),patch.object(parent.child,'validate_before_publication',side_effect=lambda out,*args:json.loads((Path(out)/'completion_candidate.json').read_text())['validated_assets']),patch.object(parent.replay33_assets,'replay',return_value={'status':'INCONCLUSIVE','calls':33}))
 
     def execute(self,run=None):
         from contextlib import ExitStack
@@ -56,6 +56,16 @@ class ParentTest(unittest.TestCase):
                 failed[0]=True;raise OSError('injected directory fsync failure')
             return original(fd)
         with patch.object(parent.os,'fsync',side_effect=fail_once):result=self.execute()
+        self.assertTrue(failed[0]);self.assertEqual(result['status'],'UNWITNESSED')
+        self.assertFalse((self.out/'parent_witness.json').exists())
+
+    def test_temporary_unlink_failure_retracts_published_witness(self):
+        original=parent.os.unlink;failed=[False]
+        def fail_once(path,*args,**kwargs):
+            if Path(path).name.startswith('.parent-witness.') and not failed[0]:
+                failed[0]=True;raise OSError('injected temporary unlink failure')
+            return original(path,*args,**kwargs)
+        with patch.object(parent.os,'unlink',side_effect=fail_once):result=self.execute()
         self.assertTrue(failed[0]);self.assertEqual(result['status'],'UNWITNESSED')
         self.assertFalse((self.out/'parent_witness.json').exists())
 

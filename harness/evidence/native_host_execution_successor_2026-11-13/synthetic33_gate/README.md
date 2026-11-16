@@ -119,3 +119,9 @@ produce no final witness and mark descendant cleanup `UNVERIFIED`; the parent
 never signals a worker group ID it does not reserve. Fake tests do not prove
 that this containment will hold for a real A7 process or authenticate a
 malicious same-user producer. Real parent/orchestrator/watchdog flags remain off.
+
+A synchronous failure removing the temporary witness link is handled like a
+post-link directory fsync failure: retract the final witness and sync the
+directory if possible, or report publication cleanup as uncertain. Parent
+publication fake tests replace the Darwin process-start lookup with a fixture;
+Darwin process observation remains covered by its separate native checks.
