@@ -55,6 +55,14 @@ class PlumbingTest(unittest.TestCase):
         self.path.write_text(json.dumps(self.manifest))
         self.digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
 
+    def test_readiness_poll_observes_cancellation_without_full_deadline_wait(self):
+        timeouts=[]
+        def select_once(_r,_w,_x,timeout):
+            timeouts.append(timeout);orchestrator._CANCELLED.append(15);return ([],[],[])
+        with patch.object(orchestrator,'_CANCELLED',[]),patch.object(orchestrator.select,'select',side_effect=select_once),patch.object(orchestrator.time,'monotonic',return_value=100.0):
+            with self.assertRaisesRegex(RuntimeError,'cancelled'):orchestrator.wait_for_readiness(5,1000.0)
+        self.assertEqual(timeouts,[.1])
+
     def test_whole_wall_reserves_cleanup_and_bounded_parent_wait(self):
         bounds=orchestrator.deadline_bounds(100.0,900,28)
         self.assertEqual(bounds,{'execution_deadline':972.0,'total_deadline':1000.0})

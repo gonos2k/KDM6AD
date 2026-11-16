@@ -108,3 +108,14 @@ retaining the arithmetic residual. If subtraction of two finite f64 values
 would overflow, a signed residual is `null` with status `OVERFLOW`; relative
 residuals are computed after scaling the operands. Strict JSON serialization
 therefore retains a finite diagnostic report without changing the numeric gate.
+
+A separate, default-disabled parent supervisor now observes the orchestrator
+as its direct child. Only a canonical return token, observed zero exit within
+the parent wall budget, complete pinned assets, watchdog/worker cleanup receipt,
+loader trace and offline replay can precede an atomic parent witness. The link
+is the publication commit point; its latency is reported separately from the
+observed model/postcheck/cleanup wall. Failed, timed-out or unverified runs
+produce no final witness and mark descendant cleanup `UNVERIFIED`; the parent
+never signals a worker group ID it does not reserve. Fake tests do not prove
+that this containment will hold for a real A7 process or authenticate a
+malicious same-user producer. Real parent/orchestrator/watchdog flags remain off.

@@ -126,6 +126,19 @@ def validate_consumed_marker(path, armed, result):
     return hashlib.sha256(raw).hexdigest()
 
 
+def wait_for_readiness(fd,deadline):
+    """Poll in short intervals so a handled signal cannot restart a long wait."""
+    while True:
+        if _CANCELLED or signal.sigpending() & {signal.SIGTERM,signal.SIGINT}:
+            raise RuntimeError('cancelled before worker release')
+        remaining=deadline-time.monotonic()
+        if remaining<=0:raise RuntimeError('watchdog readiness deadline')
+        if select.select([fd],[],[],min(.1,remaining))[0]:
+            if _CANCELLED or signal.sigpending() & {signal.SIGTERM,signal.SIGINT}:raise RuntimeError('cancelled before worker release')
+            if os.read(fd,1)!=b'R':raise RuntimeError('watchdog not armed')
+            return
+
+
 def wait_for_watchdog(pid,total_deadline,*,clock=None,waitpid=None,sleep=None):
     """Bound parent wait by the original wall deadline, without assuming cleanup."""
     clock=time.monotonic if clock is None else clock
@@ -234,11 +247,7 @@ def run(outdir, manifest_path, approved_sha):
     os.close(release_r)
     os.close(ready_w)
     try:
-        if (
-            not select.select([ready_r], [], [], max(0, deadline - time.monotonic()))[0]
-            or os.read(ready_r, 1) != b"R"
-        ):
-            raise RuntimeError("watchdog not armed")
+        wait_for_readiness(ready_r,deadline)
         watchdog_start = watchdog.process_start(pid)
         oldmask = signal.pthread_sigmask(
             signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT}
