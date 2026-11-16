@@ -26,6 +26,20 @@ def near(a, b, rtol=1e-5, atol=1e-8):
     return abs(a - b) <= atol + rtol * max(abs(a), abs(b))
 
 
+def relative_residual(a, b):
+    if a is None or b is None:
+        return None
+    scale = max(abs(a), abs(b))
+    return abs(a / scale - b / scale) if scale else 0.0
+
+
+def signed_residual(a, b):
+    if a is None or b is None:
+        return None, "UNAVAILABLE"
+    difference = a - b
+    return (difference, "FINITE") if math.isfinite(difference) else (None, "OVERFLOW")
+
+
 def exact_fields(actual, expected):
     if type(actual) is not dict or actual.keys() != expected.keys():
         return False
@@ -262,6 +276,22 @@ def replay(directory):
                         else ("CONSISTENT" if near(fd, jvp) else "MISMATCH")
                     )
                     if duality == "MISMATCH":
+                        fd_ad_exclusion_reason = "AD_DUALITY_MISMATCH"
+                    elif branch == "CROSS":
+                        fd_ad_exclusion_reason = "BRANCH_CROSSING"
+                    elif branch == "INCOMPLETE":
+                        fd_ad_exclusion_reason = "INCOMPLETE_CONDITIONS"
+                    elif not center_available or not endpoint_available or jvp is None:
+                        fd_ad_exclusion_reason = "UNAVAILABLE_VALUE"
+                    elif connectivity != "CONNECTED" or gd["graph_flag"] != 1:
+                        fd_ad_exclusion_reason = "UNCONNECTED_AD"
+                    elif resolution != "RESOLVED":
+                        fd_ad_exclusion_reason = "UNRESOLVED_FD"
+                    else:
+                        fd_ad_exclusion_reason = None
+                    fd_difference, fd_difference_status = signed_residual(fd, jvp)
+                    ad_difference, ad_difference_status = signed_residual(jvp, dot)
+                    if duality == "MISMATCH":
                         status = "NUMERIC_MISMATCH"
                     elif branch == "CROSS":
                         status = "BRANCH_CROSSING"
@@ -289,13 +319,18 @@ def replay(directory):
                             "h": h,
                             "represented_gap": gap,
                             "fd": fd,
-                            "fd_minus_jvp": fd - jvp
-                            if fd is not None and jvp is not None
-                            else None,
+                            "fd_minus_jvp": fd_difference,
+                            "fd_minus_jvp_status": fd_difference_status,
+                            "fd_ad_relative_residual": relative_residual(fd, jvp),
                             "output_ulp_signal": ulp_signal,
                             "resolution": resolution,
                             "ad_duality": duality,
+                            "ad_duality_signed_residual": ad_difference,
+                            "ad_duality_signed_residual_status": ad_difference_status,
+                            "ad_duality_relative_residual": relative_residual(jvp, dot),
                             "fd_ad_agreement": fd_ad_agreement,
+                            "fd_ad_eligible": fd_ad_exclusion_reason is None,
+                            "fd_ad_exclusion_reason": fd_ad_exclusion_reason,
                             "recorded_branch_schedule": branch,
                             "status": status,
                         }
@@ -351,6 +386,16 @@ def replay(directory):
                     )
                     else "STABLE"
                 )
+                pair_fd_exclusions = sorted(
+                    {
+                        row["fd_ad_exclusion_reason"]
+                        for row in rows
+                        if row["fd_ad_exclusion_reason"] is not None
+                    }
+                )
+                if not pair_fd_exclusions and stability != "STABLE":
+                    pair_fd_exclusions = ["TWO_STEP_UNSTABLE"]
+                ad_difference, ad_difference_status = signed_residual(jvp, dot)
                 results.append(
                     {
                         "fixture": case,
@@ -359,8 +404,13 @@ def replay(directory):
                         "jvp": jvp,
                         "vjp_dot": dot,
                         "duality": duality,
+                        "ad_duality_signed_residual": ad_difference,
+                        "ad_duality_signed_residual_status": ad_difference_status,
+                        "ad_duality_relative_residual": relative_residual(jvp, dot),
                         "fd_resolution": pair_resolution,
                         "fd_ad_agreement": pair_fd_agreement,
+                        "fd_ad_eligible": not pair_fd_exclusions,
+                        "fd_ad_exclusion_reasons": pair_fd_exclusions,
                         "recorded_branch_schedule": pair_branch,
                         "selector_status": "SPEC_ONLY"
                         if center_available

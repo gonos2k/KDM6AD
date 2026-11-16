@@ -93,3 +93,18 @@ branch. Its aggregate status gives an actual JVP–VJP duality mismatch priority
 then `BRANCH_CROSSING`, then incomplete evidence, and uses FD–AD disagreement
 as a numeric mismatch only for a stable, resolved stencil. The overall science
 status remains `INCONCLUSIVE`.
+
+Replay reports signed and relative JVP–VJP and FD–JVP residuals separately.
+`fd_ad_eligible` identifies stable, resolved, connected comparisons; an
+exclusion reason records crossing, incomplete conditions, unavailable values,
+unconnected AD or unresolved FD. Pair eligibility also requires agreement
+between the two resolved spacings. An arithmetic FD–AD difference remains
+visible for an excluded crossing, but is not treated as local derivative
+accuracy evidence. Existing thresholds and `INCONCLUSIVE` science scope are
+unchanged.
+
+An AD duality mismatch also excludes the FD–AD accuracy comparison while
+retaining the arithmetic residual. If subtraction of two finite f64 values
+would overflow, a signed residual is `null` with status `OVERFLOW`; relative
+residuals are computed after scaling the operands. Strict JSON serialization
+therefore retains a finite diagnostic report without changing the numeric gate.

@@ -98,6 +98,9 @@ class Replay33Tests(unittest.TestCase):
             and row["direction"] == "nc"
         )
         self.assertEqual(result["status"], "INCONCLUSIVE")
+        self.assertEqual(row["ad_duality_signed_residual"], 0.0)
+        self.assertTrue(row["fd_ad_eligible"])
+        self.assertEqual(row["fd_ad_exclusion_reasons"], [])
         self.assertEqual(
             (
                 row["duality"],
@@ -118,7 +121,10 @@ class Replay33Tests(unittest.TestCase):
         )
         self.assertTrue(
             all(
-                abs(step["fd"] - 0.01) < 1e-6 and step["fd_ad_agreement"] == "MISMATCH"
+                abs(step["fd"] - 0.01) < 1e-6
+                and step["fd_ad_agreement"] == "MISMATCH"
+                and step["fd_ad_eligible"]
+                and step["fd_ad_exclusion_reason"] is None
                 for step in row["steps"]
             )
         )
@@ -131,6 +137,27 @@ class Replay33Tests(unittest.TestCase):
         self.mutate(3, dot)
         with self.assertRaisesRegex(ValueError, "stored dot"):
             replay.replay(self.path)
+
+    def test_finite_extreme_residuals_remain_serializable(self):
+        self.assertEqual(replay.relative_residual(1e308, -1e308), 2.0)
+        self.assertEqual(replay.signed_residual(1e308, -1e308), (None, "OVERFLOW"))
+        name = next(iter(json.loads((self.path / "call_03.json").read_text())["result"]["selectors"]))
+
+        def opposite_ad(data):
+            entry = data["result"]["selectors"][name]
+            entry["grad_words"][8 * 39 + 23] = struct.pack("=d", -1e302).hex()
+            entry["dots"][0] = -1e308
+            entry["jvps"][0] = 1e308
+
+        self.mutate(3, opposite_ad)
+        result = replay.replay(self.path)
+        row = next(r for r in result["rows"] if r["fixture"] == "baseline"
+                   and r["selector"] == name and r["direction"] == "nc")
+        self.assertEqual((row["duality"], row["ad_duality_signed_residual_status"], row["pair_status"]),
+                         ("MISMATCH", "OVERFLOW", "NUMERIC_MISMATCH"))
+        self.assertIsNone(row["ad_duality_signed_residual"])
+        self.assertAlmostEqual(row["ad_duality_relative_residual"], 2.0)
+        json.dumps(result, allow_nan=False)
 
     def test_rehashed_endpoint_primal_detects_numeric_mismatch(self):
         def endpoint(data):
@@ -209,6 +236,7 @@ class Replay33Tests(unittest.TestCase):
         ]
         self.assertTrue(bad)
         self.assertTrue(all(row["pair_status"] == "NUMERIC_MISMATCH" for row in bad))
+        self.assertTrue(all(row["ad_duality_signed_residual"] != 0 for row in bad))
 
     def test_crossing_piecewise_fd_does_not_claim_ad_error(self):
         """Both stencils cross a kink although the center derivative is one."""
@@ -229,10 +257,15 @@ class Replay33Tests(unittest.TestCase):
                    and r["selector"] == name and r["direction"] == "th")
         self.assertEqual((result["status"], row["duality"], row["pair_status"]),
                          ("INCONCLUSIVE", "CONSISTENT", "BRANCH_CROSSING"))
+        self.assertEqual(row["ad_duality_signed_residual"], 0.0)
+        self.assertFalse(row["fd_ad_eligible"])
+        self.assertEqual(row["fd_ad_exclusion_reasons"], ["BRANCH_CROSSING"])
         for step, expected in zip(row["steps"], (0.625, 0.75)):
             self.assertAlmostEqual(step["fd"], expected, places=7)
             self.assertEqual((step["recorded_branch_schedule"], step["fd_ad_agreement"], step["status"]),
                              ("CROSS", "MISMATCH", "BRANCH_CROSSING"))
+            self.assertFalse(step["fd_ad_eligible"])
+            self.assertEqual(step["fd_ad_exclusion_reason"], "BRANCH_CROSSING")
 
     def test_valid_missing_selector_and_crossing_remain_inconclusive(self):
         names = list(
