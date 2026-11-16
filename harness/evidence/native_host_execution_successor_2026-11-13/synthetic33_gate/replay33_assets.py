@@ -261,28 +261,29 @@ def replay(directory):
                         or gd["graph_flag"] != 1
                         else ("CONSISTENT" if near(fd, jvp) else "MISMATCH")
                     )
-                    status = (
-                        "NUMERIC_MISMATCH"
-                        if duality == "MISMATCH" or fd_ad_agreement == "MISMATCH"
-                        else (
-                            "BRANCH_CROSSING"
-                            if branch == "CROSS"
-                            else (
-                                "UNRESOLVED"
-                                if branch == "INCOMPLETE"
-                                or duality in ("UNCONNECTED", "UNAVAILABLE")
-                                or not center_available
-                                or resolution in ("UNRESOLVED", "UNAVAILABLE")
-                                or jvp is None
-                                or abs(jvp) < 1e-8
-                                else (
-                                    "LOCAL_NUMERIC_CONSISTENT"
-                                    if near(fd, jvp)
-                                    else "NUMERIC_MISMATCH"
-                                )
-                            )
+                    if duality == "MISMATCH":
+                        status = "NUMERIC_MISMATCH"
+                    elif branch == "CROSS":
+                        status = "BRANCH_CROSSING"
+                    elif branch == "INCOMPLETE":
+                        status = "UNRESOLVED"
+                    elif fd_ad_agreement == "MISMATCH":
+                        # A resolved stable FD can disagree with a zero AD signal.
+                        status = "NUMERIC_MISMATCH"
+                    elif (
+                        duality in ("UNCONNECTED", "UNAVAILABLE")
+                        or not center_available
+                        or resolution in ("UNRESOLVED", "UNAVAILABLE")
+                        or jvp is None
+                        or abs(jvp) < 1e-8
+                    ):
+                        status = "UNRESOLVED"
+                    else:
+                        status = (
+                            "LOCAL_NUMERIC_CONSISTENT"
+                            if near(fd, jvp)
+                            else "NUMERIC_MISMATCH"
                         )
-                    )
                     rows.append(
                         {
                             "h": h,
@@ -309,10 +310,16 @@ def replay(directory):
                     and near(rows[0]["fd"], rows[1]["fd"])
                     else "UNSTABLE_OR_UNRESOLVED"
                 )
-                if any(row["status"] == "NUMERIC_MISMATCH" for row in rows):
+                if any(row["ad_duality"] == "MISMATCH" for row in rows):
                     pair_status = "NUMERIC_MISMATCH"
                 elif any(row["recorded_branch_schedule"] == "CROSS" for row in rows):
                     pair_status = "BRANCH_CROSSING"
+                elif any(
+                    row["recorded_branch_schedule"] == "INCOMPLETE" for row in rows
+                ):
+                    pair_status = "UNRESOLVED"
+                elif any(row["status"] == "NUMERIC_MISMATCH" for row in rows):
+                    pair_status = "NUMERIC_MISMATCH"
                 elif all(row["status"] == "LOCAL_NUMERIC_CONSISTENT" for row in rows):
                     pair_status = (
                         "LOCAL_NUMERIC_CONSISTENT"

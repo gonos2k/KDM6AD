@@ -90,3 +90,6 @@ fake scalar `s = nc/10^8 + th`의 624개 gradient는 선택 위치의 `nc=10^-8`
 고정한 psutil 5.9.4 패키지로 KDM 없이 직접 자식의 live·reserved-exited census를 별도 확인했다. 한 관측에서 live 그룹은 한 멤버와 약 2 MB RSS를 기록했고, 예약 종료는 0 RSS로 기록했으며 잘못된 PID·시작 시각을 거부하고 자식을 회수했다. 첫 시도에서 확인한 `getpgid`와 종료의 경합은 직접 부모의 WNOWAIT 종료를 제한 시간 안에 다시 확인한 경우에만 수용하도록 고쳤다. 이 시간 수치는 단일 무모델 관측값이지 응답 지연의 보증이 아니다.
 
 수정 후 로컬 Python 3.12 fake 전체 검사는 portable **89/89**, Darwin **67/67**이 일반·`-O` 모두 통과했다. 고정 A7 C++ 소스는 바꾸지 않았고 A7 parity·graph·33회 호출은 여전히 실행하지 않았다. 이전 private manifest 후보에는 28초 정리 예약과 이 변경의 Python 해시가 없어 새로 고정해야 한다. 실제 실행 차단과 최종 witness의 미완료 상태는 유지한다.
+
+분기 교차 FD의 해석도 별도 판정으로 고정한다. 같은 중심의 JVP–VJP 내적 불일치는 분기와 무관하게 `NUMERIC_MISMATCH`다. 그다음 기록된 FD 구간의 교차는 **`BRANCH_CROSSING`**으로 분류하고, 불완전한 조건은 `UNRESOLVED`로 둔다. 안정·해상된 구간에서만 FD–AD 불일치를 수치 오류로 집계한다.
+`max(th−279.9999975, 0)`을 중심 `th=280`에서 비교한 무모델 반례에서는 중심 JVP·VJP 내적이 모두 1이고 두 FD가 약 0.625·0.75이지만 두 구간이 분기를 넘으므로 행과 쌍은 `BRANCH_CROSSING`이다. 부호 있는 `FD−JVP`와 독립 FD–AD 비교 축은 그대로 보존한다.

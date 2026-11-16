@@ -87,3 +87,9 @@ a stable, resolved FD can disagree with a zero AD signal without changing the
 overall `INCONCLUSIVE` status. A pinned psutil provider was sampled with a
 non-model direct child, including live and reserved-exited states. These fake
 and no-model checks do not authorize real A7 execution.
+
+Replay keeps the signed FD–JVP residual even when a stencil crosses a recorded
+branch. Its aggregate status gives an actual JVP–VJP duality mismatch priority,
+then `BRANCH_CROSSING`, then incomplete evidence, and uses FD–AD disagreement
+as a numeric mismatch only for a stable, resolved stencil. The overall science
+status remains `INCONCLUSIVE`.

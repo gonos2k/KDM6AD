@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -208,6 +209,30 @@ class Replay33Tests(unittest.TestCase):
         ]
         self.assertTrue(bad)
         self.assertTrue(all(row["pair_status"] == "NUMERIC_MISMATCH" for row in bad))
+
+    def test_crossing_piecewise_fd_does_not_claim_ad_error(self):
+        """Both stencils cross a kink although the center derivative is one."""
+        name = next(iter(json.loads((self.path / "call_03.json").read_text())["result"]["selectors"]))
+        kink = 279.9999975
+
+        def primal(theta):
+            return struct.unpack("=Q", struct.pack("=d", max(theta - kink, 0.0)))[0]
+
+        for index, theta in ((2, 280.0), (3, 280.0), (8, 279.99999),
+                             (9, 280.00001), (10, 279.999995), (11, 280.000005)):
+            self.mutate(index, lambda data, theta=theta: data["result"]["selectors"][name].__setitem__("primal", primal(theta)))
+        for index in (8, 10):
+            self.mutate(index, lambda data: data["result"]["conditions"][0].__setitem__("raw", 0))
+
+        result = replay.replay(self.path)
+        row = next(r for r in result["rows"] if r["fixture"] == "baseline"
+                   and r["selector"] == name and r["direction"] == "th")
+        self.assertEqual((result["status"], row["duality"], row["pair_status"]),
+                         ("INCONCLUSIVE", "CONSISTENT", "BRANCH_CROSSING"))
+        for step, expected in zip(row["steps"], (0.625, 0.75)):
+            self.assertAlmostEqual(step["fd"], expected, places=7)
+            self.assertEqual((step["recorded_branch_schedule"], step["fd_ad_agreement"], step["status"]),
+                             ("CROSS", "MISMATCH", "BRANCH_CROSSING"))
 
     def test_valid_missing_selector_and_crossing_remain_inconclusive(self):
         names = list(
