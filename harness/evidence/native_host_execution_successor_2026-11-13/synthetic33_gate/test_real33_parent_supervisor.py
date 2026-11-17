@@ -19,7 +19,8 @@ class ParentTest(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name).resolve();self.out=self.root/'out';self.out.mkdir()
-        self.manifest=self.root/'manifest';self.manifest.write_text('{}');self.digest=sha(self.manifest)
+        self.registry_root=self.root/'registry';self.registry_root.mkdir()
+        self.manifest=self.root/'manifest';self.manifest.write_text(json.dumps({'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','attempt_registry_root':str(self.registry_root)}));self.digest=sha(self.manifest)
         self.config={'policy':{'wall_seconds':60,'cleanup_reserve_seconds':28}}
 
     def fake_run(self,out,manifest,digest):
@@ -52,7 +53,7 @@ class ParentTest(unittest.TestCase):
     def test_directory_fsync_failure_retracts_published_witness(self):
         original=parent.os.fsync;failed=[False]
         def fail_once(fd):
-            if stat.S_ISDIR(os.fstat(fd).st_mode) and not failed[0]:
+            if stat.S_ISDIR(os.fstat(fd).st_mode) and (self.out/'parent_witness.json').exists() and not failed[0]:
                 failed[0]=True;raise OSError('injected directory fsync failure')
             return original(fd)
         with patch.object(parent.os,'fsync',side_effect=fail_once):result=self.execute()
@@ -76,12 +77,55 @@ class ParentTest(unittest.TestCase):
             return original_unlink(path,*args,**kwargs)
         original_fsync=parent.os.fsync;failed=[False]
         def fail_once(fd):
-            if stat.S_ISDIR(os.fstat(fd).st_mode) and not failed[0]:
+            if stat.S_ISDIR(os.fstat(fd).st_mode) and (self.out/'parent_witness.json').exists() and not failed[0]:
                 failed[0]=True;raise OSError('injected directory fsync failure')
             return original_fsync(fd)
         with patch.object(parent.os,'fsync',side_effect=fail_once),patch.object(parent.os,'unlink',side_effect=unlink):result=self.execute()
         self.assertEqual(result['status'],'UNWITNESSED');self.assertIn('durability/cleanup uncertain',result['reason'])
         self.assertTrue((self.out/'parent_witness.json').exists())
+
+    def test_attempt_registry_rejects_second_fresh_directory_before_fork(self):
+        first=self.execute();self.assertEqual(first['status'],'PARENT_OBSERVED_ASSETS_ONLY')
+        registry=self.registry_root/('.synthetic33-attempt-'+self.digest+'.json')
+        record=json.loads(registry.read_text());self.assertEqual(record['manifest_sha256'],self.digest);self.assertEqual(record['output_dir'],str(self.out))
+        self.assertEqual(stat.S_IMODE(registry.stat().st_mode),0o600)
+        second=self.root/'second';second.mkdir()
+        with patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.os,'fork',side_effect=AssertionError('fork forbidden')):
+            with self.assertRaises(FileExistsError):parent.run(second,self.manifest,self.digest)
+
+    def test_identical_manifest_copy_shares_registry(self):
+        self.assertEqual(self.execute()['status'],'PARENT_OBSERVED_ASSETS_ONLY')
+        sibling=self.root/'sibling';sibling.mkdir();copy_path=sibling/'copy.json';copy_path.write_bytes(self.manifest.read_bytes())
+        self.assertEqual(sha(copy_path),self.digest)
+        second=self.root/'fresh';second.mkdir()
+        with patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.os,'fork',side_effect=AssertionError('fork forbidden')):
+            with self.assertRaises(FileExistsError):parent.run(second,copy_path,self.digest)
+
+    def test_unpinned_or_noncanonical_registry_root_rejected(self):
+        for bad in (None,str(self.root/'missing'),'relative'):
+            data={'schema':'kdm6.synthetic33.private.v1','status':'REVIEWED_PINNED','attempt_registry_root':bad}
+            self.manifest.write_text(json.dumps(data));digest=sha(self.manifest)
+            with patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.os,'fork',side_effect=AssertionError('fork forbidden')):
+                with self.assertRaises((ValueError,FileNotFoundError)):parent.run(self.out,self.manifest,digest)
+
+    def test_interrupted_registration_permanently_blocks_retry(self):
+        original=parent.os.fsync;failed=[False]
+        def fail_file(fd):
+            if stat.S_ISREG(os.fstat(fd).st_mode) and not failed[0]:failed[0]=True;raise OSError('interrupted attempt fsync')
+            return original(fd)
+        with patch.object(parent.os,'fsync',side_effect=fail_file):
+            with self.assertRaisesRegex(OSError,'interrupted attempt'):self.execute()
+        registry=self.registry_root/('.synthetic33-attempt-'+self.digest+'.json');self.assertTrue(registry.exists())
+        other=self.root/'other';other.mkdir()
+        with patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.os,'fork',side_effect=AssertionError('fork forbidden')):
+            with self.assertRaises(FileExistsError):parent.run(other,self.manifest,self.digest)
+
+    def test_wrong_manifest_or_noncanonical_output_does_not_claim(self):
+        with patch.object(parent,'REAL_PARENT_ENABLED',True),patch.object(parent.child,'reviewed_configuration',return_value=self.config),patch.object(parent.os,'fork',side_effect=AssertionError('fork forbidden')):
+            with self.assertRaisesRegex(ValueError,'manifest'):parent.run(self.out,self.manifest,'f'*64)
+            alias=self.root/'alias';alias.symlink_to(self.out,target_is_directory=True)
+            with self.assertRaisesRegex(ValueError,'canonical'):parent.run(alias,self.manifest,self.digest)
+        self.assertFalse((self.registry_root/('.synthetic33-attempt-'+self.digest+'.json')).exists())
 
     def test_nonzero_and_early_return_unwitnessed(self):
         def early(*_):return {'schema':'wrong','status':'CANDIDATE_UNVERIFIED'}

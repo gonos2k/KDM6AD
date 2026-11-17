@@ -125,3 +125,14 @@ post-link directory fsync failure: retract the final witness and sync the
 directory if possible, or report publication cleanup as uncertain. Parent
 publication fake tests replace the Darwin process-start lookup with a fixture;
 Darwin process observation remains covered by its separate native checks.
+
+The subsequent execution-readiness packet records a durable attempt claim in
+the canonical registry directory pinned by the reviewed manifest before the
+parent forks. Byte-identical manifest copies contend for the same claim. It is
+a trusted-code one-attempt guard, not same-user authentication. A Darwin
+no-model process test covers orchestrator loss after
+release while the watchdog remains alive: the watchdog marks the attempt
+incomplete and observes its worker group empty before reaping the leader.
+This does not prove cleanup after watchdog loss or actual A7 execution. The
+remaining pre-run and post-run evidence boundaries are listed in
+[the 2026-11-17 readiness note](../../../../docs/NATIVE_HOST_SYNTHETIC33_EXECUTION_READINESS_20261117.md).
