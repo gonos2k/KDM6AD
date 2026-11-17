@@ -3,7 +3,7 @@ permissions:
   contents: read
 on:
   pull_request:
-    branches: [main, research/east_ice_radius_floor_packet]
+    branches: [main, research/east_ice_radius_floor_packet, research/atomic-consumer-contract]
     paths:
       - 'harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/**'
       - '.github/workflows/synthetic33-gate-ci.yml'
