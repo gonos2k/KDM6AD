@@ -1,0 +1,192 @@
+{
+  "catalog_atoms": 191,
+  "limits": "Source correspondence only; execution, emitted records, derivative connectivity, physical units and conservation remain unverified; no group is certified complete.",
+  "mapped": [
+    {
+      "atom_id": "phase_change_heat.site.03",
+      "hook_id": "a5_heat.xlf",
+      "source_expression": "auto xlf = xls - pre.xl;",
+      "tensor": "xlf"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.cpm_safe",
+      "hook_id": "a5_heat.cpm_safe",
+      "source_expression": "auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);",
+      "tensor": "cpm_safe"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.xlf",
+      "hook_id": "a5_heat.xlf",
+      "source_expression": "auto xlf = xls - pre.xl;",
+      "tensor": "xlf"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.dep_sum",
+      "hook_id": "a5_heat.dep_sum_c",
+      "source_expression": "auto dep_sum_c = cold.psdep + cold.pgdep + cold.pidep + cold.pinud;                       // F:2738",
+      "tensor": "dep_sum_c"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.frz_sum",
+      "hook_id": "a5_heat.frz_sum_c",
+      "source_expression": "auto frz_sum_c = cold.piacr + cold.paacw_adj                                              // F:2739-2741 (paacw \u00d72)",
+      "tensor": "frz_sum_c"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.cold_heat",
+      "hook_id": "a5_heat.xlwork2_cold",
+      "source_expression": "auto xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c;             // F:2738-2741",
+      "tensor": "xlwork2_cold"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.vap_sum",
+      "hook_id": "a5_heat.vap_sum_w",
+      "source_expression": "auto vap_sum_w = warm.prevp + cold.psevp + cold.pgevp;                                    // F:2844",
+      "tensor": "vap_sum_w"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.warm_heat",
+      "hook_id": "a5_heat.xlwork2_warm",
+      "source_expression": "auto xlwork2_warm = -pre.xl * vap_sum_w - xlf * (mf.pseml + mf.pgeml);                    // F:2844-2845",
+      "tensor": "xlwork2_warm"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.selected_heat",
+      "hook_id": "a5_heat.xlwork2_selected",
+      "source_expression": "auto xlwork2 = torch::where(pre.supcol >= 0, xlwork2_cold, xlwork2_warm);                 // cold \u21d4 supcol>=0",
+      "tensor": "xlwork2"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.melt_coefficient",
+      "hook_id": "a5_heat.coef_melt",
+      "source_expression": "auto coef_melt = dtcld * xlf_melt / cpm_safe;",
+      "tensor": "coef_melt"
+    },
+    {
+      "atom_id": "phase_change_heat.supplement.temperature_final",
+      "hook_id": "a5_heat.t_new",
+      "source_expression": "auto t_new = state.t - xlwork2 / cpm_safe * dtcld + dT_amount;                            // F:2742/2846",
+      "tensor": "t_new"
+    },
+    {
+      "atom_id": "progb_bg_volume.supplement.brs_acc_entry",
+      "hook_id": "a5_brs.after_freeze",
+      "source_expression": "auto brs_acc = state.brs + mf.delta_brs_freeze;",
+      "tensor": "brs_acc"
+    },
+    {
+      "atom_id": "progb_bg_volume.supplement.brs_melt",
+      "hook_id": "a5_brs.after_melt",
+      "source_expression": "brs_acc = ops::fma_acc(brs_acc, mf.delta_brs_melt, dt_t);",
+      "tensor": "brs_acc"
+    },
+    {
+      "atom_id": "progb_bg_volume.supplement.brs_cold",
+      "hook_id": "a5_brs.after_cold",
+      "source_expression": "brs_acc = ops::fma_acc(brs_acc, dbrs_cold_sum, dt_t);",
+      "tensor": "brs_acc"
+    },
+    {
+      "atom_id": "progb_bg_volume.supplement.brs_warm",
+      "hook_id": "a5_brs.after_warm",
+      "source_expression": "brs_acc = ops::fma_acc(brs_acc, dbrs_warm_sum, dt_t);",
+      "tensor": "brs_acc"
+    },
+    {
+      "atom_id": "progb_bg_volume.supplement.brs_clamp",
+      "hook_id": "a5_brs.after_fmax",
+      "source_expression": "auto brs_new = torch::fmax(brs_acc, torch::zeros_like(brs_acc));",
+      "tensor": "brs_new"
+    },
+    {
+      "atom_id": "water_named_rate_apply.site.02",
+      "hook_id": "a5_satadj.pcact_raw",
+      "source_expression": "auto pcact_raw = PCACT_MASS_CONST * ncact / (3.0 * forcing.dend);",
+      "tensor": "pcact_raw"
+    },
+    {
+      "atom_id": "water_named_rate_apply.site.03",
+      "hook_id": "a5_satadj.qv_final",
+      "source_expression": "auto qv_final = ops::fma_acc(qv_pp, sat.pcond, dt_t, -1.0);",
+      "tensor": "qv_final"
+    }
+  ],
+  "new_hook_calls": 35,
+  "new_mapped_atoms": 18,
+  "physical_unit_status": "INCONCLUSIVE",
+  "prior_mapped": 107,
+  "prior_unmapped": 84,
+  "remaining_unmapped_atoms": 66,
+  "remaining_unmapped_ids": [
+    "applied_activation_transfer.site.03",
+    "cpm_xl.site.03",
+    "cpm_xl.site.04",
+    "nc_cleanup_dsd.site.01",
+    "nc_named_rate_terms.site.02",
+    "nc_named_rate_terms.supplement.naacw_first",
+    "nc_named_rate_terms.supplement.naacw_second",
+    "nc_named_rate_terms.supplement.nccol",
+    "nc_named_rate_terms.supplement.nfrzdtc",
+    "nc_named_rate_terms.supplement.niacw",
+    "nc_named_rate_terms.supplement.ninuc",
+    "nc_named_rate_terms.supplement.nracw",
+    "nc_named_rate_terms.supplement.nraut",
+    "nc_named_rate_terms.supplement.pimlt_ni",
+    "phase_change_heat.site.01",
+    "phase_change_heat.site.02",
+    "pii_to_temperature.site.02",
+    "progb_bg_volume.site.01",
+    "surface_flux_candidates.site.01",
+    "temperature_latent_terms.site.03",
+    "temperature_latent_terms.site.04",
+    "temperature_latent_terms.supplement.pcact_latent_factor",
+    "temperature_latent_terms.supplement.pcond_latent_factor",
+    "total_rain_fnresult.site.02",
+    "total_rain_fnresult.site.03",
+    "total_rain_fnresult.site.05",
+    "transport_brs.unresolved.actual_bottom_export",
+    "transport_brs.unresolved.realized_arrival",
+    "transport_brs.unresolved.realized_departure",
+    "transport_ni.unresolved.actual_bottom_export",
+    "transport_ni.unresolved.realized_arrival",
+    "transport_ni.unresolved.realized_departure",
+    "transport_nr.unresolved.actual_bottom_export",
+    "transport_nr.unresolved.realized_arrival",
+    "transport_nr.unresolved.realized_departure",
+    "transport_qg.unresolved.actual_bottom_export",
+    "transport_qg.unresolved.realized_arrival",
+    "transport_qg.unresolved.realized_departure",
+    "transport_qi.unresolved.actual_bottom_export",
+    "transport_qi.unresolved.realized_arrival",
+    "transport_qi.unresolved.realized_departure",
+    "transport_qr.unresolved.actual_bottom_export",
+    "transport_qr.unresolved.realized_arrival",
+    "transport_qr.unresolved.realized_departure",
+    "transport_qs.unresolved.actual_bottom_export",
+    "transport_qs.unresolved.realized_arrival",
+    "transport_qs.unresolved.realized_departure",
+    "water_before_after.site.01",
+    "water_before_after.site.02",
+    "water_before_after.site.03",
+    "water_before_after.supplement.entry_qc",
+    "water_before_after.supplement.entry_qg",
+    "water_before_after.supplement.entry_qi",
+    "water_before_after.supplement.entry_qr",
+    "water_before_after.supplement.entry_qs",
+    "water_before_after.supplement.exit_qc",
+    "water_before_after.supplement.exit_qg",
+    "water_before_after.supplement.exit_qi",
+    "water_before_after.supplement.exit_qr",
+    "water_before_after.supplement.exit_qs",
+    "water_before_after.supplement.exit_qv",
+    "water_closure_measure.site.01",
+    "water_closure_measure.site.02",
+    "water_named_rate_apply.site.01",
+    "water_named_rate_apply.supplement.pracw",
+    "water_named_rate_apply.supplement.praut"
+  ],
+  "schema": "kdm6.batch6.hook_coverage_delta.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "status": "SOURCE_ONLY_BLOCKED",
+  "updated_mapped_atoms": 125
+}

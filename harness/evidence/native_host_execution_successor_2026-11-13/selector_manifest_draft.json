@@ -1,0 +1,1131 @@
+{
+  "batch6_patch_sha256": "65524b6fce5c6f57cd8c063cbd6b360710c0b3019780d3f4854001fab088a657",
+  "batch6_source_snapshot_sha256": "3d06cc352895de7719a2fb3710cb12e949dbd56e98554009c9c5ce2e85aed9b2",
+  "blocked_groups": [
+    {
+      "group_id": "temperature_latent_terms",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "phase_change_heat",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "progb_bg_volume",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_named_rate_terms",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "water_named_rate_apply",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_entry_pre_post",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_snap1",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_snap2",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_update_reclass",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "nc_cleanup_dsd",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "pii_to_temperature",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "cpm_xl",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "water_saturation",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "satadj_condensation",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "activation_fraction_min",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "rate_min_operands",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "applied_activation_transfer",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "water_before_after",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "total_rain_fnresult",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "water_closure_measure",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_qr",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_nr",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_qs",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_qg",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_brs",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_qi",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "transport_ni",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "group_id": "surface_flux_candidates",
+      "status": "BLOCKED_NOT_CERTIFIED"
+    }
+  ],
+  "blocked_partial_masks": [
+    {
+      "atomic_id": "mask.cleanup_qc",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.dsd_ncmax",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.dsd_ncmin",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.entry_nc_floor",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.entry_nccn_bounds",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.ice_transport_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.lambda_active",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.lambda_bounds",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.main_transport_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.ncact_preclamp",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.nccn_cap_clamp",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.progb_density_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.safe_pow_floor",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.satadj_paths",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.snap1_per_cell_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.snap2_per_cell_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.temperature_floor",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.warm_cold_gate",
+      "status": "BLOCKED_PARTIAL_MASK"
+    },
+    {
+      "atomic_id": "mask.water_es_cap",
+      "status": "BLOCKED_PARTIAL_MASK"
+    }
+  ],
+  "blocked_remaining_identified": [
+    {
+      "atomic_id": "activation_fraction_min.operand.one_inline",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "activation_fraction_min.operand.pow_inline",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "activation_fraction_min.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "activation_fraction_min.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "applied_activation_transfer.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "applied_activation_transfer.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "applied_activation_transfer.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "cpm_xl.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_cleanup_dsd.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_cleanup_dsd.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_cleanup_dsd.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap1.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap1.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap1.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap2.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap2.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_snap2.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_update_reclass.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_update_reclass.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_update_reclass.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "nc_update_reclass.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.cold_heat",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.cpm_safe",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.dep_sum",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.frz_sum",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.melt_coefficient",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.selected_heat",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.temperature_final",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.vap_sum",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.warm_heat",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "phase_change_heat.supplement.xlf",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.supplement.brs_acc_entry",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.supplement.brs_clamp",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.supplement.brs_cold",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.supplement.brs_melt",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "progb_bg_volume.supplement.brs_warm",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.operand.cap_inline",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.operand.min_before_sw",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.operand.raw_rate",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "rate_min_operands.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "satadj_condensation.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "satadj_condensation.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "satadj_condensation.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "satadj_condensation.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "surface_flux_candidates.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "total_rain_fnresult.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "total_rain_fnresult.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_brs.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_ni.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_nr.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qg.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qi.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qr.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.05",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.site.06",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.supplement.fall_k",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "transport_qs.supplement.fall_top",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_named_rate_apply.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_named_rate_apply.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_saturation.site.01",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_saturation.site.02",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_saturation.site.03",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    },
+    {
+      "atomic_id": "water_saturation.site.04",
+      "status": "BLOCKED_NO_REVIEWED_SELECTOR"
+    }
+  ],
+  "blocked_unmapped": [
+    {
+      "atomic_id": "applied_activation_transfer.site.03",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "cpm_xl.site.03",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "cpm_xl.site.04",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_cleanup_dsd.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.naacw_first",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.naacw_second",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.nccol",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.nfrzdtc",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.niacw",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.ninuc",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.nracw",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.nraut",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "nc_named_rate_terms.supplement.pimlt_ni",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "phase_change_heat.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "phase_change_heat.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "pii_to_temperature.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "progb_bg_volume.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "surface_flux_candidates.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.site.03",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.site.04",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.supplement.pcact_latent_factor",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "temperature_latent_terms.supplement.pcond_latent_factor",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "total_rain_fnresult.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "total_rain_fnresult.site.03",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "total_rain_fnresult.site.05",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_brs.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_brs.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_brs.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_ni.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_ni.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_ni.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_nr.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_nr.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_nr.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qg.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qg.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qg.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qi.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qi.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qi.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qr.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qr.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qr.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qs.unresolved.actual_bottom_export",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qs.unresolved.realized_arrival",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "transport_qs.unresolved.realized_departure",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.site.03",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.entry_qc",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.entry_qg",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.entry_qi",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.entry_qr",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.entry_qs",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qc",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qg",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qi",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qr",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qs",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_before_after.supplement.exit_qv",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_closure_measure.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_closure_measure.site.02",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_named_rate_apply.site.01",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_named_rate_apply.supplement.pracw",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    },
+    {
+      "atomic_id": "water_named_rate_apply.supplement.praut",
+      "status": "BLOCKED_NO_PROVEN_SOURCE_HOOK"
+    }
+  ],
+  "coverage_delta_sha256": "77fea0d04e9853d9593ac2fb526c227dd6fa1fb50e745490b8e08e8de3aa335a",
+  "coverage_summary_sha256": "cf706dd2af631a4da8fc20d7d9f5ef1da1aef186712a1e50bc273c6b10478e80",
+  "current_source_hook_count": 366,
+  "dynamic_rule": "No assumed microphysics or sedimentation substep counts; these six hooks execute before the outer loop. runtime_call is planned sequence only under the separately unverified single-process ordered-call contract.",
+  "graph_projection": {
+    "accepts_records": false,
+    "reason": "sidecar emits forward value metadata and separate JVP/VJP payloads, not live_tangent rows; joined primal and derivative consumer is not implemented",
+    "status": "SPEC_ONLY_BLOCKED"
+  },
+  "identity_fields": [
+    "sequence",
+    "input_id",
+    "mode",
+    "runtime_call",
+    "one_step_call",
+    "outer_loop",
+    "substep_family",
+    "substep_n",
+    "scope",
+    "b_zero",
+    "k_zero",
+    "native_level_bottom_first",
+    "B",
+    "K",
+    "stage",
+    "field",
+    "event_ordinal",
+    "record_kind",
+    "derivative_mode",
+    "direction_id",
+    "seed_sha256",
+    "cotangent_id",
+    "availability",
+    "derivative_status",
+    "raw_hex"
+  ],
+  "materialized_catalog_sha256": "8693991bfc5acd28d7b6d81362302b9e9fffbfe80200d0a00a8dfb37d6d555f5",
+  "physical_unit_status": "INCONCLUSIVE",
+  "prior_source_sha256": {
+    "coordinator.cpp": "9976046be2a70bf813f8626584857cf78bd42fe88b2518f8730ea08c3599fd42",
+    "progb.cpp": "ffa1fc911ee126105dd48da4437a95ee4aeb4c9b239b114349359322b15ddb0c",
+    "runtime.cpp": "cd605c03d451969534dfdf70b5bf9f0fbb41b892fb732bf7a3e680a18d1fd0c1",
+    "satadj.cpp": "ed22e020f4cc15cd2c8d9e8bfaaaa274e3da67eceaddbb66d824bc2d25e6c604",
+    "sedimentation.cpp": "b1bd0926e1d006fb71270069fb04d5874ecd22fc9bdf951772911c348f451d56",
+    "thermo.cpp": "faa37cf6aa83591b10b0055a81bd5111aa2fe0c96dc1815a2ca44c5bc0260564"
+  },
+  "projection_contract": "normalized synthetic value projection; adapter must map metadata family to substep_family, attach canonical call sequence and derivative_status none; not a claim this projection is emitted by the current producer",
+  "schema": "kdm6.batch5.selector_manifest.draft.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "synthetic projection validation only; no source hook proves actual runtime emission, graph derivative, physical budget or execution readiness",
+  "selectors": [
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "cpm_xl.site.01",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "cpm",
+      "hook_id": "entry.cpm",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "entry_cpm, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 577,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    },
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "cpm_xl.site.02",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "xl",
+      "hook_id": "entry.xl",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "entry_xl, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 578,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    },
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "nc_entry_pre_post.site.01",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "nc_post",
+      "hook_id": "entry.nc_post",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "cur.nc, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 575,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    },
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "nc_entry_pre_post.site.02",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "nccn_post",
+      "hook_id": "entry.nccn_post",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "cur.nccn, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 576,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    },
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "pii_to_temperature.site.01",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "t",
+      "hook_id": "entry.t",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "cs.t, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 543,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    },
+    {
+      "B": 1,
+      "K": 39,
+      "active_rule": "required when the value-capture sidecar reaches this unconditional runtime-entry hook with planned B=1 K=39 dt=20",
+      "atomic_id": "water_before_after.supplement.entry_qv",
+      "cardinality": "exactly one per k_zero 0..38 for each eligible capture_on_value call",
+      "context": {
+        "event_ordinal": 0,
+        "one_step_call": 0,
+        "outer_loop": 0,
+        "substep_family": "runtime",
+        "substep_n": 0
+      },
+      "field": "qv",
+      "hook_id": "entry.qv",
+      "inactive_rule": "not a conditional branch; an omitted or inactive record is an error",
+      "scope": "layer",
+      "source_expression": "cs.qv, false);",
+      "source_file": "src/runtime.cpp",
+      "source_line": 544,
+      "stage": "entry",
+      "status": "SOURCE_ONLY_RUNTIME_UNVERIFIED"
+    }
+  ],
+  "status": "DRAFT_BLOCKED"
+}

@@ -1,0 +1,38 @@
+{
+  "consumer_summary": {
+    "context_only_unverified": 189,
+    "limitations": "Only exact intra-function source uses explicitly checked; no executed graph, capture, derivative or physical claim.",
+    "proposed_masks_unverified": 19,
+    "verified_source_uses": 2
+  },
+  "context_rule": "Move each v1 atom consumer to context_location/context_relation/context_evidence; clear consumer except verified_source_uses. Move each proposed-mask consumer text to context_text; clear consumer.",
+  "materialized_schema": "kdm6.native_host_atomic_capture_catalog.draft.v2",
+  "materialized_v2_sha256": "8693991bfc5acd28d7b6d81362302b9e9fffbfe80200d0a00a8dfb37d6d555f5",
+  "parent_v1_sha256": "05d2291d1060ddee582c443d719035b8e4a84a1c8293c4385ed5208e60aa331d",
+  "schema": "kdm6.native_host_atomic_catalog_consumer_patch.v2",
+  "scope": "Source-site draft only; context is not a proven consumer. Only explicit source-use edges are verified; no emitted data, instrumentation, execution or physical claim.",
+  "source_archive_sha256": "663871cbb48154ea6c63a18991710e955bdec5d7ac5cda9d32bc0e0dd68c2347",
+  "status": "DRAFT_BLOCKED",
+  "verified_source_uses": {
+    "phase_change_heat.supplement.dep_sum": {
+      "kind": "RHS_USE",
+      "location": {
+        "anchor": "auto xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c;",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2496
+      },
+      "source_use": "same-function explicit RHS use; source-level only",
+      "symbol": "dep_sum_c"
+    },
+    "phase_change_heat.supplement.temperature_final": {
+      "kind": "RETURN_MEMBER",
+      "location": {
+        "anchor": "t_new,",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2540
+      },
+      "source_use": "same-function CoordinatorState aggregate return; source-level only",
+      "symbol": "t_new"
+    }
+  }
+}

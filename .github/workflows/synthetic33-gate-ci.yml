@@ -1,0 +1,141 @@
+name: synthetic33-gate-ci
+permissions:
+  contents: read
+on:
+  pull_request:
+    branches: [main, research/east_ice_radius_floor_packet]
+    paths:
+      - 'harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/**'
+      - '.github/workflows/synthetic33-gate-ci.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  fake-only:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify isolated public checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          test ! -e host && test ! -L host
+          test ! -e host_fortran && test ! -L host_fortran
+          test ! -e libtorch/build
+          test ! -e libtorch/install
+          if find . \( -type f -o -type l \) \( -name 'libkdm6_c*.dylib' -o -name 'libkdm6_c*.so*' \) -print -quit | grep -q .; then
+            echo 'Unexpected KDM DSO in checkout' >&2
+            exit 1
+          fi
+      # Sentinel covers named Python ctypes constructors and propagates over Python execve; it is not a sandbox.
+      - name: Run isolated fake suites with ctypes sentinel
+        shell: bash
+        env:
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+          OMP_THREAD_LIMIT: '1'
+          OPENBLAS_NUM_THREADS: '1'
+        run: |
+          set -euo pipefail
+          guard="$RUNNER_TEMP/synthetic33-test-guard"
+          mkdir -p "$guard"
+          cat > "$guard/sitecustomize.py" <<'PY'
+          import ctypes, os
+          old_cdll, old_pydll, old_execve = ctypes.CDLL, ctypes.PyDLL, os.execve
+          def checked_cdll(name, *args, **kwargs):
+              if name is not None:
+                  raise RuntimeError('test sentinel: named DSO loading forbidden')
+              return old_cdll(name, *args, **kwargs)
+          def checked_pydll(name, *args, **kwargs):
+              if name is not None:
+                  raise RuntimeError('test sentinel: named DSO loading forbidden')
+              return old_pydll(name, *args, **kwargs)
+          def checked_execve(path, args, env):
+              env = dict(env)
+              env['PYTHONPATH'] = os.path.dirname(__file__)
+              return old_execve(path, args, env)
+          ctypes.CDLL, ctypes.PyDLL, os.execve = checked_cdll, checked_pydll, checked_execve
+          PY
+          cat > "$guard/run_suite.py" <<'PY'
+          import sys, unittest
+          suite = unittest.defaultTestLoader.discover(sys.argv[1], pattern=sys.argv[2])
+          if suite.countTestCases() == 0:
+              raise SystemExit('no tests discovered')
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          if not result.wasSuccessful() or result.skipped or result.expectedFailures or result.unexpectedSuccesses:
+              raise SystemExit('suite failed or did not run all tests')
+          PY
+          export PYTHONPATH="$guard"
+          export SYNTHETIC33_GUARD="$guard"
+          python - <<'PY'
+          import os, signal, subprocess, sys, time
+          cleaning = False
+          repeated = []
+          def cancelled(signum, frame):
+              # Record only: repeated signals cannot interrupt group cleanup.
+              repeated.append(signum)
+          def cleanup_owned(process):
+              global cleaning
+              cleaning = True
+              try:
+                  if process.returncode is None:
+                      try:
+                          os.killpg(process.pid, signal.SIGKILL)
+                      except ProcessLookupError:
+                          pass
+                      process.wait(timeout=10)
+              finally:
+                  cleaning = False
+          # Regression: a second cancel during owned-group cleanup must not
+          # interrupt signaling or the bounded reap. No real process is touched.
+          class FakeProcess:
+              pid, returncode, waited = 123, None, False
+              def wait(self, timeout):
+                  self.waited = timeout == 10
+                  self.returncode = -signal.SIGKILL
+          old_killpg = os.killpg
+          fake = FakeProcess()
+          try:
+              def fake_killpg(pid, sig):
+                  if (pid, sig) != (fake.pid, signal.SIGKILL):
+                      raise RuntimeError('wrong fake process group')
+                  cancelled(signal.SIGTERM, None)
+                  cancelled(signal.SIGINT, None)
+              os.killpg = fake_killpg
+              cleanup_owned(fake)
+          finally:
+              os.killpg = old_killpg
+          if not fake.waited or repeated != [signal.SIGTERM, signal.SIGINT]:
+              raise SystemExit('repeated-cancel cleanup regression')
+          repeated.clear()
+          signal.signal(signal.SIGTERM, cancelled)
+          signal.signal(signal.SIGINT, cancelled)
+          root = 'harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate'
+          guard = os.environ['SYNTHETIC33_GUARD']
+          for optimized in (False, True):
+              for directory, pattern in ((root, 'test_*.py'), (root + '/fake_watchdog', 'darwin_*_checks.py')):
+                  command = [sys.executable] + (['-O'] if optimized else []) + [guard + '/run_suite.py', directory, pattern]
+                  print('Running', command, flush=True)
+                  process = subprocess.Popen(command, start_new_session=True)
+                  deadline = time.monotonic() + 240
+                  while True:
+                      if repeated or time.monotonic() >= deadline:
+                          # The signal handler records only; no signal can
+                          # interrupt cleanup before the owned leader is reaped.
+                          cleanup_owned(process)
+                          raise SystemExit('fake suite timed out or was cancelled')
+                      try:
+                          code = process.wait(timeout=min(.5, max(0.01, deadline - time.monotonic())))
+                          break
+                      except subprocess.TimeoutExpired:
+                          continue
+                  if repeated:
+                      raise SystemExit('fake suite supervisor cancelled')
+                  if code:
+                      raise SystemExit(code)
+          PY

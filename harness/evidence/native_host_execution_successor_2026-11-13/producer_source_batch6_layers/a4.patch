@@ -1,0 +1,75 @@
+diff --git a/libtorch/CMakeLists.txt b/libtorch/CMakeLists.txt
+index 84066f1c6a12cd8987abf4e36d70f13472693493..94255edd8fba4f3c13d97786ec946f46e0dabbd1 100644
+--- a/libtorch/CMakeLists.txt
++++ b/libtorch/CMakeLists.txt
+@@ -158,6 +158,11 @@ endif()
+ # ── tests ───────────────────────────────────────────────────────────────────
+ enable_testing()
+ if(KDM6_BATCH5_RESEARCH_CAPTURE)
++    add_executable(test_batch6_synthetic_capture_parity tests/test_batch6_synthetic_capture_parity.cpp)
++    target_include_directories(test_batch6_synthetic_capture_parity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bridge)
++    target_compile_options(test_batch6_synthetic_capture_parity PRIVATE -UNDEBUG)
++    target_link_libraries(test_batch6_synthetic_capture_parity PRIVATE kdm6_c)
++    add_test(NAME batch6_synthetic_capture_parity COMMAND test_batch6_synthetic_capture_parity)
+     add_executable(test_batch5_conditions_v2 tests/test_batch5_conditions_v2.cpp bridge/batch5_conditions_v2.cpp)
+     target_include_directories(test_batch5_conditions_v2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bridge)
+     target_compile_definitions(test_batch5_conditions_v2 PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE KDM6_C_BUILD=1)
+diff --git a/libtorch/tests/test_batch6_synthetic_capture_parity.cpp b/libtorch/tests/test_batch6_synthetic_capture_parity.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..41d463c81f7fb86aae242254c3db27b988f87af3
+--- /dev/null
++++ b/libtorch/tests/test_batch6_synthetic_capture_parity.cpp
+@@ -0,0 +1,53 @@
++// Independent synthetic B=1 f64 value-only probe; not native host evidence.
++#include "kdm6_c_api.h"
++#include "kdm6_batch5_sidecar.h"
++#include "kdm6_batch5_conditions_v2.h"
++#include <array>
++#include <ATen/Parallel.h>
++#include <cmath>
++#include <cstdint>
++#include <cstring>
++#include <iomanip>
++#include <iostream>
++#include <limits>
++#include <stdexcept>
++#include <string>
++std::uint64_t bits(double x){std::uint64_t u;std::memcpy(&u,&x,8);return u;}
++void need(bool b,const char* s){if(!b)throw std::runtime_error(s);}
++struct Call { std::array<double,468> output{}; std::uint64_t rain=0, count=0, v1=0; };
++Call run(const std::array<double,624>& input,const char* id,const char* mode,std::uint64_t seq) {
++    need(kdm6_batch5_begin_c(id,mode,seq)==0,"begin");Call c;c.output.fill(std::numeric_limits<double>::quiet_NaN());float land=2.f;kdm6_handle_t* h=nullptr;
++    int rc=kdm6_step_ad_state_forcing_c(input.data(),input.data()+468,1,39,1,20.,1,c.output.data(),&h,&land,10.,10.,KDM6_PHYSICS_LEGACY,0);
++    if(rc!=0 || h!=nullptr){kdm6_batch5_clear_c();throw std::runtime_error("f64 value ABI rc/handle");}
++    for(double v:c.output)need(std::isfinite(v),"nonfinite output");
++    constexpr std::uint64_t rain_poison=UINT64_C(0x7ff8000000000000);c.rain=rain_poison;
++    int flag=-1;need(kdm6_batch5_result_rain_c(nullptr,0,id,mode,seq,&c.rain,&flag)==0 && flag==0 && c.rain!=rain_poison,"same-call rain");
++    double rain_value;std::memcpy(&rain_value,&c.rain,sizeof(rain_value));need(std::isfinite(rain_value),"nonfinite rain");
++    c.v1=kdm6_batch5_count_c();
++    if(std::string(mode)=="capture_off_value") { c.count=UINT64_MAX;need(c.v1==0,"off v1 nonempty");need(kdm6_batch5_condition_v2_count_c(nullptr,0,&c.count)!=0 && c.count==UINT64_MAX,"off v2 accessible"); }
++    else {need(kdm6_batch5_condition_v2_count_c(nullptr,0,&c.count)==0 && c.count>0,"on v2 count");
++      for(std::uint64_t i=0;i<c.count;++i){kdm6_batch5_condition_v2_meta m{};m.abi_version=KDM6_BATCH5_CONDITION_V2_VERSION;m.struct_size=sizeof(m);
++        need(kdm6_batch5_condition_v2_meta_c(nullptr,0,i,&m,sizeof(m))==0,"v2 metadata");
++        need(std::string(m.input_id)==id && std::string(m.mode)==mode && m.runtime_call==seq && m.context_epoch>0,"v2 identity");
++        need(m.role>=KDM6_V2_CONSUMED_BOOL && m.role<=KDM6_V2_NOT_EVALUATED && m.dtype>=KDM6_V2_BOOL && m.dtype<=KDM6_V2_NO_DTYPE,"v2 type");
++        need((m.scope==KDM6_V2_LAYER && m.B==1 && m.K==39 && m.b_zero==0 && m.k_zero>=0 && m.k_zero<39 && m.native_level_bottom_first==39-m.k_zero) ||
++             (m.scope==KDM6_V2_COLUMN && m.B==1 && m.K==-1 && m.b_zero==0 && m.k_zero==-1 && m.native_level_bottom_first==-1) ||
++             (m.scope==KDM6_V2_SCALAR && m.B==-1 && m.K==-1 && m.b_zero==-1 && m.k_zero==-1 && m.native_level_bottom_first==-1),"v2 scope");
++      }
++    }
++    kdm6_batch5_clear_c();return c;
++}
++void list(const std::uint64_t* data,std::size_t n){std::cout<<'[';for(std::size_t i=0;i<n;++i){if(i)std::cout<<',';std::cout<<'"'<<std::hex<<std::setw(16)<<std::setfill('0')<<data[i]<<'"';}std::cout<<']'<<std::dec;}
++int main(){try{
++    at::set_num_threads(1);at::set_num_interop_threads(1);need(at::get_num_threads()==1 && at::get_num_interop_threads()==1,"thread configuration");
++    std::array<double,624> input{};for(int k=0;k<39;++k){input[k]=280.;input[39+k]=0.005;input[7*39+k]=100000000.;input[12*39+k]=1.;input[13*39+k]=1.;input[14*39+k]=100000.;input[15*39+k]=100.;}
++    auto original=input;auto a=run(input,"synthetic_off","capture_off_value",1);
++    need(std::memcmp(input.data(),original.data(),input.size()*sizeof(double))==0,"off call mutated input bits");
++    auto b=run(input,"synthetic_on","capture_on_value",2);
++    need(std::memcmp(input.data(),original.data(),input.size()*sizeof(double))==0,"on call mutated input bits");std::array<std::uint64_t,624> iw{};std::array<std::uint64_t,468> aw{},bw{};
++    for(std::size_t i=0;i<iw.size();++i)iw[i]=bits(input[i]);for(std::size_t i=0;i<aw.size();++i){aw[i]=bits(a.output[i]);bw[i]=bits(b.output[i]);}
++    need(aw==bw && a.rain==b.rain,"raw parity");
++    std::cout<<"{\"schema\":\"kdm6.synthetic_b1_capture_parity.v1\",\"scope\":\"synthetic f64 value ABI; no native host or derivative claim\",\"input_words\":";list(iw.data(),iw.size());std::cout<<",\"off_output_words\":";list(aw.data(),aw.size());std::cout<<",\"on_output_words\":";list(bw.data(),bw.size());
++    std::cout<<",\"rain_word\":\""<<std::hex<<std::setw(16)<<std::setfill('0')<<a.rain<<"\",\"off_v1_records\":"<<std::dec<<a.v1<<",\"on_v1_records\":"<<b.v1<<",\"on_v2_records\":"<<b.count<<",\"raw_equal\":true}"<<std::endl;
++    return 0;
++}catch(const std::exception& e){std::cerr<<"synthetic parity: "<<e.what()<<'\n';kdm6_batch5_clear_c();return 1;}}

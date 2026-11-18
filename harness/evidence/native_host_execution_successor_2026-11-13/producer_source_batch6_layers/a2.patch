@@ -1,0 +1,240 @@
+diff --git a/libtorch/include/kdm6/batch6_a2_named_hooks.h b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d629887f4e62f673e2d65669dd5fe88e038dee7
+--- /dev/null
++++ b/libtorch/include/kdm6/batch6_a2_named_hooks.h
+@@ -0,0 +1,28 @@
++#pragma once
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++#include "kdm6/batch5_conditions_v2.h"
++#include <map>
++#include <tuple>
++namespace kdm6::batch5::a2_named {
++// Private source-only prototype. Ordinals follow the v2 identity key and reset
++// on epoch change. Calls remain on the context-owning thread.
++using namespace conditions_v2;
++using Key=std::tuple<std::uint64_t,std::uint64_t,std::string,std::uint64_t,int,std::int64_t,std::string,std::string,std::string,int>;
++inline void record(const char* stage,const char* field,const char* source_hook,Role role,
++                   Scope scope,const torch::Tensor& t,bool top_first) {
++    if (!batch5::enabled()) return;
++    static thread_local std::uint64_t epoch=0;
++    static thread_local std::map<Key,std::uint64_t> ordinals;
++    auto c=batch5::context_snapshot();
++    if(epoch!=c.epoch){ordinals.clear();epoch=c.epoch;}
++    const int count=scope==Scope::LAYER?39:1;
++    for(int i=0;i<count;++i){
++        const auto k=scope==Scope::LAYER?i:-1;
++        Key key{c.one_step_call,c.outer_loop,c.family,c.substep_n,int(scope),k,stage,field,source_hook,int(role)};
++        auto it=ordinals.find(key);const auto ord=it==ordinals.end()?0:it->second;
++        tensor(stage,field,source_hook,role,scope,t,k,top_first,ord);
++        ordinals[key]=ord+1;
++    }
++}
++}
++#endif
+diff --git a/libtorch/src/coordinator.cpp b/libtorch/src/coordinator.cpp
+index db29e52c24df050a41e5a994e42e3019fcdca9d6..9cb7026c5a9fa4f125018ea490d7db1d3b105419 100644
+--- a/libtorch/src/coordinator.cpp
++++ b/libtorch/src/coordinator.cpp
+@@ -7,6 +7,7 @@
+ #include "kdm6/coordinator.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch6_a2_named_hooks.h" // A2_INCLUDE
+ #endif
+ #include "kdm6/constants.h"
+ #include "kdm6/ops.h"
+@@ -1022,13 +1023,16 @@ CoordinatorState kdm62d_one_step(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled()) {
+         batch5::full("nc_snap1", "nc_before", nc_orig1, false);
++        batch5::a2_named::record("nc_snap1", "nc_before", "src/coordinator.cpp:nc_snap1.nc_before", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_orig1, false); // A2_HOOK
+         batch5::full("nc_snap1", "nc_candidate", nc_snap1, false);
+         batch5::full("nc_snap1", "nc_selected", working1b.nc, false);
+         batch5::full("nc_snap1", "qc", working1b.qc, false);
+         batch5::full("nc_snap1", "density", forcing.dend, false);
+         if (ncmin_for_slope.has_value()) {
+             batch5::full("nc_snap1", "ncmin", *ncmin_for_slope, false);
++            batch5::a2_named::record("nc_snap1", "ncmin", "src/coordinator.cpp:nc_snap1.ncmin", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, *ncmin_for_slope, false); // A2_HOOK
+             batch5::full("nc_snap1", "nc_ge_ncmin", batch5_nc_snap1_gate, false);
++            batch5::a2_named::record("nc_snap1", "nc_ge_ncmin", "src/coordinator.cpp:nc_snap1.nc_ge_ncmin", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_nc_snap1_gate, false); // A2_HOOK
+             batch5::full("nc_snap1", "nc_eq_ncmin", nc_orig1 == *ncmin_for_slope, false);
+         }
+     }
+@@ -1231,13 +1235,16 @@ CoordinatorState kdm62d_one_step(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+     if (batch5::enabled()) {
+         batch5::full("nc_snap2", "nc_before", nc_orig2, false);
++        batch5::a2_named::record("nc_snap2", "nc_before", "src/coordinator.cpp:nc_snap2.nc_before", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_orig2, false); // A2_HOOK
+         batch5::full("nc_snap2", "nc_candidate", nc_snap2, false);
+         batch5::full("nc_snap2", "nc_selected", working.nc, false);
+         batch5::full("nc_snap2", "qc", working.qc, false);
+         batch5::full("nc_snap2", "density", forcing.dend, false);
+         if (ncmin_for_slope.has_value()) {
+             batch5::full("nc_snap2", "ncmin", *ncmin_for_slope, false);
++            batch5::a2_named::record("nc_snap2", "ncmin", "src/coordinator.cpp:nc_snap2.ncmin", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, *ncmin_for_slope, false); // A2_HOOK
+             batch5::full("nc_snap2", "nc_ge_ncmin", batch5_nc_snap2_gate, false);
++            batch5::a2_named::record("nc_snap2", "nc_ge_ncmin", "src/coordinator.cpp:nc_snap2.nc_ge_ncmin", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_nc_snap2_gate, false); // A2_HOOK
+             batch5::full("nc_snap2", "nc_eq_ncmin", nc_orig2 == *ncmin_for_slope, false);
+         }
+     }
+@@ -2967,7 +2974,9 @@ CoordinatorState apply_threshold_cleanup(
+     auto keep_qc = batch5_keep_qc_mask.to(dtype);
+     if (batch5::enabled()) {
+         batch5::full("cleanup_mask", "qc", state.qc, false);
++        batch5::a2_named::record("cleanup_mask", "qc", "src/coordinator.cpp:cleanup_mask.qc", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, state.qc, false); // A2_HOOK
+         batch5::full("cleanup_mask", "keep_qc", batch5_keep_qc_mask, false);
++        batch5::a2_named::record("cleanup_mask", "keep_qc", "src/coordinator.cpp:cleanup_mask.keep_qc", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_keep_qc_mask, false); // A2_HOOK
+         batch5::full("cleanup_mask", "qc_eq_qmin", state.qc == qmin, false);
+     }
+ #else
+@@ -3226,23 +3235,33 @@ torch::Tensor limit_number_for_lamda(
+     if (batch5::enabled() && !batch5::site().empty()) {
+         const char* label = batch5::site().c_str();
+         batch5::full(label, "qf", qf, batch5::top_first());
++        batch5::a2_named::record(label, "qf", "src/coordinator.cpp:lambda.qf", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, qf, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "nf", nf, batch5::top_first());
++        batch5::a2_named::record(label, "nf", "src/coordinator.cpp:lambda.nf", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nf, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "density", den, batch5::top_first());
+         batch5::full(label, "qden", qden, batch5::top_first());
+         batch5::full(label, "ratio", ratio, batch5::top_first());
+         batch5::full(label, "lamda", lamda, batch5::top_first());
++        batch5::a2_named::record(label, "lamda", "src/coordinator.cpp:lambda.lamda", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, lamda, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "n_at_min", n_at_min, batch5::top_first());
+         batch5::full(label, "n_at_max", n_at_max, batch5::top_first());
+         batch5::full(label, "q_ge_threshold", batch5_q_ge_threshold, batch5::top_first());
++        batch5::a2_named::record(label, "q_ge_threshold", "src/coordinator.cpp:lambda.q_ge_threshold", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_q_ge_threshold, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "n_ge_threshold", batch5_n_ge_threshold, batch5::top_first());
++        batch5::a2_named::record(label, "n_ge_threshold", "src/coordinator.cpp:lambda.n_ge_threshold", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_n_ge_threshold, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "lamda_le_min", batch5_lamda_le_min, batch5::top_first());
++        batch5::a2_named::record(label, "lamda_le_min", "src/coordinator.cpp:lambda.lamda_le_min", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_lamda_le_min, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "lamda_ge_max", batch5_lamda_ge_max, batch5::top_first());
++        batch5::a2_named::record(label, "lamda_ge_max", "src/coordinator.cpp:lambda.lamda_ge_max", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_lamda_ge_max, batch5::top_first()); // A2_HOOK
+         // Equality masks are additional observations, not operands of where.
+         batch5::full(label, "lamda_eq_min_observed", lamda == lamda_min, batch5::top_first());
+         batch5::full(label, "lamda_eq_max_observed", lamda == lamda_max, batch5::top_first());
+         batch5::full(label, "active", active, batch5::top_first());
++        batch5::a2_named::record(label, "active", "src/coordinator.cpp:lambda.active", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, active, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "too_small", too_small, batch5::top_first());
++        batch5::a2_named::record(label, "too_small", "src/coordinator.cpp:lambda.too_small", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, too_small, batch5::top_first()); // A2_HOOK
+         batch5::full(label, "too_large", too_large, batch5::top_first());
++        batch5::a2_named::record(label, "too_large", "src/coordinator.cpp:lambda.too_large", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, too_large, batch5::top_first()); // A2_HOOK
+     }
+ #endif
+     return torch::where(too_small, n_at_min,
+@@ -3297,11 +3316,14 @@ CoordinatorState apply_dsd_number_limiters(
+     auto nc_new = torch::where(batch5_dsd_ncmin_gate, nc_snapped, state.nc);
+     if (batch5::enabled()) {
+         batch5::full("dsd_inner", "nc_input", state.nc, false);
++        batch5::a2_named::record("dsd_inner", "nc_input", "src/coordinator.cpp:dsd_inner.nc_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, state.nc, false); // A2_HOOK
+         batch5::full("dsd_inner", "qc_input", state.qc, false);
+         batch5::full("dsd_inner", "ncmin", ncmin_t, false);
++        batch5::a2_named::record("dsd_inner", "ncmin", "src/coordinator.cpp:dsd_inner.ncmin", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, ncmin_t, false); // A2_HOOK
+         batch5::full("dsd_inner", "nc_snapped", nc_snapped, false);
+         batch5::full("dsd_inner", "nc_after_min_gate", nc_new, false);
+         batch5::full("dsd_inner", "nc_ge_ncmin", batch5_dsd_ncmin_gate, false);
++        batch5::a2_named::record("dsd_inner", "nc_ge_ncmin", "src/coordinator.cpp:dsd_inner.nc_ge_ncmin", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_dsd_ncmin_gate, false); // A2_HOOK
+         batch5::full("dsd_inner", "nc_eq_ncmin", state.nc == ncmin_t, false);
+     }
+ #else
+@@ -3333,8 +3355,10 @@ CoordinatorState apply_dsd_number_limiters(
+     auto batch5_dsd_ncmax_gate = nc_new > constants::NCMAX;
+     if (batch5::enabled()) {
+         batch5::full("dsd_inner", "nc_before_max_gate", nc_new, false);
++        batch5::a2_named::record("dsd_inner", "nc_before_max_gate", "src/coordinator.cpp:dsd_inner.nc_before_max_gate", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, nc_new, false); // A2_HOOK
+         batch5::full("dsd_inner", "nc_at_max", nc_at_max, false);
+         batch5::full("dsd_inner", "nc_gt_ncmax", batch5_dsd_ncmax_gate, false);
++        batch5::a2_named::record("dsd_inner", "nc_gt_ncmax", "src/coordinator.cpp:dsd_inner.nc_gt_ncmax", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, batch5_dsd_ncmax_gate, false); // A2_HOOK
+         batch5::full("dsd_inner", "nc_eq_ncmax", nc_new == constants::NCMAX, false);
+     }
+     nc_new = torch::where(batch5_dsd_ncmax_gate, nc_at_max, nc_new);
+@@ -3444,7 +3468,9 @@ SedimentationOutputs sedimentation_chain(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+         if (batch5::enabled()) {
+             batch5::column("sedimentation_gate", "active_main", active_main.squeeze(1));
++            batch5::a2_named::record("sedimentation_gate", "active_main", "src/coordinator.cpp:sedimentation_gate.active_main", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::COLUMN, active_main.squeeze(1), false); // A2_HOOK
+             batch5::column("sedimentation_gate", "mstep_main", mstep_col_main);
++            batch5::a2_named::record("sedimentation_gate", "mstep_main", "src/coordinator.cpp:sedimentation_gate.mstep_main", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::COLUMN, mstep_col_main, false); // A2_HOOK
+         }
+ #endif
+         auto main_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
+@@ -3510,7 +3536,9 @@ SedimentationOutputs sedimentation_chain(
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+         if (batch5::enabled()) {
+             batch5::column("sedimentation_gate", "active_ice", active_ice.squeeze(1));
++            batch5::a2_named::record("sedimentation_gate", "active_ice", "src/coordinator.cpp:sedimentation_gate.active_ice", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::COLUMN, active_ice.squeeze(1), false); // A2_HOOK
+             batch5::column("sedimentation_gate", "mstep_ice", mstep_col_ice);
++            batch5::a2_named::record("sedimentation_gate", "mstep_ice", "src/coordinator.cpp:sedimentation_gate.mstep_ice", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::COLUMN, mstep_col_ice, false); // A2_HOOK
+         }
+ #endif
+         auto ice_store = [&](const torch::Tensor& before, const torch::Tensor& candidate) {
+diff --git a/libtorch/src/progb.cpp b/libtorch/src/progb.cpp
+index 4afb9e5cafc8dd94d562dc3288fde6db224cc2a5..c4470951545a27ffdacc27099e475abe7c253bb3 100644
+--- a/libtorch/src/progb.cpp
++++ b/libtorch/src/progb.cpp
+@@ -1,6 +1,7 @@
+ #include "kdm6/progb.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch6_a2_named_hooks.h" // A2_INCLUDE
+ #endif
+ #include "kdm6/ops.h"
+ 
+@@ -144,14 +145,20 @@ ProgBOutputs progb_param_torch(
+     if (batch5::enabled()) {
+         const bool top = batch5::top_first();
+         batch5::full("progb", "qg_input", qg, top);
++        batch5::a2_named::record("progb", "qg_input", "src/progb.cpp:progb.qg_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, qg, top); // A2_HOOK
+         batch5::full("progb", "bg_input", bg, top);
++        batch5::a2_named::record("progb", "bg_input", "src/progb.cpp:progb.bg_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, bg, top); // A2_HOOK
+         batch5::full("progb", "active", active, top);
++        batch5::a2_named::record("progb", "active", "src/progb.cpp:progb.active", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, active, top); // A2_HOOK
+         batch5::full("progb", "trace", trace, top);
+         batch5::full("progb", "produced", produced, top);
+         batch5::full("progb", "bg_den", bg_den, top);
++        batch5::a2_named::record("progb", "bg_den", "src/progb.cpp:progb.bg_den", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, bg_den, top); // A2_HOOK
+         batch5::full("progb", "zero_den", zero_den, top);
++        batch5::a2_named::record("progb", "zero_den", "src/progb.cpp:progb.zero_den", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, zero_den, top); // A2_HOOK
+         batch5::full("progb", "density_divisor", density_divisor, top);
+         batch5::full("progb", "rhox_op", rhox_op, top);
++        batch5::a2_named::record("progb", "rhox_op", "src/progb.cpp:progb.rhox_op", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, rhox_op, top); // A2_HOOK
+         batch5::full("progb", "rhox_candidate", rhox_c, top);
+         batch5::full("progb", "bg_candidate", bg_new_op, top);
+         batch5::full("progb", "rhox_selected", rhox, top);
+diff --git a/libtorch/src/satadj.cpp b/libtorch/src/satadj.cpp
+index 977d1fe233dd989c5e2a1966ac274a18f12d4875..546dcf05a86a3673e5f188d51084c4205d29651a 100644
+--- a/libtorch/src/satadj.cpp
++++ b/libtorch/src/satadj.cpp
+@@ -1,6 +1,7 @@
+ #include "kdm6/satadj.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch6_a2_named_hooks.h" // A2_INCLUDE
+ #endif
+ 
+ namespace kdm6 {
+@@ -84,18 +85,24 @@ SatAdjOutputs saturation_adjustment_torch(
+         const bool top = batch5::top_first();
+         batch5::full("satadj_inner", "t_input", t, top);
+         batch5::full("satadj_inner", "q_input", q, top);
++        batch5::a2_named::record("satadj_inner", "q_input", "src/satadj.cpp:satadj_inner.q_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, q, top); // A2_HOOK
+         batch5::full("satadj_inner", "qc_input", qc, top);
++        batch5::a2_named::record("satadj_inner", "qc_input", "src/satadj.cpp:satadj_inner.qc_input", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, qc, top); // A2_HOOK
+         batch5::full("satadj_inner", "qs1", qs1, top);
+         batch5::full("satadj_inner", "xl", xl, top);
+         batch5::full("satadj_inner", "cpm", cpm, top);
+         batch5::full("satadj_inner", "denom", denom, top);
+         batch5::full("satadj_inner", "work1", work1, top);
++        batch5::a2_named::record("satadj_inner", "work1", "src/satadj.cpp:satadj_inner.work1", batch5::conditions_v2::Role::OPERAND, batch5::conditions_v2::Scope::LAYER, work1, top); // A2_HOOK
+         batch5::full("satadj_inner", "cond_path", cond_path, top);
+         batch5::full("satadj_inner", "evap_path", evap_path, top);
+         batch5::full("satadj_inner", "is_super", is_super, top);
++        batch5::a2_named::record("satadj_inner", "is_super", "src/satadj.cpp:satadj_inner.is_super", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, is_super, top); // A2_HOOK
+         batch5::full("satadj_inner", "is_sub_with_cloud", is_sub_with_cloud, top);
++        batch5::a2_named::record("satadj_inner", "is_sub_with_cloud", "src/satadj.cpp:satadj_inner.is_sub_with_cloud", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, is_sub_with_cloud, top); // A2_HOOK
+         batch5::full("satadj_inner", "pcond", pcond, top);
+         batch5::full("satadj_inner", "cloud_complete_evap", cloud_complete_evap, top);
++        batch5::a2_named::record("satadj_inner", "cloud_complete_evap", "src/satadj.cpp:satadj_inner.cloud_complete_evap", batch5::conditions_v2::Role::CONSUMED_BOOL_TENSOR, batch5::conditions_v2::Scope::LAYER, cloud_complete_evap, top); // A2_HOOK
+     }
+ #endif
+     return SatAdjOutputs{/*pcond=*/pcond, /*cloud_complete_evap=*/cloud_complete_evap};
