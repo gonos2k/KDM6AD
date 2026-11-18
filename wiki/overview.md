@@ -38,6 +38,10 @@ special first-step QNCCN initializer. The selected-column mp37 QNR ledger
 provides measured applied transfers. The original field-specific payload
 basis and the same-call producer/restart binding remain open.
 
+The [integration branch status](../docs/STATUS.md#integration-branch) links
+the standalone library and joint derivative ABI to the private host and
+external RTTOV assets required for their respective executions.
+
 [[sources/native-ice-boundary-2026-10-23]] fixes diagnostic summation and
 attributes the same-call QI sedimentation loss to measured internal
 departure/arrival gaps. It preserves the legacy physical map and local

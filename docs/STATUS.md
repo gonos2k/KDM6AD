@@ -45,6 +45,23 @@ numbers and must be read with the current unit and measurement qualifications.
 
 ## Reviewed source and evidence
 
+### Integration branch
+
+`integration/kdm6ad-standalone` joins the public `main` snapshot, both
+research heads and the local documentation and synthetic33 follow-ups.
+
+| Execution path | Entry points and inputs |
+|---|---|
+| Standalone fp64 KDM and AD | `oracle/kdm6/runtime.py` for the Python oracle. The C++ joint ABI uses `kdm6_step_ad_state_forcing_c` and 12 state plus 4 independent forcing blocks. Use the Fortran binding in `libtorch/bridge/kdm6_iso_c.f90` with the same library build. |
+| WRF/KIM-meso forward | Provide the matching private host source and native case. The legacy dispatch is mp37 for Fortran and mp137 for the f32 value path. See [host build and evidence requirements](HOST_INTEGRATION.md#integration-branch-boundary). |
+| WRF/KIM-meso window derivatives | `HostTransition` defines the full-step interface. A backend must provide JVP/VJP through the complete host step, including its forcing construction. The standalone joint ABI supplies the KDM partials. |
+| RTTOV observation objective | The profile and observation code uses the external RTTOV executable, coefficients and selected cloud optical data. Its K products support first-order derivatives for the tested inputs. |
+
+`synthetic33` remains a research execution gate. Its real release flags
+are disabled, and the watchdog-loss test records unverified cleanup and a
+possible surviving worker. Historical evidence continues to refer to its own
+source, build, input and executed path.
+
 **Reviewed source snapshot (2026-11-18).** The research snapshot
 `a90b1a3e201434187fc9ec5ad2411f4d60f60f4b` on
 `research/atomic-consumer-contract` has the same tree as PR #594 head

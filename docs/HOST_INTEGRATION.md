@@ -27,6 +27,37 @@ optional driver actuals are checked before staging, and surface reflectivity
 is copied only when its destination is present. These source checks require
 a new host build and run before any runtime parity claim.
 
+## Integration branch boundary
+
+The integrated public source builds the standalone KDM library and its
+Fortran ABI tests. A coupled reproduction also needs the matching private
+WRF/KIM-meso revision with the modified microphysics driver, mp37 and mp137
+modules, and host configuration hook. The public bridge lives at
+`libtorch/bridge/kdm6_iso_c.f90`. Match the declarations used by the host with
+the exported symbols of the selected library.
+
+Use both `CMAKE_PREFIX_PATH` and `CMAKE_LIBRARY_PATH` from the same Torch
+installation in a fresh CMake build directory. Confirm in `CMakeCache.txt`
+that `TORCH_LIBRARY` and `c10_LIBRARY` resolve there, then inspect the
+library dependencies with `otool -L` or `ldd`. On a host with multiple Torch
+installations the package configuration can come from one installation while
+CMake resolves a library from another.
+
+For a coupled run, record the host source and build configuration, compiler
+and Torch versions, host executable and loaded DSO hashes, native namelist and
+input identities. Run the host configuration hook after `./configure` and
+build against the intended isolated installation. Confirm the loaded library
+before attributing a result to that build. Use the fixed native case and
+check mp37/mp137 Legacy output bits with the existing comparator.
+
+The host forward build and this parity check cover model values. A
+host-coupled adjoint backend also needs the RK transitions, applied tendencies,
+host-generated forcing and checkpoint state defined by the
+[host window contract](../oracle/kdm6/da_host_window.py). The public
+[joint ABI](STATE_FORCING_AD.md) supplies derivatives of one KDM step with
+independent forcing. The RTTOV objective uses the separate
+[native profile and asset boundary](NATIVE_OBSERVATION_AD.md).
+
 ## Files (drop into `<WRF>/phys/`)
 | File | Role |
 |---|---|
