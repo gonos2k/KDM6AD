@@ -1,10 +1,9 @@
-# `kdm6/obs/` — 모델면 RTTOV 관측연산자 (scaffold)
+# `kdm6/obs/` — 모델면 RTTOV 관측연산자
 
-Implementation note (2026-10-04): the initial scaffold/stub and missing-hydrotable
-notes below are historical design notes, not current implementation status. The
-package now has the live operator and first-order cloud/cost paths; see the
-[bounded live KMA result](../../../harness/evidence/REPORT_live_KMA_cost_2026-10-04.md).
-Physical accuracy and full DAWindow acceptance remain separate.
+현재 기능과 검증 상태는 [기능표](../../../docs/STATUS.md#observation-operator-rttov)에 기록한다.
+저장된 native 검증에는 실제 RTTOV-K와 독립 BT·비용 중앙차분을 사용한
+clear-sky 및 선택 all-sky 사례가 있다. 실행 입력·바이너리와 검증한
+방향·분기는 [native 관측 검증](../../../docs/NATIVE_OBSERVATION_AD.md)에 기록한다.
 
 Historical design reference: `KDM6AD/model-side-rttov-observation-operator.md`
 (external design file, not shipped in the public repository).
@@ -35,14 +34,15 @@ torch 경로엔 직접 못 씀 — README 참조.
   fixture/coef에서 **derive**(hard-code 금지).
 - runner: pyrttov(`rttov_wrapper_f2py.so`, runDirect/runK) 또는 subprocess `run.sh` fixture.
 
-## 성숙도 / 구현 우선순위
-- **즉시 가능(clear-sky T/Q)**: ami/501 O3+CO2 coef(predictor 54L) + pyrttov/run.sh 완비. t→T, qv→Q는
-  매핑테이블상 `clear_sky_baseline_compatible`. → P1·P2·P4·P5(T/Q)·P6 먼저.
-- **차단(all-sky cloud/hydrometeor)**: matching `rttov_hydrotable_gkompsat2_1_ami*` **부재**(IASI donor만).
-  cloud 경로(reff→Deff, HYDRO 슬롯, user-Deff)는 hydrotable 확보 전 설계 단계 stub. AMI hydrotable이
-  **최종목적(all-sky 16채널)의 결정적 blocker**다(설계 §1.7/§13/§14.5).
+## 구현된 구름 매핑과 실행 조건
 
-전부 stub(NotImplementedError) — 구현은 위 우선순위로.
+- clear-sky는 온도·수증기 프로파일과 RTTOV-K를 비용함수의 1차 미분에 연결한다.
+- 선택 all-sky VIS/IR 경로는 QC를 액체, QI+QS를 얼음에 매핑하고,
+  NC·NI와 밀도로 유효직경을 계산한다. CFRAC은 이진 gate이며,
+  QR·QG의 독립 광학 슬롯은 현재 매핑에 없다.
+- 실제 실행에는 선택한 설정에 맞는 외부 RTTOV, 계수와 구름 광학 자료가
+  필요하다. 검증 범위는 해당 실행에서 고정한 자료, 채널과 분기에 한정된다.
+
 ## Explicit KMA BT research coordinate
 
 `make_live_run_k(case_dir, fixture_case_dir=fixture, ami_kma_bt=True)` returns

@@ -43,6 +43,34 @@ with each result bounded by its pinned experiment manifest. The former
 an active executable gate. Older findings below retain experiment-specific
 numbers and must be read with the current unit and measurement qualifications.
 
+## Reviewed source and evidence
+
+**Reviewed source snapshot (2026-11-18).** The research snapshot
+`a90b1a3e201434187fc9ec5ad2411f4d60f60f4b` on
+`research/atomic-consumer-contract` has the same tree as PR #594 head
+`9a5b3b64`. The `main` snapshot `a0dafd6157873b4b3db31d07b954fea21f137ef9`
+does not contain that merge. Use the source and binary identity recorded in each
+experiment when interpreting a result from this table.
+
+| Evidence | Recorded execution and limit |
+|---|---|
+| [State and forcing AD](STATE_FORCING_AD.md) | Isolated fp64 research DSO and recorded native inputs. The installed Legacy DSO in the comparison has its own entry-point and forward evidence. |
+| [Native number boundary](#native-producer-and-restart-evidence) | Host source trace and an opt-in coordinate pullback. The original payload basis remains open for each number field. |
+| [Ice-only factorial](NATIVE_ICE_FACTORIAL.md) and [domain execution](../harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md) | Four opt-in ice treatments on one captured column and a separate endpoint-initialized domain. The experiment separates first-ice normalization and the arrival rule. |
+| [Native observation AD](NATIVE_OBSERVATION_AD.md) | Stored, checkpoint-specific first-order RTTOV-K and independent BT and cost differences. |
+| [Cloud efficacy](../harness/evidence/native_cloud_efficacy_2026-10-25/README.md) and [effective f32 analysis](../harness/evidence/effective_analysis_2026-10-25/README.md) | One stored analysis with limited cloud response and a B512 pilot of the applied-state objective. Full-domain applied-cost reassessment and relinearization remain open. |
+| [Synthetic33 execution preparation](NATIVE_HOST_SYNTHETIC33_EXECUTION_READINESS_20261117.md) | Fake CI at the reviewed PR head. Real A7 calls remain pending. |
+
+A two-layer fp64 oracle comparison on this snapshot uses `QR=(0.001,0)`,
+`DEN=DELZ=1`, `dt=1` and a top-layer departure fraction of `0.75`. Legacy
+retains `0.00025` in each layer. The conservative and
+[QR actual-departure](ACTUAL_QR_TRANSPORT.md) substeps retain `0.00025` in the
+donor and transfer `0.00075` to the receiver. Bottom export is zero in all
+three. The separate ice-only factorial isolates the velocity and arrival
+changes on its captured column. Its three alternate arms remove the large
+QI transfer deficit in that column, with a nonzero interaction between the
+two changes. Full-kernel water and physical number closure remain open.
+
 ## Differentiation surface
 
 | Capability | Python oracle | C++ fp64 | C++ f32 | C ABI | Public CI | Host-validated |
@@ -65,6 +93,37 @@ nor the selected-column packet certifies installed joint AD, host-generated
 forcing derivatives `F=G(s)`, or a full host adjoint. The selected-column
 directions remain a screening result without an output-wise derivative
 acceptance verdict.
+
+## Native producer and restart evidence
+
+The active time-split host source constructs `rho=1/(AL+ALB)` in
+`moist_physics_prep_em` immediately before dispatch and passes it as `DEN`.
+The mp137 wrapper packs QV, DEN and the four number fields as f32 values.
+The Registry labels all four number fields per kilogram without naming the
+dry or moist air-mass basis. This source path supports the dry-density
+interpretation of DEN. The generic `dry_number=1` option divides its density
+input by `1+QV` and changes the density passed to the kernel, so using that
+option with native DEN changes both the number conversion and the forcing.
+See the [same-call NI evidence](../harness/evidence/native_qnice_same_call_2026-11-02/README.md)
+for the captured bit checks and the missing AL/ALB words.
+
+| Field | Producer or recorded boundary | Evidence still needed |
+|---|---|---|
+| NC / QNCLOUD | Scalar transport feeds the raw wrapper slot. The [native QNC trace](../harness/evidence/native_upstream_nc_2026-10-26/README.md) follows a recorded carrier update into microphysics. | Physical basis through initialization, transport and restart for the chosen call. |
+| NI / QNICE | Scalar transport feeds the raw wrapper slot. Two archived levels bind host, ABI ingress and writeback words. | Same-call AL/ALB and producer or restart lineage for the chosen column. |
+| NR / QNRAIN | Scalar transport feeds the raw wrapper slot. The [native tile capture](../harness/evidence/native_host_tile_abi_2026-11-11/README.md) records the packed values. | Producer or restart lineage and applied number transport in a declared coordinate. |
+| NN / QNCCN | With QNN enabled, `start_em` can fill a profile when the maximum over the checked domain is below 1. The Legacy wrapper also writes a height-dependent profile when `ITIMESTEP==1`, before packing NN. | Record both branch decisions and any restart carry. A restored low QNN field can meet the `start_em` condition independently of the wrapper's restored step. |
+
+For one named native call, bind step, tile, column, level and input bits across
+host preparation, the pre-pack state, the ABI ingress and writeback. Capture
+`AL, ALB, QV, DEN, DELZ`, the four number fields and both NN initializer decisions
+with the actual host executable and loaded DSO hashes. Bind the initializer
+or restart identity and scalar producer for each number field. A dry-specific
+count uses `rho_d*DELZ*n_d` in the column budget. A volume count uses
+`DELZ*N`. The recorded coordinate must also feed the [conversion JVP/VJP](NATIVE_DRY_NUMBER_BOUNDARY.md#first-order-products)
+and the applied source, sink and transport ledger. The archived packets cover
+parts of this chain at distinct calls. The original host payload unit
+remains `INCONCLUSIVE`.
 
 ## Observation operator (RTTOV)
 
@@ -150,9 +209,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   and measured 1.0331 / 1.0296 / 1.0126 in that experiment. They do not establish
   a universal “3% per transfer” effect. The larger coarse-step endpoint differences
   remain separately attributed in the pinned findings.
-  Applied transfer instrumentation and matched fixture closure are available;
-  the real 10-minute WRF applied-transfer remeasurement and the host/kernel number
-  unit contract remain OPEN. See
+  The [600-second mp37 ledger](../harness/evidence/REPORT_S14_M1_native_number_ledger_2026-09-25.md)
+  records applied QNR departures, arrivals and bottom export for one native
+  column. Physical number units and corresponding mp137 coverage remain
+  open. See
   [`FINDING_matched_number_closure_v1.md`](../harness/evidence/FINDING_matched_number_closure_v1.md)
   and [`SCIENCE_STATUS.md`](../harness/evidence/SCIENCE_STATUS.md).
 - **A correction to the refinement work's own reasoning.** The graupel presence flip
