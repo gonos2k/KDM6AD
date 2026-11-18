@@ -1,0 +1,17 @@
+{
+  "endpoints": [
+    "43a00285",
+    "43a00286"
+  ],
+  "events": 23,
+  "initial_attempt": "failed after bisection due to fromhex integer formatting; corrected producer reran probes",
+  "output_words_per_event": 510,
+  "physical_unit_status": "INCONCLUSIVE",
+  "private_reexecution": "SKIPPED",
+  "sampled_predicates": "both flip at adjacent TH f32 words; sampled monotonicity only",
+  "schema": "kdm6.host_selected_f32_coupled_boundary_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "separate B=1 value-only f32 calls on a host-selected column; no perturbed host tile or AD claim",
+  "terminal_calls": 6,
+  "trace_fields_per_event": 33
+}

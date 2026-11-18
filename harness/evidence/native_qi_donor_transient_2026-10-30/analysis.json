@@ -1,0 +1,87 @@
+{
+  "boundary_copy": {
+    "alpha025_donor_and_target_after_word": "00000002",
+    "control_donor_and_target_after_word": "00000000",
+    "donor_ikj": [
+      2,
+      33,
+      168
+    ],
+    "rk3_target_RU_M_word": "C7B997A8",
+    "same_branch_inputs_in_both_runs": true,
+    "target_ikj": [
+      1,
+      33,
+      168
+    ]
+  },
+  "first_saved_advection_difference": {
+    "alpha025_ADVECT_TEND_word": "000021A3",
+    "control_ADVECT_TEND_word": "00000000",
+    "coord_ikj": [
+      2,
+      33,
+      168
+    ],
+    "stage": "RK3 QI_TEND_AFTER"
+  },
+  "first_saved_donor_QI_difference": {
+    "alpha025_QI_word": "00000002",
+    "control_QI_word": "00000000",
+    "coord_ikj": [
+      2,
+      33,
+      168
+    ],
+    "stage": "RK3 QI_RK_AFTER"
+  },
+  "host_steps_completed": 4,
+  "limits": {
+    "QI_advection_face_producer_identified": false,
+    "QI_loop_NI_synchronized_post_RK_pair": false,
+    "accepted_analysis": false,
+    "blanket_subnormal_cleanup_justified": false,
+    "emitted_f32_instruction_sequence_identified": false,
+    "whole_M0_RTTOV_cost_defined": false,
+    "whole_M0_supported": false
+  },
+  "parent_V7_checkpoint_equal": true,
+  "post_microphysics": {
+    "QI_loop_NI_snapshot_nonzero_count": 0,
+    "alpha025_donor_QI_word": "00000000",
+    "alpha025_target_QI_word": "00000002",
+    "control_target_and_donor_QI_word": "00000000"
+  },
+  "records_per_case": 552,
+  "replay_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "rk3_saved_operand_calculation": {
+    "alpha025": {
+      "exact_QI_in_subnormal_ULP": "140428110501/79691776000",
+      "exact_QI_in_subnormal_ULP_approximately": 1.762140556398191,
+      "exact_round_to_nearest_even_word": "00000002",
+      "new_mass_exact": "95000",
+      "old_mass_exact": "95000",
+      "recorded_ADVECT_TEND_word": "000021A3",
+      "recorded_QI_word": "00000002",
+      "source_compatible_separate_word": "00000002"
+    },
+    "control": {
+      "exact_QI_in_subnormal_ULP": "0",
+      "exact_QI_in_subnormal_ULP_approximately": 0.0,
+      "exact_round_to_nearest_even_word": "00000000",
+      "new_mass_exact": "95000",
+      "old_mass_exact": "95000",
+      "recorded_ADVECT_TEND_word": "00000000",
+      "recorded_QI_word": "00000000",
+      "source_compatible_separate_word": "00000000"
+    }
+  },
+  "schema": "kdm6.native_qi_donor_transient.v1",
+  "trace_off_on_applied_ACK_equal": true,
+  "trace_off_on_checkpoint_equal": true
+}

@@ -1,0 +1,331 @@
+#!/usr/bin/env python3
+"""Export only the verified native target rows from paired private host runs."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import io
+import json
+from pathlib import Path
+import re
+import struct
+import sys
+
+ROOT = Path(__file__).resolve().parent
+WORKTREE = Path("/private/tmp/KDM6AD-native-c5-limiter")
+DSO = ROOT / "build/isolated_v1/lib/libkdm6_c.2.0.0.dylib"
+HEADER = "one_step_call,runtime_call,substep,b_zero,k_zero,B,K,stage,field,dtype,raw_hex"
+FOOTER = re.compile(r"# scalar_records=(\d+),metadata_records=(\d+),status=complete")
+TARGET_B = 22617
+TARGET_K = {20, 22}
+TILE2_B = 232 * 139
+STAGES = {
+    "abi_ingress": {"qi", "ni", "p", "den"},
+    "converted_ingress": {"scalar_ingress_state->qi", "scalar_ingress_state->ni",
+                          "scalar_ingress_state->t", "scalar_ingress_state->qv",
+                          "scalar_ingress_forcing->p", "scalar_ingress_forcing->den"},
+    "step_entry": {"state.qi", "state.ni", "state.t", "state.qv", "forcing.p", "forcing.den"},
+    "c3_in": {"pre.supcol", "pre.supsat", "pre.rh_ice", "prevp", "state.ni", "forcing.dend"},
+    "c3_out": {"icenuc.pinud", "icenuc.ninud", "icenuc.ifsat"},
+    "c4_in": {"state.qi", "state.qs", "state.qg", "n0i", "n0so", "n0go", "s.n0sfac_field",
+              "work1_ice", "pre.work2", "pre.precg2", "s.rslope_s", "s.rslope2_s",
+              "s.rslopeb_s", "s.rslopemu_s", "s.rslope_g", "s.rslope2_g", "s.rslopeb_g",
+              "s.rslopemu_g", "s.rslope2_i", "s.rslopemu_i"},
+    "c4_out": {"depsub.pidep", "depsub.psdep", "depsub.pgdep", "depsub.ifsat",
+               "depsub.ice_complete_sublim"},
+    "c5_in": {'params.di125', 'params.deni', 'dtcld', 'forcing.dend', 'state.t', 'fconst.pi_f32', 'params.qcrmin', 'state.ni', 'pre.supcol', 'state.qi', 'params.t_split'},
+    "c5_out": {"agg.psaut", "agg.nsaut"},
+    "limiter_in": {'warm_out.nrcol', 'ncmin', 'cold_out.nsacr', 'warm_out.praut', 'working.qs', 'cold_out.nsaci', 'cold_out.pgdep', 'dtcld', 'cold_out.nmulrg', 'mf5.nseml', 'working.nr', 'warm_out.pracw', 'warm_out.nracw', 'cold_out.nmulrs', 'cold_out.psevp', 'working.qg', 'cold_out.nmulcs', 'warm_out.prevp', 'cold_out.pmulcg', 'cold_out.pidep', 'cold_out.pgevp', 'cold_out.nsaut', 'mf5.pgeml', 'pre2.supcol', 'warm_out.nraut', 'cold_out.niacr', 'mf5.ngeml', 'cold_out.nmulcg', 'cold_out.pgacr_adj', 'working.nc', 'cold_out.pgaci', 'working.qc', 'working.qr', 'cold_out.ngacr', 'cold_out.psaci', 'cold_out.pmulcs', 'ncmin_present', 'mf5.pseml', 'cold_out.naacw', 'cold_out.praci', 'warm_out.nccol', 'cold_out.niacw', 'cold_out.psdep', 'cold_out.pracs', 'cold_out.psaut', 'cold_out.paacw_adj', 'cold_out.pmulrs', 'cold_out.piacw', 'cold_out.ngaci', 'cold_out.pinud', 'cold_out.psacr_adj', 'cold_out.nraci', 'cold_out.pmulrg', 'cold_out.ninud', 'working.ni', 'working.qi', 'cold_out.piacr'},
+    "pre_limit": {"cold_out.pidep", "cold_out.pinud", "cold_out.ninud"},
+    "limited": {"scaled.cold.pinud", "scaled.cold.ninud", "scaled.cold.pidep",
+                "scaled.cold.psdep", "scaled.cold.pgdep", "scaled.cold.psaut",
+                "scaled.cold.praci", "scaled.cold.psaci", "scaled.cold.pgaci",
+                "scaled.cold.piacw", "scaled.cold.pmulcs", "scaled.cold.pmulcg",
+                "scaled.cold.pmulrs", "scaled.cold.pmulrg", "scaled.cold.nraci",
+                "scaled.cold.nsaci", "scaled.cold.ngaci", "scaled.cold.niacr",
+                "scaled.cold.nsaut", "scaled.cold.nmulcs", "scaled.cold.nmulcg",
+                "scaled.cold.nmulrs", "scaled.cold.nmulrg"},
+    "state_in": {"working.qi", "working.ni"},
+    "state_out": {"new_state.qi", "new_state.ni"},
+    "dsd_in": {"new_state.qi", "new_state.ni", "forcing.dend", "ncmin_gate"},
+    "dsd_out": {"new_state.qi", "new_state.ni"},
+}
+
+
+def value(row):
+    bits = int(row["raw_hex"], 16)
+    if row["dtype"] == "f32":
+        require(bits < 1 << 32, "f32 bits")
+        return struct.unpack("<f", bits.to_bytes(4, "little"))[0]
+    if row["dtype"] == "f64":
+        require(bits < 1 << 64, "f64 bits")
+        return struct.unpack("<d", bits.to_bytes(8, "little"))[0]
+    require(bits in (0, 1), "bool bits")
+    return bool(bits)
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def read_capture(path):
+    require(path.suffix == ".csv" and not path.with_name(path.name + ".partial").exists(),
+            "published capture file only")
+    raw = path.read_bytes()
+    text = raw.decode("ascii")
+    lines = text.splitlines()
+    require(len(lines) >= 3 and lines[0] == HEADER, "capture header")
+    footer = FOOTER.fullmatch(lines[-1])
+    require(footer is not None, "capture completion footer")
+    rows = list(csv.DictReader(io.StringIO("\n".join(lines[:-1]) + "\n")))
+    scalar = [row for row in rows if row["stage"] != "meta"]
+    meta = [row for row in rows if row["stage"] == "meta"]
+    require(len(scalar) == int(footer.group(1)) and len(meta) == int(footer.group(2)) == 1,
+            "capture declared record count")
+    keys = set()
+    for row in rows:
+        require(set(row) == set(HEADER.split(",")) and None not in row and
+                row["dtype"] in {"f32", "f64", "bool"} and
+                re.fullmatch(r"[0-9a-f]+", row["raw_hex"]) is not None,
+                "capture row encoding")
+        for name in ("one_step_call", "runtime_call", "substep", "b_zero", "k_zero", "B", "K"):
+            require(row[name].isdigit(), "capture numeric index " + name)
+        key = tuple(row[name] for name in
+                    ("one_step_call", "runtime_call", "substep", "b_zero", "k_zero", "stage", "field"))
+        require(key not in keys, "duplicate capture row")
+        keys.add(key)
+        require(row["stage"] in STAGES or (row["stage"] == "meta" and row["field"] == "dtcld"),
+                "unknown capture stage/field")
+        require(row["stage"] == "meta" or row["field"] in STAGES[row["stage"]],
+                "capture field inventory")
+        require(row["dtype"] == ("f32" if row["stage"] == "abi_ingress" or row["field"] == "fconst.pi_f32" else "bool" if row["field"] in {"icenuc.ifsat", "depsub.ifsat", "depsub.ice_complete_sublim"} else "f64"), "exact field dtype")
+        require(row["dtype"] == "bool" if row["field"] in {
+            "icenuc.ifsat", "depsub.ifsat", "depsub.ice_complete_sublim"} else True,
+                "branch bool dtype")
+        require(row["dtype"] == "f64" if row["stage"] == "meta" else True,
+                "dtcld dtype")
+        decoded = value(row)
+        require(decoded == decoded and decoded not in (float("inf"), float("-inf")),
+                "capture finite value")
+    identities = {tuple(row[name] for name in ("one_step_call", "runtime_call", "substep", "B", "K"))
+                  for row in rows}
+    require(len(identities) == 1, "one invocation and shape per capture file")
+    identity = next(iter(identities))
+    b_count, level_count = map(int, identity[-2:])
+    require(b_count > TARGET_B and level_count > max(TARGET_K), "selected tensor indices in bounds")
+    expected_count = 12 * b_count + 2 * (sum(map(len, STAGES.values())) - len(STAGES["converted_ingress"]))
+    require(len(scalar) == expected_count, "complete per-call scalar inventory")
+    selected_map = {(int(row["k_zero"]), row["stage"]): set() for row in scalar
+                    if int(row["b_zero"]) == TARGET_B and int(row["k_zero"]) in TARGET_K}
+    for row in scalar:
+        b, k = int(row["b_zero"]), int(row["k_zero"])
+        require(0 <= b < b_count and 0 <= k < level_count, "capture index bounds")
+        require(k in TARGET_K, "capture level inventory")
+        require(row["stage"] == "converted_ingress" or b == TARGET_B,
+                "non-target stage at unexpected batch")
+        if b == TARGET_B:
+            selected_map[(k, row["stage"])].add(row["field"])
+    require(selected_map == {(k, stage): fields for k in TARGET_K
+                             for stage, fields in STAGES.items()},
+            "complete stage inventory for this call and each level")
+    require(meta[0]["field"] == "dtcld" and value(meta[0]) > 0,
+            "one positive dtcld metadata row")
+    selected = [row for row in scalar if int(row["b_zero"]) == TARGET_B and
+                int(row["k_zero"]) in TARGET_K]
+    return {"sha256": sha(raw), "total_rows": len(rows), "identity": identity,
+            "scalar_rows": len(scalar), "metadata_rows": len(meta),
+            "selected": selected, "metadata": meta}
+
+
+def unique_host_ingress_batch(path, host_records):
+    """Find the unique B whose converted ingress matches six host words."""
+    fields = {"scalar_ingress_state->qi": "QI",
+              "scalar_ingress_forcing->p": "P",
+              "scalar_ingress_forcing->den": "DEN"}
+    expected = {(k - 1, name): float(host_records[("MP_INPUT", 3, 164, k, 242)].value(name))
+                for k in (21, 23) for name in ("QI", "P", "DEN")}
+    matches = {}
+    with path.open("r", encoding="ascii") as stream:
+        for row in csv.DictReader(line for line in stream if not line.startswith("#")):
+            name = fields.get(row["field"])
+            if row["stage"] != "converted_ingress" or name is None:
+                continue
+            k = int(row["k_zero"])
+            if value(row) == expected[(k, name)]:
+                matches.setdefault(int(row["b_zero"]), set()).add((k, name))
+    exact = [b for b, fields_matched in matches.items() if len(fields_matched) == len(expected)]
+    require(exact == [TARGET_B], "unique global-to-C++ converted-ingress batch")
+    return {"batch_b_zero": TARGET_B, "six_host_fields_exact": True,
+            "unique_candidate_count": len(exact)}
+
+
+def main():
+    sys.path.insert(0, str(WORKTREE))
+    from harness.native_trace_records import validate_window_trace
+
+    off = json.loads((ROOT / "runs/off_v1/run_result.json").read_bytes())
+    on = json.loads((ROOT / "runs/on_v1/run_result.json").read_bytes())
+    for name in ("historical_plan_sha256", "origin_sha256", "startup_sha256",
+                 "endpoint_sha256", "historical_endpoint_sha256",
+                 "executable_sha256", "dso_sha256", "source_sha256"):
+        require(off[name] == on[name], "paired host identity " + name)
+    build_raw = (ROOT / "build/isolated_v1/build_receipt.json").read_bytes()
+    build = json.loads(build_raw)
+    require(sha(build_raw) == off["isolated_build_receipt_sha256"] ==
+            on["isolated_build_receipt_sha256"] and
+            build["schema"] == "kdm6.isolated_c5_limiter_capture_build.v1" and "-ffp-contract=off" in build["compile_flags"] and build["dso_sha256"] == off["dso_sha256"] and
+            {"src/coordinator.cpp": build["coordinator_source_sha256"]} == off["compiled_source_sha256"],
+            "isolated build provenance")
+    require(off["endpoint_sha256"] == off["historical_endpoint_sha256"] and
+            on["historical_endpoint_match"] and off["historical_endpoint_match"],
+            "historical endpoint bit identity")
+    host_traces = {}
+    trace_hashes = {}
+    for mode, receipt in (("off_v1", off), ("on_v1", on)):
+        session_path = Path(receipt["session_record"])
+        session = json.loads(session_path.read_bytes())
+        controls = session.get("controls", [])
+        require(session["status"] == "complete" and
+                session["execution"]["experiment_valid"] is True and
+                session["execution"]["active_input_identity_complete"] is True and
+                len(controls) == 1 and controls[0]["generation"] == 0 and
+                controls[0]["output_checkpoint_sha256"] == receipt["endpoint_sha256"] and
+                controls[0]["output_itimestep"] == 3 and
+                controls[0]["output_time"] == "2025-07-19_00:01:00" and
+                session["initial_itimestep"] == 2 and
+                session["library_candidate_sha256"] == receipt["dso_sha256"] ==
+                sha(DSO.read_bytes()) and
+                any(line.endswith(str(DSO)) for line in
+                    session["loaded_library_lines"]),
+                "validated completed native session " + mode)
+        trace_path = session_path.parent / "native_trace.hex"
+        host_traces[mode] = validate_window_trace(
+            trace_path, steps=(3,), i=164, j=242, levels=39, dt=20)
+        trace_hashes[mode] = sha(trace_path.read_bytes())
+    require(host_traces["off_v1"] == host_traces["on_v1"],
+            "host selected-column trace raw-bit noninterference")
+    require(len(on["capture_files"]) >= 2, "C++ capture inventory")
+    capture_dir = ROOT / "runs/on_v1/capture"
+    require(all(name.endswith(".csv") for name in on["capture_files"]) and
+            {path.name for path in capture_dir.iterdir()} == set(on["capture_files"]),
+            "exact complete C++ capture inventory")
+    capture = []
+    for name, expected in sorted(on["capture_files"].items()):
+        path = capture_dir / name
+        parsed = read_capture(path)
+        require(parsed["sha256"] == expected, "capture raw file hash")
+        capture.append({"name": name, **parsed})
+    selected_files = [item for item in capture if
+                      any(int(row["B"]) == TILE2_B for row in item["selected"])]
+    require(selected_files and all(
+        int(row["B"]) == TILE2_B for item in selected_files for row in item["selected"]),
+        "target tile shape and local batch index")
+    require(len({item["identity"][1] for item in selected_files}) == 1,
+            "one target wrapper runtime call")
+    unique_checks = [unique_host_ingress_batch(capture_dir / item["name"],
+                                                host_traces["on_v1"])
+                     for item in selected_files]
+    selected = [row for item in selected_files for row in item["selected"]]
+    baseline_path = WORKTREE / "harness/evidence/native_c3_c4_dsd_call_2026-11-01/selected_packet.json"
+    baseline_raw = baseline_path.read_bytes()
+    require(sha(baseline_raw) == "ef185f41ef0aca0226c980ee0449c7e8ec4809770c98e46a09acfc113c38a224", "baseline packet pin")
+    baseline = json.loads(baseline_raw)
+    for key in ("origin_sha256", "startup_sha256", "endpoint_sha256"):
+        require(baseline["run_on"][key] == on[key], "baseline run identity " + key)
+    old_rows = [row for row in selected if row["stage"] not in {"c5_in", "c5_out", "limiter_in"}]
+    def row_key(row):
+        return tuple(row[key] for key in HEADER.split(","))
+    require(sorted(map(row_key, old_rows)) == sorted(map(row_key, baseline["selected_rows"])),
+            "all baseline selected rows raw-bit unchanged")
+    coordinate_checks = []
+    for item in selected_files:
+        for k in TARGET_K:
+            rows = {(row["stage"], row["field"]): row for row in item["selected"]
+                    if int(row["k_zero"]) == k}
+            native = host_traces["on_v1"][("MP_INPUT", 3, 164, k + 1, 242)]
+            for source_name, abi_name, converted_name in (
+                ("QI", "qi", "scalar_ingress_state->qi"),
+                ("NI", "ni", "scalar_ingress_state->ni"),
+                ("P", "p", "scalar_ingress_forcing->p"),
+                ("DEN", "den", "scalar_ingress_forcing->den"),
+            ):
+                abi = rows[("abi_ingress", abi_name)]
+                converted = rows[("converted_ingress", converted_name)]
+                native_bits = native.bits[native.fields.index(source_name)]
+                require(int(abi["raw_hex"], 16) == native_bits,
+                        "host global target to ABI raw bits " + source_name)
+                bits = int(abi["raw_hex"], 16)
+                expected = (bits if converted["dtype"] == "f32" else
+                            int.from_bytes(struct.pack("<d", value(abi)), "little"))
+                require(int(converted["raw_hex"], 16) == expected,
+                        "ABI to converted ingress raw bits " + source_name)
+                coordinate_checks.append({
+                    "one_step_call": item["identity"][0], "runtime_call": item["identity"][1],
+                    "substep": item["identity"][2], "native_k_1based": k + 1,
+                    "field": source_name, "host_abi_bits_equal": True,
+                    "abi_dtype": abi["dtype"], "converted_dtype": converted["dtype"],
+                    "abi_value": value(abi), "converted_value": value(converted),
+                })
+            host_out = host_traces["on_v1"][("MP_OUTPUT", 3, 164, k + 1, 242)]
+            for name, field in (("QI", "qi"), ("NI", "ni")):
+                dsd = rows[("dsd_out", "new_state." + field)]
+                expected_bits = int.from_bytes(struct.pack("<f", value(dsd)), "little")
+                actual_bits = host_out.bits[host_out.fields.index(name)]
+                require(actual_bits == expected_bits, "C++ final to host MP_OUTPUT " + name)
+                coordinate_checks.append({
+                    "one_step_call": item["identity"][0], "runtime_call": item["identity"][1],
+                    "substep": item["identity"][2], "native_k_1based": k + 1,
+                    "field": name, "cpp_dsd_to_host_output_bits_equal": True,
+                    "cpp_dsd_value": value(dsd), "host_output_f32": value({
+                        "dtype": "f32", "raw_hex": format(actual_bits, "x")}),
+                })
+    summary = {
+        "schema": "kdm6.native_c5_limiter_selected.v1",
+        "scientific_status": "INCONCLUSIVE",
+        "exporter_sha256": sha(Path(__file__).read_bytes()),
+        "baseline_packet_sha256": sha(baseline_raw),
+        "baseline_selected_rows_raw_bit_equal": True,
+        "coordinate": {"native_ijk_1based": [[164, 242, 21], [164, 242, 23]],
+                       "tile2_its_ite_jts_jte": [2, 233, 143, 281],
+                       "batch_b_zero": TARGET_B, "k_zero": sorted(TARGET_K),
+                       "tile2_B": TILE2_B,
+                       "evidence": "one-rank WRF tile log plus microphysics driver packing source"},
+        "run_off": off, "run_on": on,
+        "isolated_build_receipt": build,
+        "host_trace_sha256": trace_hashes,
+        "host_selected_trace": {
+            mode: [
+                {"stage": stage, "step": 3, "native_ijk_1based": [164, 242, k],
+                 "fields": list(host_traces[mode][(stage, 3, 164, k, 242)].fields),
+                 "raw_hex": [format(bits, "08x") for bits in
+                             host_traces[mode][(stage, 3, 164, k, 242)].bits]}
+                for k in (21, 23) for stage in ("MP_INPUT", "MP_OUTPUT")
+            ] for mode in ("off_v1", "on_v1")
+        },
+        "unique_batch_checks": unique_checks,
+        "coordinate_checks": coordinate_checks,
+        "capture_files": [{key: item[key] for key in
+                           ("name", "sha256", "total_rows", "scalar_rows", "metadata_rows", "identity")}
+                          for item in capture],
+        "capture_metadata": [{"name": item["name"], "rows": item["metadata"]}
+                             for item in capture],
+        "selected_rows": selected,
+        "limitations": ["private full CSV, host executable, restart and assets are hash-pinned but not redistributed",
+                        "raw QNICE physical basis remains uncertified",
+                        "Host AD and raw QNICE physical basis remain uncertified"],
+    }
+    destination = ROOT / "selected_packet.json"
+    with destination.open("x") as stream:
+        json.dump(summary, stream, indent=2, sort_keys=True, allow_nan=False)
+        stream.write("\n")
+    print("NATIVE_C3_C4_DSD_SELECTED_EXPORTED", len(selected), "rows")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,12 @@
+{
+  "files": {
+    "cpp/main.cpp": "b0714ed6a35f818bcab87162f06eeda0a80e7614275501ad30d597e73133c9f4",
+    "cpp/runner.patch.gz": "64da9cf382d69b40cc662c0fdeb6c32875d804124ad50035eef6bfd3a03fcd31",
+    "raw/activation_boundary.json": "b80da7363594c00b700b4a4a2e12d1e41569ce1a51232100cdb0c36d4d6f90d3",
+    "raw/build_receipt.json": "a6c14437bd3324d6823d1e663b940e3e27b0246d776d54a07405543ac4a5a8b1",
+    "raw/run_receipt.json": "ede9c6771933bec6c3a1b25f727ad34ca1cdf86c233f256da62c0057c2a2f2bb",
+    "raw/runner_cache.txt.gz": "b41991f94a3785db92fd0ef7a2a98fcf4ad5cae98a61296cb64841f65b88827e",
+    "raw/runner_flags.make.gz": "b82835d31ba0d86888673b0e8559c6cc5b648328141f1c7ef689ec3f0fa4390a"
+  },
+  "schema": "kdm6.native_activation_upper_boundary_cpp_ad_packet.v1"
+}

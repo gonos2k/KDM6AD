@@ -1,0 +1,472 @@
+diff --git a/libtorch/CMakeLists.txt b/libtorch/CMakeLists.txt
+index 33bd4e185607b678628f38e83f7145ac88e7aa11..84066f1c6a12cd8987abf4e36d70f13472693493 100644
+--- a/libtorch/CMakeLists.txt
++++ b/libtorch/CMakeLists.txt
+@@ -44,7 +44,7 @@ target_include_directories(kdm6
+ )
+ option(KDM6_BATCH5_RESEARCH_CAPTURE "Enable private batch5 tensor sidecar" OFF)
+ if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-    target_sources(kdm6 PRIVATE src/batch5_capture.cpp src/batch5_intermediate_ad.cpp)
++    target_sources(kdm6 PRIVATE src/batch5_capture.cpp src/batch5_intermediate_ad.cpp src/batch5_conditions_v2.cpp)
+     target_compile_definitions(kdm6 PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE)
+ endif()
+ option(KDM6_NATIVE_SCALAR_CAPTURE "Enable value-only forensic scalar capture" OFF)
+@@ -78,7 +78,7 @@ if(KDM6_NATIVE_SCALAR_CAPTURE)
+     target_compile_definitions(kdm6_c PRIVATE KDM6_NATIVE_SCALAR_CAPTURE KDM6_ENABLE_NATIVE_FP64_VALUE_BRIDGE)
+ endif()
+ if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-    target_sources(kdm6_c PRIVATE bridge/batch5_sidecar.cpp)
++    target_sources(kdm6_c PRIVATE bridge/batch5_sidecar.cpp bridge/batch5_conditions_v2.cpp)
+     target_compile_definitions(kdm6_c PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE)
+ endif()
+ target_link_libraries(kdm6_c PUBLIC kdm6)
+@@ -106,7 +106,7 @@ if(APPLE)
+             string(APPEND _kdm6_capture_exports "\n_kdm6_moment_trace_context_c\n_kdm6_native_fp64_value_c\n")
+         endif()
+         if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-            string(APPEND _kdm6_capture_exports "\n_kdm6_batch5_begin_c\n_kdm6_batch5_count_c\n_kdm6_batch5_metadata_c\n_kdm6_batch5_value_word_c\n_kdm6_batch5_binding_token_c\n_kdm6_batch5_graph_primal_c\n_kdm6_batch5_result_rain_c\n_kdm6_batch5_intermediate_jvp_c\n_kdm6_batch5_intermediate_vjp_c\n_kdm6_batch5_clear_c\n")
++            string(APPEND _kdm6_capture_exports "\n_kdm6_batch5_begin_c\n_kdm6_batch5_count_c\n_kdm6_batch5_metadata_c\n_kdm6_batch5_value_word_c\n_kdm6_batch5_binding_token_c\n_kdm6_batch5_graph_primal_c\n_kdm6_batch5_result_rain_c\n_kdm6_batch5_intermediate_jvp_c\n_kdm6_batch5_intermediate_vjp_c\n_kdm6_batch5_clear_c\n_kdm6_batch5_condition_v2_count_c\n_kdm6_batch5_condition_v2_meta_c\n_kdm6_batch5_condition_v2_raw_c\n_kdm6_batch5_condition_v2_verify_absences_c\n")
+         endif()
+         set(_kdm6_c_exports "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.exports")
+         file(WRITE "${_kdm6_c_exports}" "${_kdm6_capture_exports}")
+@@ -122,7 +122,7 @@ elseif(UNIX)
+             string(APPEND _kdm6_capture_symbols "    kdm6_moment_trace_context_c;\n    kdm6_native_fp64_value_c;\n")
+         endif()
+         if(KDM6_BATCH5_RESEARCH_CAPTURE)
+-            string(APPEND _kdm6_capture_symbols "    kdm6_batch5_begin_c;\n    kdm6_batch5_count_c;\n    kdm6_batch5_metadata_c;\n    kdm6_batch5_value_word_c;\n    kdm6_batch5_binding_token_c;\n    kdm6_batch5_graph_primal_c;\n    kdm6_batch5_result_rain_c;\n    kdm6_batch5_intermediate_jvp_c;\n    kdm6_batch5_intermediate_vjp_c;\n    kdm6_batch5_clear_c;\n")
++            string(APPEND _kdm6_capture_symbols "    kdm6_batch5_begin_c;\n    kdm6_batch5_count_c;\n    kdm6_batch5_metadata_c;\n    kdm6_batch5_value_word_c;\n    kdm6_batch5_binding_token_c;\n    kdm6_batch5_graph_primal_c;\n    kdm6_batch5_result_rain_c;\n    kdm6_batch5_intermediate_jvp_c;\n    kdm6_batch5_intermediate_vjp_c;\n    kdm6_batch5_clear_c;\n    kdm6_batch5_condition_v2_count_c;\n    kdm6_batch5_condition_v2_meta_c;\n    kdm6_batch5_condition_v2_raw_c;\n    kdm6_batch5_condition_v2_verify_absences_c;\n")
+         endif()
+         string(REPLACE "  local:" "${_kdm6_capture_symbols}  local:" _kdm6_capture_map "${_kdm6_capture_map}")
+         set(_kdm6_c_version_script "${CMAKE_CURRENT_BINARY_DIR}/kdm6_c_capture.map")
+@@ -158,6 +158,12 @@ endif()
+ # ── tests ───────────────────────────────────────────────────────────────────
+ enable_testing()
+ if(KDM6_BATCH5_RESEARCH_CAPTURE)
++    add_executable(test_batch5_conditions_v2 tests/test_batch5_conditions_v2.cpp bridge/batch5_conditions_v2.cpp)
++    target_include_directories(test_batch5_conditions_v2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bridge)
++    target_compile_definitions(test_batch5_conditions_v2 PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE KDM6_C_BUILD=1)
++    target_compile_options(test_batch5_conditions_v2 PRIVATE -UNDEBUG)
++    target_link_libraries(test_batch5_conditions_v2 PRIVATE kdm6)
++    add_test(NAME batch5_conditions_v2 COMMAND test_batch5_conditions_v2)
+     add_executable(test_batch5_intermediate_ad tests/test_batch5_intermediate_ad.cpp)
+     target_compile_definitions(test_batch5_intermediate_ad PRIVATE KDM6_BATCH5_RESEARCH_CAPTURE)
+     target_compile_options(test_batch5_intermediate_ad PRIVATE -UNDEBUG)
+diff --git a/libtorch/bridge/batch5_conditions_v2.cpp b/libtorch/bridge/batch5_conditions_v2.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..2cddbdbd8b651c18f79d0233d21cf031bda8e76e
+--- /dev/null
++++ b/libtorch/bridge/batch5_conditions_v2.cpp
+@@ -0,0 +1,59 @@
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++#include "kdm6_c_api.h"
++#include "kdm6_batch5_conditions_v2.h"
++#include "kdm6/batch5_conditions_v2.h"
++#include <cstring>
++#include <mutex>
++#include <string>
++#include <stdexcept>
++namespace {
++template<std::size_t N> bool copy(char (&out)[N],const std::string& s){if(s.size()>=N)return false;std::memcpy(out,s.data(),s.size());out[s.size()]='\0';return true;}
++std::unique_lock<std::mutex> access(const void* h,std::uint64_t token){
++    auto c=kdm6::batch5::context_snapshot();
++    if(!c.forward_committed) throw std::runtime_error("v2 forward not committed");
++    if(c.mode=="center_joint_graph") return kdm6::batch5::lock_bound_handle(h,token);
++    if(c.mode!="capture_on_value" || h || token) throw std::runtime_error("v2 value context identity");
++    return {};
++}
++}
++extern "C" KDM6_C_API int kdm6_batch5_condition_v2_count_c(const void* h,std::uint64_t token,std::uint64_t* out){
++    try {if(!out)return -1;auto lock=access(h,token);auto n=kdm6::batch5::conditions_v2::records().size();*out=n;return 0;}catch(...){return -1;}
++}
++extern "C" KDM6_C_API int kdm6_batch5_condition_v2_meta_c(const void* h,std::uint64_t token,std::uint64_t index,kdm6_batch5_condition_v2_meta* out,std::size_t size){
++    try {
++        if(!out || size!=sizeof(*out) || out->abi_version!=KDM6_BATCH5_CONDITION_V2_VERSION || out->struct_size!=sizeof(*out))return -1;
++        auto lock=access(h,token);const auto& rows=kdm6::batch5::conditions_v2::records();if(index>=rows.size())return -1;
++        const auto& r=rows[index];kdm6_batch5_condition_v2_meta m{};m.abi_version=KDM6_BATCH5_CONDITION_V2_VERSION;m.struct_size=sizeof(m);
++        if(!copy(m.input_id,r.context.input_id)||!copy(m.mode,r.context.mode)||!copy(m.family,r.context.family)||!copy(m.stage,r.stage)||!copy(m.field,r.field)||!copy(m.source_hook,r.source_hook))return -1;
++        m.context_epoch=r.context.epoch;m.runtime_call=r.context.runtime_call;m.one_step_call=r.context.one_step_call;m.outer_loop=r.context.outer_loop;m.substep_n=r.context.substep_n;m.event_ordinal=r.event_ordinal;m.causal_index=r.causal_index;
++        m.b_zero=r.b_zero;m.k_zero=r.k_zero;m.native_level_bottom_first=r.native_level_bottom_first;m.B=r.B;m.K=r.K;m.role=uint32_t(r.role);m.dtype=uint32_t(r.dtype);m.scope=uint32_t(r.scope);m.reason=uint32_t(r.reason);*out=m;return 0;
++    } catch(...){return -1;}
++}
++extern "C" KDM6_C_API int kdm6_batch5_condition_v2_raw_c(const void* h,std::uint64_t token,std::uint64_t index,std::uint64_t* out){
++    try {
++        if(!out)return -1;auto lock=access(h,token);auto c=kdm6::batch5::context_snapshot();if(c.mode!="capture_on_value")return -1;
++        const auto& rows=kdm6::batch5::conditions_v2::records();if(index>=rows.size())return -1;const auto& r=rows[index];std::uint64_t bits=0;
++        if(r.role==kdm6::batch5::conditions_v2::Role::NOT_EVALUATED)return -1;
++        if(r.role==kdm6::batch5::conditions_v2::Role::CONTROL_SCALAR)bits=r.raw_control;
++        else {const auto& t=r.tensor;if(!t.defined()||!t.device().is_cpu()||t.numel()!=1||!t.is_contiguous())return -1;
++            if(r.dtype==kdm6::batch5::conditions_v2::Dtype::BOOL)bits=*t.data_ptr<bool>()?1:0;
++            else if(r.dtype==kdm6::batch5::conditions_v2::Dtype::F32){std::uint32_t x;std::memcpy(&x,t.data_ptr<float>(),4);bits=x;}
++            else if(r.dtype==kdm6::batch5::conditions_v2::Dtype::F64)std::memcpy(&bits,t.data_ptr<double>(),8);
++            else return -1;}
++        *out=bits;return 0;
++    } catch(...){return -1;}
++}
++extern "C" KDM6_C_API int kdm6_batch5_condition_v2_verify_absences_c(const void* h,std::uint64_t token,std::uint64_t* out){
++    try {
++        if(!out)return -1;auto lock=access(h,token);auto c=kdm6::batch5::context_snapshot();if(c.mode!="capture_on_value")return -1;
++        const auto& rows=kdm6::batch5::conditions_v2::records();std::uint64_t count=0;
++        for(const auto& r:rows) if(r.role==kdm6::batch5::conditions_v2::Role::NOT_EVALUATED){
++            if(r.causal_index>=rows.size())return -1;const auto& t=rows[r.causal_index].tensor;
++            if(!t.defined() || !t.device().is_cpu() || t.scalar_type()!=torch::kBool || t.numel()!=1 || !t.is_contiguous() || *t.data_ptr<bool>())return -1;
++            ++count;
++        }
++        *out=count;return 0;
++    } catch(...){return -1;}
++}
++
++#endif
+diff --git a/libtorch/bridge/kdm6_batch5_conditions_v2.h b/libtorch/bridge/kdm6_batch5_conditions_v2.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..aba5c23f4f3d79064440707824d9cff6b8b138f9
+--- /dev/null
++++ b/libtorch/bridge/kdm6_batch5_conditions_v2.h
+@@ -0,0 +1,32 @@
++#pragma once
++#include <stddef.h>
++#include <stdint.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++/* Separate research-only v2 metadata ABI; v1 is unchanged. */
++enum { KDM6_BATCH5_CONDITION_V2_VERSION = 2 };
++enum kdm6_batch5_condition_v2_role { KDM6_V2_CONSUMED_BOOL=1, KDM6_V2_DIAGNOSTIC=2, KDM6_V2_OPERAND=3, KDM6_V2_CONTROL=4, KDM6_V2_NOT_EVALUATED=5 };
++enum kdm6_batch5_condition_v2_dtype { KDM6_V2_BOOL=1, KDM6_V2_F32=2, KDM6_V2_F64=3, KDM6_V2_I64=4, KDM6_V2_NO_DTYPE=5 };
++enum kdm6_batch5_condition_v2_scope { KDM6_V2_LAYER=1, KDM6_V2_COLUMN=2, KDM6_V2_SCALAR=3 };
++enum kdm6_batch5_condition_v2_reason { KDM6_V2_NO_REASON=0, KDM6_V2_GATE_FALSE=1, KDM6_V2_OPTIONAL_ABSENT=2, KDM6_V2_FAMILY_NOT_REACHED=3 };
++struct kdm6_batch5_condition_v2_meta {
++    uint32_t abi_version, struct_size;
++    char input_id[128], mode[32], family[32], stage[64], field[64], source_hook[128];
++    uint64_t context_epoch, runtime_call, one_step_call, outer_loop, substep_n, event_ordinal, causal_index;
++    int64_t b_zero, k_zero, native_level_bottom_first, B, K;
++    uint32_t role, dtype, scope, reason;
++};
++/* Graph mode requires same live handle/token and thread. Value mode requires
++ * NULL/0. Metadata copy uses caller-initialized exact version and size. */
++int kdm6_batch5_condition_v2_count_c(const void*,uint64_t,uint64_t*);
++int kdm6_batch5_condition_v2_meta_c(const void*,uint64_t,uint64_t,struct kdm6_batch5_condition_v2_meta*,size_t);
++/* Raw copy is value-mode only. NOT_EVALUATED has no raw value; its causal
++ * reference is metadata and requires separate truth/coverage verification. */
++int kdm6_batch5_condition_v2_raw_c(const void*,uint64_t,uint64_t,uint64_t*);
++/* Check referenced predicate values only after value-only forward. This does
++ * not validate completeness or physical meaning; graph mode is unsupported. */
++int kdm6_batch5_condition_v2_verify_absences_c(const void*,uint64_t,uint64_t*);
++#ifdef __cplusplus
++}
++#endif
+diff --git a/libtorch/bridge/kdm6_c_api.cpp b/libtorch/bridge/kdm6_c_api.cpp
+index 86d0fdaab2999379663fb515d7e2ff2fba3e60e4..ff04345ebddb3003780ed23070ed90e407d5256d 100644
+--- a/libtorch/bridge/kdm6_c_api.cpp
++++ b/libtorch/bridge/kdm6_c_api.cpp
+@@ -930,6 +930,7 @@ static int kdm6_step_ad_variant_impl(
+             if (kdm6::batch5::has_active_context()) {
+                 if (im!=1 || kme!=39 || jme!=1) throw std::runtime_error("batch5 narrow rain shape");
+                 kdm6::batch5::commit_rain(result.rain_increment);
++                kdm6::batch5::mark_forward_committed();
+             }
+ #endif
+             *handle = nullptr;
+@@ -946,6 +947,7 @@ static int kdm6_step_ad_variant_impl(
+                         throw std::runtime_error("batch5 requires narrow joint graph");
+                     kdm6::batch5::bind_handle(h);
+                     kdm6::batch5::commit_rain(result.rain_increment);
++                    kdm6::batch5::mark_forward_committed();
+                 }
+             } catch (...) { kdm6::batch5::invalidate_handle(h); delete h; throw; }
+ #endif
+diff --git a/libtorch/include/kdm6/batch5_capture.h b/libtorch/include/kdm6/batch5_capture.h
+index b3697481c94e3eeef4c02d09e5e485e848694d17..cc57e3a5b9148a250d38a156eb47e0143ce5b99c 100644
+--- a/libtorch/include/kdm6/batch5_capture.h
++++ b/libtorch/include/kdm6/batch5_capture.h
+@@ -21,6 +21,14 @@ struct Record {
+     torch::Tensor tensor;
+ };
+ struct InputLeaves { std::vector<torch::Tensor> state, forcing; };
++// Internal context snapshot; no tensors or raw pointers cross the ABI.
++struct ContextSnapshot {
++    std::string input_id, mode, family;
++    std::uint64_t epoch, runtime_call, one_step_call, outer_loop, substep_n;
++    bool forward_committed;
++};
++ContextSnapshot context_snapshot();
++void mark_forward_committed();
+ // Narrow prototype: full() requires rank-2 B=1,K=39 and rejects broadcasts;
+ // layer/column likewise require B=1 and layer K=39. No general host API.
+ // Thread-local ownership: begin/call/read/AD/clear must run on the same OS thread.
+diff --git a/libtorch/include/kdm6/batch5_conditions_v2.h b/libtorch/include/kdm6/batch5_conditions_v2.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..f39e7d3ba612288b60ce804a0f418be5dca99b5d
+--- /dev/null
++++ b/libtorch/include/kdm6/batch5_conditions_v2.h
+@@ -0,0 +1,34 @@
++#pragma once
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++#include "kdm6/batch5_capture.h"
++#include <cstdint>
++#include <string>
++#include <vector>
++namespace kdm6::batch5::conditions_v2 {
++enum class Role : std::uint8_t { CONSUMED_BOOL_TENSOR=1, DIAGNOSTIC_COMPARISON=2, OPERAND=3, CONTROL_SCALAR=4, NOT_EVALUATED=5 };
++enum class Dtype : std::uint8_t { BOOL=1, F32=2, F64=3, I64=4, NONE=5 };
++enum class Scope : std::uint8_t { LAYER=1, COLUMN=2, SCALAR=3 };
++enum class Reason : std::uint8_t { NONE=0, GATE_FALSE=1, OPTIONAL_INPUT_ABSENT=2, FAMILY_NOT_REACHED=3 };
++struct Record {
++    ContextSnapshot context;
++    std::string stage, field, source_hook;
++    Role role; Dtype dtype; Scope scope; Reason reason;
++    std::int64_t b_zero, k_zero, native_level_bottom_first, B, K;
++    std::uint64_t event_ordinal, raw_control, causal_index;
++    torch::Tensor tensor;
++};
++constexpr std::uint64_t NO_CAUSE=UINT64_MAX;
++// Caller selects one real source tensor view; no recomputation is implied.
++void tensor(const char* stage,const char* field,const char* source_hook, Role role,
++            Scope scope,const torch::Tensor& source,std::int64_t k_top,bool top_first,
++            std::uint64_t ordinal);
++void control(const char* stage,const char* field,const char* source_hook,Dtype dtype,
++             std::uint64_t raw_bits,std::uint64_t ordinal);
++// Refers to prior same-context consumed predicate; later verifier must prove it
++// is false. Metadata linkage does not itself establish the predicate's truth.
++void absent(const char* stage,const char* field,const char* source_hook, Scope scope,
++            std::int64_t k_top,Reason reason,std::uint64_t causal_index,std::uint64_t ordinal);
++const std::vector<Record>& records();
++void clear();
++}
++#endif
+diff --git a/libtorch/src/batch5_capture.cpp b/libtorch/src/batch5_capture.cpp
+index 238c09433e16a94218d68fe6f520ab407a13b858..56b73e1a18665fb91336dc39e9bdf00d236d3291 100644
+--- a/libtorch/src/batch5_capture.cpp
++++ b/libtorch/src/batch5_capture.cpp
+@@ -1,4 +1,5 @@
+ #include "kdm6/batch5_capture.h"
++#include "kdm6/batch5_conditions_v2.h"
+ #ifdef KDM6_BATCH5_RESEARCH_CAPTURE
+ #include <map>
+ #include <mutex>
+@@ -17,11 +18,13 @@ struct Context {
+     bool is_top_first = false;
+     std::string input_id, mode, family = "runtime", source_site;
+     std::uint64_t observed_one_steps = 0;
++    std::uint64_t epoch = 0;
+     std::uint64_t runtime_call = 0, one_step_call = 0, outer_loop = 0, substep_n = 0;
+     std::vector<Record> data;
+     InputLeaves leaves;
+     torch::Tensor result_rain;
+     bool rain_committed = false;
++    bool forward_committed = false;
+     const void* handle = nullptr;
+     std::uint64_t token = 0;
+     std::shared_ptr<std::atomic<bool>> valid;
+@@ -30,6 +33,7 @@ struct Context {
+ thread_local Context ctx;
+ thread_local std::uint64_t runtime_sequence = 0;
+ std::atomic<std::uint64_t> token_sequence{0};
++std::atomic<std::uint64_t> epoch_sequence{0};
+ std::mutex binding_mutex;
+ std::map<const void*, std::shared_ptr<std::atomic<bool>>> bindings;
+ void add(const char* stage, const char* field, const char* scope,
+@@ -48,7 +52,9 @@ void begin(const std::string& input_id,const std::string& mode,std::uint64_t run
+     if (input_id.empty() || input_id.size()>=128 || (mode!="capture_on_value" && mode!="capture_off_value" && mode!="center_joint_graph") || runtime_call==0)
+         throw std::invalid_argument("batch5 capture context invalid");
+     if (ctx.on) throw std::runtime_error("batch5 prior context must be explicitly cleared");
+-    ctx=Context{}; ctx.on=true;ctx.input_id=input_id;ctx.mode=mode;ctx.runtime_call=runtime_call;
++    auto epoch=++epoch_sequence;
++    if(epoch==0) throw std::runtime_error("batch5 context epoch exhausted");
++    ctx=Context{}; ctx.on=true;ctx.input_id=input_id;ctx.mode=mode;ctx.runtime_call=runtime_call;ctx.epoch=epoch;
+ }
+ void invalidate_handle(const void* handle) {
+     std::lock_guard<std::mutex> lock(binding_mutex);
+@@ -63,6 +69,7 @@ void clear(){
+         ctx.valid->store(false);
+         if (it!=bindings.end() && it->second==ctx.valid) bindings.erase(it);
+     }
++    conditions_v2::clear();
+     ctx=Context{};
+ }
+ void bind_handle(const void* handle) {
+@@ -88,6 +95,16 @@ std::uint64_t binding_token(const void* handle) {
+     return token;
+ }
+ 
++ContextSnapshot context_snapshot(){
++    if(!ctx.on || !ctx.entered || ctx.mode=="capture_off_value") throw std::runtime_error("batch5 v2 inactive context");
++    return {ctx.input_id,ctx.mode,ctx.family,ctx.epoch,ctx.runtime_call,ctx.one_step_call,ctx.outer_loop,ctx.substep_n,ctx.forward_committed};
++}
++void mark_forward_committed(){
++    if(!ctx.on || !ctx.entered || !ctx.rain_committed || ctx.forward_committed ||
++       (ctx.mode=="center_joint_graph" && (!ctx.handle || !ctx.valid || !ctx.valid->load())))
++        throw std::runtime_error("batch5 cannot commit incomplete forward");
++    ctx.forward_committed=true;
++}
+ bool has_active_context(){return ctx.on;}
+ bool accepts_f64_call(bool value_only){
+     return ctx.on && !ctx.entered && (value_only==(ctx.mode!="center_joint_graph"));
+diff --git a/libtorch/src/batch5_conditions_v2.cpp b/libtorch/src/batch5_conditions_v2.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc3c9d43ce5c12b6b4cc56a2e865afadc1478399
+--- /dev/null
++++ b/libtorch/src/batch5_conditions_v2.cpp
+@@ -0,0 +1,84 @@
++#include "kdm6/batch5_conditions_v2.h"
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE
++#include <map>
++#include <stdexcept>
++#include <tuple>
++#include <utility>
++namespace kdm6::batch5::conditions_v2 {
++namespace {
++using Key=std::tuple<std::uint64_t,std::uint64_t,std::uint64_t,std::string,std::uint64_t,int,std::int64_t,std::int64_t,std::int64_t,std::int64_t,std::string,std::string,std::string,int>;
++thread_local std::vector<Record> data;
++thread_local std::map<Key,std::uint64_t> ordinals;
++thread_local std::uint64_t epoch=0;
++void check_context(const ContextSnapshot& c) {
++    if(epoch && epoch!=c.epoch) throw std::runtime_error("v2 stale context requires clear");
++}
++void append(Record r) {
++    check_context(r.context);
++    if(data.size()>=2000000) throw std::runtime_error("v2 record limit");
++    if(r.stage.empty() || r.field.empty() || r.source_hook.empty() || r.stage.size()>=64 || r.field.size()>=64 || r.source_hook.size()>=128)
++        throw std::runtime_error("v2 invalid record label");
++    Key key{r.context.runtime_call,r.context.one_step_call,r.context.outer_loop,r.context.family,r.context.substep_n,
++            int(r.scope),r.b_zero,r.k_zero,r.B,r.K,r.stage,r.field,r.source_hook,int(r.role)};
++    auto it=ordinals.find(key);auto next=it==ordinals.end()?0:it->second;
++    if(r.event_ordinal!=next) throw std::runtime_error("v2 duplicate or missing event ordinal");
++    data.push_back(std::move(r));
++    try { ordinals[key]=next+1; } catch (...) {data.pop_back();throw;}
++    epoch=data.back().context.epoch;
++}
++Record base(const char* stage,const char* field,const char* hook,Role role,Scope scope,std::uint64_t ord) {
++    if(!stage || !field || !hook) throw std::runtime_error("v2 null label");
++    auto c=context_snapshot();check_context(c);
++    if(c.forward_committed) throw std::runtime_error("v2 forward already committed");
++    return {c,stage,field,hook,role,Dtype::NONE,scope,Reason::NONE,-1,-1,-1,-1,-1,ord,0,NO_CAUSE,{}};
++}
++bool same_context(const Record& a,const Record& b) {
++    const auto& x=a.context; const auto& y=b.context;
++    return x.epoch==y.epoch && x.runtime_call==y.runtime_call && x.one_step_call==y.one_step_call &&
++           x.outer_loop==y.outer_loop && x.family==y.family && x.substep_n==y.substep_n &&
++           a.scope==b.scope && a.b_zero==b.b_zero && a.k_zero==b.k_zero &&
++           a.native_level_bottom_first==b.native_level_bottom_first && a.B==b.B && a.K==b.K && a.event_ordinal==b.event_ordinal;
++}
++}
++void tensor(const char* stage,const char* field,const char* hook,Role role,Scope scope,
++            const torch::Tensor& source,std::int64_t k,bool top_first,std::uint64_t ordinal) {
++    if(role!=Role::CONSUMED_BOOL_TENSOR && role!=Role::DIAGNOSTIC_COMPARISON && role!=Role::OPERAND)
++        throw std::runtime_error("v2 invalid tensor role");
++    if(!source.defined() || !source.device().is_cpu()) throw std::runtime_error("v2 invalid tensor");
++    auto r=base(stage,field,hook,role,scope,ordinal);
++    if(scope==Scope::LAYER) {
++        if(source.dim()!=2 || source.size(0)!=1 || source.size(1)!=39 || k<0 || k>=39) throw std::runtime_error("v2 invalid layer shape");
++        auto storage=top_first?k:38-k;r.b_zero=0;r.k_zero=k;r.native_level_bottom_first=39-k;r.B=1;r.K=39;
++        r.tensor=source.select(0,0).select(0,storage);
++    } else if(scope==Scope::COLUMN) {
++        if(source.dim()!=1 || source.size(0)!=1 || k!=-1) throw std::runtime_error("v2 invalid column shape");
++        r.b_zero=0;r.B=1;r.tensor=source.select(0,0);
++    } else throw std::runtime_error("v2 tensor scalar scope unsupported");
++    if(role==Role::OPERAND) {
++        if(source.scalar_type()==torch::kFloat32) r.dtype=Dtype::F32;
++        else if(source.scalar_type()==torch::kFloat64) r.dtype=Dtype::F64;
++        else throw std::runtime_error("v2 operand dtype");
++    } else {
++        if(source.scalar_type()!=torch::kBool) throw std::runtime_error("v2 predicate dtype");
++        r.dtype=Dtype::BOOL;
++    }
++    append(std::move(r));
++}
++void control(const char* stage,const char* field,const char* hook,Dtype dtype,std::uint64_t bits,std::uint64_t ordinal) {
++    if((dtype==Dtype::F32 && (bits>>32)!=0) || (dtype==Dtype::BOOL && bits>1) ||
++       (dtype!=Dtype::F32 && dtype!=Dtype::F64 && dtype!=Dtype::I64 && dtype!=Dtype::BOOL)) throw std::runtime_error("v2 control dtype/raw");
++    auto r=base(stage,field,hook,Role::CONTROL_SCALAR,Scope::SCALAR,ordinal);r.dtype=dtype;r.raw_control=bits;append(std::move(r));
++}
++void absent(const char* stage,const char* field,const char* hook,Scope scope,std::int64_t k,Reason reason,std::uint64_t cause,std::uint64_t ordinal) {
++    if(reason!=Reason::GATE_FALSE && reason!=Reason::OPTIONAL_INPUT_ABSENT && reason!=Reason::FAMILY_NOT_REACHED) throw std::runtime_error("v2 invalid absence reason");
++    auto r=base(stage,field,hook,Role::NOT_EVALUATED,scope,ordinal);r.reason=reason;r.causal_index=cause;
++    if(scope==Scope::LAYER && k>=0 && k<39){r.b_zero=0;r.k_zero=k;r.native_level_bottom_first=39-k;r.B=1;r.K=39;}
++    else if(scope==Scope::COLUMN && k==-1){r.b_zero=0;r.B=1;}
++    else throw std::runtime_error("v2 absence scope");
++    if(cause>=data.size() || data[cause].role!=Role::CONSUMED_BOOL_TENSOR || !same_context(r,data[cause])) throw std::runtime_error("v2 borrowed causal predicate");
++    append(std::move(r));
++}
++const std::vector<Record>& records(){auto c=context_snapshot();check_context(c);return data;}
++void clear(){data.clear();ordinals.clear();epoch=0;}
++}
++#endif
+diff --git a/libtorch/tests/test_batch5_conditions_v2.cpp b/libtorch/tests/test_batch5_conditions_v2.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..49196f22ef627de660e755fa0713e6a3127eeb8b
+--- /dev/null
++++ b/libtorch/tests/test_batch5_conditions_v2.cpp
+@@ -0,0 +1,73 @@
++// Synthetic v2 schema mechanics only; no KDM model calls or physical approval.
++#include "kdm6/batch5_capture.h"
++#include "kdm6/batch5_conditions_v2.h"
++#include "kdm6_batch5_conditions_v2.h"
++#include <cassert>
++#include <cstring>
++#include <stdexcept>
++#include <thread>
++using namespace kdm6::batch5;
++namespace v2=kdm6::batch5::conditions_v2;
++int main(){
++    auto mask=torch::zeros({1,39},torch::TensorOptions().dtype(torch::kBool));
++    auto values=torch::arange(39,torch::TensorOptions().dtype(torch::kFloat64)).reshape({1,39});
++    auto rain=torch::ones({1},torch::kFloat64);
++    // A forward that never commits cannot disclose its partial records.
++    begin("failed", "capture_on_value", 1);enter_runtime(true);outer(0);phase("sedimentation_main",1);
++    v2::tensor("s","gate","source.gate",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,mask,0,true,0);
++    std::uint64_t count=99;assert(kdm6_batch5_condition_v2_count_c(nullptr,0,&count)!=0 && count==99);clear();
++    begin("value", "capture_on_value", 2);enter_runtime(true);outer(0);phase("sedimentation_main",1);
++    v2::tensor("s","gate","source.gate",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,mask,0,true,0);
++    v2::absent("s","operand","source.operand",v2::Scope::LAYER,0,v2::Reason::GATE_FALSE,0,0);
++    v2::tensor("s","compare","source.compare",v2::Role::DIAGNOSTIC_COMPARISON,v2::Scope::COLUMN,torch::zeros({1},torch::kBool),-1,true,0);
++    v2::tensor("s","operand","source.value",v2::Role::OPERAND,v2::Scope::LAYER,values,0,false,0);
++    v2::control("s","f32","source.f32",v2::Dtype::F32,UINT64_C(0x3f800000),0);
++    v2::control("s","f64","source.f64",v2::Dtype::F64,UINT64_C(0x3ff0000000000000),0);
++    v2::control("s","integer","source.integer",v2::Dtype::I64,UINT64_C(42),0);
++    v2::control("s","bool","source.bool",v2::Dtype::BOOL,UINT64_C(1),0);
++    bool failed=false;try{v2::tensor("s","gate","source.gate",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,mask,0,true,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::tensor("s","gate","source.gate",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,mask,0,true,2);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::tensor("s","wrong","source.wrong",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,values,0,true,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::tensor("s","wrong","source.wrong",static_cast<v2::Role>(99),v2::Scope::LAYER,mask,0,true,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::tensor("s","wrong","source.wrong",v2::Role::OPERAND,v2::Scope::SCALAR,values,0,true,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::control("s","bad","source.bad",v2::Dtype::BOOL,2,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::control("s","bad","source.bad",v2::Dtype::F32,UINT64_C(0x100000000),0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::absent("s","bad","source.bad",v2::Scope::LAYER,0,v2::Reason::NONE,0,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::absent("s","bad","source.bad",v2::Scope::LAYER,0,v2::Reason::GATE_FALSE,v2::NO_CAUSE,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    failed=false;try{v2::absent("s","bad","source.bad",v2::Scope::LAYER,1,v2::Reason::GATE_FALSE,0,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    phase("sedimentation_main",2);failed=false;try{v2::absent("s","bad","source.bad",v2::Scope::LAYER,0,v2::Reason::GATE_FALSE,0,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    phase("sedimentation_main",1);
++    count=99;assert(kdm6_batch5_condition_v2_count_c(nullptr,0,&count)!=0 && count==99);
++    commit_rain(rain);mark_forward_committed();
++    assert(kdm6_batch5_condition_v2_count_c(nullptr,0,&count)==0 && count==8);
++    failed=false;try{v2::control("s","late","source.late",v2::Dtype::F64,0,0);}catch(const std::runtime_error&){failed=true;}assert(failed);
++    kdm6_batch5_condition_v2_meta meta{};meta.abi_version=2;meta.struct_size=sizeof(meta);auto before=meta;
++    assert(kdm6_batch5_condition_v2_meta_c(nullptr,0,0,&meta,sizeof(meta)-1)!=0 && std::memcmp(&meta,&before,sizeof(meta))==0);
++    assert(kdm6_batch5_condition_v2_meta_c(nullptr,0,0,&meta,sizeof(meta))==0);
++    assert(meta.role==KDM6_V2_CONSUMED_BOOL && meta.scope==KDM6_V2_LAYER && meta.k_zero==0 && meta.native_level_bottom_first==39 && meta.B==1 && meta.K==39 && meta.substep_n==1);
++    assert(kdm6_batch5_condition_v2_meta_c(nullptr,0,2,&meta,sizeof(meta))==0 && meta.scope==KDM6_V2_COLUMN && meta.B==1 && meta.K==-1 && meta.b_zero==0 && meta.k_zero==-1);
++    assert(kdm6_batch5_condition_v2_meta_c(nullptr,0,4,&meta,sizeof(meta))==0 && meta.scope==KDM6_V2_SCALAR && meta.b_zero==-1 && meta.k_zero==-1 && meta.native_level_bottom_first==-1 && meta.B==-1 && meta.K==-1);
++    std::uint64_t raw=99;assert(kdm6_batch5_condition_v2_raw_c(nullptr,0,0,&raw)==0 && raw==0);
++    assert(kdm6_batch5_condition_v2_raw_c(nullptr,0,3,&raw)==0 && raw==UINT64_C(0x4043000000000000));
++    assert(kdm6_batch5_condition_v2_raw_c(nullptr,0,4,&raw)==0 && raw==UINT64_C(0x3f800000));
++    raw=99;assert(kdm6_batch5_condition_v2_raw_c(nullptr,0,1,&raw)!=0 && raw==99);
++    assert(kdm6_batch5_condition_v2_verify_absences_c(nullptr,0,&count)==0 && count==1);
++    clear();count=99;assert(kdm6_batch5_condition_v2_count_c(nullptr,0,&count)!=0 && count==99);
++    // A true causal predicate cannot justify a declared inactive result.
++    begin("true","capture_on_value",3);enter_runtime(true);outer(0);phase("sedimentation_main",1);
++    auto true_mask=torch::ones({1,39},torch::kBool);
++    v2::tensor("s","true","source.true",v2::Role::CONSUMED_BOOL_TENSOR,v2::Scope::LAYER,true_mask,1,true,0);
++    v2::absent("s","missing","source.missing",v2::Scope::LAYER,1,v2::Reason::GATE_FALSE,0,0);
++    commit_rain(rain);mark_forward_committed();count=99;assert(kdm6_batch5_condition_v2_verify_absences_c(nullptr,0,&count)!=0 && count==99);clear();
++    begin("graph","center_joint_graph",4);enter_runtime(false);outer(0);micro_step();
++    auto leaf=torch::ones({1,39},torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true));
++    v2::tensor("g","operand","source.graph",v2::Role::OPERAND,v2::Scope::LAYER,leaf*2.,0,false,0);
++    const int handle=1;bind_handle(&handle);const auto token=binding_token(&handle);count=99;
++    assert(kdm6_batch5_condition_v2_count_c(&handle,token,&count)!=0 && count==99);
++    commit_rain(rain);mark_forward_committed();assert(kdm6_batch5_condition_v2_count_c(&handle,token,&count)==0 && count==1);
++    raw=99;assert(kdm6_batch5_condition_v2_raw_c(&handle,token,0,&raw)!=0 && raw==99);
++    bool foreign=false;std::thread other([&]{std::uint64_t n=77;foreign=kdm6_batch5_condition_v2_count_c(&handle,token,&n)!=0 && n==77;});other.join();assert(foreign);
++    invalidate_handle(&handle);count=99;assert(kdm6_batch5_condition_v2_count_c(&handle,token,&count)!=0 && count==99);clear();
++    begin("off","capture_off_value",5);enter_runtime(true);failed=false;
++    try{v2::control("s","bad","source.bad",v2::Dtype::F64,0,0);}catch(const std::runtime_error&){failed=true;}assert(failed);clear();
++}

@@ -1,0 +1,227 @@
+{
+  "schema": "kdm6.native_f32_activation_boundary.private_preflight.v1",
+  "experiment_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_f32_activation_boundary_20261111",
+  "parent": "#577 activation operand boundary packet",
+  "input": {
+    "path": "input.bin",
+    "sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+    "source_note": "saved native 203,149 39-level f64 packet; independent preflight confirmed 624/624 state/forcing values cast exactly to REAL4"
+  },
+  "instrumented_source_origin": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_activation_operands_ad_20261110/source",
+    "source_snapshot_coordinator_sha256": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b",
+    "runtime_capture_snapshot_sha256": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10",
+    "ops_snapshot_sha256": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014",
+    "files": [
+      {
+        "path": "source/src/cloud_dsd.cpp",
+        "sha256": "987da43ab5bd7107b487cb60fe919d4aff216461c102c22c1acc5d635090b4e4"
+      },
+      {
+        "path": "source/src/cold.cpp",
+        "sha256": "7b8890b3f64b0d794c523b9375e04e891c88a10a0a1fa8c690e3f18f29556834"
+      },
+      {
+        "path": "source/src/coordinator.cpp",
+        "sha256": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b"
+      },
+      {
+        "path": "source/src/coordinator.cpp.orig",
+        "sha256": "7f0df16512eb9dd3021f33b53d435a860b9ea00c0c25ad9219704a6c10790bce"
+      },
+      {
+        "path": "source/src/melt_freeze.cpp",
+        "sha256": "1ed554222491708220feeee29af730feb16007dc3d79d2139bd3af04f309a109"
+      },
+      {
+        "path": "source/src/ops.cpp",
+        "sha256": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014"
+      },
+      {
+        "path": "source/src/progb.cpp",
+        "sha256": "00c2527db1e6801d691ca267bb49495e20c1b6710515933a938262f8a6d4ec97"
+      },
+      {
+        "path": "source/src/runtime.cpp",
+        "sha256": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10"
+      },
+      {
+        "path": "source/src/runtime.cpp.orig",
+        "sha256": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b"
+      },
+      {
+        "path": "source/src/satadj.cpp",
+        "sha256": "9b0943fe5a8f52001dcadbf73f570631e801f30a7f67e2d8d970e02eb432e1f9"
+      },
+      {
+        "path": "source/src/sedimentation.cpp",
+        "sha256": "3f9344a2b1a3c314835d2436cb47204c7a9a06b3c0b3a242c965f89d1ebcd14c"
+      },
+      {
+        "path": "source/src/sedimentation_conservative.cpp",
+        "sha256": "3091bd0cd6ac267037e1feeaec3c6cf0c5fb17654ff6f16f06d920958b6c357d"
+      },
+      {
+        "path": "source/src/slope.cpp",
+        "sha256": "202f7b197ae9f12df9cbca18d92ea0920123b54c4d2b8dbd357aa89e5fc246ec"
+      },
+      {
+        "path": "source/src/state.cpp",
+        "sha256": "df342349bf9176ad85b48de75f01d46c4e9a0d1e955fa30570c0a9caf73231a3"
+      },
+      {
+        "path": "source/src/thermo.cpp",
+        "sha256": "f4c887ba754244f781a27cd94dc42341e7559be7680947f74ea27d06507dbe4b"
+      },
+      {
+        "path": "source/src/warm.cpp",
+        "sha256": "0c48327beef36a619a2e806ca1406ddf07408a30d71ac239db8feff7a56d7cfb"
+      },
+      {
+        "path": "source/include/kdm6/cloud_dsd.h",
+        "sha256": "1cf3d37df0b06329f2265d09dd09b9a9514d7c23cafa51368d8042593823ad2a"
+      },
+      {
+        "path": "source/include/kdm6/cold.h",
+        "sha256": "97016e73c21f3d6329ea9ff7c4723f4ab0129ae2fab69d17e24235005f07962a"
+      },
+      {
+        "path": "source/include/kdm6/constants.h",
+        "sha256": "f9e41a49e36414f9247f1a645051ba78b4dc7847bdc084669e4a96516a2a3f74"
+      },
+      {
+        "path": "source/include/kdm6/coordinator.h",
+        "sha256": "7afb3fe12379f8aefd2472101ec54328f5d236aa3b2b91f91779e5c18056831c"
+      },
+      {
+        "path": "source/include/kdm6/fconst.h",
+        "sha256": "0bd277fe788a0b334441c9295fdcef8d0cb8f8eefd9ce5d98172b4cef63aba1d"
+      },
+      {
+        "path": "source/include/kdm6/melt_freeze.h",
+        "sha256": "a8e562d644ea7aa88a8221f4ef30aea5b48cdd80a7173f3d71cf8c5678808292"
+      },
+      {
+        "path": "source/include/kdm6/ops.h",
+        "sha256": "4a11cca456b9a0095917e96c4fea1ec7347e4c0050416925d837bbdc002d8b5d"
+      },
+      {
+        "path": "source/include/kdm6/progb.h",
+        "sha256": "76b8510077233b84304b159df103107c324be4ed0d7824dc63e3d0d9f878c6dd"
+      },
+      {
+        "path": "source/include/kdm6/runtime.h",
+        "sha256": "7820c9acd0866dd32521054a88d727ce88c91af629275940b4b7eea0046f6276"
+      },
+      {
+        "path": "source/include/kdm6/satadj.h",
+        "sha256": "f849ef31c79494d240c9c02680837370bccbd28c4380ed8106bd331607fc9b51"
+      },
+      {
+        "path": "source/include/kdm6/sedimentation.h",
+        "sha256": "26c849172d3b2e0dfd15e860c6fe575701d46efaf32550a0f94229b742064c0b"
+      },
+      {
+        "path": "source/include/kdm6/sedimentation_conservative.h",
+        "sha256": "ce05feb9e7347fbbfc113d8ef51c5a93b0c89d073bc8107134bb2dfdaaf182c2"
+      },
+      {
+        "path": "source/include/kdm6/slope.h",
+        "sha256": "410c00b1efc66a901cf2537c8b547d97589a8a455c639e2dc4c20fc1d8c1f982"
+      },
+      {
+        "path": "source/include/kdm6/state.h",
+        "sha256": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d"
+      },
+      {
+        "path": "source/include/kdm6/thermo.h",
+        "sha256": "52c5050b9a746d1e8a760ee7c0431a6b60515a5389d7678db41a0905db3e0fc8"
+      },
+      {
+        "path": "source/include/kdm6/warm.h",
+        "sha256": "d41f7d4da4945ce5b0eaa818cfc44eff6039b4d43463ab2e44c702d6541f993f"
+      },
+      {
+        "path": "source/bridge/kdm6_c.exports",
+        "sha256": "07c73fd3eb4c2bfd734a67a0b63ac5baabfeb24408f1aca25233d978d5c44597"
+      },
+      {
+        "path": "source/bridge/kdm6_c.map",
+        "sha256": "ba621040e9ddf653e3ca8021737c3909b65fe76ebab2f9ae19287d230dad93ea"
+      },
+      {
+        "path": "source/bridge/kdm6_c_api.cpp",
+        "sha256": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049"
+      },
+      {
+        "path": "source/bridge/kdm6_c_api.h",
+        "sha256": "de9ca99da4a77af741a875fd4c69de39c68525dbcd781e900144585bb1fd9481"
+      },
+      {
+        "path": "source/bridge/kdm6_iso_c.f90",
+        "sha256": "4908064b9fe8e0726f2659638840795ae21d371d31a3905c18ac4007c4f2dd7d"
+      },
+      {
+        "path": "source/CMakeLists.txt",
+        "sha256": "4584bef636bce249782077c13a78b9d39a110d7ba927bb6f930da509b1c8cb4f"
+      }
+    ]
+  },
+  "installed_reference": {
+    "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "symbol": "_kdm6_step_c"
+  },
+  "test_runner": {
+    "source_path": "runner/main.cpp",
+    "source_sha256": "0ba1904d6dfd38cbc9256e560354a369f779869b19a6a702eed78c6118e59351",
+    "cmake_path": "runner/CMakeLists.txt",
+    "cmake_sha256": "29f850852a39bbb955e495a5560da30076b0915565083ae12879a008efc3546e",
+    "binary_path": "runner_build/native_f32_cabi_probe",
+    "binary_sha256": "077c845598c958bbc9f851989b435eec61c1d1c7fde85fd78fd8b489d194d5c2",
+    "cxx_flags": "-ffp-contract=off -Wall -Wextra -Wpedantic; C++17; no NDEBUG"
+  },
+  "private_build": {
+    "configure": "cmake -S source -B source/build_f32_capture -DCMAKE_PREFIX_PATH=/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP -DKDM6_NATIVE_SCALAR_CAPTURE=ON",
+    "build": "cmake --build source/build_f32_capture --target kdm6_c -j2",
+    "build_type": "unset/default; matches installed libtorch/build CMAKE_BUILD_TYPE empty; private capture macro enabled, not installed",
+    "torch_stack": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch (same Torch 3.9 prefix used by libtorch/build)"
+  },
+  "experiment_controls": {
+    "abi": "kdm6_step_c, REAL4 input/output pointers, value_only=1",
+    "shape": [
+      1,
+      39,
+      1
+    ],
+    "xland": 2.0,
+    "dt_s": 20.0,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "external_kdm_process_step": "none; one C ABI forward per probe"
+  },
+  "reference_run_plan": [
+    {
+      "role": "installed_operational_dso_baseline",
+      "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "capture": "off"
+    },
+    {
+      "role": "private_capture_dso_baseline",
+      "capture": "off"
+    },
+    {
+      "role": "private_capture_dso_baseline",
+      "capture": "on"
+    }
+  ],
+  "run_environment": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "unset",
+    "KDM6_QR_TRANSPORT": "unset",
+    "KDM6AD_QNC_LIVE_GUARD": "unset"
+  },
+  "execution_guard": "No boundary sweep until installed and private capture-off baseline full-state/precip/RHOG raw words agree; if not, preserve and report mismatch."
+}

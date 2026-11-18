@@ -8,6 +8,7 @@ import math
 
 import numpy as np
 import pytest
+from harness.historical_ice_sources import historical_manifest_source
 
 E = Path(__file__).parents[1] / "evidence/applied_transfer_2026-10-24"
 WATER = ("qv", "qc", "qr", "qi", "qs", "qg")
@@ -158,12 +159,14 @@ def test_selected_first_order_products_match_control_off_on(chunk):
             assert np.array_equal(control[name].view("u8"), on[name].view("u8"))
 
 
-def test_current_source_and_artifact_pins():
+def test_historical_source_and_artifact_pins():
     manifest = json.loads((E / "manifest.json").read_text())
     root = E.parents[2]
     for group in ["source_sha256", "input_sha256", "artifact_sha256"]:
         assert manifest[group]
         for path, digest in manifest[group].items():
-            assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, (
+            source = (historical_manifest_source(path, digest)
+                      if group == "source_sha256" else root / path)
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == digest, (
                 path
             )

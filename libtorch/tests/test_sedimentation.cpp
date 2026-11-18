@@ -2,6 +2,7 @@
 #include "kdm6/coordinator.h"
 
 #include <torch/torch.h>
+#include <torch/csrc/autograd/autograd.h>
 
 #include <cassert>
 #include <cmath>
@@ -602,6 +603,63 @@ void test_substep_shapes_refuse_broadcast() {
     }
 }
 
+void test_skipped_column_ad_identity() {
+    TEST(test_skipped_column_ad_identity) {
+        for (const auto dtype : {torch::kFloat32, torch::kFloat64}) {
+            for (const bool ice : {false, true}) {
+                auto run = [&](int B, double target_mstep, bool reslope) {
+                    constexpr int K = 2;
+                    const auto opts = torch::TensorOptions().dtype(dtype);
+                    auto full = [&](double v) { return torch::full({B, K}, v, opts); };
+                    auto moment = B == 1
+                        ? torch::zeros({1, K}, opts)
+                        : torch::tensor({{0.0, 0.0}, {0.005, 0.005}}, opts);
+                    moment.requires_grad_(true);
+                    CoordinatorState state{
+                        full(0.01), full(0.001), ice ? full(0.001) : moment,
+                        full(0.001), full(0.001), ice ? moment : full(0.0),
+                        full(1.0e8), full(ice ? 1.0e3 : 0.0), full(0.0),
+                        full(1.0e8), full(1.0e-6), full(280.0),
+                    };
+                    CoordinatorForcing forcing{
+                        full(8.0e4), full(1.1), full(250.0), full(1.1),
+                    };
+                    auto work = full(0.001);
+                    auto main = (B == 2 && !ice) ? torch::tensor({1.0, 5.0}, opts)
+                                                 : torch::ones({B}, opts);
+                    auto frozen = (B == 2 && ice) ? torch::tensor({1.0, 5.0}, opts)
+                                                  : torch::ones({B}, opts);
+                    if (B == 1) {
+                        if (ice) frozen = torch::tensor({target_mstep}, opts);
+                        else main = torch::tensor({target_mstep}, opts);
+                    }
+                    auto full_params = default_coordinator_params();
+                    auto out = sedimentation_chain(
+                        state, forcing, work, work, work, work, work, work,
+                        main, ice ? 1 : B == 2 ? 5 : 1,
+                        frozen, ice && B == 2 ? 5 : 1,
+                        20.0, default_substep_advection_params(),
+                        reslope ? &full_params : nullptr);
+                    auto selected = ice
+                        ? out.state.qi.select(0, 0).select(0, 1)
+                        : out.state.qr.select(0, 0).select(0, 1) + out.rain_increment.select(0, 0);
+                    auto grad = torch::autograd::grad({selected}, {moment})[0].select(0, 0);
+                    return std::make_pair(selected.detach().clone(), grad.detach().clone());
+                };
+                for (const bool reslope : {false, true}) {
+                    auto one = run(1, 1.0, reslope);
+                    auto two = run(2, 1.0, reslope);
+                    auto zero = run(1, 0.0, reslope);
+                    assert(torch::equal(one.first, two.first));
+                    assert(torch::equal(one.second, two.second));
+                    assert(torch::equal(one.first, zero.first));
+                    assert(torch::equal(one.second, zero.second));
+                }
+            }
+        }
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch sedimentation tests\n";
     test_substep_shapes_refuse_broadcast();
@@ -615,6 +673,7 @@ int main() {
     test_sedimentation_exact_zero_precip();
     test_sedimentation_direction_python_convention();
     test_sedimentation_reslope_per_substep();
+    test_skipped_column_ad_identity();
     std::cout << "All sedimentation tests passed.\n";
     return 0;
 }

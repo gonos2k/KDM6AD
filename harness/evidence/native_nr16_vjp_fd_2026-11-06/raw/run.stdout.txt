@@ -1,0 +1,13 @@
+unit-input JVP field 0 complete
+unit-input JVP field 1 complete
+unit-input JVP field 2 complete
+unit-input JVP field 3 complete
+unit-input JVP field 4 complete
+unit-input JVP field 5 complete
+unit-input JVP field 6 complete
+unit-input JVP field 7 complete
+unit-input JVP field 8 complete
+unit-input JVP field 9 complete
+unit-input JVP field 10 complete
+unit-input JVP field 11 complete
+{"contractions": {"qg": {"max_abs_difference": 2.4868995751603507e-14, "weighted_jvp": -8.537285422727914, "weighted_vjp": -8.537285422727939}, "qs": {"max_abs_difference": 3.552713678800501e-15, "weighted_jvp": 27.972966619526687, "weighted_vjp": 27.97296661952669}, "qv": {"max_abs_difference": 2.7755575615628914e-17, "weighted_jvp": 0.04653540832796936, "weighted_vjp": 0.04653540832796939}}, "nr16": 1494.031319611338, "vjp_qg16": -527472.1976434528, "vjp_qs16": 49476.78863609118, "vjp_qv16": 6.356343269745787}

@@ -23,6 +23,7 @@ date_modified: 2026-10-26
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/east-optical-witness-2026-10-31|East-edge optical witness]] — Ten three-state saved RTTOV profiles connect changed ice moments, optical inputs and fixed-M0 channel losses with retained-input provenance limits.
 - [[sources/native-qc-nc-boundary-2026-10-26|Native QC-NC boundary trace V2]] — Corrected control/alpha1/alpha0.25 off/on boundary traces, exact checkpoint noninterference and raw-unit/cause/cost limits.
 - [[sources/native-upstream-nc-rk-2026-10-26|Native upstream QNC RK trace]] — Four actual control/alpha0.25 full-domain steps locate the RK sign change before KDM; source-order replay and cause/unit/admissibility limits remain explicit.
 - [[sources/native-qnc-flux-limiter-2026-10-27|Native QNC flux and limiter trace]] — Same-run QNC face and tendency words show an active RK3 limiter and a negative candidate NC; complete number-budget and repair remain open.
@@ -143,3 +144,44 @@ date_modified: 2026-10-26
 - [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.
 
 - [[sources/pr411-v4-actual-integration-2026-10-12]] — One real V4 spawn/RTTOV/analysis/audit/checkpoint path on retained Jul19 inputs; no native rerun/new date or convergence claim.
+
+- [[sources/east-optical-coordinate-factor-2026-10-31|East optical coordinate-factor replay]] — Offline reconstruction of 140 saved GG/PP coordinate factors and BTs using separately supplied SHA-pinned RTTOV coefficients.
+
+- [[sources/native-d1-entry-precg2-2026-11-09]] — Entry ProgB precg2 production, D1 handoff and selected f64 derivative evidence, with explicit rounding-floor and capture limits.
+
+- [[sources/native-d1-coeres-upstream-2026-11-10]] — Selected D1 entry slope to coeres_g and graupel term2, with native consumer capture and difference limits.
+
+- [[sources/native-d1-thermal-input-2026-11-10]] — Initial TH/QV to D1 thermal chain, native endpoint anchors and distinct D1/final activation branch coverage.
+
+- [[sources/native-activation-upper-boundary-2026-11-10]] — Adjacent-f64 TH/QV activation brackets and side derivatives with output-resolution and branch limits.
+
+- [[sources/native-activation-operands-2026-11-10]] — Actual fraction power and separate rate-cap operands in the selected f64 boundary sweep.
+
+- [[sources/native-f32-activation-boundary-2026-11-11]] — Single-column native-input f32 C ABI activation boundary with installed/capture DSO raw-output links and explicit host limits.
+
+- [[sources/native-host-tile-abi-2026-11-11]] — Private full-tile f32 ABI replay and paired WRF output receipt, with public metadata and host-lineage limits.
+
+- [[sources/native-host-column-f32-2026-11-11]] — Full 39-level selected host-call f32 column and separate B=1 output/activation capture, with no new boundary claim.
+
+- [[sources/native-host-column-f32-boundary-2026-11-12]] — Coupled-mask TH16 search on that same host-column input, with an adjacent f32 B=1 activation transition and endpoint output parity.
+
+- [[sources/native-host-column-f64-da-2026-11-12]] — Exact f32-to-f64 host-column input mapping, separate f64 DA activation sides, branch-interior NC16 JVP/VJP versus directional differences and an isolated rate-minimum tie test.
+
+- [[sources/native-host-stored-analysis-ci-batch-2026-11-12]] — Full-output TH16 FD–JVP and f32/f64 baseline classifications, #583 suite timing, bounded evidence-CI execution and next shared-capture inventory.
+
+- [[sources/oracle-runner-review-and-number-coordinate-2026-11-12]] — Timeout child-group cleanup, approved private skips, CI provenance/profiling, research cache seeding and raw number-coordinate source review.
+
+- [[sources/native-host-shared-screening-2026-11-12]] — Same-column f32/f64 stage comparison, bounded f64 state/forcing screening, unresolved NC plateau and conditional water inventory.
+
+- [[sources/native-host-batch4-analysis-2026-11-12]] — Output-wise saved FD/JVP screening, NC/PII gap localization, source-based unit gates and a single-build capture plan; no new derivative or physical approval.
+
+- [[sources/native-host-capture-preflight-2026-11-12]] — Exact 45-input SPEC_ONLY plan, prospective numeric gate and seven-group field inventory, with no DSO build or execution claim.
+- [[sources/native-host-atomic-consumer-correction-2026-11-13]] — Separates contextual source lines from two checked source uses in the blocked 191-atom host capture catalog; execution and derivatives remain unverified.
+- [[sources/native-host-batch6-capture-contract-2026-11-14]] — Incremental isolated source and synthetic same-graph/rain contracts, six-entry selector draft and conditional ledger; actual execution remains blocked.
+- [[sources/native-host-batch7-connection-2026-11-14]] — Canonical FD call binding, blocked v2 receipt join, A5/A7 source hooks and deferred graph execution.
+
+- [[sources/native-host-gate-receipt-2026-11-12]] — Diagnostic versus acceptance FD steps and source-only future receipt/seed/field/budget bridge; execution and scientific admission remain blocked.
+
+- [[sources/native-host-runner-closure-2026-11-13]] — Repeated-signal and full-budget synthetic runner fixes, baseline condition asset adapter and source-located but blocked field contract.
+
+- [[sources/native-host-execution-readiness-2026-11-13]] — Supervisor publication wording correction and DRAFT_BLOCKED actual-capture successor, with source/build/field blockers identified before any model call.

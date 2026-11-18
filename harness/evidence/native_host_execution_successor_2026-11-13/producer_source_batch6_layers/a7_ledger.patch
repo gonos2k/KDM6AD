@@ -1,0 +1,70 @@
+diff --git a/libtorch/src/coordinator.cpp b/libtorch/src/coordinator.cpp
+index 4ffc8acb238cc7ef1d6a6d3dcab67d5bf46eaedb..3aad4c0606a46414c67c87d80c19f563ebf58585 100644
+--- a/libtorch/src/coordinator.cpp
++++ b/libtorch/src/coordinator.cpp
+@@ -3530,6 +3530,20 @@ SedimentationOutputs sedimentation_chain(
+         fall_qs = main_store(fall_qs, out.fall_qs);
+         fall_qg = main_store(fall_qg, out.fall_qg);
+         fall_brs = main_store(fall_brs, out.fall_brs);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A7_BLOCK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a7_main_selected", "qr_state", adv_state.qr, true);
++        batch5::full("a7_main_selected", "nr_state", adv_state.nr, true);
++        batch5::full("a7_main_selected", "qs_state", adv_state.qs, true);
++        batch5::full("a7_main_selected", "qg_state", adv_state.qg, true);
++        batch5::full("a7_main_selected", "brs_state", adv_state.brs, true);
++        batch5::full("a7_main_selected", "qr_fall", fall_qr, true);
++        batch5::full("a7_main_selected", "nr_fall", fall_nr, true);
++        batch5::full("a7_main_selected", "qs_fall", fall_qs, true);
++        batch5::full("a7_main_selected", "qg_fall", fall_qg, true);
++        batch5::full("a7_main_selected", "brs_fall", fall_brs, true);
++    }
++#endif // A7_BLOCK_END
+ 
+         // Re-slope from the post-substep state after EVERY main substep (Fortran F:1189-1205
+         // is unconditional within the n-loop, incl. the last): rebuild state (updated
+@@ -3545,6 +3559,12 @@ SedimentationOutputs sedimentation_chain(
+             // §20/F:1191 per-substep ProgB brs reset (brs is INTENT(INOUT) in ProgB_param).
+             // §53/§53d: progb.bg keeps incoming brs in inactive cells (F:3567/3578) and the
+             // persistent per-cell arrays merge inside preamble via progb_ret.
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A7_BLOCK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a7_main_progb_reset", "brs_before", adv_state.brs, true);
++        batch5::full("a7_main_progb_reset", "bg_selected", pre.progb.bg, true);
++    }
++#endif // A7_BLOCK_END
+             adv_state.brs = pre.progb.bg;
+             w1_qr = pre.slope.vt_r  / delz_safe;   // F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
+             wn_qr = pre.slope.vtn_r / delz_safe;
+@@ -3592,6 +3612,14 @@ SedimentationOutputs sedimentation_chain(
+         };
+         fall_qi = ice_store(fall_qi, out_i.fall_qi);
+         fall_ni = ice_store(fall_ni, out_i.fall_ni);
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A7_BLOCK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a7_ice_selected", "qi_state", ice_state.qi, true);
++        batch5::full("a7_ice_selected", "ni_state", ice_state.ni, true);
++        batch5::full("a7_ice_selected", "qi_fall", fall_qi, true);
++        batch5::full("a7_ice_selected", "ni_fall", fall_ni, true);
++    }
++#endif // A7_BLOCK_END
+ 
+         // Re-slope ice fall speeds from the post-substep ice state (F:1244-1269). Other
+         // species are the final post-main values; vt_i/vtn_i depend only on qi/ni so that
+diff --git a/libtorch/src/runtime.cpp b/libtorch/src/runtime.cpp
+index ad287837ff754a3591c64f9f32fba4313410712a..16b479801a01376c9da91955d9e2b6cbf3817b62 100644
+--- a/libtorch/src/runtime.cpp
++++ b/libtorch/src/runtime.cpp
+@@ -636,6 +636,12 @@ FnResult kdm6_fn(const State& state,
+         // kept residues (24151-cell brs class) and breaking the sed inflow chain. The old zeroing
+         // rationale (f64 residue > brs_min while Fortran f32 underflows) is stale post-§44: the op
+         // state is f32 and step-1 is globally bitwise, so incoming brs is bit-identical across trees.
++#ifdef KDM6_BATCH5_RESEARCH_CAPTURE // A7_BLOCK_BEGIN
++    if (batch5::enabled()) {
++        batch5::full("a7_presed_progb_reset", "brs_before", cur_pyc.brs, true);
++        batch5::full("a7_presed_progb_reset", "bg_selected", pre_sed.progb.bg, true);
++    }
++#endif // A7_BLOCK_END
+         cur_pyc.brs = pre_sed.progb.bg;
+         auto w1_qr = pre_sed.slope.vt_r  / delz_safe;
+         auto wn_qr = pre_sed.slope.vtn_r / delz_safe;

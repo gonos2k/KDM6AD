@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""Private one-column fp64 C ABI baseline/AD feasibility probe."""
+import os
+for key, val in {
+    "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OMP_THREAD_LIMIT": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+}.items():
+    os.environ[key] = val
+
+import csv
+import ctypes as C
+from pathlib import Path
+import struct
+import numpy as np
+import torch
+
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
+ROOT = Path(__file__).resolve().parent
+CAP = ROOT / "runs/on/capture/native_qnice_applied_86580_runtime2.csv"
+LIB = Path(os.environ.get("KDM6_PROBE_LIB", str(ROOT / "build/libkdm6_c.2.0.0.dylib")))
+STATE = ("th", "qv", "qc", "qr", "qi", "qs", "qg", "nccn", "nc", "ni", "nr", "bg")
+FORCING = ("rho", "pii", "p", "delz")
+d = {}
+for r in csv.DictReader(x for x in CAP.open() if not x.startswith("#")):
+    d[r["stage"], r["field"], int(r["k_zero"])] = r
+
+def f64(stage, field, k):
+    return struct.unpack(">d", int(d[stage, field, k]["raw_hex"], 16).to_bytes(8, "big"))[0]
+
+def inp(stage, names):
+    return np.ascontiguousarray([[f64(stage, name, k) for k in range(38, -1, -1)] for name in names], dtype=np.float64)
+
+state = inp("runtime_full_entry", STATE)
+forcing = inp("runtime_full_forcing", FORCING)
+actual = inp("runtime_full_exit", STATE)
+probe_direction = os.environ.get("KDM6_PROBE_DIRECTION")
+probe_step = float(os.environ.get("KDM6_PROBE_STEP", "0"))
+if probe_direction:
+    field = {"qv": 1, "qs": 5, "qg": 6}[probe_direction]
+    state[field, 15] *= 1.0 + probe_step
+qr19_abs = os.environ.get("KDM6_PROBE_QR19_ABS")
+if qr19_abs is not None:
+    state[3, 18] = float(qr19_abs)
+xland_word = int(d["runtime_full_meta", "xland", 23]["raw_hex"], 16)
+xland = np.ascontiguousarray([struct.unpack(">f", xland_word.to_bytes(4, "big"))[0]], dtype=np.float32)
+dt = f64("runtime_full_meta", "dt", 23)
+ncmin_land = f64("runtime_full_meta", "ncmin_land", 23)
+ncmin_sea = f64("runtime_full_meta", "ncmin_sea", 23)
+variant = int(f64("runtime_full_meta", "physics_variant", 23))
+assert (dt, variant, xland[0]) == (20.0, 0, 2.0)
+
+lib = C.CDLL(str(LIB))
+p64 = C.POINTER(C.c_double)
+p32 = C.POINTER(C.c_float)
+step = lib.kdm6_step_ad_variant_c
+step.argtypes = [p64, p64, C.c_int, C.c_int, C.c_int, C.c_double, C.c_int,
+                 p64, C.POINTER(C.c_void_p), p32, C.c_double, C.c_double, C.c_uint32]
+step.restype = C.c_int
+jvp = lib.kdm6_handle_jvp_c
+jvp.argtypes = [C.c_void_p, p64, p64]
+jvp.restype = C.c_int
+vjp = lib.kdm6_handle_vjp_c
+vjp.argtypes = [C.c_void_p, p64, p64]
+vjp.restype = C.c_int
+close = lib.kdm6_handle_closep_c
+close.argtypes = [C.POINTER(C.c_void_p)]
+close.restype = C.c_int
+
+def ptr(a):
+    return a.ctypes.data_as(p64)
+
+def evaluate(x, graph):
+    y = np.empty_like(x)
+    handle = C.c_void_p()
+    rc = step(ptr(x), ptr(forcing), 1, 39, 1, dt, 0 if graph else 1,
+              ptr(y), C.byref(handle), xland.ctypes.data_as(p32),
+              ncmin_land, ncmin_sea, variant)
+    return rc, y, handle
+
+rc0, y0, h0 = evaluate(state, False)
+print("value_rc", rc0, "handle", h0.value)
+if rc0 != 0 or h0.value is not None or not np.isfinite(y0).all():
+    raise RuntimeError("value-only C ABI call failed")
+if not probe_direction and qr19_abs is None and not np.array_equal(y0.view('u8'), actual.view('u8')):
+    raise RuntimeError("selected-column native baseline differs")
+if os.environ.get("KDM6_PROBE_OUTPUT"):
+    np.savez_compressed(os.environ["KDM6_PROBE_OUTPUT"], state=state, forcing=forcing, output=y0, xland=xland)
+for f, name in enumerate(STATE):
+    n = sum(struct.pack(">d", float(y0[f, k])) != struct.pack(">d", float(actual[f, k])) for k in range(39))
+    print("baseline", name, "mismatch", n,
+          "native16", actual[f, 15], "isolated", y0[f, 15])
+
+if os.environ.get("KDM6_NATIVE_CAPTURE_DIR") or os.environ.get("KDM6_PROBE_VALUE_ONLY"):
+    raise SystemExit(0)
+
+rc1, y1, h1 = evaluate(state, True)
+print("graph_rc", rc1, "handle", h1.value,
+      "baseline_bit_equal", rc1 == 0 and y1.tobytes() == y0.tobytes())
+if rc1 != 0 or not h1.value or not np.isfinite(y1).all() or y1.tobytes() != y0.tobytes():
+    raise RuntimeError("C ABI graph forward failed or differs from value-only")
+if rc1 == 0 and h1.value:
+    u = np.zeros_like(state)
+    for field, level, weight in [(0,15,0.1),(1,15,-0.3),(3,15,0.5),(5,15,-0.7),
+                                  (6,16,0.9),(10,15,-1.1),(11,15,1.3)]:
+        u[field, level] = weight
+    gradient = np.empty_like(state)
+    vjp_rc = vjp(h1, ptr(u), ptr(gradient))
+    print("vjp_rc", vjp_rc)
+    if vjp_rc != 0 or not np.isfinite(gradient).all():
+        raise RuntimeError("C ABI VJP failed")
+    saved = {"state": state, "forcing": forcing, "value_output": y0,
+             "graph_output": y1, "u": u, "vjp": gradient, "xland": xland}
+    for name, field in [("qv",1),("qs",5),("qg",6)]:
+        v = np.zeros_like(state)
+        v[field,15] = state[field,15]
+        tangent = np.empty_like(state)
+        rc = jvp(h1, ptr(v), ptr(tangent))
+        if rc != 0 or not np.isfinite(tangent).all():
+            raise RuntimeError("C ABI JVP failed: " + name)
+        print("direction",name,"jvp_rc",rc,"selected_qv",tangent[1,15],
+              "selected_nr",tangent[10,15],"dot_jvp",float(np.sum(u*tangent)),
+              "dot_vjp",float(np.sum(v*gradient)))
+        saved["direction_"+name] = v
+        saved["jvp_"+name] = tangent
+        for h in ({"qv":(1e-3,1e-4), "qs":(1e-3,1e-4), "qg":(1e-5,1e-6)}[name]):
+            high_x, low_x = state.copy(), state.copy()
+            high_x[field,15] = state[field,15] * (1.0+h)
+            low_x[field,15] = state[field,15] * (1.0-h)
+            rchi, high_y, hi_handle = evaluate(high_x, False)
+            rclo, low_y, lo_handle = evaluate(low_x, False)
+            if rchi != 0 or rclo != 0 or hi_handle.value or lo_handle.value:
+                raise RuntimeError("finite-difference endpoint failed")
+            gap = (high_x[field,15]-low_x[field,15])/state[field,15]
+            fd = (high_y-low_y)/gap
+            ratio = np.abs(fd-tangent)/np.maximum(1.0,np.abs(tangent))
+            idx = np.unravel_index(np.argmax(ratio),ratio.shape)
+            print("fd",name,h,"gap",gap,"max_normalized",ratio[idx],
+                  "where",STATE[idx[0]],int(idx[1])+1,"jvp",tangent[idx],"secant",fd[idx])
+            key = "fd_"+name+"_"+str(h)
+            saved[key+"_high_input"] = high_x
+            saved[key+"_low_input"] = low_x
+            saved[key+"_high_output"] = high_y
+            saved[key+"_low_output"] = low_y
+            saved[key+"_gap"] = np.array(gap)
+    np.savez_compressed(ROOT / "probe_ad_result.npz", **saved)
+    close_rc = close(C.byref(h1))
+    print("close_rc", close_rc, "closed", h1.value)
+    if close_rc != 0 or h1.value is not None:
+        raise RuntimeError("C ABI handle close failed")

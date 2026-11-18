@@ -1,0 +1,30 @@
+{
+  "input_hashes": {
+    "channels.txt": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+    "coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "lprofiles.txt": "f0e0a435dd2edac661fea2c115ced6311473cb35151527e0bfa086c86c7034be",
+    "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "out/rttov_test.txt": "48c77a828fe91a021e7706c135420ce5546461522eb6d86455f11377dbcd4117",
+    "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "profiles/001/angles.txt": "75bf18a1340ebd2a1dbb610391a750d2ca44ff0f5e0f56028e260e26301e7a91",
+    "profiles/001/atm/co2.txt": "2e2a2d44e73b44f8c334e04a7fedb5aee1a3244f820de6aeb4009a916f39fe11",
+    "profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+    "profiles/001/atm/hydro.txt": "906737c0fd7f045f169840da8c87d80479dc959f075ddefbcd9ded8ad507776d",
+    "profiles/001/atm/hydro_deff.txt": "dfbdc2bff0ae6b2e5b794a6fdd06d44299ea5e1051cdb83984daf2e52a093249",
+    "profiles/001/atm/hydro_frac.txt": "10d26354418e2e87752e38585f633747c336f6074f5da4a1dc48c6c7fa6b5335",
+    "profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+    "profiles/001/atm/o3.txt": "4d4821e8e4ac0e2e64405314b3ed06ad01ffcc77eef2be5649b9af7539ee5857",
+    "profiles/001/atm/p.txt": "111d1dfe964433a8bcb5b2fb6b10ad6b1e1fcbea5e986341743114ec6750ed1e",
+    "profiles/001/atm/p_half.txt": "6d2a5887bd7e10bb78f2c8b8480f8b1bf70cdf6b8dffa0e9e1ff7c661606a02f",
+    "profiles/001/atm/q.txt": "ff7d3d64dfe49dac5a39659fbf9124d06f4f98d08df4b16cafd5add6ce943fe9",
+    "profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "profiles/001/atm/t.txt": "271dbca19778340b90fa4f488a6a3ae614bd0e1d7038bc9edec6016c35d198e0",
+    "profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+    "profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+    "profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+    "profiles/001/sfc/01/near_surface.txt": "12cfc190d624c91fa4d0a0a98ea457a5dcffb1651114e41a1a43addab96a5177",
+    "profiles/001/sfc/01/skin.txt": "d51331e5f791c21a05cca0c964a16fd234a2ce17a9a04a9f6d6023fa4245a88c"
+  },
+  "mode": "direct_only"
+}

@@ -1,0 +1,106 @@
+{
+  "schema": "kdm6.oracle_runner_worker_probe.nonpass.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "three slowest #584 evidence suites only; normal mode; one local macOS pass per worker count; no full-suite or hosted Ubuntu timing claim",
+  "command": "python3 harness/ci_diagnostics/compare_workers.py",
+  "runner_invocation": "runner.run(SUITES, mode=normal, timeout=300, workers=1 and 2, registry timing hints and allowed skips)",
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "PYTHONOPTIMIZE": "unset"
+  },
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "source_and_toolchain_hashes_observed_after_run": {
+    "runner_current_sha256": "3f5971609647a98b68b5a3dd4c826eb213bea4cb231c2291a9b0aabf3d179e13",
+    "registry_current_sha256": "f8125e0c93b0ec3b9d793d8dceb893ee9ca47e682414208ee465303bf1797c47",
+    "python_executable_sha256": "c06459ab038bac893e8711387d50005e2308249cdfdeba98a09b9c4c7971d931",
+    "torch_extension_sha256": "182fb93db735e360e258690c48cefd3f5eb07a7bf93ccff7ee9c37d888bde1cc",
+    "numpy_extension_sha256": "4e23a325a373848240c6ac122d4749c084001dae43f4b547774577f91f5c2ced",
+    "experiment_script_snapshot_sha256": "ddfded8a5fb426e4f02052ce5b2469875a992615d769d17d5cc6200d9ff30752"
+  },
+  "one_worker": {
+    "wall_seconds": 409.722,
+    "tests": 25,
+    "passed": 25,
+    "skipped": 0,
+    "suites": [
+      {
+        "suite": "harness/evidence/native_nr16_vjp_fd_2026-11-06",
+        "status": "pass",
+        "returncode": 0,
+        "tests": 6,
+        "skipped": 0,
+        "skip_reasons": [],
+        "elapsed_seconds": 187.996
+      },
+      {
+        "suite": "harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10",
+        "status": "pass",
+        "returncode": 0,
+        "tests": 13,
+        "skipped": 0,
+        "skip_reasons": [],
+        "elapsed_seconds": 94.387
+      },
+      {
+        "suite": "harness/evidence/native_nc16_fd_expanded_2026-11-06",
+        "status": "pass",
+        "returncode": 0,
+        "tests": 6,
+        "skipped": 0,
+        "skip_reasons": [],
+        "elapsed_seconds": 127.335
+      }
+    ]
+  },
+  "two_worker": {
+    "status": "incomplete",
+    "successful_suites": {
+      "native_d1_coeres_upstream_cpp_ad_2026-11-10": {
+        "tests": 13,
+        "skips": 0,
+        "seconds": 110.832
+      },
+      "native_nc16_fd_expanded_2026-11-06": {
+        "tests": 6,
+        "skips": 0,
+        "seconds": 180.81
+      }
+    },
+    "native_nr16_vjp_fd_2026-11-06": "300s timeout; cleanup raised PermissionError EPERM on os.killpg(process.pid, 0); no complete result JSON written",
+    "total_wall_seconds": "unavailable",
+    "outcome_parity": "unresolved",
+    "completed_suite_test_name_and_outcome_parity": {
+      "native_d1_coeres_upstream_cpp_ad_2026-11-10": {
+        "tests": 13,
+        "equal": true
+      },
+      "native_nc16_fd_expanded_2026-11-06": {
+        "tests": 6,
+        "equal": true
+      }
+    }
+  },
+  "artifacts": {
+    "workers_1.json": {
+      "sha256": "b8ed9dd6232e69e83d02ffc8649404fc523e20ea5fefadef4933cf3dd2ceaaf0"
+    },
+    "workers_1.log.gz": {
+      "sha256": "962a7d50d8d4c2e71c41caeef637d63fba9c226b70ebd1507acd4af473740a4d",
+      "uncompressed_sha256": "fc7bba213fec92e7cfd4756fdfeaee68c8275aaa35977bea2436e520aa13bc2d"
+    },
+    "workers_2.log.gz": {
+      "sha256": "c30c68d57774c7a1298523d25d8474402a990495d8112b84eebd8d31f0711ad4",
+      "uncompressed_sha256": "dfdf60c259d19de23f95565c0a04edc15984ad233b165315b2decd5af0ebe986"
+    }
+  },
+  "private_attempt_receipt_sha256": "6b9ae732f103f5e0150d7e8f9b0c8928ac2b21898a7622db44286f20a8faccd5",
+  "excluded_attempt": "preconfirmation interrupted run is not included",
+  "limitations": "Two-worker nr16 timed out at 300s and macOS PermissionError EPERM during process-group cleanup prevented final result JSON. No complete two-worker wall time, test parity or speedup can be inferred. Source/toolchain hashes were collected after execution.",
+  "source_snapshot_note": "Experiment script snapshot was retained after the failed comparison; its hash was checked after execution, not at call entry."
+}

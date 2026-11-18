@@ -1,0 +1,12 @@
+{
+  "harness/evidence/ice_c4_dsd_boundary_2026-11-01/replay.py": "ea279d40903e55ec1ca0c274eabba38a68cea5e05798cd26e7fda4b9ef32e2ad",
+  "harness/evidence/ice_c4_dsd_derivative_2026-11-01/replay.py": "b0cad81d844b0edb390ab96cfea483a5d4e42b4e464b0c62b667b626f977eac7",
+  "harness/evidence/ice_c4_dsd_derivative_2026-11-01/test_replay.py": "11c1eeaf43b004068db45c19ab2e0352ed860e4f1716fc3d0fa90b540205bbed",
+  "harness/evidence/interior_profile_jvp_2026-10-31/replay.py": "a5b0b43c58ca430ec7117a7b33a4b3e54feaa00a2945ab222d8647d3f11a76b9",
+  "harness/native_checkpoint_observation.py": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+  "oracle/kdm6/constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+  "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+  "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+  "oracle/kdm6/sensitivity_diagnostics.py": "ae0998e4aa99c5d7f41a1d2e03fef7b85820d1383adcfe18b43bdce7160ff1bb",
+  "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd"
+}

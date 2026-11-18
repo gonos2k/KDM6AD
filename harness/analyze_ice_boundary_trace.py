@@ -15,6 +15,10 @@ else:  # Direct `python harness/analyze_ice_boundary_trace.py` execution.
     import make_ice_boundary_overlay as overlay_generator
 
 SCHEMA = "kdm6.ice_boundary_trace.v1"
+HISTORICAL_SOURCE_DIR = (
+    Path(__file__).resolve().parent
+    / "evidence/historical_ice_factorial_sources_2026-10-23/libtorch/src"
+)
 FIELDS = {
     "ice_velocity": set(
         "schema record order stage basis dtcld_s mstepmax variant column level_top0 mstep work1_qi workn_qi DEND_kg_m3 DELZ_m".split()
@@ -118,7 +122,9 @@ def _request(path):
 
 
 def _verify_source_manifest(manifest):
-    source_dir = Path(__file__).parents[1] / "libtorch/src"
+    # This receipt describes the executed 2026-10-23 overlay. Verify the
+    # retained historical bytes rather than whatever the live tree contains.
+    source_dir = HISTORICAL_SOURCE_DIR
     transforms = {
         "runtime.cpp": overlay_generator.instrument_runtime,
         "coordinator.cpp": overlay_generator.instrument_coordinator,

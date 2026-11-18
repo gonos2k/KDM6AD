@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Record the original-control to QNC-guard-control full checkpoint delta."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+import netCDF4
+import numpy as np
+
+
+PUBLIC = Path('/private/tmp/KDM6AD-qnc-host-backoff-20261027')
+if str(PUBLIC) not in sys.path:
+    sys.path.insert(0, str(PUBLIC))
+from harness.native_replay_compare import compare_frames  # noqa: E402
+
+ORIGINAL = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00')
+QNC_GUARD = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qi_outflow_terms_20261030/runs/v1/control_qi_outflow_v2_on_guardon/retained_output/wrfrst_d01_2025-07-19_00:01:00')
+ORIGINAL_SHA = '225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070'
+QNC_GUARD_SHA = '950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6'
+SOURCE = PUBLIC / 'harness/native_replay_compare.py'
+EAST = [(234, j) for j in (*range(3, 12), 52)]
+
+
+def sha(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def produce() -> dict:
+    if sha(ORIGINAL) != ORIGINAL_SHA or sha(QNC_GUARD) != QNC_GUARD_SHA:
+        raise ValueError('checkpoint pin differs')
+    with netCDF4.Dataset(ORIGINAL) as before, netCDF4.Dataset(QNC_GUARD) as after:
+        before.set_auto_maskandscale(False)
+        after.set_auto_maskandscale(False)
+        comparison = compare_frames(before, after, 0, 0, '2025-07-19_00:01:00')
+        changed = {name: row['mismatch_count'] for name, row in comparison['variables'].items()
+                   if row['mismatch_count']}
+        if (comparison['variable_count_reference'] != 652 or
+                comparison['numeric_elements_compared'] != 322426586 or
+                not comparison['finite'] or comparison['missing_variables'] or
+                comparison['extra_variables'] or comparison['errors'] or
+                changed != {'QNCLOUD': 15, 'RE_CLOUD': 1}):
+            raise ValueError('full checkpoint comparison inventory differs')
+        rows = {}
+        for name in changed:
+            a = np.asarray(before[name][0])
+            b = np.asarray(after[name][0])
+            if a.dtype != np.float32 or b.dtype != np.float32 or a.shape != (39, 282, 234):
+                raise ValueError('changed field shape/type differs')
+            indices = np.argwhere(a.view(np.uint32) != b.view(np.uint32))
+            rows[name] = [
+                {'ijk_1based': [int(i + 1), int(j + 1), int(k + 1)],
+                 'original_word': f'{int(a[k, j, i].view(np.uint32)):08X}',
+                 'qnc_guard_word': f'{int(b[k, j, i].view(np.uint32)):08X}'}
+                for k, j, i in indices
+            ]
+        if len(rows['QNCLOUD']) != 15 or len(rows['RE_CLOUD']) != 1:
+            raise ValueError('changed coordinate count differs')
+        changed_columns = {(row['ijk_1based'][0], row['ijk_1based'][1])
+                           for values in rows.values() for row in values}
+        if any(coord in changed_columns for coord in EAST):
+            raise ValueError('east cost witness differs before boundary pilot')
+    return {
+        'schema': 'kdm6.original_vs_qnc_guard_control_checkpoint.v1',
+        'original_checkpoint_sha256': ORIGINAL_SHA,
+        'qnc_guard_checkpoint_sha256': QNC_GUARD_SHA,
+        'comparison_source_sha256': sha(SOURCE),
+        'variable_count': 652,
+        'numeric_elements_compared': 322426586,
+        'changed_variables': changed,
+        'changed_rows': rows,
+        'east_pilot_control_cost_profiles_ij_1based': [list(coord) for coord in EAST],
+        'east_profiles_bitwise_equal_before_boundary_pilot': True,
+        'model_calls': {'host': 0, 'KDM6': 0, 'RTTOV': 0, 'optimizer': 0},
+        'scope': 'checkpoint state identity at specified profiles; per-profile cost attribution is an inference from the observation operator',
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+    if args.output.exists() or args.output.is_symlink():
+        raise FileExistsError(args.output)
+    result = produce()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open('x') as stream:
+        json.dump(result, stream, indent=2, sort_keys=True)
+        stream.write('\n')
+    print(json.dumps({'changed_variables': result['changed_variables'],
+                      'east_equal': result['east_profiles_bitwise_equal_before_boundary_pilot']},
+                     sort_keys=True))
+
+
+if __name__ == '__main__':
+    main()

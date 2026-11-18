@@ -1,0 +1,9 @@
+    capture_native_tensor("d1_upstream_producer", "work2", pre.work2);
+    capture_native_tensor("d1_upstream_producer", "precg2", pre.progb.precg2);
+    capture_native_tensor("d1_upstream_producer", "rhox", pre.progb.rhox);
+    capture_native_tensor("d1_upstream_producer", "bg", pre.progb.bg);
+    capture_native_tensor("d1_upstream_producer", "cpm", pre.cpm);
+    capture_native_tensor("d1_upstream_producer", "xl", pre.xl);
+    capture_native_tensor("d1_upstream_producer", "avtg", pre.progb.avtg);
+    capture_native_tensor("d1_upstream_producer", "bvtg", pre.progb.bvtg);
+    capture_native_tensor("d1_upstream_producer", "active_gate", torch::logical_or(state_pre.qg > full_params.progb.qcrmin, state_pre.brs > progb::BRS_MIN));

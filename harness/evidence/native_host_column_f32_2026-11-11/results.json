@@ -1,0 +1,26 @@
+{
+  "activation_limit": "isolated B=1 capture hook; capture DSO is not rerun by the private check; cloud complete evaporation is an observed gate; independent power check allows four f32 ULP",
+  "activation_stage_trace_fields": 33,
+  "archived_b1_output_words": 510,
+  "call_scope": "host tile call and separate B=1 call; internal schedule unobserved",
+  "capture_csv_rows": 19656,
+  "input_words": 624,
+  "installed_capture_calls": 3,
+  "levels": 39,
+  "native_column": [
+    203,
+    149
+  ],
+  "output_words_compared_per_call": 510,
+  "physical_unit_status": "INCONCLUSIVE",
+  "private_check": "optional with PRIVATE_TILE_PATH and PRIVATE_DSO_PATH; checks selected words against full tile and reruns full tile plus B=1 with the pinned installed DSO",
+  "public_limit": "validates published words and captured trace arithmetic; host invocation, private tile and installed library are not independently re-executed in public mode",
+  "schema": "kdm6.native_host_column_f32_public_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "th_search_changed_word": "43a00336",
+  "th_search_last_unchanged_word": "439fff36",
+  "th_search_limit": "B=1 sampled search stopped on rate/cap mask change before a certified activation bracket; no QV search, host perturbed replay, boundary or AD claim",
+  "th_search_recorded_samples": 13,
+  "tile_output_words": 510,
+  "tile_vs_archived_b1_raw_mismatches": 0
+}

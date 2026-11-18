@@ -1,0 +1,26 @@
+{
+  "cells": {
+    "21": {
+      "AL": "3dd16af0",
+      "ALB": "3ff776e9",
+      "QNICE": "4222e8d3",
+      "QVAPOR": "3aaca660",
+      "RHO": "3efb86c6"
+    },
+    "23": {
+      "AL": "3e008820",
+      "ALB": "4011468c",
+      "QNICE": "47e9f551",
+      "QVAPOR": "3a21ba72",
+      "RHO": "3ed5bd11"
+    }
+  },
+  "endpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+  "native_ij_1based": [
+    164,
+    242
+  ],
+  "saved_time": "2025-07-19_00:01:00",
+  "schema": "kdm6.native_qnice_endpoint_words.v1",
+  "timing": "saved 00:01:00 endpoint, not the microphysics call"
+}

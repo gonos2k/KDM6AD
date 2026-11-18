@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "3a4336e73d47db29105e547326aae6d1c8d1992e3794746d24ae738bbf360f02",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_gfac_upstream_ad_20261109/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_gfac_upstream_ad_20261109/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "71543e4536d81cad6f50e372a5e3eaad7dd1ed702aeb88c0afcae258faa61fdf",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "f1a6e26189a2f21631095a90b79677cc3222f22796f785a1886762e7c3f668c5",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_gfac_upstream_cpp_ad_run.v1"
+}

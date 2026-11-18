@@ -1,0 +1,14 @@
+{
+  "files": {
+    "cpp/main.cpp": "f5a990fa520b611d960ed7872f2e809b24b8b2364bcf0ac9dbc77b4dbe838d31",
+    "cpp/runner.patch.gz": "22057534598b90ec6016b6d6b973c72e92a793a6d814adb572870c5e8546e525",
+    "raw/bridge_flags.make.gz": "26bbf6c22d69887cc9fd382b4171877038568cbd1cf4df8949aff6fe4507c130",
+    "raw/build_receipt.json": "938dc1effbd0ffc7b5011d1e2ff5d1a0ad07a64ce5c5c752e971d911b710e508",
+    "raw/core_flags.make.gz": "966bbd03983c4c84215eedfc9ce299d9ae261662790b33f5093d0bc275fd19b6",
+    "raw/cpp_result.json": "935557ff8a7f8b2473acb9a83f935eb4937f72ced4be61cf6873effd735eba6e",
+    "raw/run_receipt.json": "a04479427397467668bfdcfd643f74c40c0669fd8f685ff76a8f5f2449f5b43a",
+    "raw/runner_cache.txt.gz": "9deaa04294f7c8d34eefa6e6423bbd24ae4b9271dee43ad2cee32aaee88503b6",
+    "raw/runner_flags.make.gz": "d2302f0fb58f67091d417ba4dbf9c0d8986e0e4309257e5a595e8a12e95cf90e"
+  },
+  "schema": "kdm6.native_d1_thermal_input_cpp_ad_packet.v1"
+}

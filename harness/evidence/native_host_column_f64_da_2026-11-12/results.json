@@ -1,0 +1,19 @@
+{
+  "archive_members_checked": 28,
+  "boundary_events": 60,
+  "input_f32_words_exactly_widened": 624,
+  "interior": {
+    "lower_nc16_jvp": 0.0,
+    "upper_h_1e-5_relative_residual": 2.858119138003858e-09,
+    "upper_nc16_jvp": -788214669.5459847
+  },
+  "lower_fd_signal": "unresolved: equal NC16 output words",
+  "mask_scope": "all 10 captured activation-stage Boolean masks stable at sampled interior probes; no all-process claim",
+  "operator_scope": "isolated two-operand f64 minimum; not whole-column AD; coordinator SHA is local review source only, not installed-build proof",
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_host_column_f64_da_public_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "single selected native column; no host-tile derivative or f32 AD claim",
+  "state_words_per_call": 468,
+  "trace_fields_per_event": 33
+}

@@ -1,0 +1,33 @@
+{
+  "attempts": [
+    {
+      "K_calls_configured": 0,
+      "attempt_sha256": "a28f41af5d7a5081705d1e889b79737e394e5f8c424c99e755e06545c7ba8566",
+      "attempt_version": 1,
+      "completed_direct_results": 0,
+      "consumed_input_and_config_match_prepared_v5": true,
+      "corner": "GG",
+      "direct_attempts": 1,
+      "excluded_receipt_sha256": "2fdfa295667ab26ec5a7b3ff482c550edc862e309aedcf7afb46ba9728315e88",
+      "failure_log_sha256": "5535195f7ff86eb4e216eedee6c1f04a2f08d9baaa683c2b1d89bb043c8e0c3e",
+      "reason": "RTTOV could not read lprofiles because nchannels remained 3556 while ten profiles were configured",
+      "rttov_log_sha256": "0725dd91c77869993fdd4be4cf2028507438498185b077a35ce63cdc94f88979",
+      "status": "EXCLUDED_FAILED_ATTEMPT"
+    },
+    {
+      "K_calls_configured": 0,
+      "attempt_sha256": "a945524cfbda660351d89cc9060494b91a560d332e5f608e686c85c610491657",
+      "attempt_version": 2,
+      "completed_direct_results": 0,
+      "consumed_input_and_config_match_prepared_v6": true,
+      "corner": "GG",
+      "direct_attempts": 1,
+      "excluded_receipt_sha256": "d33645940e5fa05aadad6d8ed0fb9d7e5578fccf8137474c409f5e4f58e05cfd",
+      "failure_log_sha256": "6504bd7053e964091b7f06fd85db36b06a3c367c0039de87f724a5d8be8f0f12",
+      "reason": "RTTOV could not open direct/radiance.txt: missing out/direct directory",
+      "rttov_log_sha256": "abcea0fb04179cec331fe36d8d1b94c84d14126ffdcc2bb0d4b91c46d4fc415c",
+      "status": "EXCLUDED_FAILED_ATTEMPT"
+    }
+  ],
+  "schema": "east-optical-excluded-attempts-v1"
+}

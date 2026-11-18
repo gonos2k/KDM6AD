@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "6b796cf7048ad0391648673602bd6371ee326e0de104f1dfeee841519cac4c7c",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_pre2_c2c_cpp_ad_20261107/build/native_pre2_c2c_cpp_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_c2c_pre2_producers_20261107/runs/paired_ledger/baseline/on/native_qnice_applied_47437_runtime1.csv"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "066fe2e4ee05660edce6e8c812963c68f45910a58062b26654066ae209d9a077",
+  "input_capture_sha256": "4f762998a4561c4999c39f57ed019e6e59bf2d938b9301c5c19ba3d58b2c228f",
+  "output_sha256": "e8714b776afd9b21da03f20fe640dafc1640d4d07e97705e1a13fdbee46c83bb",
+  "returncode": 0,
+  "schema": "kdm6.native_pre2_c2c_cpp_ad_run.v1"
+}

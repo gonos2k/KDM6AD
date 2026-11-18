@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Check one pinned capture-off/on native pair before analyzing capture rows."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+
+
+def digest(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def need(ok: bool, message: str) -> None:
+    if not ok:
+        raise ValueError(message)
+
+
+def verify(pair: str = "final") -> dict:
+    need(pair in ("fp64", "conservative", "final"), "pair name")
+    off_mode, on_mode = "off_" + pair, "on_" + pair
+    runs = {}
+    for mode in (off_mode, on_mode):
+        path = ROOT / "runs" / mode / "run_result.json"
+        row = json.loads(path.read_bytes())
+        need(row.get("schema") == "kdm6.native_qnice_39_same_call_run.v1" and
+             row.get("mode") == mode, "run result schema/mode")
+        need(digest(Path(row["startup_path"])) == row["startup_sha256"] and
+             digest(Path(row["endpoint_path"])) == row["endpoint_sha256"] and
+             digest(Path(row["session_record"])) == row["session_record_sha256"],
+             "run checkpoint/session file identity")
+        session = json.loads(Path(row["session_record"]).read_bytes())
+        need(session.get("status") == "complete" and
+             session.get("execution", {}).get("experiment_valid") is True and
+             session.get("execution", {}).get("model_completed") is True and
+             session.get("execution", {}).get("actual_proc_grid") == "1x1",
+             "incomplete native session")
+        bundle = {"fp64": "retry_pr457_v3", "conservative": "attempt3",
+                  "final": "attempt5"}[pair]
+        expected_dso = str((ROOT / bundle / "libtorch/install/lib/libkdm6_c.2.0.0.dylib").resolve())
+        loaded = session.get("loaded_library_lines")
+        need(isinstance(loaded, list) and loaded and
+             all(line.endswith("> " + expected_dso) for line in loaded),
+             "actual loaded DSO")
+        capture_dir = ROOT / "runs" / mode / "capture"
+        expected_capture = row.get("capture_files")
+        need(isinstance(expected_capture, dict), "capture file manifest")
+        if mode.startswith("off"):
+            need(not expected_capture and not capture_dir.exists(),
+                 "capture-off produced capture files")
+        else:
+            actual = {p.name: digest(p) for p in capture_dir.iterdir() if p.is_file()}
+            need(actual == expected_capture and len(actual) == 3,
+                 "capture-on file identity/inventory")
+            names = tuple(actual)
+            need(sum(n.startswith("native_qnice_applied_") and n.endswith("_runtime2.csv")
+                     for n in names) == 1 and
+                 sum(n.startswith("cpp_scalar_") and n.endswith("_2.csv")
+                     for n in names) == 1 and
+                 "host_qnice_pre_call.csv" in actual,
+                 "capture-on filenames")
+        runs[mode] = row
+    common = ("worktree_commit", "historical_plan_sha256", "source_sha256",
+              "cpp_receipt_sha256", "host_receipt_sha256", "executable_sha256",
+              "dso_sha256", "origin_sha256", "startup_sha256")
+    need(all(runs[off_mode][key] == runs[on_mode][key] for key in common),
+         "paired source/build/input/startup identity")
+    need(runs[off_mode]["endpoint_sha256"] == runs[on_mode]["endpoint_sha256"],
+         "capture off/on endpoint raw-byte identity")
+    return {
+        "schema": "kdm6.native_qnice_39_pair_verification.v1",
+        "pair": pair,
+        "paired_endpoint_sha256": runs[off_mode]["endpoint_sha256"],
+        "off_on_endpoint_file_bytes_equal": True,
+        "historical_c5_endpoint_match": runs[off_mode]["historical_c5_endpoint_match"]
+        and runs[on_mode]["historical_c5_endpoint_match"],
+        "capture_files": runs[on_mode]["capture_files"],
+        "scientific_status": "INCONCLUSIVE",
+        "physical_unit_status": "INCONCLUSIVE",
+    }
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pair", choices=("fp64", "conservative", "final"), default="final")
+    args = parser.parse_args()
+    print(json.dumps(verify(args.pair), indent=2, sort_keys=True))

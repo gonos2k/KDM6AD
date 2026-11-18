@@ -1,17 +1,16 @@
 """Source-generation checks for the private ice-only 2x2 instrumentation."""
 
-from pathlib import Path
-
 import pytest
 
 from harness import make_ice_boundary_overlay as base
 from harness import make_ice_factorial_overlay as overlay
+from harness.historical_ice_sources import checked_factorial_root
 
 
 def test_factorial_modes_keep_main_chain_legacy_and_trace_three_stages():
-    root = Path(__file__).parents[2]
+    root = checked_factorial_root()
     source_paths = {
-        name: root / "libtorch/src" / name for name in overlay.FACTORIAL_SOURCE_PINS
+        name: root / "src" / name for name in overlay.FACTORIAL_SOURCE_PINS
     }
     assert {
         name: base.sha256(path) for name, path in source_paths.items()
@@ -53,9 +52,9 @@ def test_factorial_modes_keep_main_chain_legacy_and_trace_three_stages():
 
 
 def test_factorial_generators_fail_closed_on_source_or_anchor_drift():
-    root = Path(__file__).parents[2]
-    coordinator = (root / "libtorch/src/coordinator.cpp").read_text()
-    runtime = (root / "libtorch/src/runtime.cpp").read_text()
+    root = checked_factorial_root()
+    coordinator = (root / "src/coordinator.cpp").read_text()
+    runtime = (root / "src/runtime.cpp").read_text()
     with pytest.raises(RuntimeError, match="already has the factorial mode selector"):
         overlay.instrument_factor_coordinator(coordinator + "\n" + overlay.MODE_MARKER)
     with pytest.raises(RuntimeError, match="already has factorial water tracing"):

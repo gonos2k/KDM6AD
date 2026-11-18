@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
+import shutil
 
 import pytest
 
@@ -39,6 +40,17 @@ def test_actual_capture_is_complete_source_reconstructable_and_noninterfering():
     assert abs(column["qi_state_export_defect_identity_residual_kg_m2"]) < 1e-15
     assert column["ni_interface_defect_number_m2"] == pytest.approx(620092374.2268972)
     assert abs(column["ni_state_export_defect_identity_residual_number_m2"]) < 1e-5
+
+
+def test_retained_historical_source_mutation_fails_closed(tmp_path, monkeypatch):
+    source_dir = tmp_path / "historical"
+    shutil.copytree(analyzer.HISTORICAL_SOURCE_DIR, source_dir)
+    runtime = source_dir / "runtime.cpp"
+    runtime.write_bytes(runtime.read_bytes() + b"\n")
+    monkeypatch.setattr(analyzer, "HISTORICAL_SOURCE_DIR", source_dir)
+    p = artifacts()
+    with pytest.raises(ValueError, match="public source pin changed for runtime.cpp"):
+        analyzer.analyze(p["trace"], p["manifest"], p["request"])
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,55 @@
+{
+  "schema": "kdm6.oracle_evidence_results.v1",
+  "provenance": {
+    "head_commit": "dbca265999328b70fa8477607ed08ea1f9170046",
+    "head_tree": "eee4b766b30987f775155c27ec26493c42db8a0b",
+    "registry_sha256": "f8125e0c93b0ec3b9d793d8dceb893ee9ca47e682414208ee465303bf1797c47",
+    "python_version": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+    "python_executable": "/opt/local/bin/python3",
+    "workers": 1,
+    "timeout_seconds": 300,
+    "mode": "normal",
+    "github_run_id": null,
+    "github_run_attempt": null
+  },
+  "mode": "normal",
+  "expected": 3,
+  "success": true,
+  "wall_seconds": 409.722,
+  "totals": {
+    "completed": 3,
+    "tests": 25,
+    "passed_in_successful_suites": 25,
+    "skipped": 0,
+    "nonpassing_suites": 0
+  },
+  "suites": [
+    {
+      "suite": "harness/evidence/native_nr16_vjp_fd_2026-11-06",
+      "status": "pass",
+      "returncode": 0,
+      "tests": 6,
+      "skipped": 0,
+      "skip_reasons": [],
+      "elapsed_seconds": 187.996
+    },
+    {
+      "suite": "harness/evidence/native_d1_coeres_upstream_cpp_ad_2026-11-10",
+      "status": "pass",
+      "returncode": 0,
+      "tests": 13,
+      "skipped": 0,
+      "skip_reasons": [],
+      "elapsed_seconds": 94.387
+    },
+    {
+      "suite": "harness/evidence/native_nc16_fd_expanded_2026-11-06",
+      "status": "pass",
+      "returncode": 0,
+      "tests": 6,
+      "skipped": 0,
+      "skip_reasons": [],
+      "elapsed_seconds": 127.335
+    }
+  ]
+}

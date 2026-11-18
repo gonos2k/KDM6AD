@@ -1,0 +1,21 @@
+# Full-call native D1-entry `precg2` production (2026-11-09)
+
+This packet continues the saved `(203,149)` native column, 39 levels, 20-second f64 call and initial QG17/BRS17 directions from [#567](../native_d1_melt_amount_producer_cpp_ad_2026-11-09/README.md). A test-only live hook immediately after entry `pre=preamble(...)` retains the merged ProgB `avtg`, `bvtg`, `bvtg2`, `g5pbgo2`, and `precg2`, plus the actual `mug`, active gate and midpoint control. The selected D1 melt call consumes this entry `precg2`, before the later `pre1` and `pre2` rebuilds.
+
+## Producer and consumer contract
+
+The executed source computes `bvtg2=(2.5+(bvtg*0.5))+mug`, `g5pbgo2=exp(lgamma(max(bvtg2,EPS)))`, and, on the active produced branch, `precg2=(((4*0.31)*safe_pow(avtg,0.5))*g5pbgo2)`. The public replay checks the entry-density-to-`avtg`/`bvtg` interpolation, source-order f64 arithmetic and branch margins, the new producer-to-[#567 D1 melt](../native_d1_melt_amount_producer_cpp_ad_2026-11-09/README.md) handoff by raw value and JVP, and the selected input-chain tangent `d(precg2)=precg2*(0.5*d(avtg)/avtg+d(g5pbgo2)/g5pbgo2)`. Independent Python gamma arithmetic has a **16-ULP** portable bound, and its pow/product evaluation using the captured C++ gamma word has an **8-ULP** bound; these are separate from raw C++ producer-to-consumer handoff equality. `g5pbgo2` JVP is additionally compared with represented-gap value differences; this packet does not certify a general gamma derivative implementation.
+
+The baseline and saved joint `h=10^-3` endpoints have separate #553 native D1-entry `avtg`, `bvtg`, and `precg2` words. `bvtg2` and `g5pbgo2` have no independent native-host tap there; other high/low endpoints are isolated C++ evaluations. Existing #567 baseline stages, JVPs/VJPs and 24 final-state endpoints remain raw-equal. The isolated source, input, private archive/executable and result are SHA-pinned; public CI replays the archived execution rather than rebuilding that private binary.
+
+At baseline, `avtg=146.03613488313994`, `bvtg2=2.7629003162703687`, `g5pbgo2=1.6254994000806542`, and `precg2=24.35783384950257`. The joint initial relative QG17+BRS17 direction gives `d(precg2)=-0.0001477748230`: its `avtg` input contributes `-0.0001496541615`, while the captured gamma-factor input contributes `+0.0000018793385`. The QG-only and BRS-only tangents, `+4.1979478192` and `-4.1980955940`, are much larger and oppose each other. These are shared-graph input terms, not independent process-off effects.
+
+In an independent scalar replay of the 25 saved cases, source-order entry `avtg`/`bvtg` interpolation and `bvtg2` match by raw f64 bits; Python `exp(lgamma(...))` differs from the archived C++ `g5pbgo2` by at most five ULP in the local environment. The `precg2` multiplication using the **captured C++ `g5pbgo2` word** is raw-exact in all 25 cases. The portable libm allowance is a separate test from that exact C++ producer-to-consumer handoff.
+
+The five new stage signals have 50 accepted represented-gap central differences. Thirty-six meet the `10^-6` relative-signal criterion directly. Fourteen use the declared **4 output ULP** roundoff floor; 13 one-sided comparisons also use that floor. The largest relative-signal residual is about `0.002079` on a small joint-direction gamma-factor difference, where the absolute residual is about **2.354 output ULP**. These floor-accepted comparisons give roundoff-scale evidence, not `10^-6` relative accuracy for those small signals. The previously verified #567 stage-difference criteria are unchanged.
+
+## Limits
+
+This is one selected active f64 branch. Large single-direction pairs with previously captured upstream native-17 density-cap crossings are excluded from local derivative acceptance; extra small-step pairs lack an independent cap capture, and the D1-entry native-16 density boundary is diagnosed separately. Inactive ProgB retention, active pow/gamma and interpolation boundaries, the other D1 raw-rate operands, independent QV/T thermodynamic directions, operational f32, physical units/budgets, full host AD and GK2A–RTTOV cost sensitivity remain open. `scientific_status` and `physical_unit_status` remain `INCONCLUSIVE`.
+
+Run `python -m unittest discover -s harness/evidence/native_d1_precg2_producer_cpp_ad_2026-11-09 -v` and repeat with `PYTHONOPTIMIZE=1 python -O`.

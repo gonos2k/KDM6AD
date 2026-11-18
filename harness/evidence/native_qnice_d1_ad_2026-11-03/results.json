@@ -1,0 +1,204 @@
+{
+  "call": {
+    "b_zero": 22617,
+    "levels": 39,
+    "native_ij_1based": [
+      164,
+      242
+    ],
+    "one_step_call": 2,
+    "runtime_call": 2
+  },
+  "conditional_derivatives": {
+    "ni_positive_absolute_analytic": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "ni_positive_absolute_jvp": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      -0.0
+    ],
+    "ni_positive_one_sided_finite_differences": {
+      "0.01": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "0.1": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "1.0": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "ni_zero_gate_boundary": true,
+    "output_order": [
+      "QC",
+      "QI",
+      "NC",
+      "NI",
+      "T"
+    ],
+    "qi_relative_analytic": [
+      6.109135817357022e-11,
+      0.0,
+      0.0,
+      0.0,
+      -2.1195516216006763e-08
+    ],
+    "qi_relative_finite_differences": {
+      "0.001": {
+        "fd": [
+          6.109135817741531e-11,
+          0.0,
+          0.0,
+          0.0,
+          -2.1174173525651756e-08
+        ],
+        "fd_minus_jvp": [
+          3.8450973786644646e-21,
+          0.0,
+          0.0,
+          0.0,
+          2.1342690355006935e-11
+        ],
+        "output_difference": [
+          1.2218271635482618e-13,
+          0.0,
+          0.0,
+          0.0,
+          -4.234834705130197e-11
+        ],
+        "output_ulp": [
+          5.293955920339377e-23,
+          5e-324,
+          5e-324,
+          5e-324,
+          5.684341886080802e-14
+        ],
+        "represented_relative_gap": 0.001999999999999927
+      },
+      "0.01": {
+        "fd": [
+          6.109135817476575e-11,
+          0.0,
+          0.0,
+          0.0,
+          -2.1194068722252143e-08
+        ],
+        "fd_minus_jvp": [
+          1.1955344790805478e-21,
+          0.0,
+          0.0,
+          0.0,
+          1.4474937546207937e-12
+        ],
+        "output_difference": [
+          1.2218271634953223e-12,
+          0.0,
+          0.0,
+          0.0,
+          -4.2388137444504537e-10
+        ],
+        "output_ulp": [
+          5.293955920339377e-23,
+          5e-324,
+          5e-324,
+          5e-324,
+          5.684341886080802e-14
+        ],
+        "represented_relative_gap": 0.02000000000000012
+      },
+      "0.1": {
+        "fd": [
+          6.109135817344259e-11,
+          0.0,
+          0.0,
+          0.0,
+          -2.1195489807723775e-08
+        ],
+        "fd_minus_jvp": [
+          -1.2763138357751794e-22,
+          0.0,
+          0.0,
+          0.0,
+          2.6408282988096806e-14
+        ],
+        "output_difference": [
+          1.2218271634688525e-11,
+          0.0,
+          0.0,
+          0.0,
+          -4.239097961544758e-09
+        ],
+        "output_ulp": [
+          5.293955920339377e-23,
+          5e-324,
+          5e-324,
+          5e-324,
+          5.684341886080802e-14
+        ],
+        "represented_relative_gap": 0.20000000000000012
+      }
+    },
+    "qi_relative_jvp": [
+      6.109135817357022e-11,
+      0.0,
+      0.0,
+      0.0,
+      -2.1195516216006763e-08
+    ],
+    "weighted_vjp": [
+      -3814.426501988324,
+      5.0
+    ]
+  },
+  "d1_stores": {
+    "level15": {
+      "cpm_safe": 1008.7971032572444,
+      "nc_after_store2": 0.0,
+      "nc_before": 0.0,
+      "ni_after_store2": 0.0,
+      "ni_before": 0.0,
+      "pgmlt_capped": 0.0,
+      "pimlt_ni": 0.0,
+      "pimlt_qi": 6.109135817357022e-11,
+      "psmlt_capped": 0.0,
+      "qc_after_store2": 3.209940036037264e-07,
+      "qc_before": 3.2093291224555287e-07,
+      "qi_after_store2": 0.0,
+      "qi_before": 6.109135817357022e-11,
+      "t_after_d1": 275.62344269828947,
+      "t_before": 275.62344271948496
+    },
+    "melted_native_levels": [
+      15
+    ]
+  },
+  "new_rows": 507,
+  "no_splice_chain": {
+    "fixed_speed_c3_ni_raw_bit_matches": 39,
+    "hardcoded_qi15_splice": false
+  },
+  "off_on_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "parent_rows_raw_bit_equal": 3471,
+  "physical_unit_status": "INCONCLUSIVE",
+  "schema": "kdm6.native_d1_ad_conditional.v1",
+  "scientific_status": "INCONCLUSIVE"
+}

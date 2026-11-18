@@ -1,6 +1,7 @@
 name: oracle-ci
 
-# Least-privilege: read-only; this job only runs the oracle pytest.
+# Least-privilege: read-only; this job runs the portable oracle and selected
+# Torch-dependent public evidence tests.
 permissions:
   contents: read
 
@@ -23,16 +24,23 @@ on:
     branches: [main]
     paths:
       - 'oracle/**'
+      - 'harness/evidence/**'
+      - 'harness/ice_chain_applied_budget.py'
+      - 'harness/tests/test_ice_chain_applied_budget.py'
+      - 'harness/oracle_evidence_suites.json'
+      - 'harness/run_oracle_evidence_suites.py'
+      - 'harness/tests/test_run_oracle_evidence_suites.py'
+      - 'harness/ci_diagnostics/**'
+      - '.github/requirements/oracle-*.txt'
       - '.github/workflows/oracle-ci.yml'
   # No paths filter on pull_request: "oracle pytest (f64 reference)" is a
   # REQUIRED status check in the main ruleset, so it must REPORT on every PR
   # to main. Path-filtering it (oracle/** only) left non-oracle PRs blocked
   # forever — GitHub waits for a required context that never runs, and a
   # manual workflow_dispatch run is not credited to the PR merge-box. The job
-  # is a ~1-2 min pure-Python pytest; running it on all PRs is cheap and makes
-  # the gate always satisfiable. (push stays oracle-scoped — post-merge only.)
+  # must run on all PRs so the required status can be reported. (push stays oracle/evidence-scoped — post-merge only.)
   pull_request:
-    branches: [main]
+    branches: [main, research/east_ice_radius_floor_packet]
   workflow_dispatch:
 
 # Superseded PR runs have no remaining merge evidence value. Keep every main run.
@@ -44,22 +52,26 @@ jobs:
   oracle-pytest:
     name: oracle pytest (f64 reference)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            .github/requirements/oracle-torch-cpu.txt
+            .github/requirements/oracle-pypi.txt
 
       - name: Install torch (CPU, pinned) + oracle verification dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+          pip install -r .github/requirements/oracle-torch-cpu.txt
           # Keep numeric dependencies pinned while moving the single CI interpreter
           # to Python 3.12; this interpreter change needs its own green run.
           # Exercise synthetic NetCDF ingestion/identity tests in CI, not only locally.
-          pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4" "pyproj==3.7.1"
+          pip install -r .github/requirements/oracle-pypi.txt
 
       - name: Record versions
         run: |
@@ -68,8 +80,15 @@ jobs:
 
       # The mandatory pyproj import above prevents importorskip from hiding the
       # independent LCC check. Run that test once, inside the complete suite.
+      - name: Validate Oracle profiler
+        run: python -m unittest discover -s harness/ci_diagnostics -p test_profile_pytest.py -v
+
       - name: pytest (oracle/, pure-Python subset)
-        run: cd oracle && python -m pytest -rs -q
+        run: |
+          cd oracle
+          python ../harness/ci_diagnostics/profile_pytest.py \
+            --output "$RUNNER_TEMP/oracle-pytest-profile.json" \
+            --durations 30 -- python -m pytest -rs -q
 
       # The NumPy-only harness job intentionally has no Torch. Exercise the
       # native batch graph/checkpoint boundaries here, where Torch is mandatory.
@@ -82,3 +101,30 @@ jobs:
           harness/tests/test_run_native_satellite_case.py
           harness/tests/test_native_satellite_replay.py
           harness/tests/test_prepare_native_satellite_case.py
+          harness/tests/test_ice_chain_applied_budget.py
+
+      # These public evidence suites live outside harness/tests and depend
+      # on Torch + NumPy + netCDF4. Keep separate discovery processes because
+      # multiple directories contain test_replay.py. No private host/RTTOV is used.
+      - name: Validate evidence runner
+        run: python -m unittest discover -s harness/tests -p test_run_oracle_evidence_suites.py -v
+
+      - name: unittest (QNICE evidence, normal)
+        run: python harness/run_oracle_evidence_suites.py --mode normal --output "$RUNNER_TEMP/oracle-evidence-normal.json"
+
+      # The tests launch child Python CLIs. Propagate optimization to them too.
+      - name: unittest (QNICE evidence, optimized)
+        env:
+          PYTHONOPTIMIZE: '1'
+        run: python harness/run_oracle_evidence_suites.py --mode optimized --output "$RUNNER_TEMP/oracle-evidence-optimized.json"
+
+      - name: Upload evidence timings and Oracle profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-evidence-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/oracle-evidence-*.json
+            ${{ runner.temp }}/oracle-pytest-profile.json
+          if-no-files-found: warn
+          retention-days: 14

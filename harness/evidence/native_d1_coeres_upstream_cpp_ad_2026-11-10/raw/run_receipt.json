@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "d1741ce9dc12d53d7bcdca236ae7953f09404e0abb5bc711eb21af61c626734d",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_coeres_upstream_ad_20261110/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_coeres_upstream_ad_20261110/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "29583ff2bb9af61bb612b02d7381b37701eb259a412033335e20a77244073232",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "c41e31d024a010139c66fe0f3bd4138e8190297fbe7db3e743028ff11db71338",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_coeres_upstream_cpp_ad_run.v1"
+}

@@ -1,0 +1,91 @@
+{
+  "archive_sha256": "50f43060fe20c16aa7f74cd12c5699d3ac36bfbf1e53a41d164741e2b53b6579",
+  "cases": [
+    {
+      "direction": "baseline",
+      "label": "baseline",
+      "nominal_step": 0.0,
+      "runs": {
+        "off": {
+          "arrays_sha256": "124eae7323d7815638cd2874cd9c1143f09a8386d43a48e9019e81679f9ecc13",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "7d61e25a5e7ae92e6d5042aa2865fff01ecea4f0c51ec06dc125439f3621ea1d"
+        },
+        "on": {
+          "arrays_sha256": "124eae7323d7815638cd2874cd9c1143f09a8386d43a48e9019e81679f9ecc13",
+          "capture_file": "native_qnice_applied_76963_runtime1.csv",
+          "capture_rows": 16497,
+          "capture_sha256": "0aec58608a06e04adbb8e9984bb23d9c9e9f8820a0bc3792e3196addf8e4ea23",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "7d61e25a5e7ae92e6d5042aa2865fff01ecea4f0c51ec06dc125439f3621ea1d"
+        }
+      }
+    },
+    {
+      "direction": "qg_bg17_rel",
+      "label": "qg_bg17_rel_1e-03_minus",
+      "nominal_step": -0.001,
+      "runs": {
+        "off": {
+          "arrays_sha256": "7b6fc28713c914580cae8cd44f85c303a410e8a7586a019758332469a1840e42",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "35a1d6d288785fefbfd2a9e139754639944f712365296d25f9d7fa56ac7497b5"
+        },
+        "on": {
+          "arrays_sha256": "7b6fc28713c914580cae8cd44f85c303a410e8a7586a019758332469a1840e42",
+          "capture_file": "native_qnice_applied_76967_runtime1.csv",
+          "capture_rows": 16497,
+          "capture_sha256": "ae6b4336e8c5b12e2305aa1519fd1f908da15068c5ea3b1ea0152b6eb3fde06c",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "35a1d6d288785fefbfd2a9e139754639944f712365296d25f9d7fa56ac7497b5"
+        }
+      }
+    },
+    {
+      "direction": "qg_bg17_rel",
+      "label": "qg_bg17_rel_1e-03_plus",
+      "nominal_step": 0.001,
+      "runs": {
+        "off": {
+          "arrays_sha256": "b3356fcd16735df61b0bb130d82baf7e2939ed0357346b2ebb35627b1c35f11b",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "e20121db59f70f7d253e459ca480e858a9594ddef6d2d7e7891d3df0b9200eec"
+        },
+        "on": {
+          "arrays_sha256": "b3356fcd16735df61b0bb130d82baf7e2939ed0357346b2ebb35627b1c35f11b",
+          "capture_file": "native_qnice_applied_76969_runtime1.csv",
+          "capture_rows": 16497,
+          "capture_sha256": "54f20f22929f1d9240137957d094a16d609e91edfe339a465bd4320307cf7782",
+          "returncode": 0,
+          "stderr_sha256": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+          "stdout_sha256": "e20121db59f70f7d253e459ca480e858a9594ddef6d2d7e7891d3df0b9200eec"
+        }
+      }
+    }
+  ],
+  "coordinator_source_sha256": "3673080dbe5b39fd1703869c1714c2ca444f8202b1d755febde9f664e5691cf5",
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "evaluate_source_sha256": "4ac6c64164b7306ae85109b813d230b19551cc1b4d52d39f43d4754d83827f0c",
+  "library_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_nc_rate_producers_20261107/build/libkdm6_c.2.0.0.dylib",
+  "library_sha256": "46134d4b6eeda89f89f5eac8f53a5688cab05dac9a1a4c949ada95d3a8f282b0",
+  "parent_npz_sha256": "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57",
+  "plan": {
+    "qg_bg17_rel": [
+      0.001
+    ]
+  },
+  "runner_source_sha256": "1dff57717945c8da827ff2958e0af8fd8fc127c955ef1787632dc8bac97b0f0d",
+  "schema": "kdm6.native_nc_rate_producers_paired.v1"
+}

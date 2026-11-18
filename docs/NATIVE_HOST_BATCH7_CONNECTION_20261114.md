@@ -1,0 +1,107 @@
+# Native host batch7: 입력·기록 연결의 현재 경계
+
+이 문서는 [#593의 84파일 A4 합성 소스](NATIVE_HOST_BATCH6_CAPTURE_CONTRACT_20261114.md) 뒤에 준비한 연구용 연결을 기록한다. 운영 `libtorch/`·`oracle/`의 물리 구현은 바꾸지 않았다. 등록된 native `(203,149)` 열의 **45입력·필수 93호출·전체 최대 100호출 / 900초** 배치는 실행하지 않았다. successor는 `DRAFT_BLOCKED`, 과학·물리 단위 상태는 `INCONCLUSIVE`다.
+
+## 공개 자료에서 연결한 것
+
+| 단계 | 현재 검사 | 남은 근거 |
+| --- | --- | --- |
+| FD 역할과 입력 | [v2 소비자](../harness/evidence/native_host_execution_successor_2026-11-13/condition_consumer_v2.py)는 기존 receipt의 gate 입력을 재검증하고, 중심·끝점 역할을 고정된 624단어 입력·input ID·capture 호출 순서에 대조한다. ID·순서 교환은 FD 전에 거부한다. | 새 v2 payload 전체를 재표기·재해시한 자료의 실행 출처는 독립 인증되지 않는다. 직접 제출한 v2 payload에서는 gate 입력을 내지 않고 `UNRESOLVED`로 중단한다. |
+| 같은 호출 복사 | [opt-in ABI 경로](../harness/evidence/native_host_execution_successor_2026-11-13/batch5_abi_core.py)는 capture-on의 live context를 지우기 전 v2 원시 기록을 복사하고, graph에서는 같은 handle·token의 metadata만 복사한다. 실패 시 기존 정리·순서 차단을 유지한다. | fake ABI 검증 범위다. 실제 A7 DSO에서 복사한 전 호출 자료나 loader 출처는 아직 없다. |
+| 영수증 자산 | [v3 bridge](../harness/evidence/native_host_execution_successor_2026-11-13/condition_receipt_bridge_v3.py)는 same-call 복사 결과의 입력 624단어·출력 468단어·강수·DSO 표기·기록 순서를 고정 계획의 45 capture-on 슬롯과 연결한다. | 해시와 DSO 표기는 여전히 제출자 주장이다. 완전히 다시 작성한 일관된 자료를 분별하지 못하므로 `SPEC_ONLY / NOT_ELIGIBLE`을 유지한다. 혼합 one-step phase의 FD 투영은 `UNSUPPORTED`다. |
+| 단계·selector | [phase 초안](../harness/evidence/native_host_execution_successor_2026-11-13/phase_selector_draft.py)은 98개 v2 소스 위치와 별도 A7 v1 필드 18개를 고정하고, 검토된 family/step·좌표·ordinal 구조를 검사한다. | 모든 호출·층·substep에서 실제 방출됐는지, optional/미실행의 이유, 원래 조건과 같은 source인지에 대한 완전한 census는 없다. 결과는 `STRUCTURE_ONLY_INCOMPLETE`다. |
+| graph checkpoint | 중복된 rain/primal 조회를 하나로 줄이고 같은 selector의 서로 다른 seed가 primal cache를 공유하게 했다. 동일 selector·seed/cotangent 요청의 중복은 ABI 호출 전에 거부한다. | 실제 KDM graph에서 중간 primal·JVP·VJP와 독립 FD를 연결한 결과는 없다. |
+
+후속 phase 구조 보강은 고정된 runtime 경로에서 microphysics 기록의 **`one_step_call == outer + 1`**을 요구한다. 호출·epoch·반복·ordinal은 Boolean을 배제한 정확한 정수이며 C++ `uint64_t` 범위를 넘을 수 없다. 소스에서 확인되지 않은 phase는 계속 거부한다. 이 검사는 입력 구조의 모순을 막지만 실제 기록의 완전한 동적 census는 아니다.
+
+소스 계보는 기존 A4 84파일에 [A5 조건 hook 층과 A7 선택량 층](../harness/evidence/native_host_execution_successor_2026-11-13/producer_source_batch6_layers/README.md)을 순서대로 적용한다. A5는 warm/cold의 **원래 두 소비 Boolean**과 scalar·loop 제어값 14곳을, A7은 일곱 수송 변수의 outer gate가 선택한 상태·fall 및 별도의 ProgB BG 재설정 18곳을 보존한다. A5/A7은 추가 원시 기록 지점이며 완료된 19조건 동적 coverage나 실제 보존 flux 수가 아니다. 마지막 층은 여전히 84파일이고 macro OFF에서 이전 소스로 돌아가는 정적 검사를 통과했다.
+
+격리 macOS A5+A7 소스는 DSO 빌드·로드와 export **28개**, 모델 미진입 연구용 CTest **4/4**를 통과했다. 소스 snapshot SHA-256은 `033558eb6f771beb76d6ba8ebbc1aa126c4abafd4eb6d53dcabd3361cb8a1038`, DSO SHA-256은 `175a75c7b33638d802fe3d28144d1301a4fc6ac86f79fabfc433b666b0b4d6b8`, 비공개 빌드 영수증 SHA-256은 `e397671ef60139064cd135fcfc7ec156c153a07420c3380642d0641440eaacb4`다. 첫 CTest 명령은 PATH에 실행 파일이 없어 시험 전에 실패했고, 절대 경로 재실행 **4/4**가 영수증에 남아 있다.
+
+다음 전용 CI 후보는 임시 빌드가 삭제되기 전 macro ON **DSO·미실행 parity 실행 파일·컴파일 명령·JUnit·최종 A7 소스 snapshot·이전 층의 해시 목록·빌드 receipt**를 최대 **64 MiB**의 아티팩트로 보존한다. 업로드 파일이 없으면 CI가 실패한다. 별도 읽기 검증기는 각 파일의 경로·크기·해시와 독립적으로 제공한 source·바이너리·OS/아키텍처·Python ABI·Torch·컴파일러·빌드 옵션을 비교하고 `VERIFIED_BUILD_ASSET_ONLY / NOT_ELIGIBLE`로 끝난다. 이전 층의 전체 파일 바이트는 보존 대상이 아니라 해시 목록이며, 아티팩트 검증은 실제 모델 실행을 인증하지 않는다. [최종 A7 source CI](https://github.com/gonos2k/KDM6AD/actions/runs/43577270491)에서 Linux·macOS 보존 업로드가 통과했다. 내려받은 묶음의 원시 파일 해시는 모두 manifest와 일치했고 실제 압축 전 크기는 Linux 약 **1.41 MiB**, macOS 약 **2.01 MiB**였다. 이 확인도 빌드 자산의 일치이며 모델 실행 인증은 아니다.
+
+기존 격리 macOS A7 빌드 파일로 보존·읽기 코드를 따로 시험한 묶음은 **1,950,178바이트**였고 `VERIFIED_BUILD_ASSET_ONLY / NOT_ELIGIBLE / CONTAINMENT_PENDING`을 반환했다. DSO·시험 실행 파일의 해시와 ON **4/4** JUnit은 원본 파일과 일치했다. 이 시험의 receipt는 **수동 구성한 로컬 시험 입력**이며, hosted CI 생산자나 실행 출처의 인증으로 사용하지 않는다.
+
+## 실행을 보류한 이유와 다음 완료 조건
+
+이전 A4 소스의 합성 value-only parity CTest **1건**은 통과했지만, 바뀐 A5+A7 DSO에는 그 결과를 소급하지 않는다. 현재 전용 CI는 A7 parity 실행 파일을 **빌드·목록 검사만** 하고 `CONTAINMENT_PENDING`으로 기록하며, macro ON의 모델 미진입 CTest **4개**만 실행하도록 계획했다. 호스트·RTTOV 호출은 없다.
+
+실제 graph 시험을 시작하려면 다음을 같은 후보에서 확인해야 한다.
+
+1. 독립 watchdog이 worker의 실제 프로세스 그룹을 **실행 전** 인수하고 wall·RSS·반복 종료 신호·감독자 강제 종료 시 잔존 그룹을 스텁에서 처리한다. 후보 기록과 완료 확인은 분리한다. 현재 Darwin 초안에는 이 외부 containment와 확인 파일이 없어 graph/value matrix를 실행하지 않았다.
+2. 계획 입력·실제로 로드한 DSO·Torch·빌드 소스의 해시, 35개 이하 합성 호출의 시작·완료·실패·미시작 영수증을 결합한다. 제출자가 모두 다시 쓴 해시만으로 실행을 인증하지 않는다.
+3. 같은 selector·층·graph handle에서 primal·JVP·VJP를 읽고, **실제 f64에 표현된 입력 간격**의 독립 FD를 두 안정 보폭에서 비교한다. 기록된 조건·substep이 바뀌거나 필수 항목이 없으면 `INCONCLUSIVE`로 남긴다. 지금의 fixture 초안은 source/mock 시험만 통과했고 KDM graph 호출은 없다.
+4. A7 수송 자료는 후보→독립 cap→outer 선택→ProgB reset의 **알고리즘 항**으로 먼저 연결한다. 실제 면별 departure/arrival·바닥 export, 밀도·수농도·BG 체적의 단위를 확인하기 전에는 물리 보존이나 미분 수지 합격으로 읽지 않는다.
+
+이 조건과 선택된 synthetic graph 시험이 끝난 뒤에야 별도 `EXECUTION_READY` 계획을 첫 native 호출 전에 커밋할 수 있다. 현재 저장한 코드·소스·합성 시험은 그 승인 근거가 아니다.
+
+## 공개 synthetic33 감독 초안
+
+[synthetic33_gate 패킷](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/README.md)은 3개 합성 fixture × 11호출의 **33슬롯 입력·시작/완료 기록·watchdog·로더 trace·확인 파일** 계약을 소스와 fake 시험으로 묶는다. `Runner`, worker, 감독 진입점과 완료 확인의 실제 DSO 경로는 기본적으로 차단돼 있다. 검토 기준 head `646f3f0b`의 [hosted fake CI](https://github.com/gonos2k/KDM6AD/actions/runs/43599503454)는 portable **37/37**, Darwin **52/52**를 일반·`-O`로 통과했다. 이번 연결 수정 후보의 Python 3.12 로컬 재실행은 portable **43/43**, Darwin **53/53**씩 두 모드 모두 통과했다. 후자는 supervisor 강제 종료, TERM을 무시하는 자손, 반복 종료 신호, 제한 시간·RSS, 기록 누락 및 trace 교체를 포함한다. 부하가 걸린 초기 fake 실행에서 readiness 2초 제한으로 실패한 사례가 있었고, 무모델 probe 5회의 최대 2.481초를 근거로 실제 pre-ready 제한을 전체 900초 예산 안의 10초로 조정했다.
+
+별도 [경량 macOS fake CI](../.github/workflows/synthetic33-gate-ci.yml)는 이 패킷의 portable/Darwin 두 시험군을 일반·`-O`로 각각 격리 실행한다. `646f3f0b`의 hosted 결과는 위 링크에서 확인된다. [같은 head의 A7 source CI](https://github.com/gonos2k/KDM6AD/actions/runs/43599503453)는 Linux·macOS 각각 OFF **21/21**·ON **4/4**를 통과했고 빌드 자산을 보존했으나 parity는 `CONTAINMENT_PENDING`이다. fake 시험은 실제 KDM graph, loader 이미지, 33호출 산출물 또는 native 입력을 인증하지 않는다. private 승인 manifest와 raw dyld trace는 공개 패킷에 포함하지 않았다. 실제 제한 실행을 시작하려면 독립적으로 검토한 source·DSO·interpreter·입력 manifest를 고정하고, 감독자가 낸 33호출 영수증과 로더 기록을 검증한 뒤 별도 완료 확인을 발급해야 한다. 현재 그 실행·완료 경로는 미승인이다.
+
+## 후속 검토의 수정과 미실행 범위
+
+취소/release 경합은 watchdog과 상위 orchestrator가 최종 관측 시 TERM·INT를 잠시 막고 취소·deadline·상대 프로세스 생존을 다시 확인하도록 수정했다. 이 관측 이후의 신호는 허가 후 취소·정리로 분류한다. worker preflight와 witness는 **같은 정규화 DSO 경로와 해시**가 asset, manifest, 필수·승인 loaded-image 목록에 모두 들어 있는지 공통 검사한다. AD 쌍대성·FD 신호·기록된 분기/일정·두 보폭 안정성도 별도 상태로 남겨 이미 확인된 JVP/VJP 불일치가 작은 FD로 덮이지 않게 했다. 이 변경들은 fake 시험 결과이며 실제 A7 graph가 검증됐다는 뜻은 아니다.
+
+[A7 소스의 세 selector 초안](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/selector_manifest_spec_v1.py)은 NC 처리 전 수농도, 포화조정 후 QC, outer gate가 선택한 QR을 native 24층에서 후보로 둔다. **33 forward는 그대로** 두고 중심 graph 세 건에서 최대 **9 primal·18 JVP·9 VJP**를 조회하는 제안이다. 실제 fixture마다 해당 노드가 존재하고 연결되는지는 미측정이며, 누락·분기 교차·미해상 신호는 개별 `INCONCLUSIVE`로 남긴다.
+
+기존 `/bin/ps`는 현재 호스트 부하에서 **10초 timeout**을 실제로 보였다. 새 Darwin libproc 그룹 census와 격리 psutil 5.9.4 RSS helper는 부모의 WNOWAIT 예약과 별도 helper 요청을 분리한 **fake-only 후보**다. psutil 패키지의 bytecode·symlink를 배제한 전체 `.py/.so` 사전 해시, helper timeout/권한·churn 실패, fake 33호출 관측·정리를 시험했다. RSS는 **표본 기반 정지 기준**이며 4 GiB 순간 하드 상한이나 OS 수준 containment가 아니다. 실제 A7 DSO의 graph/33호출은 여전히 실행하지 않았고 완료 witness도 발급하지 않았다.
+
+이전 head `0b075d78`의 [fake CI](https://github.com/gonos2k/KDM6AD/actions/runs/43597188834)는 Darwin 시험 1건에서 합산된 witness 자원/worker 조건으로 실패했다. 로그만으로 개별 원인은 특정되지 않았지만, 빠른 fake worker가 release 직후 종료해 첫 RSS 표본 없이 peak=0이 되는 경로를 독립 재현했다. 현 후보는 worker에 ARMED·`G`를 보내기 **전에 identity가 확인된 양수 RSS 표본**을 요구한다. 표본 뒤에도 취소·deadline·supervisor 생존을 다시 확인한다. 후속 표본 중 같은 예약 리더의 확인된 종료만 정상 exit 전이로 분리하고, 다른 관측 실패는 `INCOMPLETE`로 유지한다. 수정 후 Python 3.12 Darwin fake **52/52**가 일반·`-O` 모두 통과했다. 이전 head의 Oracle·source·Port 실행은 비최종 후보라 취소했다. 검토 기준 `646f3f0b`의 [Oracle](https://github.com/gonos2k/KDM6AD/actions/runs/43599503485)·[Harness](https://github.com/gonos2k/KDM6AD/actions/runs/43599503481)·[Port](https://github.com/gonos2k/KDM6AD/actions/runs/43599503446)와 hosted fake CI는 모두 통과했다. 이번 연결 수정 후보의 hosted 결과는 아직 없다.
+
+## 네 연결 결함의 수정 후보와 실측 경계
+
+`f4444380` 단계에서는 세 selector 생산자와 witness의 결과 형식을 `kdm6.synthetic33.call_asset.v2`로 통일했다. 이후 원시 ABI 상태와 방향별 연결을 분리하면서 현재 저장 형식은 **`call_asset.v3`**가 됐다. worker가 저장한 33개 자산과 66개 journal event를 구형 최상위 selector 필드 없이 witness까지 통과시키는 fake 통합 시험을 추가했다. witness는 실제 기록한 조회 횟수와 각 selector의 상태를 검사하며, 모두 유일하고 조회가 성공한 경우에만 **9 primal·18 JVP·9 VJP**를 집계한다. 누락·미연결은 명시적인 `INCONCLUSIVE`로 보존하고, 원시 출력·강수·gradient의 비유한값, 모순된 graph 상태·연결 mask, 조건 기록의 형식·absence flag 불일치, 잘못된 정수형·범위는 거부한다. 이 검사는 제출된 자산의 내부 구조이며 과학적 미분 정확도나 완전한 동적 조건 census를 승인하지 않는다.
+
+실행 소스의 필수 해시 목록에는 selector 명세, census helper, Darwin provider를 포함한다. 유효한 helper 표본 도중 부모 예약이 같은 PID·시작 시각에서 `alive → exited_reserved`로 바뀌면 정상 종료 확인으로 연결하고, 잘못된 RSS·신원 변경은 거부한다. Darwin provider는 psutil 5.9.4의 객체별 `create_time()` 캐시를 재사용하지 않도록 RSS 뒤 새 `Process` 객체로 PID 시작 시각을 조회한다. 이는 표본 확인이며 순간 4 GiB 하드 상한이나 관측 사이의 모든 PID 경합을 배제한다는 뜻은 아니다.
+
+현재 수정은 Python fake 시험과 소스 검토 범위다. 기존 A7 DSO와 빌드 영수증의 해시는 재확인됐지만, **수정된 실행 소스를 고정한 독립 승인 manifest**, 실제 worker PID에 귀속한 loader trace, 실제 모드의 watchdog·witness 연결은 없다. 실행 경로의 하드 차단도 유지된다. 따라서 A7 KDM의 실제 33회 호출, 세 selector의 graph 미분, native 배치, 과학·물리 단위 판정은 아직 수행하지 않았다.
+
+## 다음 실행 준비 후보: 공통 예산·원시 ABI·저장 자료 replay
+
+고정한 세 fixture, fixture당 graph 한 번, 세 selector와 두 방향에서 조회 예산을 계산한다. fixture당 **3 primal·6 JVP·3 VJP**, 전체 **33 forward·9 primal·18 JVP·9 VJP**다. supervisor·runner·worker·witness는 같은 selector/slot 계획을 사용하고, 실제 수행 횟수는 성공한 graph 자산에 따로 기록한다. 이전 supervisor의 3/6/3은 전체 한도가 아니라 fixture 한 건의 수였다.
+
+`call_asset.v3`는 중간 scalar JVP의 **원시 ABI 상태** `abi_jvp_statuses`와 VJP 연결 mask 및 고정 seed에서 계산한 **방향별 연결** `direction_connectivity`를 분리한다. 원시 상태를 방향별 결과로 덮지 않으며, worker의 국소 분류에는 방향별 연결을 사용한다. 중심 capture-off/on의 원시 출력·같은 호출 강수가 다르면 graph 생성 전에 중단한다. 값이 일치한 경우에만 나머지 계획된 graph와 끝점 호출을 진행한다.
+
+fake scalar `s = nc/10^8 + th`의 624개 gradient는 선택 위치의 `nc=10^-8`, `th=1`이고 나머지는 0이다. 별도 read-only [저장 자산 replay](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/replay33_assets.py)는 witness의 v3 구조 검사를 먼저 거친 뒤 33개 자산·66개 event·입력 hash·동일 입력 값 일치를 확인한다. 저장 gradient와 두 seed에서 VJP 내적을 독립 재계산하고, 실제 f64 입력에 표현된 양 끝점 간격으로 FD·부호 있는 `FD−JVP`·출력 ULP 신호·두 보폭 안정성을 정리한다. 명백한 AD 불일치는 분기 교차가 있어도 별도 판정에서 사라지지 않고, 한 보폭만 맞는 쌍은 국소 일치로 채택하지 않는다. 16 ULP와 현재 `1e-5` 상대·`1e-8` 절대 문턱은 이 synthetic replay의 탐색 기준이며 물리 정확도 보증이 아니다. 전체 상태는 계속 `INCONCLUSIVE`다.
+
+실모드 감독의 **비활성 배선**은 독립 SHA로 고정한 private manifest의 `census_provider`가 지정한 bytecode-free psutil package와 파일별 inventory를 요구한다. watchdog은 양의 초기 RSS·부모의 WNOWAIT 예약 후 release하며, 준비 전 실패는 child를 멈춰 소유한 group인지 확인하고 정리한다. 신원이 불확실하거나 정리가 미완료면 실패로 기록한다. orchestrator는 전체 예산·provider pin을 release 직전에 다시 확인하고 후검사 뒤에도 deadline·취소를 확인한다. 이 경로의 `REAL33_RELEASE_ENABLED`, `ENABLE_REAL33`, 실제 Runner·ABI 호출 및 실모드 witness 발급은 여전히 차단돼 있다. 표본 RSS는 순간 4 GiB를 강제하는 OS hard cap이 아니다.
+
+고정 계획·journal·call asset의 슬롯은 필드 존재, 정확한 자료형과 값 및 부호 있는 0을 포함한 f64 보폭 원시 비트를 대조한다. 따라서 `seq=true`를 정수 1처럼 수용하거나 `+0.0`과 `-0.0`을 같은 슬롯으로 취급하지 않는다. 현재 후보의 로컬 Python 3.12 fake 검사는 portable **72/72**, Darwin **61/61**이 일반·`-O` 모두 통과했다. 이 수치는 이전 head `f4444380`의 hosted 결과와 구분해야 한다. 기존 격리 A7 DSO·빌드 영수증 및 84개 소스 해시는 일치해 재사용 **후보**이지만, A7 물리 parity는 실행하지 않았다. 변경된 Python 소스·33개 슬롯·9/18/9 예산·interpreter·Torch/loader 허용 이미지·census package를 담은 독립 검토 manifest와 그 별도 SHA는 아직 없다. 실제 worker의 PID-bound dyld trace, 성공·실패 전체 journal, 정상 종료·정리 및 완료 witness도 아직 생성되지 않았다. 기존 `REVIEW_REQUIRED` manifest를 상태만 바꿔 승인할 수 없으므로 33회 KDM 실측은 **NOT READY**다.
+
+중간 head `b5895edf`의 [hosted fake CI](https://github.com/gonos2k/KDM6AD/actions/runs/43655352189)는 일반 모드를 통과했지만 Darwin `-O`의 mock worker 정리에서 `EPERM`을 세 번 기록해 실패했다. 나머지 비최종 CI는 중단했다. 반복 진단에서 worker 종료가 첫 WNOWAIT 확인과 `proc_pidinfo` 조회 사이에 일어나 생존 판정이 어긋나는 경로도 확인했다. 현재 후보는 `EPERM`을 곧바로 성공으로 취급하지 않는다. 직접 자식의 종료를 WNOWAIT로 보존한 상태에서 **완전한 그룹 census 앞뒤로 종료를 확인**한 경우에만 빈 그룹을 회수하며, 확인되지 않으면 1초의 공통 재관측 한도 후 `INCOMPLETE`로 남긴다. `proc_pidinfo` 조회가 실패한 경우에만 전체 deadline 안에서 최대 0.5초 WNOWAIT 종료를 재확인한다. 후속 `waitpid` 실패도 정리 오류로 기록하며 회수 성공을 주장하지 않는다. 이 경계의 fake exec·fork worker는 각각 10회씩 일반·`-O`로 반복 통과했다. OS 호출 자체의 임의 지연, `setsid` 이탈 자손, 실제 모델 실행까지 이 시험이 보증하지는 않는다.
+
+## 실제 실행 경로 연결의 차단된 후보
+
+후속 Python 후보는 기존 33슬롯 worker journal을 유지하면서, watchdog의 `G` 이후에만 manifest·DSO·run nonce·프로세스와 thread 신원을 확인한 Runner 권한을 한 번 발급하도록 구성했다. Runner는 처음 로드하기 직전에 DSO 해시를 다시 확인하고, 같은 graph handle·token과 thread에서만 세 selector 조회를 허용한다. ARMED 기록과 `authority_consumed.json`은 worker·watchdog·supervisor의 PID/시작 시각, manifest, nonce와 출력 디렉터리를 결합하며 두 번째 권한 발급은 거부한다. 이들은 신뢰한 Python 실행 흐름의 일관성 검사이지 악의적인 같은 사용자 프로세스에 대한 OS 인증이 아니다.
+
+완료 후검사 초안은 33개 자산·journal·loader trace·worker 결과의 hash를 묶고 read-only replay를 다시 수행한다. selector가 정당하게 없거나 연결되지 않은 경우에는 수치 판정을 `INCONCLUSIVE`로 남긴다. 직접 완료 파일을 게시하는 공개 함수는 거부하며, 현재 orchestrator가 만들 수 있는 파일은 **`CANDIDATE_UNVERIFIED` 후보**뿐이다. 독립 부모가 실제 자식의 정상 종료·전체 시간·정리 결과와 후보를 확인한 최종 witness는 아직 없다.
+
+현재 로컬 Python 3.12 fake 검사는 portable **86/86**, Darwin **64/64**가 일반·`-O` 모두 통과했다. 실제 `ctypes.CDLL` 호출·A7 ABI 실행·세 selector의 값 또는 도함수·33회 합성 배치는 수행하지 않았다. 이전 비공개 `REVIEW_REQUIRED` manifest는 변경된 실행 소스를 포함하지 않으므로 승인 근거로 사용할 수 없다. 실모드 release와 watchdog 전역 차단은 유지한다. 독립 실행 manifest, 실제 worker의 loader/ABI 관측, 독립 부모 witness의 검토가 끝나기 전에는 `NOT READY`가 맞다.
+
+## 저장 replay 진단과 900초 전체 예산의 후속 정리
+
+현재 저장 자산 replay는 이전부터 유효한 중심·graph·FD 끝점 selector 누락을 `INCONCLUSIVE` 또는 `UNAVAILABLE` 행으로 남기고, 다른 selector의 분석을 계속한다. 이번 후속 수정은 판정 축을 더 분리했다. JVP와 재계산한 VJP 내적이 모두 0이어도 같은 기록된 분기에서 두 보폭 FD가 유의하게 해상되고 약 0.01이라면 AD 쌍대성은 `CONSISTENT`, FD–AD 비교는 **`MISMATCH`**, 전체 과학 상태는 계속 `INCONCLUSIVE`다. 누락·미연결·분기 교차는 각자의 이유로 남기며 손상된 v3 자산 형식은 계속 거부한다.
+
+실모드 시간 정책은 private manifest의 `cleanup_reserve_seconds=28`을 요구한다. 총 wall 한도가 900초일 때 실행·후검사는 시작 후 **872초**까지, 정리·회수는 원래 시작 후 **900초**까지다. orchestrator는 deadline 뒤에 새로운 28초를 시작하지 않는다. watchdog과 helper도 실행 마감과 총 마감을 구분해 정리 신호를 보내되, 전체 마감 안에 잔존 그룹·회수 확인을 끝내지 못하면 `INCOMPLETE`로 기록한다. OS 호출 자체가 임의로 멈추는 경우의 hard wall 보증은 이 정책에 포함되지 않는다.
+
+고정한 psutil 5.9.4 패키지로 KDM 없이 직접 자식의 live·reserved-exited census를 별도 확인했다. 한 관측에서 live 그룹은 한 멤버와 약 2 MB RSS를 기록했고, 예약 종료는 0 RSS로 기록했으며 잘못된 PID·시작 시각을 거부하고 자식을 회수했다. 첫 시도에서 확인한 `getpgid`와 종료의 경합은 직접 부모의 WNOWAIT 종료를 제한 시간 안에 다시 확인한 경우에만 수용하도록 고쳤다. 이 시간 수치는 단일 무모델 관측값이지 응답 지연의 보증이 아니다.
+
+수정 후 로컬 Python 3.12 fake 전체 검사는 portable **89/89**, Darwin **67/67**이 일반·`-O` 모두 통과했다. 고정 A7 C++ 소스는 바꾸지 않았고 A7 parity·graph·33회 호출은 여전히 실행하지 않았다. 이전 private manifest 후보에는 28초 정리 예약과 이 변경의 Python 해시가 없어 새로 고정해야 한다. 실제 실행 차단과 최종 witness의 미완료 상태는 유지한다.
+
+분기 교차 FD의 해석도 별도 판정으로 고정한다. 같은 중심의 JVP–VJP 내적 불일치는 분기와 무관하게 `NUMERIC_MISMATCH`다. 그다음 기록된 FD 구간의 교차는 **`BRANCH_CROSSING`**으로 분류하고, 불완전한 조건은 `UNRESOLVED`로 둔다. 안정·해상된 구간에서만 FD–AD 불일치를 수치 오류로 집계한다.
+`max(th−279.9999975, 0)`을 중심 `th=280`에서 비교한 무모델 반례에서는 중심 JVP·VJP 내적이 모두 1이고 두 FD가 약 0.625·0.75이지만 두 구간이 분기를 넘으므로 행과 쌍은 `BRANCH_CROSSING`이다. 부호 있는 `FD−JVP`와 독립 FD–AD 비교 축은 그대로 보존한다.
+
+AD·FD 진단 표시를 한 단계 더 분리했다. 중간 scalar의 JVP와 저장 gradient로 다시 계산한 VJP 내적에는 부호 있는 `JVP−VJP dot`과 상대 잔차를 저장한다. 각 FD 보폭에는 `FD−JVP`와 상대 잔차를 유지하고, **기록된 분기가 안정적이고 신호가 해상되며 해당 방향이 graph에 연결된 경우**에만 `fd_ad_eligible=true`를 표시한다. 그 밖에는 분기 교차, 조건 불완전, 값 부재, 미연결 또는 FD 미해상 이유를 별도로 남긴다. 두 보폭 쌍의 비교 가능성은 두 행이 모두 해당 조건을 만족하고 보폭 결과도 안정적인 경우에만 참이다. `fd_ad_agreement`는 교차 구간에서도 산술 차이를 보존하지만, 그 차이만으로 국소 미분 정확도 실패를 뜻하지 않는다. 기존 판정 태그·`1e-5` 상대·`1e-8` 절대 문턱과 전체 `INCONCLUSIVE`는 유지한다.
+
+AD 내부 쌍대성이 이미 불일치하면 해당 FD–AD 비교는 `AD_DUALITY_MISMATCH` 이유로 국소 채택 대상에서 제외한다. 산술 차이와 별도 상태는 보존한다. 유한한 큰 f64 두 값의 뺄셈이 표현 범위를 넘으면 부호 있는 잔차는 `null`과 `OVERFLOW` 상태로 남기고, 상대 잔차는 두 값을 최대 크기로 먼저 나눠 계산한다. 이는 비유한 진단값 때문에 엄격한 JSON 저장이 실패하지 않도록 하는 표현 규칙이며, 기존 수치 문턱이나 과학 상태를 바꾸지 않는다.
+
+## 독립 부모의 성공 전용 완료 확인 후보
+
+새 [부모 감독 초안](../harness/evidence/native_host_execution_successor_2026-11-13/synthetic33_gate/real33_parent_supervisor.py)은 orchestrator를 직접 자식으로 시작하고, 전체 wall 안에서 그 자식의 반환 토큰과 정상 종료 코드 0을 직접 관측한다. 이후 후보·run nonce·ARMED/최종 기록·일회성 권한 표식·loader trace·33개 자산·journal·offline replay를 부모 프로세스에서 다시 대조한다. 검증이 모두 끝난 성공 경로에 한해 원자적 링크를 최종 witness의 확정 시점으로 삼으며, 모델·후검사·정리의 관측 wall과 witness 게시 시간은 별도로 기록한다. 링크 뒤 디렉터리 동기화나 임시파일 삭제가 동기적으로 실패하면 최종 파일 제거와 디렉터리 동기화를 시도한다. 제거를 확인하지 못하면 게시 상태를 불확실로 남긴다.
+
+조기 종료·비영 종료·반환 토큰 부재·후보 변조·시간 초과에는 확정 witness를 내지 않는다. 부모는 소유한 직접 자식에게만 종료 신호를 보내며, watchdog이 죽은 뒤 예약을 잃은 worker 그룹 번호로 신호를 보내지 않는다. 이런 실패에서는 worker 정리가 독립적으로 증명되지 않아 `UNWITNESSED / cleanup UNVERIFIED`로 남는다. 부모가 게시 링크 뒤 갑자기 중단되면 이미 완료한 검증에 근거한 파일이 남을 수 있고, 같은 사용자 프로세스의 임의 변조와 `setsid` 이탈 자손은 이 계약의 OS 보안 보증 범위에 없다.
+
+실제 부모 실행 플래그는 기본 `False`이며, 이번 근거는 fake 자식·후보 파일의 성공과 실패 주입에 한정된다. 로컬 Python 3.12 fake 전체 검사는 portable **101/101**, Darwin **67/67**이 일반·`-O` 모두 통과했다. 이 모듈을 실행 소스 pin 목록에 추가했으므로 이전 private manifest 후보는 소스 판본이 맞지 않는다. 독립 검토된 최종 manifest와 실제 A7 DSO의 loader/ABI 실행 근거가 없고 실패 시 worker 잔존 정리를 확정할 외부 관측도 미완료다. 따라서 실제 33회 호출은 계속 **NOT READY**다.

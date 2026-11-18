@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Export selected M0 east-cost profiles' raw moment changes across three states."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+import numpy as np
+
+
+PUBLIC = Path('/private/tmp/KDM6AD-qnc-host-backoff-20261027')
+if str(PUBLIC) not in sys.path:
+    sys.path.insert(0, str(PUBLIC))
+from harness.native_qnc_residual_reason_producer import _fields  # noqa: E402
+
+ORIGINAL = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_full_physics_forward_20261025/runs/no_analysis_control_v3/live_process/live_h0rhslar/wrfrst_d01_2025-07-19_00:01:00')
+QNC_GUARD = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qi_outflow_terms_20261030/runs/v1/control_qi_outflow_v2_on_guardon/retained_output/wrfrst_d01_2025-07-19_00:01:00')
+PILOT = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qi_postmicro_boundary_20261030/runs/v1/control_qi_postmicro_v1_piloton_traceon/retained_output/wrfrst_d01_2025-07-19_00:01:00')
+PINS = {
+    'original_control': '225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070',
+    'qnc_guard_control': '950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6',
+    'pilot_control': '8208ea632df784c6f9fc758fe3c24522539463ff2a968af8d469cb1c78eced6c',
+}
+PROFILES = [(234, j) for j in (*range(3, 12), 52)] + [(221, 63)]
+FIELDS = ('QCLOUD', 'QNCLOUD', 'QICE', 'QNICE')
+
+
+def sha(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(8 << 20), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def word(value: np.float32) -> str:
+    return f'{int(value.view(np.uint32)):08X}'
+
+
+def produce() -> dict:
+    paths = {'original_control': ORIGINAL, 'qnc_guard_control': QNC_GUARD,
+             'pilot_control': PILOT}
+    if any(sha(path) != PINS[name] for name, path in paths.items()):
+        raise ValueError('checkpoint SHA differs')
+    fields = {name: _fields(path) for name, path in paths.items()}
+    output = []
+    for i, j in PROFILES:
+        flat = (j - 1) * 234 + i - 1
+        rows = []
+        counts = {field: 0 for field in FIELDS}
+        for k in range(1, 40):
+            for field in FIELDS:
+                values = {name: word(data[field][k - 1, flat]) for name, data in fields.items()}
+                if len(set(values.values())) == 1:
+                    continue
+                if values['qnc_guard_control'] != values['pilot_control']:
+                    counts[field] += 1
+                rows.append({'k_1based': k, 'field': field, 'words': values})
+        if i == 234 and any(row['words']['original_control'] !=
+                            row['words']['qnc_guard_control'] for row in rows):
+            raise ValueError('east profile differed before boundary pilot')
+        if i == 234 and counts['QICE'] == counts['QNICE'] == 0:
+            raise ValueError('east cost profile has no ice-pair change')
+        output.append({'native_ij_1based': [i, j], 'flat_index_zero_based': flat,
+                       'changed_layers_from_qnc_guard_by_field': counts,
+                       'changed_moment_words': rows})
+    if len(output) != 11:
+        raise ValueError('cost witness profile inventory differs')
+    return {
+        'schema': 'kdm6.qi_m0_east_cost_moment_witness.v1',
+        'checkpoint_sha256': PINS,
+        'profile_count': len(output),
+        'east_profile_count': 10,
+        'profiles': output,
+        'model_calls': {'host': 0, 'KDM6': 0, 'RTTOV': 0, 'optimizer': 0},
+        'scope': 'selected raw f32 moments only; east pre-pilot state identity follows separate 652-variable comparison receipt',
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+    if args.output.exists() or args.output.is_symlink():
+        raise FileExistsError(args.output)
+    result = produce()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open('x') as stream:
+        json.dump(result, stream, indent=2, sort_keys=True)
+        stream.write('\n')
+    print(json.dumps({'profiles': result['profile_count'],
+                      'east': result['east_profile_count']}, sort_keys=True))
+
+
+if __name__ == '__main__':
+    main()

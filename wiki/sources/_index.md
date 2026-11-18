@@ -5,6 +5,8 @@ date_modified: 2026-10-25
 ---
 # Sources
 
+- [[kdm6ad-east-ice-radius-floor-2026-10-31]] — Bounded source-form checkpoint ice-radius floor replay and physical-unit limits.
+
 - [[native-qnc-control-witnesses-2026-10-28]] — Existing control checkpoint at all 54 candidate-failed profiles and native layers, with raw-word repair mechanisms and stage-attribution limits.
 - [[native-qnc-host-backoff-review-2026-10-28]] — Versioned source-pin closure and three-way original/variant block28 BT comparison with full-M0 limits.
 - [[native-qnc-target-host-backoff-2026-10-27]] — Four isolated full-host steps and two original-B512 direct RTTOV calls verify one target moment repair with remaining full-support invalidity.
@@ -37,3 +39,7 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[native-target-artifact-diagnostic-2026-10-08]] — Eight saved native states and RTTOV H diagnostics from a runner-invalid target; all results remain diagnostic-only and R2 remains OPEN.
 
 - [[review388389-local-resolution-2026-10-08]] — Local metadata correction and bounded termination/RTTOV warning diagnosis; underlying native/physical correspondence remains open.
+- [[native-c5-source-pins-and-ice-auxiliary-2026-11-01]] — Historical C3/C5 source snapshots, shared-input bit checks, and conditional ice auxiliary response at two native levels.
+- [[native-qnice-same-call-coordinate-2026-11-02]] — Captured QNICE/DEN/QV numeric handoff and the distinct native versus generic dry-number coordinate formulas.
+- [[native-qnice-pre-c3-endpoint-2026-11-02]] — Pre-C3 NI net intervals and later saved endpoint density words, with same-call and budget limits.
+- [[synthetic-qnice-applied-replay-2026-11-02]] — Synthetic raw-word NI replay separates state arithmetic, interface mismatch and column change.

@@ -1,0 +1,29 @@
+{
+  "capture_files": {},
+  "cpp_receipt_sha256": "c8aa9e5b2e7bd6634d1ab91dc131dd7b37f0e147d638de6201529c6130bd3cd4",
+  "dso_sha256": "976b4110b81f64e8e63cb7162642b2b00002af0e9b074520c92eeb2cd9126422",
+  "endpoint_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/runs/off_final/scratch/live_3n7q1g_1/wrfrst_d01_2025-07-19_00:01:00",
+  "endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "historical_c5_endpoint_match": false,
+  "historical_c5_endpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+  "historical_plan_sha256": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7",
+  "host_receipt_sha256": "62e807021aa842c30b49c3122d850542e948bda70e028c68665f9b425dbe029f",
+  "mode": "off_final",
+  "origin_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "private_runner_sha256": "561f6c07d2ae65153eff7efc97ca593ac1057d44dda26379c18c2fa7c8c56607",
+  "schema": "kdm6.native_qnice_39_same_call_run.v1",
+  "session_record": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/runs/off_final/scratch/live_3n7q1g_1/live_session.json",
+  "session_record_sha256": "f9de9620a3e7d164dbe37b8ec8498f8f987abe0a23b405e02cbad05770d82aac",
+  "source_sha256": {
+    "harness/native_live_stepper.py": "05d99842d1deae976136ff879813180a79befeebf9894454d9f64f8018e2e01b",
+    "harness/run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "libtorch/CMakeLists.txt": "4584bef636bce249782077c13a78b9d39a110d7ba927bb6f930da509b1c8cb4f",
+    "libtorch/src/coordinator.cpp": "cf0f908a17d68763b4f1ad9074727becf2f36eeac874c29b5854c5b0739b93ce",
+    "libtorch/src/runtime.cpp": "ae40dac52a3768fb2381fda90213cca1736a04a864cb49fe7590b2f7afc109f8",
+    "libtorch/src/sedimentation.cpp": "1fd41e6dff2f99cf80cf9f318245cb50cb2d107d2f9053f8c65802f6b4037c2a"
+  },
+  "startup_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnice_39_20261102/runs/off_final/scratch/live_3n7q1g_1/wrfrst_d01_2025-07-19_00:00:40",
+  "startup_sha256": "0c4836a2a44531c98d38d3ded15cab5048679b1139f3e4fd96fb62eff84bfad3",
+  "worktree_commit": "3fda6cbcda751a6ea2475213b4237a86ec21f0b6"
+}

@@ -1,0 +1,1313 @@
+{
+  "groups": {
+    "heat_bg": [
+      {
+        "blocked_reason": "Need separate source-ordered applied heat increments, live temperatures/thermodynamic coefficients and branch operands",
+        "branch_or_boundary": "activation then condensation/evaporation; entry cpm/xl reused",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "t_pp; t_final; pcact; sat.pcond; xl; cpm_safe",
+        "id": "temperature_latent_terms",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "No active term: preserve zero applied term and branch masks, not absent data",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto t_pp    = ops::fma_acc(state.t, pcact * xl / cpm_safe, dt_t, 1.0);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2638
+          },
+          {
+            "anchor": "auto t_final  = ops::fma_acc(t_pp, sat.pcond * xl / cpm_safe, dt_t, 1.0);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2662
+          },
+          {
+            "anchor": "torch::Tensor compute_cpm(",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 58
+          },
+          {
+            "anchor": "torch::Tensor compute_xl(",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 67
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: per-process realized heat split and unit-consistent measurement through rounding/clamp are not existing standalone tensors",
+        "branch_or_boundary": "melt/freeze rates and temperature update at actual producer/consumer sites",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "mf.psmlt; mf.pgeml; xls; pre.cpm; state.t / working.t",
+        "id": "phase_change_heat",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Inactive branch must carry explicit mask and absence reason, not inferred zero",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "mf.psmlt",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 797
+          },
+          {
+            "anchor": "mf.pgeml",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2072
+          },
+          {
+            "anchor": "auto xlf = xls - pre.xl;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2474
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need live pre/post BG, rho clamp operands and active/equality masks plus a declared volume measure; no physical unit approval",
+        "branch_or_boundary": "precision-dependent denominator, 100/900 density clamp, active/trace option",
+        "existing_capture": "archived d1_postmelt_progb partial value/mask",
+        "expression_or_tensor": "qg; bg; op_f32; bg_den; zero_den; rhox_c; bg_new_op; active",
+        "id": "progb_bg_volume",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "inactive legacy retains original bg; alternate midpoint branch differs and is out of scope",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "const bool op_f32 = (odt == torch::kFloat32);",
+            "file": "libtorch/src/progb.cpp",
+            "line": 112
+          },
+          {
+            "anchor": "auto bg_den = op_f32 ? bg.to(odt) : torch::clamp(bg.to(odt), /*min=*/BRS_MIN);",
+            "file": "libtorch/src/progb.cpp",
+            "line": 113
+          },
+          {
+            "anchor": "auto bg_new_op = qg_op / rhox_c;",
+            "file": "libtorch/src/progb.cpp",
+            "line": 131
+          },
+          {
+            "anchor": "auto active = torch::logical_or(",
+            "file": "libtorch/src/progb.cpp",
+            "line": 90
+          }
+        ]
+      }
+    ],
+    "named_process": [
+      {
+        "blocked_reason": "Need source-order per-term applied amount, clamp residual, NC donor and each recipient in same call; aggregate nc_new alone is not individual attribution",
+        "branch_or_boundary": "post-limiter rates and cold_mask at state_update; naacw appears twice in source association",
+        "existing_capture": "archived nc_budget value-only subset",
+        "expression_or_tensor": "warm.nraut,nccol,nracw; cold.niacw,naacw; mf.ninuc,nfrzdtc,pimlt_ni; dnc_rate_sum,dnc_amount",
+        "id": "nc_named_rate_terms",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Warm branch suppresses niacw cold term; preserve zero masks and exact evaluation order",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto dnc_rate_sum = (",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2294
+          },
+          {
+            "anchor": "- cold.niacw * cold_mask",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2298
+          },
+          {
+            "anchor": "auto dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2301
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: per-process rounded applied donor/recipient amounts are not explicit independent tensors; materialize without reassociation and retain live JVP",
+        "branch_or_boundary": "post-limiter candidate \u2192 applied state updates; activation and satadj are deferred",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "warm.praut, warm.pracw; sat.pcond; pcact; state qv/qc and corresponding updated tensors",
+        "id": "water_named_rate_apply",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "SW false gates ncact; condensation/evap uses selected satadj mask",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "limit(state.qg, constants::QCRMIN,",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2083
+          },
+          {
+            "anchor": "auto pcact_raw = PCACT_MASS_CONST * ncact / (3.0 * forcing.dend);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2625
+          },
+          {
+            "anchor": "auto qv_final = ops::fma_acc(qv_pp, sat.pcond, dt_t, -1.0);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2660
+          }
+        ]
+      }
+    ],
+    "nc_zero": [
+      {
+        "blocked_reason": "Need graph-connected entry-clamp operands, outputs, equality/branch masks and tangents; existing runtime entry value rows do not establish live tangents",
+        "branch_or_boundary": "Before one-step loop; record pre/post operands, NC zero and NCCN min/max comparisons including equality",
+        "existing_capture": "archived runtime_full_entry/pre/post value-only subset",
+        "expression_or_tensor": "state.nc; cur.nc = clamp(cur.nc,0); state.nccn; cur.nccn = clamp(...)",
+        "id": "nc_entry_pre_post",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Always present for dt>0; dt<=0 returns exact no-op, record explicit inactive reason",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "cur.nc = torch::clamp(cur.nc, /*min=*/0.0)",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 548
+          },
+          {
+            "anchor": "cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX)",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 551
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need live pre/post candidate, lambda unclamped value and bound/equality masks; no identity-merged value may substitute",
+        "branch_or_boundary": "Post-melt snap, qc threshold, per-cell ncmin and lambda bound comparisons",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "nc_orig1; nc_snap1; working1b.nc and aux1.n0c",
+        "id": "nc_snap1",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "When gate false, record mask and selected identity value; internal clamp comparisons need exact tie states",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto nc_orig1 = working1b.nc;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 987
+          },
+          {
+            "anchor": "auto nc_snap1 = limit_number_for_lamda(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 988
+          },
+          {
+            "anchor": "torch::where(nc_orig1 >= *ncmin_for_slope, nc_snap1, nc_orig1)",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 998
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need live candidate, pre/post and all threshold masks",
+        "branch_or_boundary": "Post-freeze snap uses qc, ncmin and lambda bounds",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "nc_orig2; nc_snap2; working.nc and aux2.n0c",
+        "id": "nc_snap2",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "False gate retains nc_orig2; emit mask and identity value",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto nc_orig2 = working.nc;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 1170
+          },
+          {
+            "anchor": "auto nc_snap2 = limit_number_for_lamda(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 1171
+          },
+          {
+            "anchor": "torch::where(nc_orig2 >= *ncmin_for_slope, nc_snap2, nc_orig2)",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 1177
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need graph-live pre/post NC/NCCN and reclass gate operands, not merely raw candidate rates",
+        "branch_or_boundary": "state_update then ice/snow and rain/cloud reclassification",
+        "existing_capture": "archived fd_state_update/reclass subset value-only",
+        "expression_or_tensor": "dnc_rate_sum; dnc_amount; nc_new; new_state through both reclassifiers",
+        "id": "nc_update_reclass",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "When a process is gated off, record false mask and selected identity/zero amount only when actual source does so",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto dnc_rate_sum = (",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2294
+          },
+          {
+            "anchor": "auto dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2301
+          },
+          {
+            "anchor": "auto nc_new = ops::fma_acc(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2306
+          },
+          {
+            "anchor": "new_state = reclassify_small_rain_to_cloud(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 1585
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need full clamp candidates and live JVP per boundary; verify dynamic order against executed call",
+        "branch_or_boundary": "Cleanup QC gate then DSD ncmin/lambda and NCMAX at their actual call order",
+        "existing_capture": "archived fd_cleanup/fd_dsd value-only subset",
+        "expression_or_tensor": "keep_qc; state.nc * keep_qc; nc_snapped; ncmin_t; nc_new",
+        "id": "nc_cleanup_dsd",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "False masks select source-specified values; record exact equality and no silent zero",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto keep_qc = (state.qc > qmin).to(dtype);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2693
+          },
+          {
+            "anchor": "/*nc=*/state.nc * keep_qc,",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2705
+          },
+          {
+            "anchor": "auto nc_new = torch::where(state.nc >= ncmin_t, nc_snapped, state.nc);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2971
+          },
+          {
+            "anchor": "nc_new = torch::where(nc_new > constants::NCMAX, nc_at_max, nc_new);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2994
+          }
+        ]
+      }
+    ],
+    "pii_chain": [
+      {
+        "blocked_reason": "Need live t entry and final/PII tangent with same forcing seed",
+        "branch_or_boundary": "State/forcing entry and output conversion",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "s.th * f.pii; c.t / f.pii",
+        "id": "pii_to_temperature",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Always for dt>0; dt<=0 returns no-op",
+        "required_record_kinds": [
+          "value",
+          "live_tangent"
+        ],
+        "source_locations": [
+          {
+            "anchor": "/*t=*/s.th * f.pii,",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 60
+          },
+          {
+            "anchor": "out.th = c.t / f.pii;",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 71
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need q-floor and cpm-floor masks, live entry cpm/xl, later use and tangents",
+        "branch_or_boundary": "q clamp; temperature and thermal coefficient entry reuse; cpm floor",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "entry_cpm; entry_xl; q_safe; dt; cpm_safe",
+        "id": "cpm_xl",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "All defined for dt>0; capture clamp comparisons and provenance of entry reuse",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "const auto entry_cpm = thermo::compute_cpm(",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 552
+          },
+          {
+            "anchor": "const auto entry_xl = thermo::compute_xl(",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 553
+          },
+          {
+            "anchor": "torch::Tensor compute_cpm(",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 58
+          },
+          {
+            "anchor": "torch::Tensor compute_xl(",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 67
+          },
+          {
+            "anchor": "auto cpm_safe = torch::clamp(cpm,",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2573
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need raw pre-clamp values, all comparisons and live PII-to-temperature-to-qs tangents; SW flag alone insufficient",
+        "branch_or_boundary": "water saturation temperature floor, es cap, denominator/q floors and SW positivity",
+        "existing_capture": "archived selected qs1/sw and sw_positive value/mask",
+        "expression_or_tensor": "qs1; qs1_safe; t_safe; es; qs; sw_percent; sw_ratio",
+        "id": "water_saturation",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "At tie retain less/equal/greater operands, never imply differentiability from equality",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto qs1 = thermo::compute_qs_water(state.t, forcing.p, thermo_params);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2576
+          },
+          {
+            "anchor": "auto t_safe = torch::clamp(t, /*min=*/1.0);",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 96
+          },
+          {
+            "anchor": "es = torch::minimum(es, 0.99 * pres);",
+            "file": "libtorch/src/thermo.cpp",
+            "line": 101
+          },
+          {
+            "anchor": "auto sw_percent = (state.qv / qs1_safe - 1.0) * 100.0;",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2583
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need live work1/denom, cond/evap cap operands, output and PII tangents",
+        "branch_or_boundary": "post-pcact temperature \u2192 saturation adjustment condensation/evaporation selection",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "qs1_pp; sat.pcond; t_pp; t_final",
+        "id": "satadj_condensation",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "No-condensation path returns zero pcond but still record branch operands and false masks",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto qs1_pp = thermo::compute_qs_water(t_pp, forcing.p, thermo_params);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2643
+          },
+          {
+            "anchor": "auto is_super = work1 > 0;",
+            "file": "libtorch/src/satadj.cpp",
+            "line": 66
+          },
+          {
+            "anchor": "auto is_sub_with_cloud = torch::logical_and(work1 < 0, qc > 0);",
+            "file": "libtorch/src/satadj.cpp",
+            "line": 67
+          },
+          {
+            "anchor": "auto t_final  = ops::fma_acc(t_pp, sat.pcond * xl / cpm_safe, dt_t, 1.0);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2662
+          }
+        ]
+      }
+    ],
+    "rate_cap_tie": [
+      {
+        "blocked_reason": "Need live both minimum operands, clamped-base threshold and result JVP; existing comparison masks alone are value-only",
+        "branch_or_boundary": "SW ratio clamp then minimum 1 vs safe_pow; retain operand <,=,> masks",
+        "existing_capture": "archived fd_satadj_inner fraction operands and masks",
+        "expression_or_tensor": "sw_ratio; ops::safe_pow(sw_ratio, ACTK); activated_fraction",
+        "id": "activation_fraction_min",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "SW<=0 yields ncact selected zero later, but fraction intermediate is still evaluated",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto sw_ratio = torch::clamp(sw_percent / 0.48, /*min=*/0.0);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2584
+          },
+          {
+            "anchor": "auto activated_fraction = torch::minimum(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2588
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need graph-live independent operand JVP/VJP and result tangent; preclamp and NCCN clamp tie masks are new beyond recorded rate comparison masks",
+        "branch_or_boundary": "preclamp numerator max(0), NCCN max(0), minimum operand less/equal/greater, and SW>0",
+        "existing_capture": "archived fd_satadj_inner raw/cap/selected and lt/eq/gt value-only",
+        "expression_or_tensor": "ncact_raw; clamp(state.nccn,0)/dtcld; ncact",
+        "id": "rate_min_operands",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Minimum is evaluated before SW gate; when SW false record selected ncact zero and gate=false rather than label operands absent",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto ncact_raw = torch::clamp(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2596
+          },
+          {
+            "anchor": "auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2599
+          },
+          {
+            "anchor": "ncact = torch::where(sw_percent > 0.0, ncact, torch::zeros_like(ncact));",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2604
+          }
+        ]
+      },
+      {
+        "blocked_reason": "Need graph-live donor/receiver post-state and raw/final cap masks and JVP",
+        "branch_or_boundary": "Activation transfer, bare complete-evap equality and NCCN floor/cap",
+        "existing_capture": "archived selected transfer values/masks",
+        "expression_or_tensor": "nc_pp; nccn_pp; complete_evap_mask; nc_evap_amount; nc_final; nccn_final",
+        "id": "applied_activation_transfer",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Capture false complete-evap mask and zero transfer as computed; NC/NCCN cap equality requires explicit tie state",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto nc_pp   = torch::clamp(ops::fma_acc(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2639
+          },
+          {
+            "anchor": "auto nccn_pp = torch::clamp(ops::fma_acc(",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2640
+          },
+          {
+            "anchor": "auto complete_evap_mask = sat.cloud_complete_evap.to(dtype);",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2651
+          },
+          {
+            "anchor": "auto nccn_final = torch::clamp(nccn_final_raw,",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 2665
+          }
+        ]
+      }
+    ],
+    "same_call_water": [
+      {
+        "blocked_reason": "Need distinct pre-cleanup and post-cleanup state and rho*delz live tangents; native water measure remains conditional",
+        "branch_or_boundary": "entry/exit same B=1 call; layer weights derived from entry forcing",
+        "existing_capture": "archived runtime_full_entry/forcing/exit value-only",
+        "expression_or_tensor": "state.qv/qc/qr/qi/qs/qg; state_out fields; forcing.rho and forcing.delz",
+        "id": "water_before_after",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "dt<=0 returns identity state and zero increment; do not synthesize unobserved cleanup",
+        "required_record_kinds": [
+          "value",
+          "live_tangent"
+        ],
+        "source_locations": [
+          {
+            "anchor": "/*qv=*/s.qv, /*qc=*/s.qc, /*qr=*/s.qr,",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 55
+          },
+          {
+            "anchor": "auto state_out = coord_to_state(cur, state, forcing);",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 675
+          },
+          {
+            "anchor": "/*delz=*/f.delz,",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 82
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: f64 C ABI returns only packed state, not FnResult rain; same-call live total precipitation and clamp mask need new hook",
+        "branch_or_boundary": "surface bottom layer; rain total contains snow/graupel subsets",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom; surface.rain_increment; rain_inc; FnResult.rain_increment",
+        "id": "total_rain_fnresult",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "Surface increment zero on no-op; snow/graupel outputs are overlapping diagnostics, not extra total",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto fallsum = fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom;",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 310
+          },
+          {
+            "anchor": "/*rain_increment=*/torch::clamp(fallsum, 0.0)",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 317
+          },
+          {
+            "anchor": "rain_inc  = (i == 0) ? sed.rain_increment",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 645
+          },
+          {
+            "anchor": "torch::Tensor rain_increment;",
+            "file": "libtorch/include/kdm6/runtime.h",
+            "line": 83
+          },
+          {
+            "anchor": "pack_packed_state(result.state_out, state_out_packed, im, kme, jme);",
+            "file": "libtorch/bridge/kdm6_c_api.cpp",
+            "line": 901
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: conversion of rain [mm] to weighted state measure and rho convention require documented measure/unit contract before closure verdict",
+        "branch_or_boundary": "one selected column and declared weighting",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "sum_k rho_k*delz_k*(qout_k-qin_k) + total_precip",
+        "id": "water_closure_measure",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "No precipitation: retain exact zero increment; never add overlapping subsets",
+        "required_record_kinds": [
+          "value",
+          "live_tangent"
+        ],
+        "source_locations": [
+          {
+            "anchor": "/*delz=*/f.delz,",
+            "file": "libtorch/src/runtime.cpp",
+            "line": 82
+          },
+          {
+            "anchor": "/*rain_increment=*/torch::clamp(fallsum, 0.0)",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 317
+          }
+        ]
+      }
+    ],
+    "sedimentation": [
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_qr_k; dqr_k; dqr_above; pre/post qr; fall accumulator",
+        "id": "transport_qr",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_qr_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 106
+          },
+          {
+            "anchor": "auto falk_qr_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 138
+          },
+          {
+            "anchor": "auto dqr_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 151
+          },
+          {
+            "anchor": "auto dqr_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 165
+          },
+          {
+            "anchor": "qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 176
+          },
+          {
+            "anchor": "auto active_main =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3091
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_nr_k; dnr_k; dnr_above; pre/post nr; fall accumulator",
+        "id": "transport_nr",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_nr_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 111
+          },
+          {
+            "anchor": "auto falk_nr_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 140
+          },
+          {
+            "anchor": "auto dnr_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 152
+          },
+          {
+            "anchor": "auto dnr_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 167
+          },
+          {
+            "anchor": "nr_cols[k] = torch::clamp(nr_cols[k] - dnr_k + dnr_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 177
+          },
+          {
+            "anchor": "auto active_main =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3091
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_qs_k; dqs_k; dqs_above; pre/post qs; fall accumulator",
+        "id": "transport_qs",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_qs_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 112
+          },
+          {
+            "anchor": "auto falk_qs_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 141
+          },
+          {
+            "anchor": "auto dqs_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 153
+          },
+          {
+            "anchor": "auto dqs_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 169
+          },
+          {
+            "anchor": "qs_cols[k] = torch::clamp(qs_cols[k] - dqs_k + dqs_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 178
+          },
+          {
+            "anchor": "auto active_main =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3091
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_qg_k; dqg_k; dqg_above; pre/post qg; fall accumulator",
+        "id": "transport_qg",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_qg_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 113
+          },
+          {
+            "anchor": "auto falk_qg_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 142
+          },
+          {
+            "anchor": "auto dqg_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 154
+          },
+          {
+            "anchor": "auto dqg_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 171
+          },
+          {
+            "anchor": "qg_cols[k] = torch::clamp(qg_cols[k] - dqg_k + dqg_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 179
+          },
+          {
+            "anchor": "auto active_main =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3091
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_brs_k; dbrs_k; dbrs_above; pre/post brs; fall accumulator",
+        "id": "transport_brs",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_brs_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 114
+          },
+          {
+            "anchor": "auto falk_brs_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 143
+          },
+          {
+            "anchor": "auto dbrs_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 155
+          },
+          {
+            "anchor": "auto dbrs_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 173
+          },
+          {
+            "anchor": "brs_cols[k] = torch::clamp(brs_cols[k] - dbrs_k + dbrs_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 180
+          },
+          {
+            "anchor": "auto active_main =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3091
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "no complete applied ledger asserted",
+        "expression_or_tensor": "falk_qi_k; dqi_k; dqi_above; pre/post qi; fall accumulator",
+        "id": "transport_qi",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_qi_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 248
+          },
+          {
+            "anchor": "auto falk_qi_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 264
+          },
+          {
+            "anchor": "auto dqi_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 271
+          },
+          {
+            "anchor": "auto dqi_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 277
+          },
+          {
+            "anchor": "qi_cols[k] = torch::clamp(qi_cols[k] - dqi_k + dqi_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 282
+          },
+          {
+            "anchor": "auto active_ice =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3148
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: required applied departure/arrival, top-clamp realized loss, bottom export and rounding/projection must be defined and hooked separately; stored falk is a candidate, not applied transfer",
+        "branch_or_boundary": "Interior k>0, per species and per actual main/ice n; stored falk_prev carries above entry; report min ties and clamp",
+        "existing_capture": "legacy ice NI first substep has archived value-only ledger",
+        "expression_or_tensor": "falk_ni_k; dni_k; dni_above; pre/post ni; fall accumulator",
+        "id": "transport_ni",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "n>mstep: where selects incoming state; record inactive reason. k=0 has separate top formula and no above incoming; do not invent *_k variables there",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto falk_ni_top =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 250
+          },
+          {
+            "anchor": "auto falk_ni_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 266
+          },
+          {
+            "anchor": "auto dni_k =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 272
+          },
+          {
+            "anchor": "auto dni_above =",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 279
+          },
+          {
+            "anchor": "ni_cols[k] = torch::clamp(ni_cols[k] - dni_k + dni_above, 0.0);",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 283
+          },
+          {
+            "anchor": "auto active_ice =",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3148
+          }
+        ]
+      },
+      {
+        "blocked_reason": "BLOCKED: fall accumulators are accumulated candidate fluxes; connect actual bottom departure with rho/delz and surface precipitation before asserting a budget",
+        "branch_or_boundary": "top-first K-1 bottom; dtcld and delz_bottom in surface mapping",
+        "existing_capture": "NOT_ASSERTED",
+        "expression_or_tensor": "fall_qr_b, fall_qs_b, fall_qg_b, fall_qi_b; surface accumulation",
+        "id": "surface_flux_candidates",
+        "implementation_status": "BLOCKED",
+        "inactive_rule": "No transport gate implies zero candidate but actual applied export still needs explicit measure",
+        "required_record_kinds": [
+          "value",
+          "live_tangent",
+          "mask"
+        ],
+        "source_locations": [
+          {
+            "anchor": "auto fall_qr_b = fall_qr.index({Slice(), bottom});",
+            "file": "libtorch/src/coordinator.cpp",
+            "line": 3177
+          },
+          {
+            "anchor": "auto fallsum = fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom;",
+            "file": "libtorch/src/sedimentation.cpp",
+            "line": 310
+          }
+        ]
+      }
+    ]
+  },
+  "identity": {
+    "duplicates": "event_ordinal contiguous within full identity except ordinal; never overwrite repeated stage/field",
+    "required": [
+      "input_id",
+      "mode",
+      "runtime_call",
+      "one_step_call",
+      "outer_loop",
+      "substep_family",
+      "substep_n",
+      "scope",
+      "b_zero",
+      "k_zero",
+      "native_level_bottom_first",
+      "stage",
+      "field",
+      "record_kind",
+      "derivative_mode",
+      "direction_id",
+      "seed_sha256",
+      "cotangent_id",
+      "event_ordinal"
+    ],
+    "surface": "surface/column aggregate has no k_zero; use explicit scope=column and source bottom K-1, never fake a layer",
+    "tangent": "live tensor remains graph-connected until directional JVP/VJP; no detach, item, no_grad in AD path; value-only recording separate",
+    "vertical": "K=39 sedimentation top-first: native_level_bottom_first=39-k_zero; column B=1 b_zero=0. Runtime ingress state is host bottom-first; reverse only at the explicit flip_k boundary."
+  },
+  "mask_policy": "Existing #586 masks/schedule are baseline only. Proposed new NC clamp/snap/DSD, saturation and raw/cap clamp, process and transport limiter masks are BLOCKED until new instrumented source and reviewed version; do not feed them to current receipt adapter. Equality/tie recorded separately from less/greater.",
+  "physical_unit_status": "INCONCLUSIVE",
+  "proposed_new_masks": [
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "entry_nc_floor",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "cur.nc relative to 0 (<,=,>)",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "cur.nc = torch::clamp(cur.nc, /*min=*/0.0)",
+        "file": "libtorch/src/runtime.cpp",
+        "line": 548
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "entry_nccn_bounds",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "cur.nccn relative to NCCN_MIN/MAX (<,=,>)",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX)",
+        "file": "libtorch/src/runtime.cpp",
+        "line": 551
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "snap1_per_cell_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "nc_orig1 versus ncmin_for_slope and qc versus EPS, preserving equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "torch::where(nc_orig1 >= *ncmin_for_slope, nc_snap1, nc_orig1)",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 998
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "snap2_per_cell_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "nc_orig2 versus ncmin_for_slope and qc versus EPS, preserving equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "torch::where(nc_orig2 >= *ncmin_for_slope, nc_snap2, nc_orig2)",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 1177
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "lambda_active",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "qf vs q_thresh and nf vs n_thresh including equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto active = (qf >= q_thresh) & (nf >= n_thresh);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2919
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "lambda_bounds",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "unclamped lamda relative to both bounds incl ties and branch precedence",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto too_small = active & (lamda <= lamda_min);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2928
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "dsd_ncmin",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "state.nc vs ncmin_t including equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto nc_new = torch::where(state.nc >= ncmin_t, nc_snapped, state.nc);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2971
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "dsd_ncmax",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "nc_new vs NCMAX including equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "nc_new = torch::where(nc_new > constants::NCMAX, nc_at_max, nc_new);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2994
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "nc_zero",
+      "id": "cleanup_qc",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "state.qc vs qmin including equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto keep_qc = (state.qc > qmin).to(dtype);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2693
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "pii_chain",
+      "id": "temperature_floor",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "t vs 1 K floor incl equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto t_safe = torch::clamp(t, /*min=*/1.0);",
+        "file": "libtorch/src/thermo.cpp",
+        "line": 96
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "pii_chain",
+      "id": "water_es_cap",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "raw es vs 0.99*pres (<,=,>)",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "es = torch::minimum(es, 0.99 * pres);",
+        "file": "libtorch/src/thermo.cpp",
+        "line": 101
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "pii_chain",
+      "id": "satadj_paths",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "work1 sign, qc gate, cond/evap cap and complete-evap equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto is_sub_with_cloud = torch::logical_and(work1 < 0, qc > 0);",
+        "file": "libtorch/src/satadj.cpp",
+        "line": 67
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "rate_cap_tie",
+      "id": "safe_pow_floor",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "sw_ratio vs EPS incl equality",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto xc = torch::clamp(x, /*min=*/constants::EPS);",
+        "file": "libtorch/src/ops.cpp",
+        "line": 200
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "rate_cap_tie",
+      "id": "ncact_preclamp",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "materialize source-ordered fma_acc numerator relative to 0 (<,=,>) before clamp",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto ncact_raw = torch::clamp(",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2596
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "rate_cap_tie",
+      "id": "nccn_cap_clamp",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "state.nccn vs zero incl equality and raw/cap comparisons",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2599
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "sedimentation",
+      "id": "main_transport_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "n vs mstep_col_main; inactive where selects incoming state",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto active_main = (torch::clamp(mstep_col_main, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 3091
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "sedimentation",
+      "id": "ice_transport_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "n vs mstep_col_ice; inactive where selects incoming state",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto active_ice = (torch::clamp(mstep_col_ice, /*min=*/1.0) >= static_cast<double>(n)).unsqueeze(1);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 3148
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "named_process",
+      "id": "warm_cold_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "supcol vs zero including equality; warm mask is complement",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto cold_mask = (pre.supcol >= 0).to(dtype);",
+        "file": "libtorch/src/coordinator.cpp",
+        "line": 2119
+      }
+    },
+    {
+      "adapter_compatibility": "NOT_SUPPORTED_BY_CURRENT_BASELINE_ADAPTER",
+      "group": "heat_bg",
+      "id": "progb_density_gate",
+      "implementation_status": "BLOCKED",
+      "required_comparison": "active, op_f32, zero_den and density clamp operands including equalities",
+      "rule": "record exact operand words, comparison outcome including equality, input/call/substep/level identity; no unrecorded branch may be inferred stable",
+      "source": {
+        "anchor": "auto active = torch::logical_or(qg > params.qcrmin, bg > BRS_MIN);",
+        "file": "libtorch/src/progb.cpp",
+        "line": 90
+      }
+    }
+  ],
+  "schema": "kdm6.native_host_concrete_field_contract.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "Source map only; no instrumentation exists by virtue of this file; all new live-tangent/branch measurements remain BLOCKED. Current receipt adapter accepts only the #586 baseline keys, not new masks.",
+  "source_archive_sha256": "663871cbb48154ea6c63a18991710e955bdec5d7ac5cda9d32bc0e0dd68c2347",
+  "source_sha256": {
+    "libtorch/bridge/kdm6_c_api.cpp": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049",
+    "libtorch/bridge/kdm6_c_api.h": "de9ca99da4a77af741a875fd4c69de39c68525dbcd781e900144585bb1fd9481",
+    "libtorch/include/kdm6/runtime.h": "7820c9acd0866dd32521054a88d727ce88c91af629275940b4b7eea0046f6276",
+    "libtorch/src/coordinator.cpp": "2a9d9df17dd9bab8d8288bd2d2c6e57ebd7dc65b15d688c06c523cd825b0c932",
+    "libtorch/src/ops.cpp": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014",
+    "libtorch/src/progb.cpp": "fbe6bfb88ff166f1b6f9dd0ab8ec8bf67d535fdd3c377b2092d9a2ef5606bafe",
+    "libtorch/src/runtime.cpp": "ae40dac52a3768fb2381fda90213cca1736a04a864cb49fe7590b2f7afc109f8",
+    "libtorch/src/satadj.cpp": "9b0943fe5a8f52001dcadbf73f570631e801f30a7f67e2d8d970e02eb432e1f9",
+    "libtorch/src/sedimentation.cpp": "1fd41e6dff2f99cf80cf9f318245cb50cb2d107d2f9053f8c65802f6b4037c2a",
+    "libtorch/src/thermo.cpp": "f4c887ba754244f781a27cd94dc42341e7559be7680947f74ea27d06507dbe4b"
+  },
+  "status": "SPEC_ONLY"
+}

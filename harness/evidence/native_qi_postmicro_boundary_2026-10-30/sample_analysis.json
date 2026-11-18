@@ -1,0 +1,26 @@
+{
+  "alpha025_k33_target_qi": {
+    "after": "00000000",
+    "before": "00000002",
+    "f32_subnormal_units_before": 2
+  },
+  "donor_compared": [
+    "alpha025",
+    "control"
+  ],
+  "donor_sha256": {
+    "alpha025": "bec8580b6be5b9be0e3ef1fd970bed95930d87d3f0a0e38863b3f2243e1c47d1",
+    "control": "d2eff88c0bc9740a2064e2b3ecf5eae827d1f3a4191553659cad9575a62e44f4"
+  },
+  "input_sha256": {
+    "alpha025_off": "1895c917a57c24485cfce0324d4ffe6297fdd0e3da01c2ea031927152184532e",
+    "alpha025_on": "667c99c90a238ac4eeb52202a7b7e4d5a681aae33b5feca67c2364f36c4bf53c",
+    "control_off": "e9c6832815059e40521d4436b33d83b5d481858d7a9a51b62e1d03a2aef5c28f",
+    "control_on": "90d8b45297768f268e712d02231f69953f1da24d2075f93a78bc504f435467d7"
+  },
+  "overlay_sha256": "222ca46f5ac57a0cbc40fafecae92539c0fd7ea4f7fe8a0c61b57b918ff0727c",
+  "parent_solve_expected_sha256": "73d4ac972e3576d151b4a04ee8a263da0e3a9d19734ba6e75a1d83c1a055a451",
+  "parent_solve_verified": false,
+  "schema": "kdm6.qi_postmicro_boundary_sample_analysis.v1",
+  "scope": "sampled west target and donor at j=168, k=30..33 only; no full-boundary or budget claim"
+}

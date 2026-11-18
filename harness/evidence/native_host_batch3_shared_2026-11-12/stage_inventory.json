@@ -1,0 +1,4215 @@
+{
+  "capture_csv_sha256": "49d60ae156212acdf987577ec271f4b5a56a318b5a9ff4829c36419397e29aba",
+  "capture_gzip_sha256": "e84e020e8c4c219d9e93c3165c5e42cae8f53db1ec8b4fbc7826f6b6609c5649",
+  "gaps_scope": "Exact stage/field labels are absent from these captured records; equivalent operands, inferred quantities, other calls and uninstrumented operators are not ruled out.",
+  "ledger_exact_label_gaps": {
+    "graupel_volume_budget": [
+      {
+        "field": "brs_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "brs_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "dbrs_cold_sum",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "dbrs_warm_sum",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_out_brs",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_brs",
+        "stage": "fd_main"
+      }
+    ],
+    "heat_budget": [
+      {
+        "field": "temperature_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "temperature_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "xlwork2",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "pcond",
+        "stage": "fd_satadj_inner"
+      },
+      {
+        "field": "temperature_after",
+        "stage": "fd_satadj_inner"
+      }
+    ],
+    "named_process_applied_mass": [
+      {
+        "field": "qv_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qv_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qc_before",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "qc_after",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_praut",
+        "stage": "fd_state_update"
+      },
+      {
+        "field": "applied_pracw",
+        "stage": "fd_state_update"
+      }
+    ],
+    "precipitation_components_and_applied_export": [
+      {
+        "field": "rain_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "snow_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "graupel_increment",
+        "stage": "runtime_full_exit"
+      },
+      {
+        "field": "applied_surface_qr",
+        "stage": "fd_main"
+      }
+    ],
+    "sedimentation_mass_departure_arrival": [
+      {
+        "field": "applied_out_qi",
+        "stage": "ice_sedimentation_n1"
+      },
+      {
+        "field": "applied_in_qi",
+        "stage": "ice_sedimentation_n1"
+      },
+      {
+        "field": "applied_out_qr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_qr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_out_qg",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_qg",
+        "stage": "fd_main"
+      }
+    ],
+    "sedimentation_number_all_substeps": [
+      {
+        "field": "applied_out_ni",
+        "stage": "ice_sedimentation_n2"
+      },
+      {
+        "field": "applied_in_ni",
+        "stage": "ice_sedimentation_n2"
+      },
+      {
+        "field": "applied_out_nr",
+        "stage": "fd_main"
+      },
+      {
+        "field": "applied_in_nr",
+        "stage": "fd_main"
+      }
+    ]
+  },
+  "rows": 19656,
+  "schema": "kdm6.native_host_f64_stage_inventory.v1",
+  "scope": "one isolated B=1 value-only f64 baseline capture; field presence is not a complete causal graph or a physical budget",
+  "stage_records": {
+    "c2c_number_inputs": {
+      "field_count": 30,
+      "fields_by_dtype_count": {
+        "avtg": {
+          "f64": 39
+        },
+        "avts": {
+          "f64": 39
+        },
+        "den": {
+          "f64": 39
+        },
+        "denfac": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "eacgc": {
+          "f64": 39
+        },
+        "eacsc": {
+          "f64": 39
+        },
+        "g3pbg": {
+          "f64": 39
+        },
+        "g3pbs": {
+          "f64": 39
+        },
+        "muc": {
+          "f64": 39
+        },
+        "n0c": {
+          "f64": 39
+        },
+        "n0go": {
+          "f64": 39
+        },
+        "n0sfac": {
+          "f64": 39
+        },
+        "n0so": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "ncmin": {
+          "f64": 39
+        },
+        "pi_f32": {
+          "f64": 39
+        },
+        "qc": {
+          "f64": 39
+        },
+        "qcrmin": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qs": {
+          "f64": 39
+        },
+        "qsum_floor": {
+          "f64": 39
+        },
+        "rslope3_g": {
+          "f64": 39
+        },
+        "rslope3_s": {
+          "f64": 39
+        },
+        "rslopeb_g": {
+          "f64": 39
+        },
+        "rslopeb_s": {
+          "f64": 39
+        },
+        "rslopec": {
+          "f64": 39
+        },
+        "rslopecmu": {
+          "f64": 39
+        },
+        "rslopemu_g": {
+          "f64": 39
+        },
+        "rslopemu_s": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 1170,
+      "substeps": [
+        0
+      ]
+    },
+    "c2c_pre2_consumer": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "brs": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_input": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "dend": {
+          "f64": 39
+        },
+        "ni": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_pre_homogeneous_freeze": {
+      "field_count": 7,
+      "fields_by_dtype_count": {
+        "freeze_mask": {
+          "bool": 39
+        },
+        "nc_freeze_source": {
+          "f64": 39
+        },
+        "ni_after": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "qc_freeze_source": {
+          "f64": 39
+        },
+        "qi_after": {
+          "f64": 39
+        },
+        "qi_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 273,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_pre_mf_d1": {
+      "field_count": 26,
+      "fields_by_dtype_count": {
+        "cpm_safe": {
+          "f64": 39
+        },
+        "nc_after_store1": {
+          "f64": 39
+        },
+        "nc_after_store2": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nfrzdtc": {
+          "f64": 39
+        },
+        "ni_after_store1": {
+          "f64": 39
+        },
+        "ni_after_store2": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "ninuc": {
+          "f64": 39
+        },
+        "pfrzdtc_qi": {
+          "f64": 39
+        },
+        "pgmlt_capped": {
+          "f64": 39
+        },
+        "pimlt_ni": {
+          "f64": 39
+        },
+        "pimlt_qi": {
+          "f64": 39
+        },
+        "pinuc_qi": {
+          "f64": 39
+        },
+        "pre_cpm": {
+          "f64": 39
+        },
+        "psmlt_capped": {
+          "f64": 39
+        },
+        "qc_after_store1": {
+          "f64": 39
+        },
+        "qc_after_store2": {
+          "f64": 39
+        },
+        "qc_before": {
+          "f64": 39
+        },
+        "qi_after_store1": {
+          "f64": 39
+        },
+        "qi_after_store2": {
+          "f64": 39
+        },
+        "qi_before": {
+          "f64": 39
+        },
+        "qv_before": {
+          "f64": 39
+        },
+        "t_after_d1": {
+          "f64": 39
+        },
+        "t_after_melt": {
+          "f64": 39
+        },
+        "t_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 1014,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_pre_mf_d2_d3_d4": {
+      "field_count": 13,
+      "fields_by_dtype_count": {
+        "nfrzdtc": {
+          "f64": 39
+        },
+        "ni_after_store1": {
+          "f64": 39
+        },
+        "ni_after_store2": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "ninuc": {
+          "f64": 39
+        },
+        "pfrzdtc_qi": {
+          "f64": 39
+        },
+        "pimlt_ni": {
+          "f64": 39
+        },
+        "pimlt_qi": {
+          "f64": 39
+        },
+        "pinuc_qi": {
+          "f64": 39
+        },
+        "qi_after_store1": {
+          "f64": 39
+        },
+        "qi_after_store2": {
+          "f64": 39
+        },
+        "qi_before": {
+          "f64": 39
+        },
+        "t_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 507,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_pre_snap_a": {
+      "field_count": 8,
+      "fields_by_dtype_count": {
+        "dend": {
+          "f64": 39
+        },
+        "gate_ni_ge_zero": {
+          "bool": 39
+        },
+        "gate_qi_ge_1e14": {
+          "bool": 39
+        },
+        "lambda_clamped": {
+          "f64": 39
+        },
+        "lambda_raw": {
+          "f64": 39
+        },
+        "ni_after": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 312,
+      "substeps": [
+        0
+      ]
+    },
+    "c3_pre_snap_b": {
+      "field_count": 8,
+      "fields_by_dtype_count": {
+        "dend": {
+          "f64": 39
+        },
+        "gate_ni_ge_zero": {
+          "bool": 39
+        },
+        "gate_qi_ge_1e14": {
+          "bool": 39
+        },
+        "lambda_clamped": {
+          "f64": 39
+        },
+        "lambda_raw": {
+          "f64": 39
+        },
+        "ni_after": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 312,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_brs_reslope": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "brs_after": {
+          "f64": 39
+        },
+        "brs_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_entry_thermo": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "applied_cpm": {
+          "f64": 39
+        },
+        "entry_cpm_arg": {
+          "f64": 39
+        },
+        "fresh_cpm": {
+          "f64": 39
+        },
+        "qv": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_melt_consumer": {
+      "field_count": 21,
+      "fields_by_dtype_count": {
+        "brs_after": {
+          "f64": 39
+        },
+        "brs_before": {
+          "f64": 39
+        },
+        "delta_brs_capped": {
+          "f64": 39
+        },
+        "delta_brs_freeze": {
+          "f64": 39
+        },
+        "gfac_melt": {
+          "f64": 39
+        },
+        "nfrzdtr": {
+          "f64": 39
+        },
+        "nr1": {
+          "f64": 39
+        },
+        "nr2": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        },
+        "pfrzdtr": {
+          "f64": 39
+        },
+        "qg_after": {
+          "f64": 39
+        },
+        "qg_before": {
+          "f64": 39
+        },
+        "qr1": {
+          "f64": 39
+        },
+        "qr2": {
+          "f64": 39
+        },
+        "qr_after": {
+          "f64": 39
+        },
+        "qr_before": {
+          "f64": 39
+        },
+        "qs_after": {
+          "f64": 39
+        },
+        "qs_before": {
+          "f64": 39
+        },
+        "sfac_melt": {
+          "f64": 39
+        },
+        "warm_mask": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 819,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_melt_producer": {
+      "field_count": 62,
+      "fields_by_dtype_count": {
+        "coeres_g": {
+          "f64": 39
+        },
+        "coeres_s": {
+          "f64": 39
+        },
+        "cpm": {
+          "f64": 39
+        },
+        "delta_brs": {
+          "f64": 39
+        },
+        "delta_brs_capped": {
+          "f64": 39
+        },
+        "den": {
+          "f64": 39
+        },
+        "den_safe": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "gfac": {
+          "f64": 39
+        },
+        "gfac_raw": {
+          "f64": 39
+        },
+        "graupel_active": {
+          "bool": 39
+        },
+        "mass_den": {
+          "f64": 39
+        },
+        "n0go": {
+          "f64": 39
+        },
+        "n0sfac": {
+          "f64": 39
+        },
+        "n0so": {
+          "f64": 39
+        },
+        "ni": {
+          "f64": 39
+        },
+        "p": {
+          "f64": 39
+        },
+        "pgmlt": {
+          "f64": 39
+        },
+        "pgmlt_capped": {
+          "f64": 39
+        },
+        "pgmlt_capped_g": {
+          "f64": 39
+        },
+        "pgmlt_dt": {
+          "f64": 39
+        },
+        "pgmlt_raw": {
+          "f64": 39
+        },
+        "pgmlt_sum": {
+          "f64": 39
+        },
+        "pgmlt_term1": {
+          "f64": 39
+        },
+        "pgmlt_term2": {
+          "f64": 39
+        },
+        "precg1": {
+          "f64": 39
+        },
+        "precg2": {
+          "f64": 39
+        },
+        "precs1": {
+          "f64": 39
+        },
+        "precs2": {
+          "f64": 39
+        },
+        "psmlt": {
+          "f64": 39
+        },
+        "psmlt_capped": {
+          "f64": 39
+        },
+        "psmlt_capped_g": {
+          "f64": 39
+        },
+        "psmlt_dt": {
+          "f64": 39
+        },
+        "psmlt_raw": {
+          "f64": 39
+        },
+        "psmlt_sum": {
+          "f64": 39
+        },
+        "psmlt_term1": {
+          "f64": 39
+        },
+        "psmlt_term2": {
+          "f64": 39
+        },
+        "qcrmin": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        },
+        "qs": {
+          "f64": 39
+        },
+        "rhox": {
+          "f64": 39
+        },
+        "rhox_div": {
+          "f64": 39
+        },
+        "rslope2_g": {
+          "f64": 39
+        },
+        "rslope2_s": {
+          "f64": 39
+        },
+        "rslope_g": {
+          "f64": 39
+        },
+        "rslope_s": {
+          "f64": 39
+        },
+        "rslopeb_g": {
+          "f64": 39
+        },
+        "rslopeb_s": {
+          "f64": 39
+        },
+        "rslopemu_g": {
+          "f64": 39
+        },
+        "rslopemu_s": {
+          "f64": 39
+        },
+        "sfac": {
+          "f64": 39
+        },
+        "sfac_raw": {
+          "f64": 39
+        },
+        "snow_active": {
+          "bool": 39
+        },
+        "t": {
+          "f64": 39
+        },
+        "t0c": {
+          "f64": 39
+        },
+        "t1": {
+          "f64": 39
+        },
+        "warm": {
+          "bool": 39
+        },
+        "work2": {
+          "f64": 39
+        },
+        "xka_val": {
+          "f64": 39
+        },
+        "xka_val_g": {
+          "f64": 39
+        },
+        "xlf": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 2418,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_postmelt_progb": {
+      "field_count": 23,
+      "fields_by_dtype_count": {
+        "active": {
+          "bool": 39
+        },
+        "avtg": {
+          "f64": 39
+        },
+        "bg": {
+          "f64": 39
+        },
+        "bg_den": {
+          "f64": 39
+        },
+        "bg_new": {
+          "f64": 39
+        },
+        "bg_new_op": {
+          "f64": 39
+        },
+        "brs_min": {
+          "f64": 39
+        },
+        "bvtg": {
+          "f64": 39
+        },
+        "density_divisor": {
+          "f64": 39
+        },
+        "idx_left": {
+          "f64": 39
+        },
+        "idx_right": {
+          "f64": 39
+        },
+        "midpoint_trace": {
+          "bool": 39
+        },
+        "op_f32": {
+          "bool": 39
+        },
+        "produced": {
+          "bool": 39
+        },
+        "qcrmin": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "rho_max": {
+          "f64": 39
+        },
+        "rho_min": {
+          "f64": 39
+        },
+        "rhox": {
+          "f64": 39
+        },
+        "rhox_c": {
+          "f64": 39
+        },
+        "rhox_op": {
+          "f64": 39
+        },
+        "trace": {
+          "bool": 39
+        },
+        "zero_den": {
+          "bool": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 897,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_postmelt_progb_merge": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "bg": {
+          "f64": 39
+        },
+        "rhox": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_state_entry": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "brs": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        },
+        "qr": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_upstream_entry": {
+      "field_count": 7,
+      "fields_by_dtype_count": {
+        "brs": {
+          "f64": 39
+        },
+        "den": {
+          "f64": 39
+        },
+        "dend": {
+          "f64": 39
+        },
+        "p": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qv": {
+          "f64": 39
+        },
+        "t": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 273,
+      "substeps": [
+        0
+      ]
+    },
+    "d1_upstream_producer": {
+      "field_count": 9,
+      "fields_by_dtype_count": {
+        "active_gate": {
+          "bool": 39
+        },
+        "avtg": {
+          "f64": 39
+        },
+        "bg": {
+          "f64": 39
+        },
+        "bvtg": {
+          "f64": 39
+        },
+        "cpm": {
+          "f64": 39
+        },
+        "precg2": {
+          "f64": 39
+        },
+        "rhox": {
+          "f64": 39
+        },
+        "work2": {
+          "f64": 39
+        },
+        "xl": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 351,
+      "substeps": [
+        0
+      ]
+    },
+    "d234_boundary": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "brs_after": {
+          "f64": 39
+        },
+        "brs_before": {
+          "f64": 39
+        },
+        "qg_after": {
+          "f64": 39
+        },
+        "qg_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "d234_rain": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        },
+        "qr_after": {
+          "f64": 39
+        },
+        "qr_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_after_d234": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "nc": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_cleanup": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "nc": {
+          "f64": 39
+        },
+        "nccn": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_d5": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "ngeml_applied": {
+          "f64": 39
+        },
+        "ngeml_raw": {
+          "f64": 39
+        },
+        "nraut_applied": {
+          "f64": 39
+        },
+        "nrcol_applied": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_dsd": {
+      "field_count": 6,
+      "fields_by_dtype_count": {
+        "nc_after": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nccn_after": {
+          "f64": 39
+        },
+        "nccn_before": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 234,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_main": {
+      "field_count": 11,
+      "fields_by_dtype_count": {
+        "brs_after": {
+          "f64": 39
+        },
+        "brs_before": {
+          "f64": 39
+        },
+        "brs_candidate": {
+          "f64": 39
+        },
+        "brs_reslope": {
+          "f64": 39
+        },
+        "fall_qg": {
+          "f64": 39
+        },
+        "qg_after": {
+          "f64": 39
+        },
+        "qg_before": {
+          "f64": 39
+        },
+        "qg_candidate": {
+          "f64": 39
+        },
+        "rhox_reslope": {
+          "f64": 39
+        },
+        "vt_g_reslope": {
+          "f64": 39
+        },
+        "w1_qg": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 429,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_reclass": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "nc": {
+          "f64": 39
+        },
+        "nccn": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_satadj": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "nc_after": {
+          "f64": 39
+        },
+        "nccn_after": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_satadj_inner": {
+      "field_count": 33,
+      "fields_by_dtype_count": {
+        "activated_fraction": {
+          "f64": 39
+        },
+        "activation_fraction_min_output": {
+          "f64": 39
+        },
+        "activation_fraction_one": {
+          "f64": 39
+        },
+        "activation_fraction_pow": {
+          "f64": 39
+        },
+        "activation_fraction_pow_eq_one": {
+          "bool": 39
+        },
+        "activation_fraction_pow_gt_one": {
+          "bool": 39
+        },
+        "activation_fraction_pow_lt_one": {
+          "bool": 39
+        },
+        "cloud_complete_evap": {
+          "bool": 39
+        },
+        "nc_after_activation": {
+          "f64": 39
+        },
+        "nc_evap_amount": {
+          "f64": 39
+        },
+        "nc_final": {
+          "f64": 39
+        },
+        "nc_input": {
+          "f64": 39
+        },
+        "ncact": {
+          "f64": 39
+        },
+        "ncact_clamped_numerator": {
+          "f64": 39
+        },
+        "ncact_min_output": {
+          "f64": 39
+        },
+        "ncact_nccn_rate_cap": {
+          "f64": 39
+        },
+        "ncact_preclamp_fma": {
+          "f64": 39
+        },
+        "ncact_raw": {
+          "f64": 39
+        },
+        "ncact_raw_eq_nccn_rate_cap": {
+          "bool": 39
+        },
+        "ncact_raw_gt_nccn_rate_cap": {
+          "bool": 39
+        },
+        "ncact_raw_lt_nccn_rate_cap": {
+          "bool": 39
+        },
+        "nccn_after_activation": {
+          "f64": 39
+        },
+        "nccn_cap_active": {
+          "bool": 39
+        },
+        "nccn_final": {
+          "f64": 39
+        },
+        "nccn_final_raw": {
+          "f64": 39
+        },
+        "nccn_floor_active": {
+          "bool": 39
+        },
+        "nccn_input": {
+          "f64": 39
+        },
+        "qs1": {
+          "f64": 39
+        },
+        "qv_input": {
+          "f64": 39
+        },
+        "safe_pow_clamped_base_diagnostic": {
+          "f64": 39
+        },
+        "sw_percent": {
+          "f64": 39
+        },
+        "sw_positive": {
+          "bool": 39
+        },
+        "sw_ratio": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 1287,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_snap_a": {
+      "field_count": 5,
+      "fields_by_dtype_count": {
+        "nc_after": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nc_candidate": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 195,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_snap_b": {
+      "field_count": 5,
+      "fields_by_dtype_count": {
+        "nc_after": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nc_candidate": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 195,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_state_update": {
+      "field_count": 6,
+      "fields_by_dtype_count": {
+        "nc_after": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nccn_after": {
+          "f64": 39
+        },
+        "nccn_before": {
+          "f64": 39
+        },
+        "nr_after": {
+          "f64": 39
+        },
+        "nr_before": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 234,
+      "substeps": [
+        0
+      ]
+    },
+    "fd_warm": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "nc": {
+          "f64": 39
+        },
+        "nr_after_evap": {
+          "f64": 39
+        },
+        "nr_before_evap": {
+          "f64": 39
+        },
+        "rain_complete_evap": {
+          "bool": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "final_dsd_number_rewrite": {
+      "field_count": 3,
+      "fields_by_dtype_count": {
+        "ni_after": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "ni_snapped_candidate": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 117,
+      "substeps": [
+        0
+      ]
+    },
+    "ice_sedimentation_n1": {
+      "field_count": 20,
+      "fields_by_dtype_count": {
+        "applied_in_ni": {
+          "f64": 39
+        },
+        "applied_out_ni": {
+          "f64": 38
+        },
+        "delz": {
+          "f64": 39
+        },
+        "dend": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "falk_candidate_pre_store_ni": {
+          "f64": 39
+        },
+        "falk_stored_ni": {
+          "f64": 39
+        },
+        "fall_ni_after": {
+          "f64": 39
+        },
+        "fall_ni_before": {
+          "f64": 39
+        },
+        "gate": {
+          "f64": 39
+        },
+        "in_attempt_ni": {
+          "f64": 39
+        },
+        "mstep": {
+          "f64": 39
+        },
+        "ni_after": {
+          "f64": 39
+        },
+        "ni_before": {
+          "f64": 39
+        },
+        "out_attempt_ni": {
+          "f64": 39
+        },
+        "projection_ni": {
+          "f64": 39
+        },
+        "realized_loss_ni": {
+          "f64": 39
+        },
+        "scheduled_out_ni": {
+          "f64": 1
+        },
+        "work1": {
+          "f64": 39
+        },
+        "workn": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 741,
+      "substeps": [
+        1
+      ]
+    },
+    "naacw_producer": {
+      "field_count": 6,
+      "fields_by_dtype_count": {
+        "naacw": {
+          "f64": 39
+        },
+        "ngacw": {
+          "f64": 39
+        },
+        "nsacw": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qs": {
+          "f64": 39
+        },
+        "qsum_floor": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 234,
+      "substeps": [
+        0
+      ]
+    },
+    "nc_budget": {
+      "field_count": 16,
+      "fields_by_dtype_count": {
+        "cold_mask": {
+          "f64": 39
+        },
+        "dnc_amount": {
+          "f64": 39
+        },
+        "dnc_rate_sum": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "naacw": {
+          "f64": 39
+        },
+        "nc_base": {
+          "f64": 39
+        },
+        "nc_before": {
+          "f64": 39
+        },
+        "nc_clamped": {
+          "f64": 39
+        },
+        "nc_unclamped": {
+          "f64": 39
+        },
+        "nccol": {
+          "f64": 39
+        },
+        "nfrzdtc": {
+          "f64": 39
+        },
+        "niacw": {
+          "f64": 39
+        },
+        "ninuc": {
+          "f64": 39
+        },
+        "nracw": {
+          "f64": 39
+        },
+        "nraut": {
+          "f64": 39
+        },
+        "pimlt_ni": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 624,
+      "substeps": [
+        0
+      ]
+    },
+    "nc_budget_producer": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "naacw": {
+          "f64": 39
+        },
+        "nccol": {
+          "f64": 39
+        },
+        "niacw": {
+          "f64": 39
+        },
+        "nracw": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "nc_limit_cold": {
+      "field_count": 11,
+      "fields_by_dtype_count": {
+        "gate": {
+          "bool": 39
+        },
+        "naacw_after": {
+          "f64": 39
+        },
+        "naacw_before": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "nccol_before": {
+          "f64": 39
+        },
+        "ncmin": {
+          "f64": 39
+        },
+        "niacw_before": {
+          "f64": 39
+        },
+        "nracw_after": {
+          "f64": 39
+        },
+        "nracw_before": {
+          "f64": 39
+        },
+        "nraut_before": {
+          "f64": 39
+        },
+        "source_sum": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 429,
+      "substeps": [
+        0
+      ]
+    },
+    "nc_limit_warm": {
+      "field_count": 10,
+      "fields_by_dtype_count": {
+        "gate": {
+          "bool": 39
+        },
+        "naacw_after": {
+          "f64": 39
+        },
+        "naacw_before": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "nccol_before": {
+          "f64": 39
+        },
+        "ncmin": {
+          "f64": 39
+        },
+        "nracw_after": {
+          "f64": 39
+        },
+        "nracw_before": {
+          "f64": 39
+        },
+        "nraut_before": {
+          "f64": 39
+        },
+        "source_sum": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 390,
+      "substeps": [
+        0
+      ]
+    },
+    "nracw_producer": {
+      "field_count": 17,
+      "fields_by_dtype_count": {
+        "avedia_r": {
+          "f64": 39
+        },
+        "di100": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "g1pmr": {
+          "f64": 39
+        },
+        "g3pmc": {
+          "f64": 39
+        },
+        "g4pmr": {
+          "f64": 39
+        },
+        "g6pmc": {
+          "f64": 39
+        },
+        "g7pmr": {
+          "f64": 39
+        },
+        "lenconcr": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "ncrk1": {
+          "f64": 39
+        },
+        "ncrk2": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        },
+        "nracw": {
+          "f64": 39
+        },
+        "qr": {
+          "f64": 39
+        },
+        "rslope3_r": {
+          "f64": 39
+        },
+        "rslopec3": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 663,
+      "substeps": [
+        0
+      ]
+    },
+    "nraut_producer": {
+      "field_count": 13,
+      "fields_by_dtype_count": {
+        "den": {
+          "f64": 39
+        },
+        "dtcld": {
+          "f64": 39
+        },
+        "lenconcr": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "ncmin": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        },
+        "nraut": {
+          "f64": 39
+        },
+        "nraut_coeff": {
+          "f64": 39
+        },
+        "praut": {
+          "f64": 39
+        },
+        "qc": {
+          "f64": 39
+        },
+        "qck1": {
+          "f64": 39
+        },
+        "qcr": {
+          "f64": 39
+        },
+        "qr": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 507,
+      "substeps": [
+        0
+      ]
+    },
+    "pre2_producer": {
+      "field_count": 18,
+      "fields_by_dtype_count": {
+        "avtg": {
+          "f64": 39
+        },
+        "bg": {
+          "f64": 39
+        },
+        "brs_input": {
+          "f64": 39
+        },
+        "bvtg": {
+          "f64": 39
+        },
+        "den_input": {
+          "f64": 39
+        },
+        "dend_input": {
+          "f64": 39
+        },
+        "g3pbg": {
+          "f64": 39
+        },
+        "graupel_slope_mask": {
+          "bool": 39
+        },
+        "pidn0g": {
+          "f64": 39
+        },
+        "progb_active": {
+          "bool": 39
+        },
+        "qg_input": {
+          "f64": 39
+        },
+        "rhox": {
+          "f64": 39
+        },
+        "rslope2_g": {
+          "f64": 39
+        },
+        "rslope3_g": {
+          "f64": 39
+        },
+        "rslope_g": {
+          "f64": 39
+        },
+        "rslopeb_g": {
+          "f64": 39
+        },
+        "rslopegbmax": {
+          "f64": 39
+        },
+        "rslopemu_g": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 702,
+      "substeps": [
+        0
+      ]
+    },
+    "pre2_rain_producer": {
+      "field_count": 14,
+      "fields_by_dtype_count": {
+        "avedia_r": {
+          "f64": 39
+        },
+        "avedia_ratio": {
+          "f64": 39
+        },
+        "dend_input": {
+          "f64": 39
+        },
+        "nr_input": {
+          "f64": 39
+        },
+        "nrmin": {
+          "f64": 39
+        },
+        "pidnr": {
+          "f64": 39
+        },
+        "qcrmin": {
+          "f64": 39
+        },
+        "qr_input": {
+          "f64": 39
+        },
+        "rslope2_r": {
+          "f64": 39
+        },
+        "rslope3_r": {
+          "f64": 39
+        },
+        "rslope_limit": {
+          "f64": 39
+        },
+        "rslope_r": {
+          "f64": 39
+        },
+        "rsloper3max": {
+          "f64": 39
+        },
+        "rslopermax": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 546,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_entry_post_clamp": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "ni": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_entry_pre_clamp": {
+      "field_count": 5,
+      "fields_by_dtype_count": {
+        "den": {
+          "f64": 39
+        },
+        "dend": {
+          "f64": 39
+        },
+        "ni": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        },
+        "qv": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 195,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_entry_thermo": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "entry_cpm": {
+          "f64": 39
+        },
+        "qv_for_cpm": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_full_entry": {
+      "field_count": 12,
+      "fields_by_dtype_count": {
+        "bg": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "nccn": {
+          "f64": 39
+        },
+        "ni": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        },
+        "qc": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        },
+        "qr": {
+          "f64": 39
+        },
+        "qs": {
+          "f64": 39
+        },
+        "qv": {
+          "f64": 39
+        },
+        "th": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 468,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_full_exit": {
+      "field_count": 12,
+      "fields_by_dtype_count": {
+        "bg": {
+          "f64": 39
+        },
+        "nc": {
+          "f64": 39
+        },
+        "nccn": {
+          "f64": 39
+        },
+        "ni": {
+          "f64": 39
+        },
+        "nr": {
+          "f64": 39
+        },
+        "qc": {
+          "f64": 39
+        },
+        "qg": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        },
+        "qr": {
+          "f64": 39
+        },
+        "qs": {
+          "f64": 39
+        },
+        "qv": {
+          "f64": 39
+        },
+        "th": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 468,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_full_forcing": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "delz": {
+          "f64": 39
+        },
+        "p": {
+          "f64": 39
+        },
+        "pii": {
+          "f64": 39
+        },
+        "rho": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_full_meta": {
+      "field_count": 7,
+      "fields_by_dtype_count": {
+        "dry_number": {
+          "f64": 39
+        },
+        "dt": {
+          "f64": 39
+        },
+        "loops": {
+          "f64": 39
+        },
+        "ncmin_land": {
+          "f64": 39
+        },
+        "ncmin_sea": {
+          "f64": 39
+        },
+        "physics_variant": {
+          "f64": 39
+        },
+        "xland": {
+          "f32": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 273,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_full_schedule": {
+      "field_count": 4,
+      "fields_by_dtype_count": {
+        "mstep_ice_col": {
+          "f64": 39
+        },
+        "mstep_main_col": {
+          "f64": 39
+        },
+        "mstepmax_ice": {
+          "f64": 39
+        },
+        "mstepmax_main": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 156,
+      "substeps": [
+        0
+      ]
+    },
+    "runtime_post_sed_entry": {
+      "field_count": 2,
+      "fields_by_dtype_count": {
+        "ni": {
+          "f64": 39
+        },
+        "qi": {
+          "f64": 39
+        }
+      },
+      "k_zero_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "row_count": 78,
+      "substeps": [
+        0
+      ]
+    }
+  },
+  "stages_count": 51,
+  "vertical_order": "top first; native level = 39 - k_zero"
+}

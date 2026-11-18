@@ -1,0 +1,8 @@
+{
+  "files": {
+    "README.md": "b2f2fce7dc2a3c3458845f78573e18f62d1802f60ce1e87738e98f84a26747c3",
+    "test_verify.py": "6bb4b821a4b62c89010fbd64409837cfc951bf7cd33653cc7a92f34d7bbb97db",
+    "verify.py": "5582fd21a0808715aaf25e562f2f3aafd893edde3e736bbba37573f53098be29"
+  },
+  "schema": "east-optical-onehot-sources-v1"
+}

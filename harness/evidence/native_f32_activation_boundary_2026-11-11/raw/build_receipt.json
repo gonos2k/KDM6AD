@@ -1,0 +1,27 @@
+{
+  "capture_dso_sha256": "eabb607b08760a5b757031f864f6644e5f75aa83aebdc4c32f8fdfc8c2245c95",
+  "flags_sha256": {
+    "raw/bridge_flags.make.gz": "f777e6476c7cc53bead7c5a8c28f751a1bdc11d347902538242a8abcea62e9b5",
+    "raw/core_cache.txt.gz": "d8c73b9ce9a4ed62665bf24a3cc80d1995f238eb0f8ec398379ee07c6711c7ad",
+    "raw/core_flags.make.gz": "59547271ce47df7d7cf41fe76c32295c65f2f2c0c4577dcc34935c6845fc7468",
+    "raw/runner_cache.txt.gz": "0c741c46d8b72d0402d3e957d5fa8744a1d991a1653acc68fec58b5aaba517aa",
+    "raw/runner_flags.make.gz": "9c306f423e4096583400379199a8a69617f2dfbc56b91412269f8747079323d9"
+  },
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "parent_research_merge_commit": "f2bbd4deb57ef116484b2abe3954c8d004c01107",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "preflight_runner_hash_is_stale_after_rpath_repair": true,
+  "producer_sha256": "b791ac0eea87ad6dc0760d721fac7295c6de60fa41604a7863b476a9aee7632f",
+  "python": "3.10.11",
+  "runner_cmake_sha256": "985d38a61cffb2f382a3e61f89d9ea15750637c73871e0510f563ec16187e207",
+  "runner_executable_sha256": "b8894b76d93fec3b8cadd1be80e043bbf04b7cf37ca29ba6aaf3105b686e4050",
+  "runner_source_sha256": "0ba1904d6dfd38cbc9256e560354a369f779869b19a6a702eed78c6118e59351",
+  "schema": "kdm6.native_f32_activation_boundary_build.v1",
+  "source_sha256": {
+    "c_abi": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049",
+    "coordinator": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b",
+    "ops": "0c0cb13fc97c66888424121453537af953165746d9e9bdc6e21fa69dccbe9014",
+    "parent_input": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+    "runtime": "d0bf029414d0c04c1c06a8b754e486827449b2574febb0ed49e1d0e3c8baab10"
+  }
+}

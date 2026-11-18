@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Pin the exact trial DSO for one-/two-column fp64 AD comparison."""
+import datetime,hashlib,json,math,os
+from pathlib import Path
+import subprocess,sys
+import numpy as np
+R=Path(__file__).resolve().parent
+T=R.parent/'native_d1_full_state_mask_trial_20261105'
+LIB=T/'build/libkdm6_c.2.0.0.dylib'
+ARCHIVE=T/'build/libkdm6.a'
+EXPECTED_LIB='4c7849af3cb2a36599b968b018569d9f955b94eb38cacd58749f5b5e679a5caf'
+EXPECTED_ARCHIVE='44099b67b14b15450796fb3b648778c96635d22eec614c8b3b5f40f59762608d'
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+if sha(LIB)!=EXPECTED_LIB or sha(ARCHIVE)!=EXPECTED_ARCHIVE:raise RuntimeError('trial binary identity changed')
+CAP=next((R/'runs/on/capture').glob('native_qnice_applied_*.csv'))
+env=dict(os.environ,KDM6_PROBE_LIB=str(LIB),OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OMP_THREAD_LIMIT='1',KDM6_ICE_FACTORIAL_MODE='norm_actual',KDM6_QR_TRANSPORT='actual_departure',KDM6AD_QNC_LIVE_GUARD='1')
+commands=[([sys.executable,str(R/'probe_ad.py')],R/'probe_ad_mask_final.txt',R/'probe_ad_mask_final_stderr.txt'),
+          ([sys.executable,str(R/'probe_schedule_witness.py'),'0.16','--graph'],R/'schedule_witness_mask_final.txt',R/'schedule_witness_mask_final_stderr.txt')]
+receipts=[]
+for cmd,out,err in commands:
+ p=subprocess.run(cmd,env=env,text=True,capture_output=True)
+ out.write_text(p.stdout);err.write_text(p.stderr)
+ if p.returncode:raise RuntimeError(str(cmd)+' failed: '+p.stderr)
+ receipts.append({'command':cmd,'returncode':p.returncode,'stdout_sha256':sha(out),'stderr_sha256':sha(err)})
+a=np.load(R/'probe_ad_result.npz',allow_pickle=False)
+b=np.load(R/'schedule_witness_0p16_ad.npz',allow_pickle=False)
+if not np.array_equal(a['value_output'].view('u8'),a['graph_output'].view('u8')):raise RuntimeError('graph/value baseline mismatch')
+if not np.array_equal(a['value_output'].view('u8'),b['target_output'].view('u8')):raise RuntimeError('B1/B2 target baseline mismatch')
+if not np.array_equal(a['vjp'].view('u8'),b['target_grad'].view('u8')) or np.count_nonzero(b['witness_grad']):raise RuntimeError('B1/B2 VJP mismatch')
+dots={}
+for name in ('qv','qs','qg'):
+ if not np.array_equal(a['jvp_'+name].view('u8'),b['jvp_'+name+'_target'].view('u8')) or np.count_nonzero(b['jvp_'+name+'_witness']):raise RuntimeError('B1/B2 JVP mismatch: '+name)
+ lhs=math.fsum(float(x)*float(y) for x,y in zip(a['u'].ravel(),a['jvp_'+name].ravel()))
+ rhs=math.fsum(float(x)*float(y) for x,y in zip(a['direction_'+name].ravel(),a['vjp'].ravel()))
+ if abs(lhs-rhs)>1e-12*max(1.,abs(lhs),abs(rhs)):raise RuntimeError('JVP/VJP duality: '+name)
+ dots[name]={'weighted_jvp':lhs,'weighted_vjp':rhs,'absolute_difference':abs(lhs-rhs)}
+record={'schema':'kdm6.native_full_column_mask_ad_probe.v1',
+ 'run_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+ 'scope':'synthetic two-column schedule witness with selected native column; conditional f64 state AD, no host-attached graph',
+ 'library_path':str(LIB),'library_sha256':sha(LIB),'archive_sha256':sha(ARCHIVE),
+ 'coordinator_source_sha256':sha(T/'source/src/coordinator.cpp'),
+ 'coordinator_object_sha256':sha(T/'build/CMakeFiles/kdm6.dir/src/coordinator.cpp.o'),
+ 'input_capture_sha256':sha(CAP),'probe_source_sha256':{'probe_ad.py':sha(R/'probe_ad.py'),'probe_schedule_witness.py':sha(R/'probe_schedule_witness.py')},
+ 'environment':{k:env[k] for k in ('KDM6_PROBE_LIB','OMP_NUM_THREADS','MKL_NUM_THREADS','OMP_THREAD_LIMIT','KDM6_ICE_FACTORIAL_MODE','KDM6_QR_TRANSPORT','KDM6AD_QNC_LIVE_GUARD')},
+ 'calls':receipts,'arrays_sha256':{'B1':sha(R/'probe_ad_result.npz'),'B2':sha(R/'schedule_witness_0p16_ad.npz')},
+ 'baseline_raw_equal_cells':468,'B1_B2_jvp_raw_equal_cells':1404,
+ 'B1_B2_vjp_raw_equal_cells':468,'witness_vjp_nonzero_cells':0,
+ 'duality':dots}
+(R/'final_probe_receipt.json').write_text(json.dumps(record,indent=2,sort_keys=True)+'\n')
+print(json.dumps(record,sort_keys=True))

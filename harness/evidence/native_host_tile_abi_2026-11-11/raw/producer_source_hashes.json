@@ -1,0 +1,13 @@
+{
+  "comparator_source_hash_timing": "retrospective after paired runs",
+  "executed_private_source_sha256": {
+    "compare_column.py": "ed5d7d6c41291204ce80ebeaf90d3b614aa710524be966914ec7da6eecd663c7",
+    "proxy.c": "a6a402a1d4bece2f2fd1fb3e5674a391e1a4dc4842e260ad5cc8787ae608647d",
+    "replay.py": "64c585ba7e2bbbcc09f176e5ef3a9eb0e4292e057b4b6eec535b09f91cd6b215",
+    "signature.py": "6ce0f03da9ed9d3a06c3892212a3dad1651fe0158eed434d5d4516cb965e49b7",
+    "strict_bitwise_nc.py": "e90464a63300c7f95665dcf9d75ea6d5765669cee31a48e65006f572140de24b"
+  },
+  "public_proxy_view_is_executed_byte_identity": false,
+  "public_proxy_view_sha256": "409f89bea241acb40e61c1ef0717e344fd1a0525ad614389284f87bd626e05a8",
+  "schema": "kdm6.native_host_tile_producer_sources.v1"
+}

@@ -1,0 +1,51 @@
+{
+  "analysis_sha256": "7afc260614d30ed5776d9b19770090d22a044aff6af097d8089fb03da8513e24",
+  "external_source_pins": {
+    "harness/analyze_qnc_candidate_inputs.py": "8917416b2bac9b5ac5daa7fa275c6c83b562d006e33325daa44926f937a7b9a7",
+    "harness/analyze_qnc_domain_preflight.py": "df0d32c9ea6c79555192b8a3bf4891a08d1fb39992430f504de09544ad5ccd76",
+    "harness/analyze_qnc_live_guard_host.py": "e4b22a9e18417d7ad5e6990e83995967eeb86dde0db1cd23f589a60244668400",
+    "harness/analyze_qnc_selected_adaptive_pilot.py": "bc3ac7109fcf3be3f165dd6cdef7f2ec9474bf7ae548392e271d3c76e8ada7c3",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/evidence/native_qnc_candidate_inputs_2026-10-28/replay.py": "80f98afd4a0ca366075fdfe2c04d783d08398cc52e09054e4847d675e2070097",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_moment_trace_records.py": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_candidate_face_overlay.py": "216ed63e3d8631ede9bfa69a4d43ce1eeb1f5c2b2fce5d15f4a24d229914196b",
+    "harness/native_qnc_domain_preflight_advect_overlay.py": "058a57892bce18cefb86ffd479fb97914b0081db7dc98ba15efc355417287969",
+    "harness/native_qnc_live_guard_overlay.py": "59b2037b5eae21c68fcf9eb36bcd02ce137a87920409eb888c39f7ee6df0050f",
+    "harness/native_qnc_representative_trace_overlay.py": "862529b7f5161049f09e006b7716510e2e8ad1d4e64720df0a07ec4d9d128e05",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c",
+    "harness/native_qnc_star_qi_records.py": "eae1604689bbe7f9417b9badf3f21dad8fc6bbe2c6bc496f74c6c89cc2bcbf67",
+    "harness/qnc_live_guard_f32_probe.f90": "22e188e3595e508222d6182925b6f81c5dc516c9d95c8829b2f09d3192973054",
+    "harness/qnc_live_guard_sign_probe.f90": "2f0cb6d5f1d32db52771dc1102f204b7f38b7f3396be203f5fc17f179b9b08b9",
+    "harness/qnc_live_guard_tile.f90": "d622090bfa7ab300e03d2b65408e32a8b081523ef824036de92bfd81550f8356",
+    "harness/qnc_rounding_env.c": "884075c61395d9be76df169e985eb39b138aae797bdf26bde795cec69228c313",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "2e58c5338bc23466e3e12cebba6429eb9e5198d8425ca0cbe9839effe40704ec",
+    "analysis.json": "7afc260614d30ed5776d9b19770090d22a044aff6af097d8089fb03da8513e24",
+    "data/alpha025/faces.tsv": "99aa1c3deeeba67e40490fd79d17d748b2d8268b48ece6095bd7d3ad1a1e37ac",
+    "data/alpha025/rk_writer.tsv": "d871c4d41cd43720941483feb3bb89dafc871935d07db3abc97fea6e49007be1",
+    "data/control/faces.tsv": "13ac311826b52baf216790de9df8602654c4dbf7560361163066c4b64d383024",
+    "data/control/rk_writer.tsv": "09ebf6f449b7bbf7b3f05e1fcaa324bc59ccc36aa12f37e371ccbe773e72ff14",
+    "receipts/alpha025_between_variant.json": "9a5dc8768b85f2f331f5db3f9bd8e85bcad4696f5af7d079ec050610f7a93785",
+    "receipts/alpha025_support_analysis.json": "2270ecd8bc8a1d38c9fa15b9714806d3875c2833ab7e54e4daf420f2c5d56c7e",
+    "receipts/control_between_variant.json": "fec32108edc94846543e3d6fcc289bdcfe4a7bc7ba21b23412cd4e9e35410c81",
+    "receipts/control_support_analysis.json": "cbab5f37b62098df3d4b11891fdbd38db089b9e570156e026137e6337efa2073",
+    "receipts/execution_summary.json": "e0b321c525ff7111e31f3a1c238e91013566e70128631d261f35d55c0155ccd2",
+    "replay.py": "eecd600aa9087f2f2bfd132d060d6dce6f56d47a4691392390a09edc243e219d"
+  },
+  "schema": "kdm6.native_qnc_live_guard_manifest.v1",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_qnc_candidate_inputs_2026-10-28/manifest.json": "a975acf33c9b42a644d0682f2c47476bae15856d3af3abbcc0deb1be407b2506",
+    "harness/evidence/native_qnc_selected_adaptive_2026-10-29/manifest.json": "6a8ec5c06456148d4ad1cf3da90a795d1d44b984fa8cbac66e5b75dbc7e76452"
+  }
+}

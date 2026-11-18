@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Capture conditional one-column value-only FD branch signatures."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+library = Path(os.environ["KDM6_PROBE_LIB"])
+if not library.is_absolute() or sha(library) != "4c7849af3cb2a36599b968b018569d9f955b94eb38cacd58749f5b5e679a5caf":
+    raise RuntimeError("final fixed DSO path/hash required")
+CASES = {"qv": (1e-3, 1e-4, 1e-5), "qs": (1e-3, 1e-4), "qg": (1e-5, 1e-6, 1e-7)}
+base = ROOT / os.environ.get("KDM6_FD_OUTDIR", "fd_captures")
+base.mkdir(exist_ok=True)
+records = []
+for name, hs in CASES.items():
+    for h in hs:
+        for sign in (-1, 1):
+            label = f"{name}_{h:.0e}_{'plus' if sign > 0 else 'minus'}"
+            case = base / label
+            case.mkdir(exist_ok=False)
+            env = dict(os.environ)
+            env.update({
+                "KDM6_NATIVE_CAPTURE_DIR": str(case),
+                "KDM6_NATIVE_CAPTURE_CALL": "1",
+                "KDM6_NATIVE_CAPTURE_B": "0",
+                "KDM6_NATIVE_CAPTURE_ALL_K": "1",
+                "KDM6_NATIVE_CAPTURE_MAX_ROWS": "12000",
+                "KDM6_NATIVE_CAPTURE_MAX_BYTES": str(4 << 20),
+                "KDM6_NATIVE_CAPTURE_LEGACY_SCALAR": "0",
+                "KDM6_PROBE_DIRECTION": name,
+                "KDM6_PROBE_STEP": repr(sign*h),
+                "KDM6_PROBE_OUTPUT": str(case / "state_output.npz"),
+            })
+            proc = subprocess.run([sys.executable, str(ROOT / "probe_ad.py")],
+                                  text=True, capture_output=True, env=env)
+            (case / "stdout.txt").write_text(proc.stdout)
+            (case / "stderr.txt").write_text(proc.stderr)
+            if proc.returncode:
+                raise RuntimeError(label + ": " + proc.stderr)
+            csvs = list(case.glob("native_qnice_applied_*.csv"))
+            if len(csvs) != 1:
+                raise RuntimeError(label + ": capture count " + str(len(csvs)))
+            rec = {"label":label,"direction":name,"relative_step":sign*h,
+                   "capture_sha256":sha(csvs[0]),"capture_file":csvs[0].name,
+                   "arrays_sha256":sha(case/"state_output.npz")}
+            records.append(rec)
+            print(label,rec["capture_sha256"][:12])
+(base / "receipt.json").write_text(json.dumps({
+    "schema":"kdm6.selected_column_fd_capture.v2",
+    "library_path":str(library),"library_sha256":sha(library),
+    "archive_sha256":sha(library.parent/"libkdm6.a"),
+    "producer_source_sha256":sha(Path(__file__)),
+    "probe_source_sha256":sha(ROOT/"probe_ad.py"),
+    "environment":{k:os.environ.get(k) for k in ("KDM6_PROBE_LIB","KDM6_FD_OUTDIR")},
+    "cases":records},indent=2,sort_keys=True)+"\n")

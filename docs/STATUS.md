@@ -51,9 +51,20 @@ numbers and must be read with the current unit and measurement qualifications.
 | State VJP  `Mₓᵀu` | ✓ | ✓ | diag | ✓ | ✓ | – |
 | State JVP  `Mₓv` (Pearlmutter double-VJP) | ✓ | ✓ | diag | ✓ | ✓ | – |
 | HVP  `∇²J·v` (branch-local) | ✓ | ✓ | – | – (C++ only) | partial | – |
-| Forcing VJP  `M_fᵀu` (ρ, Π, p, Δz) | – | – | – | – | – | – |
+| Independent forcing VJP/JVP `M_fᵀu`, `M_fv` (ρ, Π, p, Δz) | – | ✓ | – | ✓ | ✓ (synthetic ABI) | – |
 | Parameter VJP  `M_θᵀu` | ✓ | – | – | – | partial | – |
 | Precip / ρ_g / reflectivity / r_eff seed | diag | diag | diag | – | – | – |
+
+The independent fp64 state+forcing C ABI is implemented and exercised by
+synthetic C++/Fortran tests; [the native-input verification](STATE_FORCING_AD.md)
+used a separately built research library. The selected-column #586 experiment
+recorded joint JVP/VJP from an isolated capture DSO and matched its **forward
+values** to the installed Legacy DSO. That installed DSO exposed only the
+state-only AD entry point in this experiment. Consequently neither this table
+nor the selected-column packet certifies installed joint AD, host-generated
+forcing derivatives `F=G(s)`, or a full host adjoint. The selected-column
+directions remain a screening result without an output-wise derivative
+acceptance verdict.
 
 ## Observation operator (RTTOV)
 
@@ -83,7 +94,7 @@ numbers and must be read with the current unit and measurement qualifications.
 | Capability | Status |
 |---|---|
 | Stable C ABI v2 (`struct_size`+`abi_version` framing) | ✓ |
-| Hidden visibility, exactly 9 exported C symbols, SOVERSION 2 | ✓ |
+| Hidden visibility, 14 allowlisted C symbols including joint state+forcing AD, SOVERSION 2 | ✓ (built port; older installed DSOs can expose fewer symbols) |
 | Thread-determinism fail-closed fence | ✓ |
 | `KMP_DUPLICATE_LIB_OK` caller-owned (PR1-B) | ✓ |
 | fp64 AD entry as a v2 descriptor (`struct_size`, strides, masks) | – |

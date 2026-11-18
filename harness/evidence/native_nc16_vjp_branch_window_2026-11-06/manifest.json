@@ -1,0 +1,16 @@
+{
+  "files": {
+    "build_metadata/bridge_flags.make.gz": "309b1f356826717652db7ef53291f034db7a1d4401f187833cbc144661dd358e",
+    "executed_cpp/kdm6_c_api.cpp": "8c3f4a96dc7078eea8b19806d70c0ec6477debbc2cead04eec32403c26efe049",
+    "executed_cpp/kdm6_c_api.h": "de9ca99da4a77af741a875fd4c69de39c68525dbcd781e900144585bb1fd9481",
+    "executed_cpp/state.h": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d",
+    "producer/probe_nc16.py.txt": "e733f119a7c956b6b7b3e30cee89565cd9d9f241d15208ed930605ebdcef7f79",
+    "raw/bridge_attestation.json": "7c9320f0c8623c3183194eeeb710a9ac48d39e8db020a8ee6af35ecb8085e20a",
+    "raw/log_manifest.json": "774f35c5d9386f1ff82381bebd72b9afc5141a4023393c75226efcc957629637",
+    "raw/nc16_result.npz": "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57",
+    "raw/receipt.json": "266ccd946eb16f8bdb879fb978ee9fe6711a37030d12f61d7cc4ec149ab90724",
+    "raw/run.stderr.txt": "758fae461f2178a1b904261122c193338ff5b8a927aa0d4f58aa269e0846efe7",
+    "raw/run.stdout.txt": "af6b4cb3ae66fd8f397abd6fc80ad6766d3b9988d389ec261de18f43df85f971"
+  },
+  "schema": "kdm6.native_nc16_vjp_branch_window_packet.v1"
+}

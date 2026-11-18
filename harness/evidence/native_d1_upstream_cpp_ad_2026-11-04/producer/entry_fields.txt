@@ -1,0 +1,7 @@
+    capture_native_tensor("d1_upstream_entry", "qg", state_pre.qg);
+    capture_native_tensor("d1_upstream_entry", "brs", state_pre.brs);
+    capture_native_tensor("d1_upstream_entry", "t", state_pre.t);
+    capture_native_tensor("d1_upstream_entry", "qv", state_pre.qv);
+    capture_native_tensor("d1_upstream_entry", "p", forcing.p);
+    capture_native_tensor("d1_upstream_entry", "den", forcing.den);
+    capture_native_tensor("d1_upstream_entry", "dend", forcing.dend);

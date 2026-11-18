@@ -1,0 +1,100 @@
+{
+  "ci_evidence_wall_seconds": {
+    "normal": 617.0,
+    "optimized": 612.0
+  },
+  "ci_oracle_wall_seconds": 1544.0,
+  "ci_suites_per_mode": 49,
+  "f32_f64_baseline_mismatch_count": 101,
+  "f32_f64_mismatches_by_field": {
+    "bg": 4,
+    "nc": 11,
+    "nccn": 1,
+    "ni": 7,
+    "nr": 2,
+    "qc": 20,
+    "qg": 5,
+    "qi": 5,
+    "qr": 13,
+    "qs": 5,
+    "qv": 19,
+    "th": 9
+  },
+  "full_output_fd_rows": 2808,
+  "physical_unit_status": "INCONCLUSIVE",
+  "resolved_at_h_1e_minus_5": {
+    "lower": {
+      "count": 6,
+      "fields_and_levels": [
+        [
+          "th",
+          16
+        ],
+        [
+          "qv",
+          16
+        ],
+        [
+          "qc",
+          16
+        ],
+        [
+          "qr",
+          16
+        ],
+        [
+          "qs",
+          16
+        ],
+        [
+          "nr",
+          16
+        ]
+      ],
+      "max_field_scaled_absolute_derivative_error": 1.4638169565373005e-09,
+      "max_field_scaled_absolute_output_residual": 2.9276338569129284e-14,
+      "max_output_ulp_residual": 105.69720458984375,
+      "max_unit_scale_normalized_output_error": 1.478370994813881e-14
+    },
+    "upper": {
+      "count": 7,
+      "fields_and_levels": [
+        [
+          "th",
+          16
+        ],
+        [
+          "qv",
+          16
+        ],
+        [
+          "qc",
+          16
+        ],
+        [
+          "qr",
+          16
+        ],
+        [
+          "qs",
+          16
+        ],
+        [
+          "nc",
+          16
+        ],
+        [
+          "nr",
+          16
+        ]
+      ],
+      "max_field_scaled_absolute_derivative_error": 2.2528114318847658e-08,
+      "max_field_scaled_absolute_output_residual": 4.505622746364679e-13,
+      "max_output_ulp_residual": 3023.6722412109375,
+      "max_unit_scale_normalized_output_error": 4.879719415559417e-13
+    }
+  },
+  "schema": "kdm6.native_host_analysis_batch_replay.v1",
+  "scientific_status": "INCONCLUSIVE",
+  "scope": "saved #583 TH16 direction and #583 CI logs; no new KDM or RTTOV calls"
+}

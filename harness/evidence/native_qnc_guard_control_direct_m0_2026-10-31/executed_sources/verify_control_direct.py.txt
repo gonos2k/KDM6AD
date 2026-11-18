@@ -1,0 +1,39 @@
+import hashlib,json,math
+from pathlib import Path
+import numpy as np
+root=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/native_qnc_guard_control_direct_20261031/direct_full_m0_v1/control')
+base=Path('/private/tmp/KDM6AD-qnc-control-direct-20261031/harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_baseline.npz')
+def sha(p):
+ h=hashlib.sha256()
+ with p.open('rb') as f:
+  for b in iter(lambda:f.read(8<<20),b''):h.update(b)
+ return h.hexdigest()
+def check(v,m):
+ if not v:raise ValueError(m)
+check(sha(base)=='c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144','baseline hash')
+with np.load(base,allow_pickle=False) as b:
+ mask=b['m0_mask']; obs=b['obs_bt_k']; original=b['baseline_bt_kma_v3_0']
+check(mask.shape==(65988,7) and mask.dtype==np.bool_ and mask.sum()==377342,'support')
+binding=json.loads((root/'binding.json').read_bytes()); bh=sha(root/'binding.json'); summary=json.loads((root/'summary.json').read_bytes())
+check(binding['checkpoint_sha256']=='950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6' and binding['runner_sha256']=='bdd80f465509bf7d5f0a935cfdb4f3823a4a03950dc54f890d54b47e0ae0e760' and not binding['with_k'],'binding')
+chunks=root/'chunks';check({x.name for x in chunks.iterdir()}=={f'chunk_{i:03}' for i in range(129)},'inventory')
+sums=[];base_sums=[]
+for i in range(129):
+ d=chunks/f'chunk_{i:03}';lo=i*512;hi=min(lo+512,65988)
+ check(not (d/'failure.json').exists() and (d/'call').is_dir(),f'failed/raw call {i}')
+ a=json.loads((d/'attempt.json').read_bytes()); r=json.loads((d/'result.json').read_bytes()); rr=r['rttov_receipt']
+ check(a=={'binding_sha256':bh,'chunk':i,'flat_range':[lo,hi],'with_k':False},f'attempt {i}')
+ check(r['binding_sha256']==bh and r['chunk']==i and r['capture_sha256']==sha(d/'result.npz') and r['direct_calls']==rr['direct_calls']==1 and r['K_calls']==rr['K_calls']==0 and rr['mode']=='direct',f'result {i}')
+ with np.load(d/'result.npz',allow_pickle=False) as z:
+  bt=z['bt']; q=z['quality']; valid=z['valid']; profile=z['profile_valid']; flat=z['flat_indices']
+  check(bt.dtype==np.float64 and q.dtype==np.int32 and valid.dtype==np.bool_ and profile.dtype==np.bool_ and flat.dtype==np.int32 and bt.shape==q.shape==valid.shape==(hi-lo,7) and profile.shape==(hi-lo,) and np.array_equal(flat,np.arange(lo,hi,dtype=np.int32)),f'array schema {i}')
+  m=mask[lo:hi];check(np.all(valid[m]) and np.all(q[m]==0) and np.all(profile[:,None]|~m) and np.isfinite(bt[m]).all(),f'quality {i}')
+  vals=[];bases=[]
+  for c in range(7):
+   rows=np.flatnonzero(m[:,c]);rs=[float(bt[j,c])-float(obs[lo+j,c]) for j in rows];bs=[float(original[lo+j,c])-float(obs[lo+j,c]) for j in rows]
+   vals.append(math.fsum(.5*x*x if abs(x)<=1 else abs(x)-.5 for x in rs));bases.append(math.fsum(.5*x*x if abs(x)<=1 else abs(x)-.5 for x in bs))
+  sums.append(math.fsum(vals));base_sums.append(math.fsum(bases))
+num=math.fsum(sums); base_num=math.fsum(base_sums);cost=num/377342;base_cost=base_num/377342
+check(base_num==4153766.894054753 and base_cost==11.007963317242059,'baseline arithmetic')
+check(summary['status']=='DIRECT_FIXED_M0_COMPLETE' and summary['binding_sha256']==bh and summary['completed_chunk_receipts']==summary['direct_calls_recorded_in_completed_receipts']==129 and summary['K_calls']==0 and summary['chunk_numerators']==sums and summary['numerator']==num and summary['cost']==cost,'summary')
+print(json.dumps({'status':'INDEPENDENT_REPLAY_PASSED','model_calls':0,'support_cells':377342,'chunks':129,'direct_receipts':129,'K_calls':0,'binding_sha256':bh,'summary_sha256':sha(root/'summary.json'),'numerator':num,'cost':cost,'cost_minus_original_control':cost-base_cost,'cost_minus_pilot_control':cost-11.008295588872157},sort_keys=True))

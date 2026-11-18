@@ -2,23 +2,22 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from harness import make_ice_boundary_overlay as overlay
+from harness.historical_ice_sources import checked_factorial_root
 
 
 def test_exact_source_pins_and_only_copied_tus_are_instrumented():
-    root = Path(__file__).parents[2]
+    root = checked_factorial_root()
     before = {
-        name: overlay.sha256(root / "libtorch/src" / name)
+        name: overlay.sha256(root / "src" / name)
         for name in overlay.SOURCE_PINS
     }
     assert before == overlay.SOURCE_PINS
-    runtime = (root / "libtorch/src/runtime.cpp").read_text()
-    coordinator = (root / "libtorch/src/coordinator.cpp").read_text()
-    sedimentation = (root / "libtorch/src/sedimentation.cpp").read_text()
+    runtime = (root / "src/runtime.cpp").read_text()
+    coordinator = (root / "src/coordinator.cpp").read_text()
+    sedimentation = (root / "src/sedimentation.cpp").read_text()
 
     runtime_overlay = overlay.instrument_runtime(runtime)
     coordinator_overlay = overlay.instrument_coordinator(coordinator)
@@ -43,15 +42,15 @@ def test_exact_source_pins_and_only_copied_tus_are_instrumented():
     assert "torch::NoGradGuard no_grad" in coordinator_overlay
     assert "torch::NoGradGuard no_grad" in sedimentation_overlay
     assert {
-        name: overlay.sha256(root / "libtorch/src" / name)
+        name: overlay.sha256(root / "src" / name)
         for name in overlay.SOURCE_PINS
     } == before
 
 
 @pytest.mark.parametrize("which", ["coordinator", "sedimentation"])
 def test_generator_refuses_already_instrumented_source(which):
-    root = Path(__file__).parents[2]
-    source = (root / "libtorch/src" / f"{which}.cpp").read_text()
+    root = checked_factorial_root()
+    source = (root / "src" / f"{which}.cpp").read_text()
     if which == "runtime":
         transform = overlay.instrument_runtime
     elif which == "coordinator":

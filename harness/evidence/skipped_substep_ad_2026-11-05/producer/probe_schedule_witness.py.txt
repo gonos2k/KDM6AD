@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Synthetic second-column schedule witness for selected-column AD locality."""
+import os
+for key,val in {'OMP_NUM_THREADS':'1','MKL_NUM_THREADS':'1','OMP_THREAD_LIMIT':'1',
+                'KDM6_ICE_FACTORIAL_MODE':'norm_actual','KDM6_QR_TRANSPORT':'actual_departure',
+                'KDM6AD_QNC_LIVE_GUARD':'1'}.items():os.environ[key]=val
+import argparse,csv,ctypes as C,struct
+from pathlib import Path
+import numpy as np,torch
+
+torch.set_num_threads(1);torch.set_num_interop_threads(1)
+parser=argparse.ArgumentParser();parser.add_argument('factor',type=float);parser.add_argument('--graph',action='store_true');parser.add_argument('--qr19',type=float);args=parser.parse_args()
+ROOT=Path(__file__).resolve().parent
+CAP=next((ROOT/'runs/on/capture').glob('native_qnice_applied_*.csv'))
+d={(r['stage'],r['field'],int(r['k_zero'])):r['raw_hex'] for r in csv.DictReader(x for x in CAP.open() if not x.startswith('#'))}
+S=('th','qv','qc','qr','qi','qs','qg','nccn','nc','ni','nr','bg');F=('rho','pii','p','delz')
+def f64(st,n,k):return struct.unpack('>d',int(d[st,n,k],16).to_bytes(8,'big'))[0]
+def mat(st,names):return np.array([[f64(st,n,k) for k in range(38,-1,-1)] for n in names],dtype=np.float64)
+state=mat('runtime_full_entry',S);forcing=mat('runtime_full_forcing',F);actual=mat('runtime_full_exit',S)
+x=np.stack((state,state),axis=1);f=np.stack((forcing,forcing),axis=1);f[3,1]*=args.factor
+if args.qr19 is not None:x[3,0,18]=args.qr19
+x=np.ascontiguousarray(x);f=np.ascontiguousarray(f)
+def pack(a):return np.ascontiguousarray(a.transpose(0,2,1))
+def unpack(a,fields):return a.reshape(fields,39,2).transpose(0,2,1).copy()
+lib=C.CDLL(os.environ.get('KDM6_PROBE_LIB',str(ROOT/'build/libkdm6_c.2.0.0.dylib')))
+p64=C.POINTER(C.c_double);p32=C.POINTER(C.c_float);ptr=lambda a:a.ctypes.data_as(p64)
+step=lib.kdm6_step_ad_variant_c
+step.argtypes=[p64,p64,C.c_int,C.c_int,C.c_int,C.c_double,C.c_int,p64,C.POINTER(C.c_void_p),p32,C.c_double,C.c_double,C.c_uint32];step.restype=C.c_int
+jvp=lib.kdm6_handle_jvp_c;jvp.argtypes=[C.c_void_p,p64,p64];jvp.restype=C.c_int
+vjp=lib.kdm6_handle_vjp_c;vjp.argtypes=[C.c_void_p,p64,p64];vjp.restype=C.c_int
+close=lib.kdm6_handle_closep_c;close.argtypes=[C.POINTER(C.c_void_p)];close.restype=C.c_int
+xland=np.array([2.,2.],dtype=np.float32)
+xx=pack(x);ff=pack(f);yy=np.empty(xx.size,dtype=np.float64);h=C.c_void_p()
+rc=step(ptr(xx),ptr(ff),2,39,1,20.,0 if args.graph else 1,ptr(yy),C.byref(h),xland.ctypes.data_as(p32),10.,10.,0)
+print('factor',args.factor,'graph',args.graph,'rc',rc,'handle',h.value)
+if rc!=0:raise RuntimeError('step failed')
+if args.graph and not h.value:raise RuntimeError('missing AD handle')
+if not args.graph and h.value:raise RuntimeError('value-only returned a handle')
+y=unpack(yy,12)
+if os.environ.get('KDM6_PROBE_OUTPUT'):np.savez_compressed(os.environ['KDM6_PROBE_OUTPUT'],input=x,output=y)
+print('target_native_raw_equal',np.array_equal(y[:,0].view('u8'),actual.view('u8')),
+      'target_baseline_mismatches',np.count_nonzero(y[:,0].view('u8')!=actual.view('u8')))
+if args.qr19 is None and not np.array_equal(y[:,0].view('u8'),actual.view('u8')):
+ raise RuntimeError('target baseline differs from native')
+if args.graph:
+ base=np.load(ROOT/'probe_ad_result.npz',allow_pickle=False)
+ jvp_arrays={}
+ for name,field in [('qv',1),('qs',5),('qg',6)]:
+  v=np.zeros_like(x);v[field,0,15]=state[field,15]
+  vp=pack(v);out=np.empty_like(yy);rcj=jvp(h,ptr(vp),ptr(out))
+  if rcj!=0:raise RuntimeError('JVP failed: '+name)
+  t=unpack(out,12)
+  ref=base['jvp_'+name];diff=t[:,0]-ref
+  if not np.array_equal(t[:,0].view('u8'),ref.view('u8')) or np.count_nonzero(t[:,1]):
+   raise RuntimeError('target/witness JVP mismatch: '+name)
+  jvp_arrays['jvp_'+name+'_target']=t[:,0]
+  jvp_arrays['jvp_'+name+'_witness']=t[:,1]
+  print('jvp',name,'rc',rcj,'max_abs',np.max(np.abs(diff)),
+        'raw_equal',np.array_equal(t[:,0].view('u8'),ref.view('u8')),
+        'witness_nonzero',np.count_nonzero(t[:,1]))
+ seed=np.zeros_like(x);seed[:,0]=base['u']
+ sp=pack(seed);gp=np.empty_like(yy);rcv=vjp(h,ptr(sp),ptr(gp))
+ if rcv!=0:raise RuntimeError('VJP failed')
+ g=unpack(gp,12)
+ if not np.array_equal(g[:,0].view('u8'),base['vjp'].view('u8')) or np.count_nonzero(g[:,1]):
+  raise RuntimeError('target/witness VJP mismatch')
+ print('vjp_rc',rcv,'target_raw_equal',np.array_equal(g[:,0].view('u8'),base['vjp'].view('u8')),
+       'witness_nonzero',np.count_nonzero(g[:,1]),
+       'target_max_abs',np.max(np.abs(g[:,0]-base['vjp'])),
+       'target_mismatch_count',np.count_nonzero(g[:,0].view('u8')!=base['vjp'].view('u8')))
+ np.savez_compressed(ROOT/'schedule_witness_0p16_ad.npz',
+                     target_output=y[:,0],target_grad=g[:,0],witness_grad=g[:,1],
+                     **jvp_arrays)
+ if h.value:
+  close_rc=close(C.byref(h));print('close_rc',close_rc)
+  if close_rc!=0 or h.value:raise RuntimeError('handle close failed')

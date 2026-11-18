@@ -9,6 +9,7 @@ import shutil
 import pytest
 
 from harness import make_actual_qr_overlay
+from harness.historical_ice_sources import checked_factorial_root
 from harness.make_applied_transfer_overlay import (
     MARKER,
     TUS,
@@ -32,7 +33,8 @@ def _fixtures(tmp_path: Path):
     source_root = tmp_path / "source"
     (source_root / "src").mkdir(parents=True)
     for name in FACTORIAL_SOURCE_PINS:
-        shutil.copy2(ROOT / "libtorch" / "src" / name, source_root / "src" / name)
+        shutil.copy2(checked_factorial_root() / "src" / name,
+                     source_root / "src" / name)
 
     factorial_base = tmp_path / "factorial_base"
     factorial_sources = render_factorial_base(source_root)

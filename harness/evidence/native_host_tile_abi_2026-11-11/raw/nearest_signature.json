@@ -1,0 +1,42 @@
+{
+  "native": {
+    "nearest": {
+      "i_zero": 201,
+      "j_zero": 5,
+      "global_i_assuming_clipping": 203,
+      "global_j_assuming_clipping": 148,
+      "relative_rms": 0.007501169378239726,
+      "equal_words": 0
+    },
+    "most_exact": {
+      "i_zero": 25,
+      "j_zero": 0,
+      "equal_words": 2,
+      "relative_rms": 0.5716235350622191
+    },
+    "mapped_203_149": {
+      "relative_rms": 0.010919619117521488,
+      "equal_words": 0
+    }
+  },
+  "reversed": {
+    "nearest": {
+      "i_zero": 4,
+      "j_zero": 137,
+      "global_i_assuming_clipping": 6,
+      "global_j_assuming_clipping": 280,
+      "relative_rms": 1291.963286242729,
+      "equal_words": 0
+    },
+    "most_exact": {
+      "i_zero": 225,
+      "j_zero": 9,
+      "equal_words": 1,
+      "relative_rms": 2323.818554165213
+    },
+    "mapped_203_149": {
+      "relative_rms": 2287.5201783544703,
+      "equal_words": 0
+    }
+  }
+}

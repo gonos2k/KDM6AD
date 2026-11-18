@@ -1,0 +1,7 @@
+        record("sfac_raw", sfac_raw);
+        record("sfac", sfac);
+        record("gfac_raw", gfac_raw);
+        record("gfac", gfac);
+        record("rhox_div", rhox_div);
+        record("delta_brs", delta_brs);
+        record("delta_brs_capped", delta_brs_capped);

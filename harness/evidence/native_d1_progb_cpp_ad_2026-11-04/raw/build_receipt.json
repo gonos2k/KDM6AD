@@ -1,0 +1,41 @@
+{
+  "build_metadata_sha256": {
+    "CMakeCache.txt": "d4831a85df7561c526c83385a2ebf96c24c05a07ec1fcd711979fe8d4bb8c12e",
+    "flags.make": "f02210943fd7d7789abd51798986c394640bc5f34be8e7fcb958af3f678590aa",
+    "link.txt": "6f52f95d7f2d5ba7f97b29e3fd69d9739cee938c15bc22692f7959cf49fb1d28"
+  },
+  "cmake_version": "cmake version 3.24.4",
+  "cxx_version": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+  "executable_sha256": "f48d52c5b841e6160bb637196604ff823ca1a9a5a2398c249774a60b8d723832",
+  "input_capture_sha256": "98bfe8ca7deb80590d4c739421fa9f6d90b17da0e7b2e05bec02c05e7685bc16",
+  "main_object_sha256": "f83c38b04f02a72db86756a41ca5b87cde42229ed606118fcedbbd185b383934",
+  "output_sha256": "f68fe356e3d66bbd44a3580f273b1bbcd452355dca7fb36c4cb0e377aa0702f5",
+  "parent_native_archive_sha256": "93575a832a92c786ac7ecfb75154daa42ebdca84a6a400cd2871fa2a406bb8ae",
+  "parent_native_build_receipt_sha256": "d45f16ee1df08665296c42ca6290c837988c73636001a1b553d0682e88257acb",
+  "parent_native_dso_sha256": "cd6dde0222431a9f6a21d717e002d332d13c3931cd3e78cff40c27d9d81a60f3",
+  "run_at_utc": "2026-11-04T10:42:19.695058+00:00",
+  "run_command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_cpp_ad_20261104/build/native_d1_progb_cpp_ad",
+    "/private/tmp/KDM6AD-native-d1-progb-cpp-ad/harness/evidence/native_d1_progb_ad_2026-11-04/raw/native_qnice_applied_67313_runtime2.csv"
+  ],
+  "run_exit_code": 0,
+  "runtime_linked_libraries": [
+    "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)",
+    "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)"
+  ],
+  "schema": "kdm6.native_d1_progb_cpp_ad_build.v1",
+  "scope": "isolated macOS C++/libtorch stage graph using frozen native D1 operands; no host rerun or C ABI handle",
+  "source_sha256": {
+    "cpp/CMakeLists.txt": "1eba1fba49b232fae50cc0c2c91280c496149a8f9f56d89337d8b66e0c7e16ca",
+    "cpp/main.cpp": "b6866dffa010eaa2575d5985446e0443dbcbc1bf0d80d4abc491ccd6ed495790"
+  },
+  "torch_libraries_sha256": {
+    "libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b",
+    "libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+    "libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987"
+  },
+  "torch_version": "2.13.0"
+}

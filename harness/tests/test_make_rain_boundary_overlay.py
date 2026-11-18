@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from harness import make_ice_factorial_overlay as factorial
+from harness.historical_ice_sources import checked_factorial_root
 from harness.make_rain_boundary_overlay import (
     RAIN_COORD_MARKER,
     RAIN_SED_MARKER,
@@ -14,14 +15,15 @@ from harness.make_rain_boundary_overlay import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = checked_factorial_root()
 V6_OVERLAY = Path(
     "/Users/yhlee/KDM6AD-k/host/research_evidence/"
     "mp137_ice_factorial_20261023/overlay_build_v6/overlay"
 )
 
 
-def test_public_four_source_pins_and_rendered_current_v6_overlay_match():
-    rendered = render_factorial_base(ROOT / "libtorch")
+def test_public_four_historical_source_pins_and_v6_overlay_match():
+    rendered = render_factorial_base(SOURCE_ROOT)
     assert set(rendered) == {
         "runtime.cpp",
         "coordinator.cpp",
@@ -36,7 +38,7 @@ def test_public_four_source_pins_and_rendered_current_v6_overlay_match():
 
 
 def test_trace_instrumentation_preserves_all_original_qr_expressions():
-    base = render_factorial_base(ROOT / "libtorch")
+    base = render_factorial_base(SOURCE_ROOT)
     original = base["sedimentation.cpp"].decode()
     traced = instrument_rain_sedimentation(original)
     untouched_expressions = (
@@ -71,7 +73,7 @@ def test_trace_instrumentation_preserves_all_original_qr_expressions():
 
 
 def test_surface_trace_logs_existing_fall_rates_and_returned_surface_values_only():
-    base = render_factorial_base(ROOT / "libtorch")
+    base = render_factorial_base(SOURCE_ROOT)
     original = base["coordinator.cpp"].decode()
     traced = instrument_rain_surface(original)
     surface_call = (
@@ -104,7 +106,7 @@ def test_generator_copies_runtime_and_conservative_and_only_edits_rain_tus(tmp_p
     if not V6_OVERLAY.is_dir():
         pytest.skip("private v6 overlay is not present in this checkout")
     output = tmp_path / "rain-overlay"
-    manifest = create_overlay(ROOT / "libtorch", V6_OVERLAY, output)
+    manifest = create_overlay(SOURCE_ROOT, V6_OVERLAY, output)
     assert manifest["translation_units_changed_from_base"] == [
         "sedimentation.cpp",
         "coordinator.cpp",
@@ -125,7 +127,7 @@ def test_generator_copies_runtime_and_conservative_and_only_edits_rain_tus(tmp_p
 
 
 def test_base_overlay_must_match_factor_generators_and_output_cannot_overlap(tmp_path):
-    base = render_factorial_base(ROOT / "libtorch")
+    base = render_factorial_base(SOURCE_ROOT)
     fake_base = tmp_path / "base-overlay"
     fake_base.mkdir()
     for name, data in base.items():
@@ -133,14 +135,14 @@ def test_base_overlay_must_match_factor_generators_and_output_cannot_overlap(tmp
     mutated = fake_base / "sedimentation.cpp"
     mutated.write_bytes(mutated.read_bytes() + b"\n// changed\n")
     with pytest.raises(ValueError, match="differs from current pinned"):
-        render_rain_overlay(ROOT / "libtorch", fake_base)
+        render_rain_overlay(SOURCE_ROOT, fake_base)
 
     with pytest.raises(ValueError, match="overlap"):
-        create_overlay(ROOT / "libtorch", fake_base, ROOT / "libtorch" / "rain-overlay")
+        create_overlay(SOURCE_ROOT, fake_base, SOURCE_ROOT / "rain-overlay")
 
 
 def test_duplicate_rain_instrumentation_anchor_fails_closed():
-    base = render_factorial_base(ROOT / "libtorch")
+    base = render_factorial_base(SOURCE_ROOT)
     source = base["sedimentation.cpp"].decode()
     traced = instrument_rain_sedimentation(source)
     with pytest.raises(RuntimeError, match="already has the rain boundary trace"):
@@ -148,7 +150,7 @@ def test_duplicate_rain_instrumentation_anchor_fails_closed():
 
 
 def test_ambiguous_rain_qr_update_anchor_fails_closed():
-    base = render_factorial_base(ROOT / "libtorch")
+    base = render_factorial_base(SOURCE_ROOT)
     source = base["sedimentation.cpp"].decode()
     anchor = "        qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);\n"
     assert source.count(anchor) == 1
@@ -163,10 +165,10 @@ def test_generator_refuses_existing_and_symlink_outputs(tmp_path):
     existing = tmp_path / "existing"
     existing.mkdir()
     with pytest.raises(ValueError, match="exists or is a symlink"):
-        create_overlay(ROOT / "libtorch", V6_OVERLAY, existing)
+        create_overlay(SOURCE_ROOT, V6_OVERLAY, existing)
     target = tmp_path / "target"
     target.mkdir()
     link = tmp_path / "output-link"
     link.symlink_to(target, target_is_directory=True)
     with pytest.raises(ValueError, match="exists or is a symlink"):
-        create_overlay(ROOT / "libtorch", V6_OVERLAY, link)
+        create_overlay(SOURCE_ROOT, V6_OVERLAY, link)

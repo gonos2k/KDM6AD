@@ -1,0 +1,10 @@
+{
+  "line_count": 54518,
+  "line_number_1based": 53001,
+  "new_line": "VAL\t3\t0\tPOST_FINISH\t1\t33\t168\tQI\tf32\t00000000",
+  "new_sha256": "17938b0e448b5deeb39ce645fc89e1a6804ed8ad624faea726cea3bec9db5491",
+  "old_line": "VAL\t3\t0\tPOST_FINISH\t1\t33\t168\tQI\tf32\t00000002",
+  "old_relative_path": "harness/evidence/native_qnc_live_guard_2026-10-30/data/alpha025/rk_writer.tsv",
+  "old_sha256": "d871c4d41cd43720941483feb3bb89dafc871935d07db3abc97fea6e49007be1",
+  "schema": "kdm6.qi_postmicro_rk_writer_single_delta.v1"
+}

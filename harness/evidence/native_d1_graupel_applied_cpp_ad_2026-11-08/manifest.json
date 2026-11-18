@@ -1,0 +1,14 @@
+{
+  "files": {
+    "executed_cpp/coordinator.cpp": "fad7f30cae95a5764a3107e9dbddc0573a04f7afc8d0fac8d55cb282061d5cd8",
+    "executed_cpp/instrumentation.patch.gz": "fd5a3d86c2ae1cd566f017187df1f0ab095f134f36053991a417def9bb148dee",
+    "raw/bridge_flags.make.gz": "99f700a54442ece723aec267701cc8f0f6990ef4808e994ae4f97d9fd5e54463",
+    "raw/build_receipt.json": "12f867ac26ab3f58d5a9e2aba4556687fb8644c921548bce08c62bb94eea108c",
+    "raw/core_flags.make.gz": "4f018b9c23f28b5cf2804d84f18ee3a38a9dc686c4d595ef49bc056fb8904f8e",
+    "raw/cpp_result.json": "4fe29e684db0ccd5fc989e2541b502f6dd7a8e73446f1a639c1dc670f0ddaa3a",
+    "raw/run_receipt.json": "a3799de1f4d7a8dfa29db1da27c8cc1b3f278ce55377438f7dcf7ace8a0fc1e0",
+    "raw/runner_cache.txt.gz": "e5685d8b38e16cd0fee8ac9b2280d5cf585be5c4246e525a1c8bc57f7b5a1ff2",
+    "raw/runner_flags.make.gz": "a66b14e67c1a7c9083105d29289ee48eb2db06020f1f551042f3bcb6c166f795"
+  },
+  "schema": "kdm6.native_d1_graupel_applied_cpp_ad_packet.v1"
+}

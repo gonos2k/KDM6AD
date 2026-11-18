@@ -1,0 +1,35 @@
+{
+  "dims": [
+    232,
+    39,
+    139
+  ],
+  "dt": 20.0,
+  "land": 10.0,
+  "sea": 10.0,
+  "flags": 0,
+  "value": 1,
+  "call": 2,
+  "original_rc": 0,
+  "replay_rc": 0,
+  "handle": null,
+  "bit_mismatch_counts": {
+    "th": 0,
+    "qv": 0,
+    "qc": 0,
+    "qr": 0,
+    "qi": 0,
+    "qs": 0,
+    "qg": 0,
+    "nccn": 0,
+    "nc": 0,
+    "ni": 0,
+    "nr": 0,
+    "bg": 0,
+    "rain": 0,
+    "snow": 0,
+    "graupel": 0,
+    "rhog": 0
+  },
+  "capture_sha256": "a13d3aafdc4d71ffe5ea7a59616a48f4ea7c6ab3da813b8883bb7277df71ecce"
+}

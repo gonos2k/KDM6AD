@@ -1,0 +1,25 @@
+{
+  "analysis_sha256": "9019ea44750fef7de8eb9efe7d301156b78a18a64e963d0fa8849663c4e3aa44",
+  "external_source_pins": {
+    "harness/analyze_qi_outflow_terms.py": "3aea542c0bc1cbb65b05a42f1a10450cfa51af3c054e1f144e1858b732e1e2ed",
+    "harness/native_qi_outflow_terms_overlay.py": "41a12f20cd947e35c178cd0694dc2879b03049186bad2eb4211aeeaa06ff4857"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "0c84840295c808b916f45cdf1c1d5dc5f5e4dc4ca84893ae6c58294682ea7812",
+    "analysis.json": "9019ea44750fef7de8eb9efe7d301156b78a18a64e963d0fa8849663c4e3aa44",
+    "data/alpha025/qi_outflow.tsv": "e8a5b996059c97bb6a63722c903ecd174875ebc585e32b4ac32a286c1ab5a4f1",
+    "data/control/qi_outflow.tsv": "45dbdd7a2110a0943eab518e95fa9e683c4bb1ade529e48613fb2b57ce400058",
+    "execution_summary.json": "474286e802991610289a4bba56f1e26a5d8c14e4cae13cd85795b9507210a0b8",
+    "replay.py": "036a8f04b8de9c515fdda2d57876c9cdd0e4d7916ea37077701f037fafced56f"
+  },
+  "schema": "kdm6.native_qi_outflow_manifest.v1",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_qi_face_producer_2026-10-30/manifest.json": "d5841ccd6c37a57c41e57bddb877820829999c2c7fd3330fa11f0ecf2756d207"
+  }
+}

@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""One value-only f64 C ABI endpoint with optional post-freeze ProgB/slope capture."""
+
+from __future__ import annotations
+
+import ctypes as C
+import hashlib
+import os
+from pathlib import Path
+
+for key, val in {
+    "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OMP_THREAD_LIMIT": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure", "KDM6AD_QNC_LIVE_GUARD": "1",
+}.items():
+    os.environ[key] = val
+
+import numpy as np  # noqa: E402 - set one-thread environment before importing Torch
+import torch  # noqa: E402
+
+
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
+LIB_SHA = "c5748ba51b3e6ca7511353c2fc94badefdca76bb6e6b34d1fe5577e788a840bd"
+PARENT_SHA = "a939fa0b11447da3c77d3fa67784ae5eb03fc5ccc49f42c5fb7eedb761443f57"
+SPEC = {
+    "baseline": (),
+    "qv16_rel": ((1, 15, "relative"),),
+    "nc16_rel": ((8, 15, "relative"),),
+    "qc16_rel": ((2, 15, "relative"),),
+    "th16_abs": ((0, 15, "absolute"),),
+    "qg17_rel": ((6, 16, "relative"),),
+    "bg17_rel": ((11, 16, "relative"),),
+    "qg_bg17_rel": ((6, 16, "relative"), (11, 16, "relative")),
+}
+
+
+def need(ok: bool, why: str) -> None:
+    if not ok:
+        raise RuntimeError(why)
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main() -> None:
+    libpath = Path(os.environ["KDM6_FD_LIB"])
+    parent = Path(os.environ["KDM6_NC16_PARENT_NPZ"])
+    output_path = Path(os.environ["KDM6_FD_OUTPUT"])
+    name = os.environ["KDM6_FD_DIRECTION"]
+    step_size = float(os.environ["KDM6_FD_STEP"])
+    need(libpath.is_absolute() and parent.is_absolute() and output_path.is_absolute(),
+         "absolute library/parent/output paths")
+    need(sha(libpath) == LIB_SHA and sha(parent) == PARENT_SHA,
+         "pinned DSO and NC16 parent input")
+    need(name in SPEC and np.isfinite(step_size), "finite supported direction")
+    need((name == "baseline") == (step_size == 0.0), "baseline/endpoint step")
+    need(not output_path.exists(), "refuse to overwrite endpoint result")
+    capture_enabled = os.environ.get("KDM6_NO_CAPTURE") != "1"
+    if capture_enabled:
+        capture_dir = Path(os.environ["KDM6_NATIVE_CAPTURE_DIR"])
+        need(capture_dir.is_absolute() and capture_dir.is_dir(), "capture directory")
+    else:
+        need(not os.environ.get("KDM6_NATIVE_CAPTURE_DIR"),
+             "capture-off call must not set capture directory")
+    with np.load(parent, allow_pickle=False) as source:
+        baseline = np.array(source["state"], copy=True, order="C")
+        forcing = np.array(source["forcing"], copy=True, order="C")
+        xland = np.array(source["xland"], copy=True, order="C")
+        native_output = np.array(source["value_output"], copy=True, order="C")
+    need(baseline.dtype == forcing.dtype == np.float64
+         and baseline.shape == (12, 39) and forcing.shape == (4, 39)
+         and xland.dtype == np.float32 and xland.shape == (1,)
+         and np.isfinite(baseline).all() and np.isfinite(forcing).all(),
+         "captured input layout and finiteness")
+    state = baseline.copy()
+    for field, level, mode in SPEC[name]:
+        before = state[field, level]
+        state[field, level] = before * (1.0 + step_size) if mode == "relative" else before + step_size
+    need(np.isfinite(state).all(), "finite perturbed state")
+    lib = C.CDLL(str(libpath))
+    p64 = C.POINTER(C.c_double)
+    p32 = C.POINTER(C.c_float)
+    step = lib.kdm6_step_ad_variant_c
+    step.argtypes = [p64, p64, C.c_int, C.c_int, C.c_int, C.c_double, C.c_int,
+                     p64, C.POINTER(C.c_void_p), p32, C.c_double, C.c_double,
+                     C.c_uint32]
+    step.restype = C.c_int
+    result = np.empty_like(state)
+    handle = C.c_void_p()
+    def ptr(arr):
+        return arr.ctypes.data_as(p64)
+    rc = step(ptr(state), ptr(forcing), 1, 39, 1, 20.0, 1,
+              ptr(result), C.byref(handle), xland.ctypes.data_as(p32),
+              10.0, 10.0, 0)
+    need(rc == 0 and handle.value is None and np.isfinite(result).all(),
+         "value-only f64 C ABI endpoint")
+    if name == "baseline":
+        need(result.tobytes() == native_output.tobytes(), "parent baseline raw equality")
+    np.savez_compressed(output_path, state=state, forcing=forcing, xland=xland, output=result)
+    print(name, step_size, "NC16", float(result[8, 15]), "rc", rc)
+
+
+if __name__ == "__main__":
+    main()

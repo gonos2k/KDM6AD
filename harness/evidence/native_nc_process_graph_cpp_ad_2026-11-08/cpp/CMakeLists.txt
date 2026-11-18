@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.20)
+project(kdm6_native_nc_process_graph_ad LANGUAGES CXX)
+if(NOT DEFINED KDM6_HOOK_ROOT)
+  message(FATAL_ERROR "KDM6_HOOK_ROOT must name the isolated graph-hook build")
+endif()
+find_package(Torch REQUIRED)
+add_executable(native_nc_process_graph_ad main.cpp)
+target_include_directories(native_nc_process_graph_ad PRIVATE "${KDM6_HOOK_ROOT}/source/include")
+target_link_libraries(native_nc_process_graph_ad PRIVATE
+  "${KDM6_HOOK_ROOT}/build/libkdm6.a" ${TORCH_LIBRARIES})
+target_compile_features(native_nc_process_graph_ad PRIVATE cxx_std_17)
+target_compile_options(native_nc_process_graph_ad PRIVATE -ffp-contract=off -Wall -Wextra -Wpedantic)
+if(CMAKE_CXX_FLAGS MATCHES "(^| )-DNDEBUG( |$)" OR
+   CMAKE_CXX_FLAGS_RELEASE MATCHES "(^| )-DNDEBUG( |$)")
+  if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(FATAL_ERROR "Evidence executable must keep assertions enabled")
+  endif()
+endif()

@@ -1,0 +1,2 @@
+    capture_native_tensor("d1_postmelt_progb_merge", "rhox", pre1.progb.rhox);
+    capture_native_tensor("d1_postmelt_progb_merge", "bg", pre1.progb.bg);

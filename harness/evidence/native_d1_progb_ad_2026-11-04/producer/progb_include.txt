@@ -1,0 +1,1 @@
+#include "kdm6/coordinator.h"  // selected-column, value-only post-D1 ProgB capture

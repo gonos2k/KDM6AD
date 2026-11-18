@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
+import replay_native_multistep_1hour as hour_replay  # noqa: E402
 from replay_native_multistep_1hour import (  # noqa: E402
     ADDENDUM_NAME, EVIDENCE_NAME, PLAN_NAME, replay, validate_metadata,
 )
@@ -20,7 +21,8 @@ def _data():
     return json.loads((EVIDENCE / EVIDENCE_NAME).read_text())
 
 
-def test_complete_one_hour_public_archive_replays_without_multistep_approval():
+def test_complete_one_hour_public_archive_replays_without_multistep_approval(shared_hour_census, monkeypatch):
+    monkeypatch.setattr(hour_replay, 'replay_file', shared_hour_census)
     result = replay(EVIDENCE)
     assert result["selected_rows"] == result["consumed_rows"] == 11_692_800
     assert result["multistep_selected"] == 0

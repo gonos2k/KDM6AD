@@ -1,0 +1,43 @@
+{
+  "build_metadata_sha256": {
+    "CMakeCache.txt": "2cb894f3467f9b1ef1fdfb5c827d2e8d346dde38de00848d3c9dc320614b0282",
+    "flags.make": "2f931d841b7970f4b6d6e1c989dead93756dafe84a566c3b56b7638c570be9d1",
+    "link.txt": "0f2d0f646915e6ae46ba098444bd560694e81dc4c932e1976008271349113a6d"
+  },
+  "build_type": "Debug",
+  "cxx_flags": "-g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -ffp-contract=off -Wall -Wextra -Wpedantic -std=gnu++17",
+  "executable_sha256": "b05d1a75788473c72882ea1ab97398717d32eb5826d7f0a5008498a668e8e45b",
+  "input_capture_sha256": "125e122ad7fff63bd1d4c30e5d9172f291fbd7c2758022c558ef7b204b01fbad",
+  "main_object_sha256": "84f16f6a6140fbfb49c3d1118d827717caf0915ad4eea414076345db91a74f69",
+  "native_archive_sha256": "7a17e7115bae01d6b5dff72a438c792b7de26b2b484551ac239c156444452384",
+  "native_build_receipt_sha256": "1068f8124e3ebfb7026026d36054d7514c948ff5710da4e34b350b9e4f159d8b",
+  "native_dso_sha256": "13b14f9a2dd7c857732e3cd4ba33fab6f1c8ec9711f7d43f5e82d9a25ca721b7",
+  "output_sha256": "b2c92d70ab3d8e58d03a6ed6edbdceb5b8dbed537dc2e7cbfa0f294e409e4f4b",
+  "run_at_utc": "2026-11-05T01:15:21.098613+00:00",
+  "run_command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_entry_cpm_cpp_ad_20261105/build/native_d1_entry_cpm_cpp_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_entry_cpm_20261105/runs/on/capture/native_qnice_applied_72033_runtime2.csv"
+  ],
+  "run_exit_code": 0,
+  "runtime_linked_libraries": [
+    "\t/opt/homebrew/opt/pytorch/libexec/lib/python3.14/site-packages/torch/lib/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)",
+    "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)"
+  ],
+  "schema": "kdm6.native_d1_entry_cpm_cpp_ad_build.v1",
+  "scope": "isolated macOS conditional outer/D1 QV stage graph; not a perturbed host or C ABI call",
+  "source_sha256": {
+    "cpp/CMakeLists.txt": "7379310637c4dc6ea8ed7139cad7f7fef2ef257899cd1eb256b414aded37a3eb",
+    "cpp/main.cpp": "90899f12971ca0bbf6114e570c81bf5938401e920b3b0da2cd0937ee8ffeeb07",
+    "executed_cpp/thermo.cpp": "f4c887ba754244f781a27cd94dc42341e7559be7680947f74ea27d06507dbe4b"
+  },
+  "torch_libraries_sha256": {
+    "libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b",
+    "libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+    "libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987"
+  },
+  "torch_version": "2.13.0"
+}

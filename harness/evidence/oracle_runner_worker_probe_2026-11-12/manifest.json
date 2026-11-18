@@ -1,0 +1,10 @@
+{
+  "files": {
+    "producer/compare_workers_attempt.py": "ddfded8a5fb426e4f02052ce5b2469875a992615d769d17d5cc6200d9ff30752",
+    "raw/receipt.json": "8b06dfb280997ec7b4e303e0f50e5a608574b5e9f51ad26b7acf79ca9fd6c31a",
+    "raw/workers_1.json": "b8ed9dd6232e69e83d02ffc8649404fc523e20ea5fefadef4933cf3dd2ceaaf0",
+    "raw/workers_1.log.gz": "962a7d50d8d4c2e71c41caeef637d63fba9c226b70ebd1507acd4af473740a4d",
+    "raw/workers_2.log.gz": "c30c68d57774c7a1298523d25d8474402a990495d8112b84eebd8d31f0711ad4"
+  },
+  "schema": "kdm6.oracle_runner_worker_probe_packet.v1"
+}

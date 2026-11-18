@@ -1,0 +1,10 @@
+# wrfrst_d01_2025-07-19_00:01:00 (frames=1) vs wrfrst_d01_2025-07-19_00:01:00 (frames=1)
+# strict uint-bitwise compare at last common frame index 0
+
+VARIABLES: 652 common, 650 BITWISE-MATCH, 2 DIFFER, 0 unsupported/skipped
+
+DIFFERING variables:
+  QNCLOUD                DIVERGES 15/2573532 cells (max|Δ|=2.774e+05)
+  RE_CLOUD               DIVERGES 1/2573532 cells (max|Δ|=7.179e-06)
+
+RESULT: FAIL

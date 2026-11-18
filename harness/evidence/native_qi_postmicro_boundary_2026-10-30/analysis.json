@@ -1,0 +1,89 @@
+{
+  "alpha_k33_target_QI_before_after": {
+    "after": "00000000",
+    "before": "00000002",
+    "f32_subnormal_units_before": 2
+  },
+  "candidate_is_diagnostic_not_accepted": true,
+  "cases": {
+    "alpha025": {
+      "M0_hard_moment_lost_channel_cells": 0,
+      "M0_hard_moment_lost_profiles": 0,
+      "changed_checkpoint_variables": {
+        "QICE": {
+          "elements": 12183,
+          "raw_delta_sum": 0.0020621190034531434,
+          "sides_with_corner_overlap": {
+            "corner_overlap": 57,
+            "east": 6978,
+            "north": 2240,
+            "south": 2370,
+            "west": 652
+          }
+        },
+        "QNICE": {
+          "elements": 7142,
+          "raw_delta_sum": 21699825.28275381,
+          "sides_with_corner_overlap": {
+            "corner_overlap": 33,
+            "east": 3960,
+            "north": 1265,
+            "south": 1528,
+            "west": 422
+          }
+        }
+      },
+      "checkpoint_bound_target_donor_words_joined": true,
+      "checkpoint_sha256": "829893a28166c251c3562d0166aa68bb666ed17b9a9b847ff3351d87ba144bfc",
+      "full_domain_hard_invalid_profiles": 925,
+      "full_domain_new_hard_invalid_vs_parent": 0,
+      "parent_checkpoint_sha256": "96575cc4557e4d4b0a6f5b606d4fe446c1db1fbc47570deadc5ab982694878ba",
+      "trace_off_on_checkpoint_and_ACK_equal": true
+    },
+    "control": {
+      "M0_hard_moment_lost_channel_cells": 0,
+      "M0_hard_moment_lost_profiles": 0,
+      "changed_checkpoint_variables": {
+        "QICE": {
+          "elements": 12190,
+          "raw_delta_sum": 0.0020621052816708133,
+          "sides_with_corner_overlap": {
+            "corner_overlap": 57,
+            "east": 6976,
+            "north": 2239,
+            "south": 2375,
+            "west": 657
+          }
+        },
+        "QNICE": {
+          "elements": 7143,
+          "raw_delta_sum": 21697634.760307856,
+          "sides_with_corner_overlap": {
+            "corner_overlap": 33,
+            "east": 3959,
+            "north": 1266,
+            "south": 1529,
+            "west": 422
+          }
+        }
+      },
+      "checkpoint_bound_target_donor_words_joined": true,
+      "checkpoint_sha256": "8208ea632df784c6f9fc758fe3c24522539463ff2a968af8d469cb1c78eced6c",
+      "full_domain_hard_invalid_profiles": 974,
+      "full_domain_new_hard_invalid_vs_parent": 0,
+      "parent_checkpoint_sha256": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+      "trace_off_on_checkpoint_and_ACK_equal": true
+    }
+  },
+  "host_steps_completed": 6,
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "original_M0_channel_cells": 377342,
+  "original_M0_profiles": 53906,
+  "schema": "kdm6.native_qi_postmicro_boundary_host.v1",
+  "whole_M0_RTTOV_cost_defined_in_this_packet": false
+}

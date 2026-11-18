@@ -1,0 +1,20 @@
+{
+  "archive_sha256": "836c6109194285aeb205e9759ee2d2cd7409b33b5c448a2b6547e7579278d2b8",
+  "command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_entry_slope_ad_20261109/runner_build/native_nc_process_graph_ad",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_entry_slope_ad_20261109/input.bin"
+  ],
+  "environment": {
+    "KDM6AD_QNC_LIVE_GUARD": "1",
+    "KDM6_ICE_FACTORIAL_MODE": "norm_actual",
+    "KDM6_QR_TRANSPORT": "actual_departure",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "executable_sha256": "3118e917c12f513eab07ff14f002f00536be0d0441177c6a192029990601390e",
+  "input_sha256": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+  "output_sha256": "963d7bfb0f58455e4cb10308e0f1524c6e076595620040765d0a749d462a28fe",
+  "returncode": 0,
+  "schema": "kdm6.native_d1_entry_slope_cpp_ad_run.v1"
+}

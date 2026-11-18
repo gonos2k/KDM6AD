@@ -1,0 +1,41 @@
+{
+  "build_metadata_sha256": {
+    "CMakeCache.txt": "948d884465c4d0479cad10d751a8ff84626169caf833e138a0b39b9e971c9ab9",
+    "flags.make": "688fa35a22b8df5d218a5e924fcada9d344c86808313afdcc8d0ab15e46d2591",
+    "link.txt": "b804a64a24c03419b8ab5739aff7c464802cfa42f7fab52f5e1c94bc5346c054"
+  },
+  "cmake_version": "cmake version 3.24.4",
+  "cxx_version": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+  "executable_sha256": "47f2a47048d04273ff1bd3f25222674957491321220f13b0d03002ebfb1be9e0",
+  "input_capture_sha256": "d21069d03e69a6056a342cd6114c0e3c61902b81523d3a042dbd19d777c34af9",
+  "main_object_sha256": "3c475463170f94ba7830f35d1a954a11a487a18f7c176e665b6d14846f16cc46",
+  "native_archive_sha256": "10da3704da17c9e5ed61d510d4450d00bfa73975517842bcb0412e2f93dc6f2f",
+  "native_build_receipt_sha256": "696890d3b76c2dd79402aaf1a06df90d53441efc833b3e219b31e6cc5ba93d80",
+  "native_dso_sha256": "29e6a4870c84496306a00c798d801db6102fbde43b8600b534a2c87eaac3e6d9",
+  "output_sha256": "025afa17f75425eaa0b1d522592fe0baf8a0210e571ec6c7d0653103339e1cf7",
+  "run_at_utc": "2026-11-04T13:50:00.444404+00:00",
+  "run_command": [
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_upstream_cpp_ad_20261104/build/native_d1_upstream_cpp_ad",
+    "/private/tmp/KDM6AD-native-d1-upstream-ad/harness/evidence/native_d1_upstream_cpp_ad_2026-11-04/raw/native_qnice_applied_42336_runtime2.csv"
+  ],
+  "run_exit_code": 0,
+  "runtime_linked_libraries": [
+    "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)",
+    "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)"
+  ],
+  "schema": "kdm6.native_d1_upstream_cpp_ad_build.v1",
+  "scope": "isolated macOS C++/libtorch conditional entry-producer/D1/postmelt stage graph; no perturbed host run or C ABI handle",
+  "source_sha256": {
+    "cpp/CMakeLists.txt": "dfb8954474d1edcdbc0d225df50cc937be3f3129a86b9b7c9f790fcd9a3c9c6f",
+    "cpp/main.cpp": "953b4ff36511f85acfce3d350791fcd2e99c33c3fc3fa58e5a54b0506206b6d9"
+  },
+  "torch_libraries_sha256": {
+    "libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b",
+    "libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+    "libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987"
+  },
+  "torch_version": "2.13.0"
+}

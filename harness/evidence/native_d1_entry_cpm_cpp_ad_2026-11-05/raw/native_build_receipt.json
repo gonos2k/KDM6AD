@@ -1,0 +1,45 @@
+{
+  "archive_sha256": "7a17e7115bae01d6b5dff72a438c792b7de26b2b484551ac239c156444452384",
+  "candidate": {
+    "B": 32248,
+    "K": 39,
+    "b_zero": 27945,
+    "dt_seconds": 20,
+    "native_ij_1based": [
+      203,
+      149
+    ],
+    "native_level_1based": 16,
+    "one_step_call": 2,
+    "runtime_call": 2
+  },
+  "cmake_cache_sha256": "a211937a016229093c65f919b4739ba2e94eb115eacf8494eec1b66f15dace39",
+  "cxx_flags": "-O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+  "input_plan_sha256": "6032da73badc756c06410669d540daf53491afaa4f9705765ba7f270ac4343f7",
+  "new_dso_sha256": "13b14f9a2dd7c857732e3cd4ba33fab6f1c8ec9711f7d43f5e82d9a25ca721b7",
+  "new_executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "object_sha256": {
+    "coordinator.cpp.o": "a61c13514225248be9e806c9603dc144b2a20be505bd9400289d542ad8f0f6e2",
+    "melt_freeze.cpp.o": "c79f6383385eafea8cbc447339ac12b951f624e68e343d0b7ca556cfefb0fdd6",
+    "runtime.cpp.o": "4a608c2d618d7733ea6eeec9eb3a6bce689aa637ae890230a5c9559d4f578ac8",
+    "sedimentation_conservative.cpp.o": "0ff313b4814cde181bb5a27fa48ca10046ae167e8bfedd1012c804ea2116093d",
+    "thermo.cpp.o": "d0df2336fc2a6002fdab0d1723f6db843fe09bc609a626a3cb764b2e649ef837"
+  },
+  "only_source_change_vs_parent": [
+    "runtime.cpp",
+    "coordinator.cpp"
+  ],
+  "parent_dso_sha256": "29e6a4870c84496306a00c798d801db6102fbde43b8600b534a2c87eaac3e6d9",
+  "parent_endpoint_sha256": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+  "parent_native_build_receipt_sha256": "696890d3b76c2dd79402aaf1a06df90d53441efc833b3e219b31e6cc5ba93d80",
+  "runner_sha256": "bd1bcfcf8f2ccd3348e2d584d6987f41aa6a1d0ebd2b69d795e3b34638024378",
+  "schema": "kdm6.native_d1_entry_cpm_build.v1",
+  "scope": "isolated same-build value-only outer entry-cpm capture; no perturbed host AD execution",
+  "source_sha256": {
+    "coordinator.cpp": "f1e8099bba98b8d5e752091546caeb9d1d6a9838fcdab08b3a43e1aac5c511f4",
+    "melt_freeze.cpp": "de60df10d9bc23c2903549e5f192d3af15c4b7a21ae55655aa6c706570de1c6e",
+    "runtime.cpp": "465e7ec388d17f4d47ff8ec27cbb06394bd4647bacdad92352371b3e869f10c0",
+    "sedimentation_conservative.cpp": "3091bd0cd6ac267037e1feeaec3c6cf0c5fb17654ff6f16f06d920958b6c357d",
+    "thermo.cpp": "f4c887ba754244f781a27cd94dc42341e7559be7680947f74ea27d06507dbe4b"
+  }
+}

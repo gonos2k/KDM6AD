@@ -1,0 +1,52 @@
+{
+  "checks": {
+    "forward_ad": "actual C++ dual-level JVP",
+    "jvp_vjp_expected_tolerance": 1e-14,
+    "one_sided_difference_h": 1e-06,
+    "one_sided_expected_tolerance": 1e-08,
+    "reverse_ad": "torch::autograd::grad with output cotangent 1",
+    "rows": 9,
+    "tie_weights": [
+      0.5,
+      0.5
+    ]
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+  "files": {
+    "CMakeLists.txt": "ae452a06e5c756833752ccd07ff44a0ee23ab874ab6f0b3b732b5cf5344e3f62",
+    "build.log": "60515e8de627d0193910d0ff24b8222aeff2f7e6ffe101e05467b1f7304c5967",
+    "build/CMakeCache.txt": "9f963315a56136b7369378898bc8dd101b73c1c6a10ea95cb4ae18a69f34b6a6",
+    "build/CMakeFiles/rate_min_operator.dir/flags.make": "06e493d0971dad87497bf0c96fa05b8e0e05596d990d130a7baa7202b8bb8268",
+    "build/rate_min_operator": "ab522f5f6e7071712109aa6ac0ec3166f645b487b90c27dc2c496ce15c5e94b2",
+    "configure.log": "bc156bb76b04622c5fc059c65abee60c84f3ad525fa8e25c949477367618c0a6",
+    "installed_otool.txt": "558f1d5644d0c308eb9762f7e3535051ba7d0d760a570933424bbf481b479086",
+    "loader.stderr": "6d8c3ac6ab0f2123ae7aaf765726dad9460bddb2681c2c5d39e188e4d4d07ddf",
+    "main.cpp": "1a2fe856cdfe9506a22da5a49ec12d03aa004041e989ea67d761a903ab4c974c",
+    "result.csv": "2dbe4dffa9012c46c04b4aca58770040103c3dbc0dd04782aaead3f3088d864c",
+    "result.json": "bd7f8874d86e7df45f250a1709f228b8bb8f5442b125bda2cfe3d3559820832e"
+  },
+  "installed_dso_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "installed_otool_interpretation": "installed DSO names these as @rpath dependencies; experiment loader resolved the same dependency names to the recorded Torch paths, establishing ABI dependency compatibility only, not the exact installed DSO build provenance",
+  "loader_observed_paths": [
+    "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+    "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+    "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib"
+  ],
+  "other_local_build_dso_sha256": "82c9fffe18c1fcbcb41aeec85b5430ce103b57b285089953ecdea7341dc1103e",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "provenance_limit": "local operational build DSO differs from installed DSO, so that build cache cannot establish installed DSO exact compiler flags. This experiment uses compiler and Torch prefix from #578 capture-build receipt; installed DSO links Torch via @rpath.",
+  "schema": "kdm6.f64_rate_min_operator_experiment.v1",
+  "scope": "isolated CPU f64 torch::minimum with two independent scalar operands; no whole-column, host, physical or higher-order derivative claim",
+  "source_coordinator_sha256": "cf41d3133d9300cb2230a035f735a66b67ba1500b6dc3caeaa64cca7347cef5d",
+  "source_expression": "torch::minimum(ncact_raw, torch::clamp(state.nccn, 0)/dtcld)",
+  "threads": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1"
+  },
+  "torch_library_sha256": {
+    "libc10.dylib": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+    "libtorch.dylib": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+    "libtorch_cpu.dylib": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565"
+  }
+}

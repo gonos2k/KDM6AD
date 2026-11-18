@@ -1,0 +1,13 @@
+{
+  "schema": "east-optical-deff-onehot-sources-v1",
+  "files": {
+    "verify.py": "c8249d0c8a3103c73fed352463f8d5d87da91f91d472d367433924f74c5a0a55",
+    "test_verify.py": "f8aab9b2e1b53aecc9bfece261ae7fbfeb2a65c02228663f6431f1136c464a82",
+    "README.md": "5d37eb87ee5bf3d2ba006c4cce4a8532420a3fd47b3e5e60cf579d4ca241b713"
+  },
+  "helpers": {
+    "east_optical_derivative_2026-10-31/packet/runner.py": "20bcd57f001d2a63fbb4d70a9b64029622de50576d2dd7174baac5f4972099ca",
+    "east_optical_derivative_2026-10-31/packet/preflight.json": "a0515c1da6025b4b069f21039e0012274ba6136251eb192d6e93733699dd222e",
+    "east_optical_onehot_2026-10-31/packet/runner.py": "290472886a9eed6ec75479439e4aff88973b0bff8fc97e2c6dd99d18ca55032a"
+  }
+}

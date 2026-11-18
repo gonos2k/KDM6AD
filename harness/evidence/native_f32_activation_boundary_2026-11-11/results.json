@@ -1,0 +1,78 @@
+{
+  "baseline": {
+    "baseline_arrays_equal": {
+      "precip_increment_f32_words": 3,
+      "rhog_output_f32_words": 39,
+      "state_output_f32_words": 468
+    },
+    "calls": 3,
+    "scope": "archived standard f32 C ABI; no host-run claim"
+  },
+  "baseline_capture": {
+    "activation_fields_linked": 33,
+    "precip_words_linked": 3,
+    "rhog_words_linked": 39,
+    "state_words_linked": 468
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "scientific_status": "INCONCLUSIVE",
+  "sweep": {
+    "boundaries": 4,
+    "distinct_full_inputs": 35,
+    "endpoint_diagnostics": {
+      "qv16": {
+        "input_gap": 4.656612873077393e-10,
+        "lower_word": "3befdf4f",
+        "outputs": {
+          "precip_increment_f32_words": {
+            "changed_words": 0,
+            "max_abs_delta": 0.0,
+            "max_word_distance": 0
+          },
+          "rhog_output_f32_words": {
+            "changed_words": 0,
+            "max_abs_delta": 0.0,
+            "max_word_distance": 0
+          },
+          "state_output_f32_words": {
+            "changed_words": 3,
+            "max_abs_delta": 1200.0,
+            "max_word_distance": 75
+          }
+        },
+        "upper_word": "3befdf50"
+      },
+      "th16": {
+        "input_gap": 3.0517578125e-05,
+        "lower_word": "439ff9f0",
+        "outputs": {
+          "precip_increment_f32_words": {
+            "changed_words": 0,
+            "max_abs_delta": 0.0,
+            "max_word_distance": 0
+          },
+          "rhog_output_f32_words": {
+            "changed_words": 1,
+            "max_abs_delta": 6.103515625e-05,
+            "max_word_distance": 1
+          },
+          "state_output_f32_words": {
+            "changed_words": 9,
+            "max_abs_delta": 8528.0,
+            "max_word_distance": 533
+          }
+        },
+        "upper_word": "439ff9f1"
+      }
+    },
+    "events": 36,
+    "repeated_full_input_checks": 1,
+    "scope": "sampled endpoints only; no global uniqueness claim"
+  },
+  "terminal": {
+    "calls": 12,
+    "endpoint_traces": 4,
+    "endpoints": 4,
+    "words_per_call": 510
+  }
+}

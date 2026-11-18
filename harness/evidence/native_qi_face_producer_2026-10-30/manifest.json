@@ -1,0 +1,41 @@
+{
+  "analysis_sha256": "23c33bf248fdc0f15cf4672bcebbeee216f2a75c04a7fe02d76ed26e9b641c7d",
+  "external_source_pins": {
+    "harness/analyze_qi_donor_transient.py": "9e311db1d6096951657d0231eb2fd9ed421f0fb39c776e1d42cbe34654dc81cc",
+    "harness/analyze_qi_face_producer.py": "6108c8b6f5dc5cfd6bf36bb84dd28653c1aa488381bc0f8a4448fef8911cbb95",
+    "harness/analyze_qnc_candidate_inputs.py": "8917416b2bac9b5ac5daa7fa275c6c83b562d006e33325daa44926f937a7b9a7",
+    "harness/analyze_qnc_domain_preflight.py": "df0d32c9ea6c79555192b8a3bf4891a08d1fb39992430f504de09544ad5ccd76",
+    "harness/analyze_qnc_shared_face_trace.py": "4fa9f903587473371052852d2a1f431b836adf79c947990771d59f384add6a2c",
+    "harness/analyze_upstream_nc_trace.py": "561148d6bb930f9f655a2deca56b6319260a9b4d55d1c71cdf73b03af6211f5a",
+    "harness/evidence/native_qi_donor_transient_2026-10-30/replay.py": "c7fb00c568d19b4503ac898290ae42a3abd1e0cc67e0da511d5e5c7e61d66d42",
+    "harness/g33_s15_probe.py": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "harness/native_moment_trace_records.py": "1e907ddad3ce4d40a5190601cb461d93e17af483fc22ab6c82e0224be8c40944",
+    "harness/native_qi_face_producer_overlay.py": "95fbbec0165c7616028d0a6c63d9bfa6154dad795cb648d827b9ab00d23f5473",
+    "harness/native_qnc_advect_qi_trace_records.py": "1635a199dee6965acf5ac310a6a14d821fd56eb74d02352b4faaca14b6c7d738",
+    "harness/native_qnc_candidate_face_overlay.py": "216ed63e3d8631ede9bfa69a4d43ce1eeb1f5c2b2fce5d15f4a24d229914196b",
+    "harness/native_qnc_domain_preflight_advect_overlay.py": "058a57892bce18cefb86ffd479fb97914b0081db7dc98ba15efc355417287969",
+    "harness/native_qnc_representative_trace_overlay.py": "862529b7f5161049f09e006b7716510e2e8ad1d4e64720df0a07ec4d9d128e05",
+    "harness/native_qnc_representative_trace_records.py": "1814fc60278a7437ad95a5617512c58e9148d83d67a5a31ea933682c62ddbb0c",
+    "harness/native_qnc_star_qi_records.py": "eae1604689bbe7f9417b9badf3f21dad8fc6bbe2c6bc496f74c6c89cc2bcbf67",
+    "harness/replay_qnc_flux_limiter_trace.py": "f280fcedf914dd04526fe02e3e278826c8e96806492b21ae03ce0075e1be233a"
+  },
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "packet_files_sha256": {
+    "README.md": "efb3c9df72bafceb2e1831e901795352f966305b0d202284b8346969328113ae",
+    "analysis.json": "23c33bf248fdc0f15cf4672bcebbeee216f2a75c04a7fe02d76ed26e9b641c7d",
+    "data/alpha025/qi_face.tsv": "e21b5b8b5b1b8c023ca59e402f15361b1ccef22e0693dabb29fce2a7475ae12b",
+    "data/control/qi_face.tsv": "7be9e209d377fe930fc669e7aa77ad05872208b218bde3bbfaaaff3e0f969cc6",
+    "execution_summary.json": "ce1ccbf622df196a10b244d53e0922202bd2e6a8af2246c3d9b5141a424ba8bd",
+    "replay.py": "a95b57fcc72db34c6f88fd2015b2f97a6ba0c2f410397871e9f9c73b04cfa366"
+  },
+  "schema": "kdm6.native_qi_face_producer_manifest.v1",
+  "upstream_manifest_pins": {
+    "harness/evidence/native_qi_donor_transient_2026-10-30/manifest.json": "feee32577248d9da4d338efa455e1fcfed06692e70b7d61a5db67dab97b198fb",
+    "harness/evidence/native_qnc_live_guard_2026-10-30/manifest.json": "7a74def7eb3b9f5a36610f35270b34b3e8d486c7ac6bdee219cff9832746cf23"
+  }
+}

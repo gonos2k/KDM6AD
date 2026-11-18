@@ -27,3 +27,10 @@ were zero at preparation. Subsequent execution is recorded in
 [[native-domain-ice-factorial-2026-10-23]]. Fixed 512-column chunks are part of experiment identity. The
 input, protocol and [scope](../../docs/NATIVE_ICE_FACTORIAL.md) retain explicit
 number-unit, batching, boundary/RK and observation limitations.
+
+The [historical source archive](../../harness/evidence/historical_ice_factorial_sources_2026-10-23/README.md)
+preserves the campaign's original source words and receipts separately from
+current G3.3 instrumentation. Its resolver now requires the exact recorded
+relative path **and** digest before selecting a snapshot; malformed, missing
+and symlink-aliased paths are rejected. The path-validation correction does
+not invalidate or delete the original experimental records.

@@ -1,0 +1,39 @@
+{
+  "commands": {
+    "archive_sha256": "127eafb3bc0b399d8f62d7388d48317ffa2ccf21adc355a5afa0193ceae5fbe2",
+    "c_abi_dylib_sha256": "d35dbb5737485997cb19b1104ba60a542a4668b25ad53891d6f85f0723c534c0",
+    "core_build": [
+      "cmake --build build --target kdm6 -j4",
+      "cmake --build build --target kdm6_c -j2"
+    ],
+    "core_configure": "cmake -S source -B build -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DCMAKE_BUILD_TYPE=Release -DKDM6_NATIVE_SCALAR_CAPTURE=ON",
+    "cpp_flags": "C++17, -ffp-contract=off; runner build has assertions enabled (no Release build type)",
+    "runner_build": "cmake --build runner_build --target native_nc_process_graph_ad -j2",
+    "runner_configure": "cmake -S runner -B runner_build -DCMAKE_PREFIX_PATH=/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch -DKDM6_HOOK_ROOT=/Users/yhlee/KDM6AD-k/host/research_evidence/native_activation_operands_ad_20261110",
+    "runner_sha256": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d"
+  },
+  "parent_research_merge_commit": "26c95d4e9e15271d19c178e35868fd8db450cd42",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "schema": "kdm6.native_activation_operands_cpp_ad_build.v1",
+  "sha256": {
+    "bridge_flags": "2ef52dfad17d15d2efba3504378451e0ff5681e0661bdc6f54bb43713734490a",
+    "core_cache": "a3a4499c801cd4301400892c524b1408e790f069e701119c6f1b43366bde23c5",
+    "core_flags": "cd39864a7730fd35fe344d6ec71ff23b5b63a077cee52f55ddc92ae315cbc334",
+    "input_binary": "fbfe149519126de4192b0cf788ff9b56da65aef55fd1c6e2ff73a52b9844e82d",
+    "new_boundary": "58a9eca3be9a245e300c6e9f452bfcbf4ba235a3b7f16bcb1bb99423cf8a70f6",
+    "new_coordinator": "6d1ac33a73900e59d49134450c76d226ddbdb54376446f53ac96da3b21ee9c8b",
+    "new_core_archive": "127eafb3bc0b399d8f62d7388d48317ffa2ccf21adc355a5afa0193ceae5fbe2",
+    "new_core_dso": "d35dbb5737485997cb19b1104ba60a542a4668b25ad53891d6f85f0723c534c0",
+    "new_cpp_result": "242b9f5e1ef9757ee5cbd804675aab8f2b21d499fc62cc6075ae0201c7f78dff",
+    "new_runner": "5a7022e9e8ae3dad0b719e989bef87c8cd0eaf5070c3b916a29d201da8658805",
+    "new_runner_executable": "3a8de28ae4a51de9d2f0a55f6dff6308bb0cc0122281079b57c245247786b14d",
+    "old_coordinator": "8f9ddd1f0875fc980e43f3c49f8b48c836d7a7e6c28813b97b24c4cfd1fcf0c4",
+    "old_runner": "b0714ed6a35f818bcab87162f06eeda0a80e7614275501ad30d597e73133c9f4",
+    "parent_boundary": "b80da7363594c00b700b4a4a2e12d1e41569ce1a51232100cdb0c36d4d6f90d3",
+    "parent_cpp_result": "935557ff8a7f8b2473acb9a83f935eb4937f72ced4be61cf6873effd735eba6e",
+    "private_provenance": "2bbb32891894538643d4234b7e048722b9a5ae52de3696d29f47c56914fbc52c",
+    "runner_cache": "883e8f98d95bb0ce27f324b4a4356217bdb5463130ad7e103ea93ea6959be86e",
+    "runner_flags": "3e4f330a3bb593930853deb59488b7aa2589b625bdd233e87f081ed64a4c397c"
+  }
+}

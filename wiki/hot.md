@@ -1,11 +1,26 @@
 ---
 title: Hot Cache
 type: meta
-date_modified: 2026-10-25
+date_modified: 2026-10-30
 ---
 # Hot Cache
 
 ## Current Focus
+- [[sources/interior-qi-ni-optical-direction-2026-10-31]] — A checkpoint-local QI↑/raw NI↓ direction at interior `(164,242,21)` changes both serialized ice content and diameter; bounded direct/K comparisons agree locally but neither host reachability nor raw NI physical units is certified.
+- [[sources/east-optical-deff-onehot-2026-10-31]] — A layer-39 diameter direction raises the optical span to rank four per profile; the offline packet independently checks raw radiance conversion and FD arithmetic.
+- [[sources/east-optical-onehot-2026-10-31]] — A one-layer serialized ice-content direction adds per-profile rank beyond the prior two optical directions; 16 direct calls show small FD–K residuals without a plateau or host-derivative claim.
+- [[sources/east-optical-coordinate-factor-2026-10-31]] — Independent scalar replay checks GG/PP native-to-KMA BT derivative factors on 140 saved cells using a separately supplied SHA-pinned RTTOV coefficient file; scientific status remains INCONCLUSIVE.
+- [[sources/east-optical-derivative-2026-10-31]] — Serialized ice-content/diameter RTTOV K and central differences agree closely at h=1e-4 for ten east profiles; h=1e-3 diameter steps cross a 20 µm table knot. Host/QNICE derivatives and physical budgets remain open.
+- [[sources/east-optical-factorial-2026-10-31]] — Four direct RTTOV content×diameter cases at ten east fixed-M0 profiles reproduce the BT decrease through serialized ice-content substitution; diameter contrasts vanish in saved KMA BT but not raw radiance. Physical budget and full derivatives remain open.
+- [[sources/east-optical-cloud-gate-review-2026-10-31]] — East fixed-M0 pilot Control has 42 cloud-fraction-positive ice-content increases; all 29 observed diameter-bound-category changes are in clear rows. A controlled RTTOV content/diameter contrast and boundary physical/derivative contracts remain open.
+- [[sources/native-qnc-guard-control-direct-m0-2026-10-31]] — Guard-only Control direct replay retains all original M0 cells; fixed-support cost is 11.007967186042567. Physical attribution and acceptance remain open.
+- [[sources/native-qi-m0-cost-decomposition-2026-10-31]] — Ten east-edge profiles explain about 98.84% of the pilot-control cost increase over original control; alpha has mixed profile/channel losses despite lower aggregate cost. Boundary physics and derivative admission remain open.
+- [[sources/native-qi-postmicro-direct-m0-2026-10-30]] — Both pilot checkpoints retain all 377,342 original-M0 cells in 129 direct RTTOV blocks each; alpha-minus-control Huber cost is −0.0009641239. Physical boundary and derivative admission remain open.
+- [[sources/native-qi-postmicro-boundary-pilot-2026-10-30]] — An opt-in late QI/NI boundary reapplication restores the last frozen-M0 hard-moment profile in actual host checkpoints but changes thousands of boundary moments; the direct cost is recorded above, while physics and derivative admission remain open.
+- [[sources/native-qi-outflow-terms-2026-10-30]] — The remaining ice case's lower limiter-owner outflow splits at one vertical bottom face; saved six-face and f32 aggregate replays identify the term, while QI/NI correction and whole-M0 cost remain open.
+- [[sources/native-qi-face-producer-2026-10-30]] — The earlier QI donor trace linked the changed applied face to the lower neighbor's limiter branch; the lower owner's outflow terms are now decomposed above, while a physical correction remains open.
+- [[sources/native-qi-donor-transient-2026-10-30]] — The earlier donor trace located the RK3 positive QI advection tendency and following X-start copy; the face result is linked above, while a physical correction remains unresolved.
+- [[sources/native-qnc-live-guard-host-2026-10-30]] — Selected-54 live QNC guard completed four native host steps and recovered all 53 liquid-failure M0 profiles; one QI/NI profile and seven channels still fail, so whole-M0 RTTOV cost and analysis acceptance remain open.
 - [[sources/native-block22-saved-response-2026-10-25]] — Saved block22 endpoints show a large, nonlinear target IR105 response and liquid Deff/QC/NC mapping; fixed-probe JVP and finite-profile K projection are kept distinct, with no named-process cause.
 - [[sources/native-ko7-restricted-confirmation-2026-10-25]] — One actual 129-block restricted T/Q confirmation preserves fixed support and lowers the declared objective by 0.076%; post-hoc same-scene result, with no forecast/host-cycle or physical-closure claim.
 - [[sources/native-domain-ko7-bounded-case-2026-10-25]] — Completed fixed 65,988-column KO7 case; baseline derivatives pass, all three full-domain proposals lose fixed support and are rejected. No host-cycle or fit-improvement claim.

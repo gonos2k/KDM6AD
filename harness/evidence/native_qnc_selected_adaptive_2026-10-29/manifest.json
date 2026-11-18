@@ -1,0 +1,16 @@
+{
+  "analysis_bytes": 2938243,
+  "analysis_sha256": "af250dc5288837ac2fafacc389c8cc30e8f7d625426664ef72019080474f2766",
+  "analyzer_source_sha256": "bc3ac7109fcf3be3f165dd6cdef7f2ec9474bf7ae548392e271d3c76e8ada7c3",
+  "failure_rows_sha256": "fa7ba0a92ccec5f1b8001a3c218b8a737ca90c1b9ed4a24f6253e616c1f6257e",
+  "max_ulp_cap": 256,
+  "normalized_replay_sha256": "753fdd3d9443226a25b4af8e839e420b5920f699e9ebc4faa7ed2756ba91a179",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "parent_manifest_sha256": "a975acf33c9b42a644d0682f2c47476bae15856d3af3abbcc0deb1be407b2506",
+  "schema": "kdm6.native_qnc_selected_adaptive_packet.v3"
+}

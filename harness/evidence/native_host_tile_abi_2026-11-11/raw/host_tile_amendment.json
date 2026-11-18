@@ -1,0 +1,287 @@
+{
+  "amendment": {
+    "original_receipt": "private://native_host_tile_abi_20261111/run_receipt.json",
+    "original_sha256": "3b904842c49b4a59164cc3252b9b5460d634202164865686057889d670f0f32d",
+    "purpose": "clarify comparison script provenance and distinguish loader observations"
+  },
+  "capture_off_on": {
+    "details": {
+      "energy_0": {
+        "output": "# klfs_lc05_energy.202507190000 (frames=2) vs klfs_lc05_energy.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 5 common, 5 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n",
+        "returncode": 0
+      },
+      "energy_1": {
+        "output": "# klfs_lc05_energy.202507190000 (frames=2) vs klfs_lc05_energy.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 5 common, 5 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n",
+        "returncode": 0
+      },
+      "fcst_0": {
+        "output": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n",
+        "returncode": 0
+      },
+      "fcst_1": {
+        "output": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 non-numeric\n\nRESULT: STRICT BITWISE PASS\n",
+        "returncode": 0
+      }
+    },
+    "energy_variables_each_frame": 5,
+    "forecast_variables_each_frame": 254,
+    "numeric_or_char_differences": 0,
+    "ocean_and_precipitation_saved_frames": 0,
+    "skipped": 0,
+    "timestamps": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ]
+  },
+  "comparator_provenance": {
+    "archived_output_wording": "0 non-numeric",
+    "command_provenance": "argv and cwd reconstructed from the recorded Python subprocess invocation that executed the comparisons",
+    "commands": [
+      {
+        "argv": [
+          "python3",
+          "harness/strict_bitwise_nc.py",
+          "private://native_host_tile_abi_20261111/case_pair_off/runs/mp137_pair_off_0min20s_hist0_20261111_161555_p25645/klfs_lc05_fcst.202507190000",
+          "private://native_host_tile_abi_20261111/case_pair_on/runs/mp137_pair_on_0min20s_hist0_20261111_161149_p25482/klfs_lc05_fcst.202507190000",
+          "0"
+        ],
+        "cwd": "private://workspace",
+        "output_file": "private://native_host_tile_abi_20261111/compare_fcst_0.txt"
+      },
+      {
+        "argv": [
+          "python3",
+          "harness/strict_bitwise_nc.py",
+          "private://native_host_tile_abi_20261111/case_pair_off/runs/mp137_pair_off_0min20s_hist0_20261111_161555_p25645/klfs_lc05_fcst.202507190000",
+          "private://native_host_tile_abi_20261111/case_pair_on/runs/mp137_pair_on_0min20s_hist0_20261111_161149_p25482/klfs_lc05_fcst.202507190000",
+          "1"
+        ],
+        "cwd": "private://workspace",
+        "output_file": "private://native_host_tile_abi_20261111/compare_fcst_1.txt"
+      },
+      {
+        "argv": [
+          "python3",
+          "harness/strict_bitwise_nc.py",
+          "private://native_host_tile_abi_20261111/case_pair_off/runs/mp137_pair_off_0min20s_hist0_20261111_161555_p25645/klfs_lc05_energy.202507190000",
+          "private://native_host_tile_abi_20261111/case_pair_on/runs/mp137_pair_on_0min20s_hist0_20261111_161149_p25482/klfs_lc05_energy.202507190000",
+          "0"
+        ],
+        "cwd": "private://workspace",
+        "output_file": "private://native_host_tile_abi_20261111/compare_energy_0.txt"
+      },
+      {
+        "argv": [
+          "python3",
+          "harness/strict_bitwise_nc.py",
+          "private://native_host_tile_abi_20261111/case_pair_off/runs/mp137_pair_off_0min20s_hist0_20261111_161555_p25645/klfs_lc05_energy.202507190000",
+          "private://native_host_tile_abi_20261111/case_pair_on/runs/mp137_pair_on_0min20s_hist0_20261111_161149_p25482/klfs_lc05_energy.202507190000",
+          "1"
+        ],
+        "cwd": "private://workspace",
+        "output_file": "private://native_host_tile_abi_20261111/compare_energy_1.txt"
+      }
+    ],
+    "hash_timing": "retrospective: computed after comparisons; no execution-time script hash was recorded",
+    "path": "private://workspace/harness/strict_bitwise_nc.py",
+    "sha256": "e90464a63300c7f95665dcf9d75ea6d5765669cee31a48e65006f572140de24b"
+  },
+  "exclusions": [
+    "aborted first-tile input-only pilot",
+    "failed recursive DYLD interposition trial",
+    "internal schedule unobserved",
+    "mp37 parity not tested"
+  ],
+  "files": {
+    "capture_gzip": {
+      "path": "private://native_host_tile_abi_20261111/tile_second.bin.gz",
+      "sha256": "314e2d0c6c4a8081713aae90421b08b3c2cb18b5f53655a470c5e445ffe89703",
+      "size_bytes": 45533165
+    },
+    "capture_uncompressed": {
+      "path": "private://native_host_tile_abi_20261111/tile_second.bin",
+      "sha256": "a13d3aafdc4d71ffe5ea7a59616a48f4ea7c6ab3da813b8883bb7277df71ecce",
+      "size_bytes": 146405972
+    },
+    "installed_dso": {
+      "path": "private://installed_dso/libkdm6_c.2.0.0.dylib",
+      "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "size_bytes": 1996680
+    },
+    "off_namelist": {
+      "path": "private://native_host_tile_abi_20261111/case_pair_off/runs/mp137_pair_off_0min20s_hist0_20261111_161555_p25645/namelist.input",
+      "sha256": "67e6d702b4209f0b7821d19ddded37645515584c0d58a8776c0309bc7b7cd980",
+      "size_bytes": 6446
+    },
+    "on_namelist": {
+      "path": "private://native_host_tile_abi_20261111/case_pair_on/runs/mp137_pair_on_0min20s_hist0_20261111_161149_p25482/namelist.input",
+      "sha256": "67e6d702b4209f0b7821d19ddded37645515584c0d58a8776c0309bc7b7cd980",
+      "size_bytes": 6446
+    },
+    "proxy_dso": {
+      "path": "private://native_host_tile_abi_20261111/proxy.dylib",
+      "sha256": "4d1ce49e3890cc648c9aec9330738275f256edee14a37754c8ccc6a9d98a26ff",
+      "size_bytes": 34024
+    },
+    "proxy_executable": {
+      "path": "private://native_host_tile_abi_20261111/case_pair_on/wrf.exe",
+      "sha256": "3289996c6eb3af3030bf3b380cf17a320b1241c6d0fc2177e4d84426774ede09",
+      "size_bytes": 50483360
+    },
+    "reference_executable": {
+      "path": "private://native_host_tile_abi_20261111/case_pair_off/wrf.exe",
+      "sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+      "size_bytes": 50483352
+    },
+    "selected_summary": {
+      "path": "private://native_host_tile_abi_20261111/selected_summary.json",
+      "sha256": "e9ce79d45090218c43754a54ff078373e7e69335fdc8f3e9eea2d7f285e55232",
+      "size_bytes": 2446
+    },
+    "wrfbdy": {
+      "path": "private://source_case/wrfbdy_d01",
+      "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "size_bytes": 103922656
+    },
+    "wrfchainp": {
+      "path": "private://source_case/wrfchainp_d01",
+      "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "size_bytes": 3458043
+    },
+    "wrfinput": {
+      "path": "private://source_case/wrfinput_d01",
+      "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "size_bytes": 374429080
+    }
+  },
+  "full_tile_replay": {
+    "bit_mismatch_counts": {
+      "bg": 0,
+      "graupel": 0,
+      "nc": 0,
+      "nccn": 0,
+      "ni": 0,
+      "nr": 0,
+      "qc": 0,
+      "qg": 0,
+      "qi": 0,
+      "qr": 0,
+      "qs": 0,
+      "qv": 0,
+      "rain": 0,
+      "rhog": 0,
+      "snow": 0,
+      "th": 0
+    },
+    "call": 2,
+    "capture_sha256": "a13d3aafdc4d71ffe5ea7a59616a48f4ea7c6ab3da813b8883bb7277df71ecce",
+    "dims": [
+      232,
+      39,
+      139
+    ],
+    "dt": 20.0,
+    "flags": 0,
+    "handle": null,
+    "land": 10.0,
+    "original_rc": 0,
+    "replay_rc": 0,
+    "sea": 10.0,
+    "value": 1
+  },
+  "historical_reference": {
+    "column_comparison_path": "private://native_host_tile_abi_20261111/column_vs_556.json",
+    "nearest_path": "private://native_host_tile_abi_20261111/nearest_signature.json",
+    "reference_checkpoint": "2025-07-19_00:00:40",
+    "reference_compute": "historical isolated f64",
+    "signature_matches_in_tile": 0,
+    "this_case_start": "2025-07-19_00:00:00",
+    "this_compute": "installed f32"
+  },
+  "loaded_libraries": {
+    "first_accepted_proxy_run": {
+      "observation": "lsof snapshot of first accepted proxy run, not paired-on run",
+      "snapshot": [
+        "wrf.exe 25040 yhlee  txt      REG               1,16     34024           459959909 private://native_host_tile_abi_20261111/proxy.dylib",
+        "wrf.exe 25040 yhlee  txt      REG               1,16   1996680           243194458 private://installed_dso/libkdm6_c.2.0.0.dylib"
+      ],
+      "wrf_pid": 25040
+    },
+    "paired_off": {
+      "snapshot": [
+        "wrf.exe 25647 yhlee  txt      REG               1,16   1996680           243194458 private://installed_dso/libkdm6_c.2.0.0.dylib"
+      ],
+      "wrf_pid": 25647
+    },
+    "paired_on": {
+      "evidence": "paired-on captured full tile SHA equals first accepted tile SHA; this is not an independent loader observation",
+      "runner_pid": 25482,
+      "separate_lsof_snapshot": "not captured",
+      "wrf_pid": 25487
+    }
+  },
+  "private_amended_receipt_original_sha256": "b05be0d28e2fbfff21ec38b6bbf0e7887c0ae5e0c915a87c965eeb2e81790799",
+  "schema": "kdm6.private_host_tile_abi.v1",
+  "scope": "private host capture; public distribution excludes full native tile and full NetCDF outputs",
+  "single_column_replay": {
+    "bit_mismatch_counts": {
+      "bg": 0,
+      "graupel": 0,
+      "nc": 0,
+      "nccn": 0,
+      "ni": 0,
+      "nr": 0,
+      "qc": 0,
+      "qg": 0,
+      "qi": 0,
+      "qr": 0,
+      "qs": 0,
+      "qv": 0,
+      "rain": 0,
+      "rhog": 0,
+      "snow": 0,
+      "th": 0
+    },
+    "native_column": [
+      203,
+      149
+    ],
+    "packed_ij_zero": [
+      201,
+      6
+    ],
+    "schedule": "not exposed by ABI",
+    "single_call_rc": 0,
+    "tile_call_rc": 0
+  },
+  "tile": {
+    "bounds_i": [
+      2,
+      233
+    ],
+    "bounds_j": [
+      143,
+      281
+    ],
+    "call_index": 2,
+    "dt": 20,
+    "native_column": [
+      203,
+      149
+    ],
+    "ncmin_land": 10,
+    "ncmin_sea": 10,
+    "packed_i_j_zero": [
+      201,
+      6
+    ],
+    "param_grad_flags": 0,
+    "runtime_b_zero": 27945,
+    "shape_im_km_jm": [
+      232,
+      39,
+      139
+    ],
+    "value_only": 1
+  }
+}

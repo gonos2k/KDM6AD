@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
-from streaming_ice_census import CensusPlan, replay_file  # noqa: E402
+from streaming_ice_census import CensusPlan  # noqa: E402
 
 
 ARCHIVE = (Path(__file__).resolve().parents[2] / "harness" / "evidence"
@@ -13,8 +13,8 @@ ARCHIVE_SHA256 = "f7a4d6666f69b8f217eb5e6c4307f4441dabb46ad9d86e00a0985f432b33c4
 PLAN = CensusPlan(tuple(range(1, 181)), (2, 233), (2, 281), 0)
 
 
-def test_full_hour_census_is_complete_but_has_no_second_ice_substep():
-    result = replay_file(ARCHIVE, PLAN)
+def test_full_hour_census_is_complete_but_has_no_second_ice_substep(shared_hour_census):
+    result = shared_hour_census(ARCHIVE, PLAN)
     audit = result["audit"]
     assert result["file_sha256"] == ARCHIVE_SHA256
     assert audit["selected_rows"] == audit["expected_columns"] == 11_692_800

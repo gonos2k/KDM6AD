@@ -1,0 +1,13 @@
+value_rc 0 handle None
+baseline th mismatch 2 native16 319.9346295946104 isolated 319.934629594956
+baseline qv mismatch 2 native16 0.007305455407406137 isolated 0.007305455407566253
+baseline qc mismatch 2 native16 0.000467958411084689 isolated 0.0004679584098524899
+baseline qr mismatch 2 native16 0.0008160054065884782 isolated 0.0008160054056617106
+baseline qi mismatch 0 native16 0.0 isolated 0.0
+baseline qs mismatch 1 native16 0.0005306422586368095 isolated 0.0005306422586385069
+baseline qg mismatch 1 native16 4.1303310467353256e-05 isolated 4.1303298602403573e-05
+baseline nccn mismatch 0 native16 100000000.0 isolated 100000000.0
+baseline nc mismatch 2 native16 254080925.8395777 isolated 254080925.47653916
+baseline ni mismatch 0 native16 0.0 isolated 0.0
+baseline nr mismatch 2 native16 1494.031319611338 isolated 1494.0313281486249
+baseline bg mismatch 1 native16 4.589659933439039e-08 isolated 4.5896586150989034e-08

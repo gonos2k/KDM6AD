@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""Post-completion direct packet packer; NEVER run against active workers.
+
+Requires 129 completed, failure-free chunks AND a finalized summary per case.
+Reads private archives and publishes only hashes/arrays; private call workspaces,
+checkpoints and source tree are not redistributed. No model calls are made.
+"""
+from __future__ import annotations
+import hashlib
+from io import BytesIO
+import json
+import math
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import numpy as np
+
+ROOT = Path(__file__).resolve().parent
+RUNS = ROOT / 'direct_full_m0_v1'
+REPO = Path('/private/tmp/KDM6AD-qnc-host-backoff-20261027')
+PUBLIC = REPO / 'harness/evidence/native_qi_postmicro_direct_m0_2026-10-30'
+BASE = REPO / 'harness/evidence/native_full_physics_observation_2026-10-25/native_full_physics_observation_baseline.npz'
+BASE_SHA = 'c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144'
+TREE_SHA = '1ef3cc94d90465cea370c0974445f1d54b8de3192d33d2f5438464de41c0609f'
+N, Z = 65988, 377342
+
+
+def require(ok, message):
+    if not ok:
+        raise ValueError(message)
+
+
+def digest(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for part in iter(lambda: f.read(8 << 20), b''):
+            h.update(part)
+    return h.hexdigest()
+
+
+def read_json(path):
+    raw = path.read_bytes()
+    return json.loads(raw), hashlib.sha256(raw).hexdigest()
+
+
+def read_npz(path, expected):
+    raw = path.read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == expected, f'capture hash mismatch: {path}')
+    with np.load(BytesIO(raw), allow_pickle=False) as z:
+        return {k: np.array(z[k], copy=True) for k in z.files}
+
+
+def source_tree():
+    files = sorted(p for p in [*REPO.glob('harness/*.py'), *REPO.glob('oracle/**/*.py'),
+                                *REPO.glob('oracle/kdm6/obs/data/**/*')]
+                   if p.is_file() and '__pycache__' not in p.parts)
+    h = hashlib.sha256()
+    for p in files:
+        h.update(p.relative_to(REPO).as_posix().encode() + b'\0' + digest(p).encode() + b'\n')
+    return len(files), h.hexdigest()
+
+
+def pack_case(case, base):
+    folder = RUNS / case
+    binding, bh = read_json(folder / 'binding.json')
+    summary, sh = read_json(folder / 'summary.json')
+    require(binding['schema'] == 'kdm6.qi_postmicro_full_m0_direct.v1' and binding['case'] == case,
+            f'{case}: binding identity mismatch')
+    require(binding['chunks'] == 129 and binding['support_cells'] == Z and binding['with_k'] is False
+            and binding['KDM_calls'] == binding['host_steps'] == 0, f'{case}: binding counts mismatch')
+    require((binding['source_tree_files'], binding['source_tree_sha256']) == (517, TREE_SHA), 'source tree binding mismatch')
+    for path, expected in binding['source_pins'].items():
+        require(digest(Path(path)) == expected, f'changed pinned source/input: {path}')
+    require(digest(ROOT / 'run_full_m0_direct.py') == binding['runner_sha256'], 'runner hash mismatch')
+    for trace in ('on', 'off'):
+        p = ROOT / 'runs/v1' / f'{case}_qi_postmicro_v1_piloton_trace{trace}' / 'run_result.json'
+        host, h = read_json(p)
+        require(h == binding[f'host_trace_{trace}_result_sha256'] and host['status'] == 'PASS'
+                and host['checkpoint_sha256'] == binding['checkpoint_sha256'],
+                f'{case}: host {trace} binding mismatch')
+        if trace == 'on':
+            require(host['retained_checkpoint_path'] is not None and
+                    digest(Path(host['retained_checkpoint_path'])) == binding['checkpoint_sha256'],
+                    f'{case}: retained trace-on checkpoint differs')
+    require(summary['status'] == 'DIRECT_FIXED_M0_COMPLETE' and summary['binding_sha256'] == bh
+            and summary['support_cells'] == Z and summary['completed_chunk_receipts'] == 129
+            and summary['direct_calls_recorded_in_completed_receipts'] == 129 and summary['K_calls'] == 0
+            and summary['huber_delta_K'] == summary['sigma_K'] == 1.0 and summary['bias_K'] == 0.0,
+            f'{case}: summary mismatch')
+    chunkroot = folder / 'chunks'
+    require({p.name for p in chunkroot.iterdir()} == {f'chunk_{i:03d}' for i in range(129)},
+            f'{case}: missing or unexpected/duplicate chunk')
+    pieces = {k: [] for k in ('bt', 'quality', 'valid', 'profile_valid')}
+    receipts, chunk_sums = [], []
+    mask, obs = base['m0_mask'], base['obs_bt_k']
+    for i in range(129):
+        d = chunkroot / f'chunk_{i:03d}'
+        require(d.is_dir() and not (d / 'failure.json').exists(), f'{case} chunk {i}: failure')
+        a, ah = read_json(d / 'attempt.json'); r, rh = read_json(d / 'result.json')
+        start, stop = i * 512, min((i + 1) * 512, N)
+        require(a['chunk'] == r['chunk'] == i and a['flat_range'] == [start, stop]
+                and a['binding_sha256'] == r['binding_sha256'] == bh and a['with_k'] is False,
+                f'{case} chunk {i}: attempt/binding/range mismatch')
+        require(r['direct_calls'] == 1 and r['K_calls'] == 0 and r['rttov_receipt']['direct_calls'] == 1
+                and r['rttov_receipt']['K_calls'] == 0 and r['rttov_receipt']['mode'] == 'direct',
+                f'{case} chunk {i}: call count mismatch')
+        worker = a.get('worker_source_sha256')
+        require(worker == r.get('worker_source_sha256'), f'{case} chunk {i}: worker pin mismatch')
+        if worker is not None:
+            require(digest(ROOT / 'run_full_m0_direct_worker.py') == worker, f'{case} chunk {i}: worker source changed')
+        x = read_npz(d / 'result.npz', r['capture_sha256'])
+        shape = (stop-start, 7)
+        require(np.array_equal(x['flat_indices'], np.arange(start, stop, dtype=np.int32))
+                and x['flat_indices'].dtype == np.int32, f'{case} chunk {i}: flat mismatch')
+        for key, dtype, expected_shape in [('bt', np.float64, shape), ('quality', np.int32, shape),
+                                           ('valid', np.bool_, shape), ('profile_valid', np.bool_, (stop-start,))]:
+            require(x[key].dtype == dtype and x[key].shape == expected_shape, f'{case} chunk {i}: {key} mismatch')
+            pieces[key].append(x[key])
+        m = mask[start:stop]; bt = x['bt']; o = obs[start:stop]
+        require(np.all(x['valid'][m]) and np.all(x['quality'][m] == 0)
+                and np.all(x['profile_valid'][:, None] | ~m) and np.isfinite(bt[m]).all(), f'{case} chunk {i}: support lost')
+        channel_sums = []
+        for c in range(7):
+            channel_sums.append(math.fsum(0.5*v*v if abs(v) <= 1.0 else abs(v)-0.5
+                                for v in (float(bt[j,c])-float(o[j,c]) for j in np.flatnonzero(m[:,c]))))
+        chunk_sums.append(math.fsum(channel_sums))
+        archive = None
+        if (d / 'call_archive_receipt.json').exists():
+            ar, arh = read_json(d / 'call_archive_receipt.json')
+            require(ar['chunk'] == i and ar['result_sha256'] == rh and ar['capture_sha256'] == r['capture_sha256']
+                    and digest(d / 'call.tar.gz') == ar['archive_sha256'], f'{case} chunk {i}: private archive mismatch')
+            archive = {'receipt_sha256': arh, 'archive_sha256': ar['archive_sha256']}
+        else:
+            require((d / 'call').is_dir(), f'{case} chunk {i}: private call workspace unavailable')
+        receipts.append({'chunk': i, 'flat_range': [start, stop], 'attempt_sha256': ah, 'result_sha256': rh,
+                         'capture_sha256': r['capture_sha256'], 'binding_sha256': bh,
+                         'worker_source_sha256': worker, 'direct_calls': 1, 'K_calls': 0, 'private_archive': archive})
+    total = math.fsum(chunk_sums)
+    require(summary['chunk_numerators'] == chunk_sums and summary['numerator'] == total and summary['cost'] == total / Z,
+            f'{case}: summary arithmetic mismatch')
+    packed = {k: base[k] for k in ('flat_index','chunk_index','chunk_local_row','channel_id','obs_bt_k','m0_mask')}
+    for source, target in [('bt','bt_k'),('quality','model_quality'),('valid','actual_valid_mask'),('profile_valid','profile_valid')]:
+        packed[target] = np.concatenate(pieces[source], axis=0)
+    return packed, {'case': case, 'binding_sha256': bh, 'summary_sha256': sh,
+                    'checkpoint_sha256': binding['checkpoint_sha256'], 'source_tree_sha256': TREE_SHA,
+                    'source_tree_files': 517, 'runner_sha256': binding['runner_sha256'],
+                    'source_pin_hashes': sorted(binding['source_pins'].values()), 'chunks': receipts}
+
+
+def main():
+    require(source_tree() == (517, TREE_SHA), 'current source tree differs from run snapshot')
+    require(not (PUBLIC / 'data').exists(), 'destination exists; refusing overwrite')
+    base = read_npz(BASE, BASE_SHA)
+    require(base['m0_mask'].dtype == np.bool_ and base['m0_mask'].shape == (N,7)
+            and int(base['m0_mask'].sum()) == Z and np.array_equal(base['flat_index'],np.arange(N)), 'baseline support mismatch')
+    packed, receipts = {}, {}
+    for case in ('control', 'alpha025'):
+        packed[case], receipts[case] = pack_case(case, base)
+    with tempfile.TemporaryDirectory(prefix='direct_m0_pack_') as tmp:
+        temp = Path(tmp)
+        hashes = {}
+        for case in ('control', 'alpha025'):
+            path = temp / f'{case}.npz'
+            np.savez_compressed(path, **packed[case]); hashes[case] = digest(path)
+        cmd = [sys.executable, str(PUBLIC/'replay.py'), '--baseline', str(BASE), '--control', str(temp/'control.npz'),
+               '--control-sha256', hashes['control'], '--alpha025', str(temp/'alpha025.npz'), '--alpha025-sha256', hashes['alpha025']]
+        replay = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = json.loads(replay.stdout)
+        require(result['baseline_cost'] == 11.007963317242059 and result['model_calls_in_replay'] == 0, 'independent replay mismatch')
+        require(source_tree() == (517, TREE_SHA), 'source tree changed during packing')
+        manifest = {'schema': 'kdm6.qi_postmicro_direct_m0_producer_receipts.v1', 'baseline_sha256': BASE_SHA,
+                    'packer_sha256': digest(Path(__file__)), 'replay_source_sha256': digest(PUBLIC/'replay.py'),
+                    'packed_sha256': hashes, 'cases': receipts, 'replay': result,
+                    'scope': 'Offline packing and arithmetic; zero model calls. Source tree is a run-time hash snapshot, not a public source archive. Private checkpoint and call archives remain private; hashes do not independently prove execution.'}
+        # Exclusive creation prevents overwriting any prior publication. A failed
+        # copy leaves a visible incomplete data directory requiring manual review.
+        dest = PUBLIC/'data'; dest.mkdir(exist_ok=False)
+        for case in ('control', 'alpha025'):
+            with (dest/f'{case}.npz').open('xb') as f:
+                f.write((temp/f'{case}.npz').read_bytes()); f.flush(); os.fsync(f.fileno())
+        with (dest/'producer_receipts.json').open('x') as f:
+            json.dump(manifest, f, sort_keys=True, indent=2, allow_nan=False); f.write('\n'); f.flush(); os.fsync(f.fileno())
+    print(json.dumps({'status':'PACKED_AND_REPLAYED','packed_sha256':hashes,'model_calls':0}))
+
+
+if __name__ == '__main__':
+    main()

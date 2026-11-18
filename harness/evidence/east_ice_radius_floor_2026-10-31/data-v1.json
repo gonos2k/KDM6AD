@@ -1,0 +1,1383 @@
+{
+  "base_commit": "c186c752c70226d6c3fd72fe93e45ccaa9c14bed",
+  "checkpoint_sha256": {
+    "guard": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6",
+    "pilot": "8208ea632df784c6f9fc758fe3c24522539463ff2a968af8d469cb1c78eced6c"
+  },
+  "exporter_sha256": "e49b07b368728a8a86d82aa832fd5056f3da9211c2b84a1ecac2e3ce6db7dd56",
+  "rows": [
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E235140",
+        "ALB": "401D79FC",
+        "QICE": "318419BC",
+        "QNICE": "44243473",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CB480",
+        "ALB": "402AF093",
+        "QICE": "3647D195",
+        "QNICE": "48F45CDA",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E396C20",
+        "ALB": "40397176",
+        "QICE": "36584E0E",
+        "QNICE": "48F3F7D7",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E4FCD40",
+        "ALB": "40490D10",
+        "QICE": "35CBA56A",
+        "QNICE": "48536BA2",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E235090",
+        "ALB": "401D79FC",
+        "QICE": "3184DDFE",
+        "QNICE": "44251DCB",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CBF30",
+        "ALB": "402AF093",
+        "QICE": "3647CE9A",
+        "QNICE": "48F45872",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E398320",
+        "ALB": "40397176",
+        "QICE": "36585D95",
+        "QNICE": "48F405B2",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E4FEEF0",
+        "ALB": "40490D10",
+        "QICE": "35F57341",
+        "QNICE": "487ECD13",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E234CE0",
+        "ALB": "401D79FC",
+        "QICE": "318CFE45",
+        "QNICE": "442F3F61",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CC420",
+        "ALB": "402AF093",
+        "QICE": "3647D187",
+        "QNICE": "48F45B1B",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E3990F0",
+        "ALB": "40397176",
+        "QICE": "36586F00",
+        "QNICE": "48F41718",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E500680",
+        "ALB": "40490D10",
+        "QICE": "3603774C",
+        "QNICE": "488876AA",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E234580",
+        "ALB": "401D79FC",
+        "QICE": "318E2571",
+        "QNICE": "4430AC0C",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CC760",
+        "ALB": "402AF093",
+        "QICE": "3647D194",
+        "QNICE": "48F45ACB",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E399B00",
+        "ALB": "40397176",
+        "QICE": "36588CED",
+        "QNICE": "48F4372B",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E5017E0",
+        "ALB": "40490D10",
+        "QICE": "3612A3D8",
+        "QNICE": "4898352B",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E233F90",
+        "ALB": "401D79FC",
+        "QICE": "31936458",
+        "QNICE": "4437368D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CCAB0",
+        "ALB": "402AF093",
+        "QICE": "3647D2EC",
+        "QNICE": "48F45BE5",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39A430",
+        "ALB": "40397176",
+        "QICE": "3658AD0A",
+        "QNICE": "48F4592D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E502510",
+        "ALB": "40490D10",
+        "QICE": "362A6ED9",
+        "QNICE": "48B0E5D6",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2338F0",
+        "ALB": "401D79FC",
+        "QICE": "319946D1",
+        "QNICE": "443E8E3A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CCD40",
+        "ALB": "402AF093",
+        "QICE": "3647D468",
+        "QNICE": "48F45D44",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39AD60",
+        "ALB": "40397176",
+        "QICE": "3658CE09",
+        "QNICE": "48F47C5B",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E503360",
+        "ALB": "40490D10",
+        "QICE": "364300F8",
+        "QNICE": "48CA651A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2333D0",
+        "ALB": "401D79FC",
+        "QICE": "319EB59F",
+        "QNICE": "44455607",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CD230",
+        "ALB": "402AF093",
+        "QICE": "3647D585",
+        "QNICE": "48F45E38",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39B870",
+        "ALB": "40397176",
+        "QICE": "3658F19C",
+        "QNICE": "48F4A286",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E5041B0",
+        "ALB": "40490D10",
+        "QICE": "365DAC71",
+        "QNICE": "48E61183",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E232EB0",
+        "ALB": "401D79FC",
+        "QICE": "31A297C0",
+        "QNICE": "444A2E51",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CD800",
+        "ALB": "402AF093",
+        "QICE": "3647D708",
+        "QNICE": "48F45F92",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39C360",
+        "ALB": "40397176",
+        "QICE": "36590F93",
+        "QNICE": "48F4C2F5",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E505000",
+        "ALB": "40490D10",
+        "QICE": "3669499F",
+        "QNICE": "48F21E72",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E232BC0",
+        "ALB": "401D79FC",
+        "QICE": "31A6DF12",
+        "QNICE": "444F845F",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CDDD0",
+        "ALB": "402AF093",
+        "QICE": "3647E4AE",
+        "QNICE": "48F46F7E",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39CE70",
+        "ALB": "40397176",
+        "QICE": "36591B7A",
+        "QNICE": "48F4CF3A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E505E50",
+        "ALB": "40490D10",
+        "QICE": "3668C32F",
+        "QNICE": "48F19133",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 22,
+      "layer": 44,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E0C5400",
+        "ALB": "40056C51",
+        "QICE": "33397A2D",
+        "QNICE": "461144DE",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 23,
+      "layer": 43,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E175DB0",
+        "ALB": "4010FDB8",
+        "QICE": "3494E616",
+        "QNICE": "47563E20",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2230F0",
+        "ALB": "401D79FC",
+        "QICE": "35EA3D22",
+        "QNICE": "489B5CFF",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2C6B00",
+        "ALB": "402AF093",
+        "QICE": "36478B01",
+        "QNICE": "48F41C0D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E3AE210",
+        "ALB": "40397176",
+        "QICE": "3659A1AA",
+        "QNICE": "48F55B1D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "guard",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E543330",
+        "ALB": "40490D10",
+        "QICE": "366693E9",
+        "QNICE": "48EF090D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E235140",
+        "ALB": "401D79FC",
+        "QICE": "32ACFD50",
+        "QNICE": "44B27DD1",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CB480",
+        "ALB": "402AF093",
+        "QICE": "368918A1",
+        "QNICE": "48F45804",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E396C20",
+        "ALB": "40397176",
+        "QICE": "367DA2A4",
+        "QNICE": "48F41C5F",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 3,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E4FCD40",
+        "ALB": "40490D10",
+        "QICE": "3622DEF0",
+        "QNICE": "48AA7C69",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E235090",
+        "ALB": "401D79FC",
+        "QICE": "32AC6225",
+        "QNICE": "44B2EF00",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CBF30",
+        "ALB": "402AF093",
+        "QICE": "3688B89B",
+        "QNICE": "48F453A4",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E398320",
+        "ALB": "40397176",
+        "QICE": "367FB9DE",
+        "QNICE": "48F41C5D",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 4,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E4FEEF0",
+        "ALB": "40490D10",
+        "QICE": "3645EBD2",
+        "QNICE": "48CEA16F",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E234CE0",
+        "ALB": "401D79FC",
+        "QICE": "32ADB10A",
+        "QNICE": "44B7FDD6",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CC420",
+        "ALB": "402AF093",
+        "QICE": "3688272F",
+        "QNICE": "48F45653",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E3990F0",
+        "ALB": "40397176",
+        "QICE": "368057F9",
+        "QNICE": "48F41C5C",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 5,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E500680",
+        "ALB": "40490D10",
+        "QICE": "3653F911",
+        "QNICE": "48DD1495",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E234580",
+        "ALB": "401D79FC",
+        "QICE": "32ADC36A",
+        "QNICE": "44B8B346",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CC760",
+        "ALB": "402AF093",
+        "QICE": "3687FA67",
+        "QNICE": "48F45611",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E399B00",
+        "ALB": "40397176",
+        "QICE": "368129CC",
+        "QNICE": "48F41C5A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 6,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E5017E0",
+        "ALB": "40490D10",
+        "QICE": "366A74A5",
+        "QNICE": "48F41FD2",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E233F90",
+        "ALB": "401D79FC",
+        "QICE": "32AF29F9",
+        "QNICE": "44BBF770",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CCAB0",
+        "ALB": "402AF093",
+        "QICE": "368819F6",
+        "QNICE": "48F45739",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39A430",
+        "ALB": "40397176",
+        "QICE": "36822F0D",
+        "QNICE": "48F4378A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 7,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E502510",
+        "ALB": "40490D10",
+        "QICE": "366AFBDE",
+        "QNICE": "48F41F23",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2338F0",
+        "ALB": "401D79FC",
+        "QICE": "32B0D7C6",
+        "QNICE": "44BFA214",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CCD40",
+        "ALB": "402AF093",
+        "QICE": "368858CC",
+        "QNICE": "48F458A6",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39AD60",
+        "ALB": "40397176",
+        "QICE": "368351A5",
+        "QNICE": "48F4662A",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 8,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E503360",
+        "ALB": "40490D10",
+        "QICE": "366BB4A7",
+        "QNICE": "48F41E6F",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2333D0",
+        "ALB": "401D79FC",
+        "QICE": "32B26EBD",
+        "QNICE": "44C304CE",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CD230",
+        "ALB": "402AF093",
+        "QICE": "3688B16A",
+        "QNICE": "48F459AA",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39B870",
+        "ALB": "40397176",
+        "QICE": "36849E0F",
+        "QNICE": "48F498C0",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 9,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E5041B0",
+        "ALB": "40490D10",
+        "QICE": "366CCE16",
+        "QNICE": "48F41DAB",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E232EB0",
+        "ALB": "401D79FC",
+        "QICE": "32B39E77",
+        "QNICE": "44C57068",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CD800",
+        "ALB": "402AF093",
+        "QICE": "3689282B",
+        "QNICE": "48F45B11",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39C360",
+        "ALB": "40397176",
+        "QICE": "3686078F",
+        "QNICE": "48F4BE90",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 10,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E505000",
+        "ALB": "40490D10",
+        "QICE": "366EAA90",
+        "QNICE": "48F41D55",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E232BC0",
+        "ALB": "401D79FC",
+        "QICE": "32B4B5AC",
+        "QNICE": "44C82084",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2CDDD0",
+        "ALB": "402AF093",
+        "QICE": "3689933F",
+        "QNICE": "48F46AFB",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E39CE70",
+        "ALB": "40397176",
+        "QICE": "36876307",
+        "QNICE": "48F4CA90",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 11,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E505E50",
+        "ALB": "40490D10",
+        "QICE": "3670D965",
+        "QNICE": "48F41D59",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 22,
+      "layer": 44,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E0C5400",
+        "ALB": "40056C51",
+        "QICE": "33931020",
+        "QNICE": "46123CF1",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 23,
+      "layer": 43,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E175DB0",
+        "ALB": "4010FDB8",
+        "QICE": "352AEE04",
+        "QNICE": "4757BBED",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 24,
+      "layer": 42,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E2230F0",
+        "ALB": "401D79FC",
+        "QICE": "365EE351",
+        "QNICE": "489CB6C4",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 25,
+      "layer": 41,
+      "saved_deff_um": 20.020000000000007,
+      "words": {
+        "AL": "3E2C6B00",
+        "ALB": "402AF093",
+        "QICE": "369FBBF0",
+        "QNICE": "48F41B42",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 26,
+      "layer": 40,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E3AE210",
+        "ALB": "40397176",
+        "QICE": "3694D593",
+        "QNICE": "48F55516",
+        "QSNOW": "00000000"
+      }
+    },
+    {
+      "case": "pilot",
+      "fraction": 0.999999,
+      "i": 234,
+      "j": 52,
+      "k": 27,
+      "layer": 39,
+      "saved_deff_um": 20.020000000000003,
+      "words": {
+        "AL": "3E543330",
+        "ALB": "40490D10",
+        "QICE": "36804111",
+        "QNICE": "48F41D60",
+        "QSNOW": "00000000"
+      }
+    }
+  ],
+  "schema": "kdm6.east_ice_radius_floor.v1",
+  "source_sha256": {
+    "harness/native_checkpoint_observation.py": "115bdf2b8db76b69852fe5262c01723d198660dc9be9f7361a0ed1023671ba14",
+    "oracle/kdm6/constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+    "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+    "oracle/kdm6/obs/native_cloud_profile.py": "2aeb687fed9f660818d76f98d1f8588e2cc21c9d20a7e471ff166a999a5d202c",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/slope.py": "5121761c97390eb0348ad3ed1c2b8aec6ad697b839826fdcac1cd6437978e823"
+  },
+  "source_units": {
+    "guard": {
+      "AL": "m3 kg-1",
+      "ALB": "m3 kg-1",
+      "QICE": "kg kg-1",
+      "QNICE": "  kg-1",
+      "QSNOW": "kg kg-1"
+    },
+    "pilot": {
+      "AL": "m3 kg-1",
+      "ALB": "m3 kg-1",
+      "QICE": "kg kg-1",
+      "QNICE": "  kg-1",
+      "QSNOW": "kg kg-1"
+    }
+  },
+  "witness_sha256": "a7748163ccf75252ec6fa8d0b38b26973dbceb8c5d24fef537ee3db356fc0136"
+}

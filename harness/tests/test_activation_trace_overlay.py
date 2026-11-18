@@ -5,12 +5,13 @@ from pathlib import Path
 import pytest
 
 from harness.make_activation_trace_overlay import instrument_coordinator, main
+from harness.historical_ice_sources import checked_actual_qr_coordinator
 
 SOURCE = Path(__file__).resolve().parents[2] / "libtorch/src/coordinator.cpp"
 
 
 def test_observer_only_inserts_source_and_labels_value_only_diagnostics():
-    original = SOURCE.read_text()
+    original = checked_actual_qr_coordinator().read_text()
     rendered = instrument_coordinator(original)
     changes = difflib.SequenceMatcher(None, original.splitlines(), rendered.splitlines())
     assert all(tag in ("equal", "insert") for tag, *_ in changes.get_opcodes())
@@ -23,7 +24,8 @@ def test_observer_only_inserts_source_and_labels_value_only_diagnostics():
 
 def test_observer_refuses_a_second_instrumentation():
     with pytest.raises(ValueError, match="already present"):
-        instrument_coordinator(instrument_coordinator(SOURCE.read_text()))
+        instrument_coordinator(instrument_coordinator(
+            checked_actual_qr_coordinator().read_text()))
 
 
 def test_cli_rejects_unpinned_source_without_creating_output(tmp_path):

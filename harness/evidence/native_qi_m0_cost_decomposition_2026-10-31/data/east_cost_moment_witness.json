@@ -1,0 +1,1669 @@
+{
+  "checkpoint_sha256": {
+    "original_control": "225d2cabe8a466304c06ba1a04638b84c8456b8477326b6852c9217360440070",
+    "pilot_control": "8208ea632df784c6f9fc758fe3c24522539463ff2a968af8d469cb1c78eced6c",
+    "qnc_guard_control": "950bc5d67dc8cf4980091ecac19a9b7b1ba94756e83d9bd101180e55863c0bb6"
+  },
+  "east_profile_count": 10,
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "profile_count": 11,
+  "profiles": [
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 5,
+        "QNCLOUD": 0,
+        "QNICE": 5
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "318419BC",
+            "pilot_control": "32ACFD50",
+            "qnc_guard_control": "318419BC"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "44243473",
+            "pilot_control": "44B27DD1",
+            "qnc_guard_control": "44243473"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D195",
+            "pilot_control": "368918A1",
+            "qnc_guard_control": "3647D195"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45CDA",
+            "pilot_control": "48F45804",
+            "qnc_guard_control": "48F45CDA"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36584E0E",
+            "pilot_control": "367DA2A4",
+            "qnc_guard_control": "36584E0E"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F3F7D7",
+            "pilot_control": "48F41C5F",
+            "qnc_guard_control": "48F3F7D7"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "35CBA56A",
+            "pilot_control": "3622DEF0",
+            "qnc_guard_control": "35CBA56A"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48536BA2",
+            "pilot_control": "48AA7C69",
+            "qnc_guard_control": "48536BA2"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "28C64D3F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "28C64D3F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "38E6F369",
+            "pilot_control": "38E5A31D",
+            "qnc_guard_control": "38E6F369"
+          }
+        }
+      ],
+      "flat_index_zero_based": 701,
+      "native_ij_1based": [
+        234,
+        3
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 7,
+        "QNCLOUD": 0,
+        "QNICE": 7
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2C3BF7C2",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2C3BF7C2"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3EE5CD9F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3EE5CD9F"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "3184DDFE",
+            "pilot_control": "32AC6225",
+            "qnc_guard_control": "3184DDFE"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "44251DCB",
+            "pilot_control": "44B2EF00",
+            "qnc_guard_control": "44251DCB"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647CE9A",
+            "pilot_control": "3688B89B",
+            "qnc_guard_control": "3647CE9A"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45872",
+            "pilot_control": "48F453A4",
+            "qnc_guard_control": "48F45872"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36585D95",
+            "pilot_control": "367FB9DE",
+            "qnc_guard_control": "36585D95"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F405B2",
+            "pilot_control": "48F41C5D",
+            "qnc_guard_control": "48F405B2"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "35F57341",
+            "pilot_control": "3645EBD2",
+            "qnc_guard_control": "35F57341"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "487ECD13",
+            "pilot_control": "48CEA16F",
+            "qnc_guard_control": "487ECD13"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2B36EC72",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2B36EC72"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3DB7CB5C",
+            "pilot_control": "3DB77278",
+            "qnc_guard_control": "3DB7CB5C"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25F1682E",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25F1682E"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "37D8F3F8",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "37D8F3F8"
+          }
+        }
+      ],
+      "flat_index_zero_based": 935,
+      "native_ij_1based": [
+        234,
+        4
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "2777053F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2777053F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3A179BC4",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3A179BC4"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2CA458FE",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2CA458FE"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3F48F065",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3F48F065"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "318CFE45",
+            "pilot_control": "32ADB10A",
+            "qnc_guard_control": "318CFE45"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "442F3F61",
+            "pilot_control": "44B7FDD6",
+            "qnc_guard_control": "442F3F61"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D187",
+            "pilot_control": "3688272F",
+            "qnc_guard_control": "3647D187"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45B1B",
+            "pilot_control": "48F45653",
+            "qnc_guard_control": "48F45B1B"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36586F00",
+            "pilot_control": "368057F9",
+            "qnc_guard_control": "36586F00"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F41718",
+            "pilot_control": "48F41C5C",
+            "qnc_guard_control": "48F41718"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "3603774C",
+            "pilot_control": "3653F911",
+            "qnc_guard_control": "3603774C"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "488876AA",
+            "pilot_control": "48DD1495",
+            "qnc_guard_control": "488876AA"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2BF43EB8",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2BF43EB8"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3E7935AE",
+            "pilot_control": "3E78BDC6",
+            "qnc_guard_control": "3E7935AE"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25957829",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25957829"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "36BB24E5",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "36BB24E5"
+          }
+        }
+      ],
+      "flat_index_zero_based": 1169,
+      "native_ij_1based": [
+        234,
+        5
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "27E1A442",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "27E1A442"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3A8A754C",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3A8A754C"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2CE18124",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2CE18124"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3F89DC55",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3F89DC55"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "318E2571",
+            "pilot_control": "32ADC36A",
+            "qnc_guard_control": "318E2571"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "4430AC0C",
+            "pilot_control": "44B8B346",
+            "qnc_guard_control": "4430AC0C"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D194",
+            "pilot_control": "3687FA67",
+            "qnc_guard_control": "3647D194"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45ACB",
+            "pilot_control": "48F45611",
+            "qnc_guard_control": "48F45ACB"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36588CED",
+            "pilot_control": "368129CC",
+            "qnc_guard_control": "36588CED"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F4372B",
+            "pilot_control": "48F41C5A",
+            "qnc_guard_control": "48F4372B"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "3612A3D8",
+            "pilot_control": "366A74A5",
+            "qnc_guard_control": "3612A3D8"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "4898352B",
+            "pilot_control": "48F41FD2",
+            "qnc_guard_control": "4898352B"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2C25B513",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2C25B513"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3EA9D49A",
+            "pilot_control": "3EA98303",
+            "qnc_guard_control": "3EA9D49A"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "2594C2F8",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2594C2F8"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "37095313",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "37095313"
+          }
+        }
+      ],
+      "flat_index_zero_based": 1403,
+      "native_ij_1based": [
+        234,
+        6
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "282C7C38",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "282C7C38"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3AD3B1D4",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3AD3B1D4"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2D10B3B4",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D10B3B4"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3FB0ED59",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3FB0ED59"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "31936458",
+            "pilot_control": "32AF29F9",
+            "qnc_guard_control": "31936458"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "4437368D",
+            "pilot_control": "44BBF770",
+            "qnc_guard_control": "4437368D"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D2EC",
+            "pilot_control": "368819F6",
+            "qnc_guard_control": "3647D2EC"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45BE5",
+            "pilot_control": "48F45739",
+            "qnc_guard_control": "48F45BE5"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "3658AD0A",
+            "pilot_control": "36822F0D",
+            "qnc_guard_control": "3658AD0A"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F4592D",
+            "pilot_control": "48F4378A",
+            "qnc_guard_control": "48F4592D"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "362A6ED9",
+            "pilot_control": "366AFBDE",
+            "qnc_guard_control": "362A6ED9"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48B0E5D6",
+            "pilot_control": "48F41F23",
+            "qnc_guard_control": "48B0E5D6"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2C726591",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2C726591"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3EF8EC8F",
+            "pilot_control": "3EF8750F",
+            "qnc_guard_control": "3EF8EC8F"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25A1ADDB",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25A1ADDB"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "36F1A248",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "36F1A248"
+          }
+        }
+      ],
+      "flat_index_zero_based": 1637,
+      "native_ij_1based": [
+        234,
+        7
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "286C55C1",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "286C55C1"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3B110A33",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3B110A33"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2D30104F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D30104F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3FD74616",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3FD74616"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "319946D1",
+            "pilot_control": "32B0D7C6",
+            "qnc_guard_control": "319946D1"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "443E8E3A",
+            "pilot_control": "44BFA214",
+            "qnc_guard_control": "443E8E3A"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D468",
+            "pilot_control": "368858CC",
+            "qnc_guard_control": "3647D468"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45D44",
+            "pilot_control": "48F458A6",
+            "qnc_guard_control": "48F45D44"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "3658CE09",
+            "pilot_control": "368351A5",
+            "qnc_guard_control": "3658CE09"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F47C5B",
+            "pilot_control": "48F4662A",
+            "qnc_guard_control": "48F47C5B"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "364300F8",
+            "pilot_control": "366BB4A7",
+            "qnc_guard_control": "364300F8"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48CA651A",
+            "pilot_control": "48F41E6F",
+            "qnc_guard_control": "48CA651A"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2CAB6005",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2CAB6005"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3F303171",
+            "pilot_control": "3F2FDCE4",
+            "qnc_guard_control": "3F303171"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25B7A832",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25B7A832"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "36C6A006",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "36C6A006"
+          }
+        }
+      ],
+      "flat_index_zero_based": 1871,
+      "native_ij_1based": [
+        234,
+        8
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "2898C373",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2898C373"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3B3B84BB",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3B3B84BB"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2D4F2CEE",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D4F2CEE"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3FFD5065",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3FFD5065"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "319EB59F",
+            "pilot_control": "32B26EBD",
+            "qnc_guard_control": "319EB59F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "44455607",
+            "pilot_control": "44C304CE",
+            "qnc_guard_control": "44455607"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D585",
+            "pilot_control": "3688B16A",
+            "qnc_guard_control": "3647D585"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45E38",
+            "pilot_control": "48F459AA",
+            "qnc_guard_control": "48F45E38"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "3658F19C",
+            "pilot_control": "36849E0F",
+            "qnc_guard_control": "3658F19C"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F4A286",
+            "pilot_control": "48F498C0",
+            "qnc_guard_control": "48F4A286"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "365DAC71",
+            "pilot_control": "366CCE16",
+            "qnc_guard_control": "365DAC71"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48E61183",
+            "pilot_control": "48F41DAB",
+            "qnc_guard_control": "48E61183"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2CE748E6",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2CE748E6"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3F6DF754",
+            "pilot_control": "3F6D852B",
+            "qnc_guard_control": "3F6DF754"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25D1AA06",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25D1AA06"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "36A16F88",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "36A16F88"
+          }
+        }
+      ],
+      "flat_index_zero_based": 2105,
+      "native_ij_1based": [
+        234,
+        9
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "28BB447F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "28BB447F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3B65E201",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3B65E201"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2D6B971F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D6B971F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "40100727",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "40100727"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "31A297C0",
+            "pilot_control": "32B39E77",
+            "qnc_guard_control": "31A297C0"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "444A2E51",
+            "pilot_control": "44C57068",
+            "qnc_guard_control": "444A2E51"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647D708",
+            "pilot_control": "3689282B",
+            "qnc_guard_control": "3647D708"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F45F92",
+            "pilot_control": "48F45B11",
+            "qnc_guard_control": "48F45F92"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36590F93",
+            "pilot_control": "3686078F",
+            "qnc_guard_control": "36590F93"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F4C2F5",
+            "pilot_control": "48F4BE90",
+            "qnc_guard_control": "48F4C2F5"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "3669499F",
+            "pilot_control": "366EAA90",
+            "qnc_guard_control": "3669499F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48F21E72",
+            "pilot_control": "48F41D55",
+            "qnc_guard_control": "48F21E72"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2D088916",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D088916"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3F8C87F8",
+            "pilot_control": "3F8C4490",
+            "qnc_guard_control": "3F8C87F8"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25DBFEC8",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25DBFEC8"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "367F72CA",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "367F72CA"
+          }
+        }
+      ],
+      "flat_index_zero_based": 2339,
+      "native_ij_1based": [
+        234,
+        10
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 8,
+        "QNCLOUD": 0,
+        "QNICE": 8
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "28E01764",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "28E01764"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "3B898CF4",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3B898CF4"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "2D83FC89",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D83FC89"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "402160E1",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "402160E1"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "31A6DF12",
+            "pilot_control": "32B4B5AC",
+            "qnc_guard_control": "31A6DF12"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "444F845F",
+            "pilot_control": "44C82084",
+            "qnc_guard_control": "444F845F"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "3647E4AE",
+            "pilot_control": "3689933F",
+            "qnc_guard_control": "3647E4AE"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F46F7E",
+            "pilot_control": "48F46AFB",
+            "qnc_guard_control": "48F46F7E"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "36591B7A",
+            "pilot_control": "36876307",
+            "qnc_guard_control": "36591B7A"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F4CF3A",
+            "pilot_control": "48F4CA90",
+            "qnc_guard_control": "48F4CF3A"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "3668C32F",
+            "pilot_control": "3670D965",
+            "qnc_guard_control": "3668C32F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48F19133",
+            "pilot_control": "48F41D59",
+            "qnc_guard_control": "48F19133"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "2D149D86",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D149D86"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "3F9902E8",
+            "pilot_control": "3F98B986",
+            "qnc_guard_control": "3F9902E8"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "25E1D88E",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "25E1D88E"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "369CC483",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "369CC483"
+          }
+        }
+      ],
+      "flat_index_zero_based": 2573,
+      "native_ij_1based": [
+        234,
+        11
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 14,
+        "QNCLOUD": 0,
+        "QNICE": 14
+      },
+      "changed_moment_words": [
+        {
+          "field": "QICE",
+          "k_1based": 18,
+          "words": {
+            "original_control": "1FC8376F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "1FC8376F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 18,
+          "words": {
+            "original_control": "3041B152",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3041B152"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 19,
+          "words": {
+            "original_control": "23F7837F",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "23F7837F"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 19,
+          "words": {
+            "original_control": "36D3B989",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "36D3B989"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 20,
+          "words": {
+            "original_control": "293FB179",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "293FB179"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 20,
+          "words": {
+            "original_control": "3C156B12",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3C156B12"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 21,
+          "words": {
+            "original_control": "2AE98092",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2AE98092"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 21,
+          "words": {
+            "original_control": "3C4C80A6",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "3C4C80A6"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "33397A2D",
+            "pilot_control": "33931020",
+            "qnc_guard_control": "33397A2D"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 22,
+          "words": {
+            "original_control": "461144DE",
+            "pilot_control": "46123CF1",
+            "qnc_guard_control": "461144DE"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "3494E616",
+            "pilot_control": "352AEE04",
+            "qnc_guard_control": "3494E616"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 23,
+          "words": {
+            "original_control": "47563E20",
+            "pilot_control": "4757BBED",
+            "qnc_guard_control": "47563E20"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "35EA3D22",
+            "pilot_control": "365EE351",
+            "qnc_guard_control": "35EA3D22"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 24,
+          "words": {
+            "original_control": "489B5CFF",
+            "pilot_control": "489CB6C4",
+            "qnc_guard_control": "489B5CFF"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "36478B01",
+            "pilot_control": "369FBBF0",
+            "qnc_guard_control": "36478B01"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 25,
+          "words": {
+            "original_control": "48F41C0D",
+            "pilot_control": "48F41B42",
+            "qnc_guard_control": "48F41C0D"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "3659A1AA",
+            "pilot_control": "3694D593",
+            "qnc_guard_control": "3659A1AA"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 26,
+          "words": {
+            "original_control": "48F55B1D",
+            "pilot_control": "48F55516",
+            "qnc_guard_control": "48F55B1D"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "366693E9",
+            "pilot_control": "36804111",
+            "qnc_guard_control": "366693E9"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 27,
+          "words": {
+            "original_control": "48EF090D",
+            "pilot_control": "48F41D60",
+            "qnc_guard_control": "48EF090D"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "311A7588",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "311A7588"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 28,
+          "words": {
+            "original_control": "439CB9A5",
+            "pilot_control": "439C6E9E",
+            "qnc_guard_control": "439CB9A5"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "2D4094AF",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "2D4094AF"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 29,
+          "words": {
+            "original_control": "3FC7A420",
+            "pilot_control": "3FC741CC",
+            "qnc_guard_control": "3FC7A420"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 30,
+          "words": {
+            "original_control": "27B878AA",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "27B878AA"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 30,
+          "words": {
+            "original_control": "3A3E4217",
+            "pilot_control": "3A3DE19F",
+            "qnc_guard_control": "3A3E4217"
+          }
+        },
+        {
+          "field": "QICE",
+          "k_1based": 31,
+          "words": {
+            "original_control": "221FCEB9",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "221FCEB9"
+          }
+        },
+        {
+          "field": "QNICE",
+          "k_1based": 31,
+          "words": {
+            "original_control": "34A65C01",
+            "pilot_control": "00000000",
+            "qnc_guard_control": "34A65C01"
+          }
+        }
+      ],
+      "flat_index_zero_based": 12167,
+      "native_ij_1based": [
+        234,
+        52
+      ]
+    },
+    {
+      "changed_layers_from_qnc_guard_by_field": {
+        "QCLOUD": 0,
+        "QICE": 0,
+        "QNCLOUD": 0,
+        "QNICE": 0
+      },
+      "changed_moment_words": [
+        {
+          "field": "QNCLOUD",
+          "k_1based": 6,
+          "words": {
+            "original_control": "405C5296",
+            "pilot_control": "488770A7",
+            "qnc_guard_control": "488770A7"
+          }
+        }
+      ],
+      "flat_index_zero_based": 14728,
+      "native_ij_1based": [
+        221,
+        63
+      ]
+    }
+  ],
+  "schema": "kdm6.qi_m0_east_cost_moment_witness.v1",
+  "scope": "selected raw f32 moments only; east pre-pilot state identity follows separate 652-variable comparison receipt"
+}

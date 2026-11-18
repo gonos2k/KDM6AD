@@ -1,0 +1,75 @@
+{
+  "alpha_minus_pilot_control_changed_M0_channel_cells": 337714,
+  "alpha_minus_pilot_control_changed_M0_profiles": 48257,
+  "baseline_sha256": "c919f13c3ceb4defec42e43e0b60ad71d22d10f57a9454f6f880f98ec1bf9144",
+  "cases": {
+    "alpha025": {
+      "changed_M0_channel_cells_vs_original_control": 337714,
+      "changed_M0_profiles_vs_original_control": 48257,
+      "max_abs_supported_BT_change_K_vs_original_control": 9.991353097927743
+    },
+    "control": {
+      "changed_M0_channel_cells_vs_original_control": 77,
+      "changed_M0_profiles_vs_original_control": 11,
+      "max_abs_supported_BT_change_K_vs_original_control": 5.370063623403723
+    }
+  },
+  "model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "original_M0_channel_cells": 377342,
+  "original_M0_profiles": 53906,
+  "packed_sha256": {
+    "alpha025": "1d8bbe792f4efbe087e5cb139f40151997241ad796a96aeef3af91ddddacaad9",
+    "control": "055e0222eda193bb8942f3890684d5f2389ec578eb0450330e05adce38ad074e"
+  },
+  "schema": "kdm6.native_qi_postmicro_direct_observation_diagnostics.v1",
+  "scope": "saved direct BT comparison on original fixed support; no process attribution",
+  "targets": {
+    "ice_boundary": {
+      "IR105_obs_BT_K": 295.5085165033916,
+      "channel_id": 13,
+      "flat_index_zero_based": 39078,
+      "native_ij_1based": [
+        1,
+        168
+      ],
+      "original_control": {
+        "IR105_sim_BT_K": 295.08684460340703,
+        "IR105_sim_minus_obs_K": -0.4216718999845739
+      },
+      "pilot_alpha025": {
+        "IR105_sim_BT_K": 295.08684460340703,
+        "IR105_sim_minus_obs_K": -0.4216718999845739
+      },
+      "pilot_control": {
+        "IR105_sim_BT_K": 295.08684460340703,
+        "IR105_sim_minus_obs_K": -0.4216718999845739
+      }
+    },
+    "qnc_guard": {
+      "IR105_obs_BT_K": 274.7028789629801,
+      "channel_id": 13,
+      "flat_index_zero_based": 14728,
+      "native_ij_1based": [
+        221,
+        63
+      ],
+      "original_control": {
+        "IR105_sim_BT_K": 285.8225734260864,
+        "IR105_sim_minus_obs_K": 11.119694463106327
+      },
+      "pilot_alpha025": {
+        "IR105_sim_BT_K": 285.8224834677661,
+        "IR105_sim_minus_obs_K": 11.119604504786025
+      },
+      "pilot_control": {
+        "IR105_sim_BT_K": 286.1484689544752,
+        "IR105_sim_minus_obs_K": 11.445589991495126
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ import pytest
 from harness.make_actual_qr_overlay import MARKER, create_overlay, render_overlay
 from harness.make_rain_boundary_overlay import render_factorial_base
 from harness.make_ice_factorial_overlay import FACTORIAL_SOURCE_PINS
+from harness.historical_ice_sources import checked_factorial_root
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +21,8 @@ def _copy_pinned_sources(root: Path, destination: Path):
     source_root = destination
     (source_root / "src").mkdir(parents=True)
     for name in FACTORIAL_SOURCE_PINS:
-        shutil.copy2(root / "libtorch" / "src" / name, source_root / "src" / name)
+        shutil.copy2(checked_factorial_root() / "src" / name,
+                     source_root / "src" / name)
     return source_root
 
 

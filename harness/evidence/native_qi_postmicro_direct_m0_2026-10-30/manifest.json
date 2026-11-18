@@ -1,0 +1,29 @@
+{
+  "analysis_sha256": "20ed4c66e972965415637efeae50a4a8eff8459496305f73c98a6be849be41f3",
+  "artifacts": {
+    "README.md": "1dc8b23ebda21b8f44c23db2414f312b05fae8a2ca2d11b4d60f00cf15c0e092",
+    "SOURCE_RESOLUTION.md": "765dc17dd7ad9aca87cc55aba56fbb2053283731f3aaf14ba26b4c6c6cebd061",
+    "analysis.json": "20ed4c66e972965415637efeae50a4a8eff8459496305f73c98a6be849be41f3",
+    "data/alpha025.npz": "1d8bbe792f4efbe087e5cb139f40151997241ad796a96aeef3af91ddddacaad9",
+    "data/chunk_artifacts.tar.gz": "736779e7084bccc0a4348eb62cbd0eacf753173a48146a37657e92e65f88df77",
+    "data/control.npz": "055e0222eda193bb8942f3890684d5f2389ec578eb0450330e05adce38ad074e",
+    "data/producer_receipts.json": "0e179e6f7c47b96c32ab2d5e68b26be7a1772f1a547ab2ec4d358b7d901e81a8",
+    "executed_sources/export_chunk_artifacts.py.txt": "893f522f8b89a0a1a36391a3f89221d684ac1961ac181d59a47eec7409fd8050",
+    "executed_sources/pack_full_m0_direct.py.txt": "1ff2f257a42eeb4c1f56bd73d3e29a93457d8ed679ed42dfb8a0f132f15c2d1b",
+    "executed_sources/run_full_m0_direct.py.txt": "c3c11438f6a89705e5ad65733e7678cee6f4f16b4667af010f55b6cd79542298",
+    "observation_diagnostics.json": "300332b0c6da6e8793162bc30fc08fc28a4686f32707d5008445c78791bd111c",
+    "observation_diagnostics.py": "3bb3fccf091dff7efb660231584fd376a2e992103d9eb135441651b9c75740ca",
+    "packet_replay.py": "d9c432466b3be6213f651205599cfab540919531a814264e90f6800b7417f236",
+    "replay.py": "f126c44a3cf7e0eaca4f9ca76a901f0e329c79be72beb50d96ce6a3ebdbef0f6"
+  },
+  "exporter_source_sha256": "893f522f8b89a0a1a36391a3f89221d684ac1961ac181d59a47eec7409fd8050",
+  "offline_model_calls": {
+    "KDM6": 0,
+    "RTTOV": 0,
+    "host": 0,
+    "optimizer": 0
+  },
+  "parent_execution_summary_sha256": "15053274c48c1dcd01cf092051c8a217912b251dd5cb446581b1b76a1ed2802c",
+  "schema": "kdm6.qi_postmicro_direct_m0_packet.v1",
+  "source_tree_sha256": "1ef3cc94d90465cea370c0974445f1d54b8de3192d33d2f5438464de41c0609f"
+}

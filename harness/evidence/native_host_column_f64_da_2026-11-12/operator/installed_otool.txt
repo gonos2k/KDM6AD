@@ -1,0 +1,7 @@
+/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib:
+	@rpath/libkdm6_c.2.dylib (compatibility version 2.0.0, current version 2.0.0)
+	@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)
+	@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)
+	@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2100.43.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)

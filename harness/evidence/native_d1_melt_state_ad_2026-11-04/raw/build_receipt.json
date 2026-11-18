@@ -1,0 +1,64 @@
+{
+  "archive_sha256": "f144b5dd4eb3559d9ea94f73cb449fd22ab32e9e1ce47ea0e1c9ebc24ecf6631",
+  "candidate": {
+    "B": 32248,
+    "b_zero": 27945,
+    "native_ij_1based": [
+      203,
+      149
+    ],
+    "native_level_1based": 16,
+    "one_step_call": 2,
+    "runtime_call": 2
+  },
+  "capture_blocks_sha256": {
+    "consumer_fields.txt": "32ad72d5116b1b694d59b66839f137f48e93ce1852142f41a4900e151818c2b0",
+    "entry_fields.txt": "f72a51c4a4c0deea598002e06f321a681e988f12a31d674d63024c66579ab5c7",
+    "producer_fields.txt": "4c7d23fa444dbcb851868f7a14cedec3c0195055234b21e091357521f7dadf69",
+    "reslope_after.txt": "7f7f0757fcfd60f2feef3b54b2aae8cdf7c07cca0e35927c080b826b28b050e9",
+    "reslope_before.txt": "3379b1b74644f2c279e00610382104b3e79db7d35fe86bf89c2e523e8e2e718d"
+  },
+  "cmake_cache_sha256": "ef79d2cbfcf478a0c1c76602db59effad513eef7cac34361427fad2bbe0d72b4",
+  "cxx_flags": "-O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+  "link_command": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -mmacosx-version-min=26.7 -dynamiclib -Wl,-headerpad_max_install_names -Wl,-exported_symbols_list,/Users/yhlee/KDM6AD-k/host/research_evidence/native_d1_state_entry_20261104/build/kdm6_c_capture.exports -compatibility_version 2.0.0 -current_version 2.0.0 -o libkdm6_c.2.0.0.dylib -install_name @rpath/libkdm6_c.2.dylib CMakeFiles/kdm6_c.dir/bridge/kdm6_c_api.cpp.o  -Wl,-rpath,/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib libkdm6.a /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+  "new_dso_sha256": "9c0bcba7f36bd97254bbe80429b9d60f52af7de376252a7591759e71893a48a9",
+  "new_executable_sha256": "54fc156b5eb98d8ba143775079b78ed68ce82858639430dfa0954a6d054bbb17",
+  "object_sha256": {
+    "cloud_dsd.cpp.o": "8ffbf2cbd479efe86f35783381229c81a3fce7ee1d8b5ff2dfc27e7887473614",
+    "cold.cpp.o": "f0a4cb66bf1a66fb3044b04f49a273d97af074d36813242bdbc9654b66fbf66c",
+    "coordinator.cpp.o": "dcf35fb4c40ea3bc1abc0bf50f761353e97ab9b503647c4dfff6b84b8aadbdf7",
+    "kdm6_c_api.cpp.o": "4b1c47531500c26740c416cf4b94ae9c4877799a5c73a600c1388553e90fc7a2",
+    "melt_freeze.cpp.o": "acec7425e65a764b0549f9fb92adb19c3dfddc8c471f1c51723dceeb042bb69e",
+    "ops.cpp.o": "a35ed8eab64eea35ca5e8250596e44261e88463b76b96946c43dab94e5d9651e",
+    "progb.cpp.o": "711a7df69b554aec93abb2d84c8946a7156f4fb5c263150e2e01de020e96128b",
+    "runtime.cpp.o": "f0a0bf0ec1ca0d21211223e3719b08b79cb1c462bb6da8de2a0f6da71786a385",
+    "satadj.cpp.o": "ac7561f8b18f0742389853f268e9422209cb3a7616826c2ff06536dbdb079233",
+    "sedimentation.cpp.o": "8c3a2427e2c57fe50570f4f623cbccc61d60194eef33ca88e5792928844720e4",
+    "sedimentation_conservative.cpp.o": "a51c2cfe99594217b81eb681700b9d6a7da2704268c3ad61103e27281486addb",
+    "slope.cpp.o": "39afa6df50055e7ecb9441fd252b4220f9b24f52c207f0ab10e61e5ff0fe0165",
+    "state.cpp.o": "fd0977fe87906d6328b9e762ea66f908f889a6514cb6fdcfce7659f0759c9e5e",
+    "thermo.cpp.o": "d0df2336fc2a6002fdab0d1723f6db843fe09bc609a626a3cb764b2e649ef837",
+    "warm.cpp.o": "29e40e2366d804891163bc69b047476af69965bbedda5776c39418825f4215d6"
+  },
+  "only_source_change_vs_parent": [
+    "src/melt_freeze.cpp",
+    "src/coordinator.cpp"
+  ],
+  "parent_build_receipt_sha256": "f7d165f8daeb5c38517c951ee575f0426caf3c3d9cd5b966668948afbe027e0d",
+  "parent_dso_sha256": "7003ebe1546455cb5fcc2e29bff34244f20ed9d659ff3c07be96c75c2217781c",
+  "runner_sha256": "b337c222c2fb36abd30823987e6ceba40cb2508450842a30524f1e051d66dd11",
+  "schema": "kdm6.native_d1_melt_state_entry_cpp_build.v1",
+  "scope": "same copied host executable; isolated DSO adds value-only selected-column D1 entry/producer/consumer/reslope capture; binary and object bytes remain private",
+  "source_headers_sha256": {
+    "constants.h": "f9e41a49e36414f9247f1a645051ba78b4dc7847bdc084669e4a96516a2a3f74",
+    "coordinator.h": "7afb3fe12379f8aefd2472101ec54328f5d236aa3b2b91f91779e5c18056831c",
+    "melt_freeze.h": "a8e562d644ea7aa88a8221f4ef30aea5b48cdd80a7173f3d71cf8c5678808292",
+    "ops.h": "4a11cca456b9a0095917e96c4fea1ec7347e4c0050416925d837bbdc002d8b5d"
+  },
+  "source_sha256": {
+    "coordinator.cpp": "837f710684cccc8887a18a59dda191580d7a81edf424e3ce25432f6accc3acfd",
+    "melt_freeze.cpp": "de60df10d9bc23c2903549e5f192d3af15c4b7a21ae55655aa6c706570de1c6e",
+    "runtime.cpp": "5fd679246a5bac02bec7d0ed784a43cad7d4a6cfbb190387bb7103b152e23a59",
+    "sedimentation_conservative.cpp": "3091bd0cd6ac267037e1feeaec3c6cf0c5fb17654ff6f16f06d920958b6c357d"
+  }
+}

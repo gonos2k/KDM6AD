@@ -1,0 +1,16 @@
+{
+  "files": {
+    "producer/proxy.c": "409f89bea241acb40e61c1ef0717e344fd1a0525ad614389284f87bd626e05a8",
+    "producer/strict_bitwise_nc_executed.py": "e90464a63300c7f95665dcf9d75ea6d5765669cee31a48e65006f572140de24b",
+    "raw/column_vs_556.json": "3e340fbaace52100478931bd8c29cfd1380f679f342a092c0479b737d468bde5",
+    "raw/full_tile_replay_summary.json": "4f5283294b23bfb1865efa4879e28d0d33fba093686cc44ba6c0937c23a0f808",
+    "raw/host_tile_amendment.json": "814d24b13e2d0fd7671e45cef57ab182afa238303b019258457cc87a55a803bc",
+    "raw/host_tile_receipt.json": "d2818450d7e166f0a435be824c39c4e04ba8d66a34fa007784a49a173f9a0d6d",
+    "raw/nearest_signature.json": "b6ffa37815c1b0d6b4660f50390493b216014ed873ec91d80c4dccbfbc57ebb1",
+    "raw/paired_host_outputs.json": "6d366bd262e1c998e2d11ff25259bbb84b95d476df174bf7fd80a70f5b3a1f4c",
+    "raw/producer_source_hashes.json": "1ab473b1c95fb2087499bc0c1d52bab573e5901ce80cdbd51a3638f8685eb505",
+    "raw/selected_column.json": "e9ce79d45090218c43754a54ff078373e7e69335fdc8f3e9eea2d7f285e55232",
+    "raw/single_column_summary.json": "030dc53f2234d9c1dd634a9228e407d6ffaf808f42a15683cfc4188b1039fe37"
+  },
+  "schema": "kdm6.native_host_tile_abi_public_packet.v1"
+}

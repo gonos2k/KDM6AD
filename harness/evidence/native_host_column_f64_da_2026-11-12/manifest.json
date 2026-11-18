@@ -1,0 +1,27 @@
+{
+  "files": {
+    "operator/CMakeCache.txt.gz": "31730f46d59c87b1620683d5b6407385aeb792282fd1bd78a5a93a553a1165f5",
+    "operator/CMakeLists.txt": "ae452a06e5c756833752ccd07ff44a0ee23ab874ab6f0b3b732b5cf5344e3f62",
+    "operator/build.log": "60515e8de627d0193910d0ff24b8222aeff2f7e6ffe101e05467b1f7304c5967",
+    "operator/configure.log.gz": "4a69e7445acc022f1d7d2e8f245719b8145ae308676e8aee776ce9dffde961db",
+    "operator/flags.make.gz": "6dd54b8594e7f1dd0c0d8503b8dcdf1d13b80834a8a1d627b32ff143320d656d",
+    "operator/installed_otool.txt": "558f1d5644d0c308eb9762f7e3535051ba7d0d760a570933424bbf481b479086",
+    "operator/loader.stderr.gz": "6c18fc828871ce29026066b6f08a4b2c80d43dafb8533f9c49bc99ed037df34d",
+    "operator/main.cpp": "1a2fe856cdfe9506a22da5a49ec12d03aa004041e989ea67d761a903ab4c974c",
+    "operator/result.csv": "2dbe4dffa9012c46c04b4aca58770040103c3dbc0dd04782aaead3f3088d864c",
+    "producer/baseline_probe.py": "4abed355556f390d639b8ae4277ee683d3d1cd26f116c7907ef4d35780bcc49f",
+    "producer/boundary_probe.py": "e0ec2183f28cd1c397e1e6ed6f955e9fccd71fbb909b14fe30000a153f2494e4",
+    "producer/interior_ad_fd.py": "c34e40190bbcd4feb35642245f17c594d22ff0a1796de4bb258933954fb7c8ad",
+    "raw/baseline_probe.json.gz": "8141b98a09d116320fdf2829e17fc6ffc90410efb50d5e08ba259b32ac28d8ad",
+    "raw/baseline_receipt.json": "a1606b9d74bb747cfa60e26ffaf1595de0b12fc77329dbf92dcea98ac2c1b11a",
+    "raw/boundary.json.gz": "79c88cab57c813cb7c42bc2d6d4666a0ff0166fe98eb8f26d953062bcc40a9d7",
+    "raw/boundary_receipt.json": "0642157fe6277c4dbc7132661a58edd4a33b668b2ccaee02d0322492d3c83081",
+    "raw/capture_receipt.json": "69431135bddcdde0ad3660271c0c2d9e66735c08f67dea6d95d095a655fae8ac",
+    "raw/interior_ad_fd.json.gz": "304c2ce5d0f93651b9f5c4ce88a327dbf39725060fe53820915eca522bebc597",
+    "raw/operator_receipt.json": "4a0ce7fb4533d5020b41d343ee81dbc25420c1861975b2ac5b03c8bf475367ee",
+    "raw/operator_result.json": "bd7f8874d86e7df45f250a1709f228b8bb8f5442b125bda2cfe3d3559820832e",
+    "raw/parity_calls.zip": "05f6039f355d961b47a62c9e1e6a0d12c91cb1dee292ebd8c6d99c3abb2a8bcf",
+    "reviewed_source/coordinator.cpp.gz": "fbe94e1876f6bb3efd9d89e9d31bd347c040c4c2c9f470378249db6ffb1d476d"
+  },
+  "schema": "kdm6.native_host_column_f64_da_packet.v1"
+}

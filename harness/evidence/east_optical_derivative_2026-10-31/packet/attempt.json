@@ -1,0 +1,11 @@
+{
+  "manifest_sha256": "3287e676da020da12b5de78fd5b7cb8c4348b275d6ca25677587c313943b6585",
+  "planned_calls": {
+    "K_mode_paths": 2,
+    "combined_baseline_K_subprocesses": 2,
+    "direct_mode_paths": 50,
+    "direct_only_fd_subprocesses": 48,
+    "subprocesses": 50
+  },
+  "runner_sha256": "20bcd57f001d2a63fbb4d70a9b64029622de50576d2dd7174baac5f4972099ca"
+}

@@ -1,0 +1,205 @@
+{
+  "calls": 3,
+  "levels_per_call": 39,
+  "limiter_active_levels_by_call": {
+    "baseline": {
+      "cold": 0,
+      "warm": 0
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "cold": 0,
+      "warm": 0
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "cold": 0,
+      "warm": 0
+    }
+  },
+  "native16": {
+    "baseline": {
+      "naacw_producer": {
+        "naacw": 483349.01202199335,
+        "ngacw": 325.517828165678,
+        "nsacw": 520914.7557322119,
+        "qg": 4.1812234388383836e-05,
+        "qs": 0.0005376252287222719,
+        "qsum_floor": 1e-15
+      },
+      "nc_limit_cold": {
+        "factor": 1.0,
+        "gate": false,
+        "naacw_after": 483349.01202199335,
+        "naacw_before": 483349.01202199335,
+        "nracw_after": 562060.8956226252,
+        "nracw_before": 562060.8956226252,
+        "source": 30635933.596769035,
+        "value": 184716859.43634674
+      },
+      "nc_limit_warm": {
+        "factor": 1.0,
+        "gate": true,
+        "naacw_after": 483349.01202199335,
+        "naacw_before": 483349.01202199335,
+        "nracw_after": 562060.8956226252,
+        "nracw_before": 562060.8956226252,
+        "source": 30635933.596769035,
+        "value": 184716859.43634674
+      },
+      "nracw_producer": {
+        "avedia_r": 0.0008748502122009835,
+        "di100": 0.0001,
+        "dtcld": 20.0,
+        "g1pmr": 1.0,
+        "g3pmc": 1.0,
+        "g4pmr": 24.0,
+        "g6pmc": 2.0,
+        "g7pmr": 5040.001953125,
+        "lenconcr": 2.1074396807005334e-07,
+        "nc": 184716859.43634674,
+        "ncrk1": 3030.0,
+        "ncrk2": 2590000000000000.0,
+        "nr": 1499.7893838072516,
+        "nracw": 562060.8956226252,
+        "qr": 0.0007153505720139617,
+        "rslope3_r": 2.7899087618198954e-11,
+        "rslopec3": 4.145569739785257e-15
+      },
+      "producer_branches": {
+        "big_drop": true,
+        "nracw_cap_active": false,
+        "qsum_active": true,
+        "rain_active": true
+      }
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "naacw_producer": {
+        "naacw": 483381.1401947831,
+        "ngacw": 324.6523727175901,
+        "nsacw": 520914.7557322119,
+        "qg": 4.1773620988021945e-05,
+        "qs": 0.0005376252287222719,
+        "qsum_floor": 1e-15
+      },
+      "nc_limit_cold": {
+        "factor": 1.0,
+        "gate": false,
+        "naacw_after": 483381.1401947831,
+        "naacw_before": 483381.1401947831,
+        "nracw_after": 562055.7607829178,
+        "nracw_before": 562055.7607829178,
+        "source": 30637116.027020358,
+        "value": 184716859.43634674
+      },
+      "nc_limit_warm": {
+        "factor": 1.0,
+        "gate": true,
+        "naacw_after": 483381.1401947831,
+        "naacw_before": 483381.1401947831,
+        "nracw_after": 562055.7607829178,
+        "nracw_before": 562055.7607829178,
+        "source": 30637116.027020358,
+        "value": 184716859.43634674
+      },
+      "nracw_producer": {
+        "avedia_r": 0.0008748435989901923,
+        "di100": 0.0001,
+        "dtcld": 20.0,
+        "g1pmr": 1.0,
+        "g3pmc": 1.0,
+        "g4pmr": 24.0,
+        "g6pmc": 2.0,
+        "g7pmr": 5040.001953125,
+        "lenconcr": 2.1074396807005334e-07,
+        "nc": 184716859.43634674,
+        "ncrk1": 3030.0,
+        "ncrk2": 2590000000000000.0,
+        "nr": 1499.8096939661837,
+        "nracw": 562055.7607829178,
+        "qr": 0.0007153440366603521,
+        "rslope3_r": 2.7898454934511977e-11,
+        "rslopec3": 4.145569739785257e-15
+      },
+      "producer_branches": {
+        "big_drop": true,
+        "nracw_cap_active": false,
+        "qsum_active": true,
+        "rain_active": true
+      }
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "naacw_producer": {
+        "naacw": 483316.88254621363,
+        "ngacw": 326.3849455793129,
+        "nsacw": 520914.7557322119,
+        "qg": 4.185085477148888e-05,
+        "qs": 0.0005376252287222719,
+        "qsum_floor": 1e-15
+      },
+      "nc_limit_cold": {
+        "factor": 1.0,
+        "gate": false,
+        "naacw_after": 483316.88254621363,
+        "naacw_before": 483316.88254621363,
+        "nracw_after": 562066.0296393145,
+        "nracw_before": 562066.0296393145,
+        "source": 30634751.09793784,
+        "value": 184716859.43634674
+      },
+      "nc_limit_warm": {
+        "factor": 1.0,
+        "gate": true,
+        "naacw_after": 483316.88254621363,
+        "naacw_before": 483316.88254621363,
+        "nracw_after": 562066.0296393145,
+        "nracw_before": 562066.0296393145,
+        "source": 30634751.09793784,
+        "value": 184716859.43634674
+      },
+      "nracw_producer": {
+        "avedia_r": 0.0008748568217081272,
+        "di100": 0.0001,
+        "dtcld": 20.0,
+        "g1pmr": 1.0,
+        "g3pmc": 1.0,
+        "g4pmr": 24.0,
+        "g6pmc": 2.0,
+        "g7pmr": 5040.001953125,
+        "lenconcr": 2.1074396807005334e-07,
+        "nc": 184716859.43634674,
+        "ncrk1": 3030.0,
+        "ncrk2": 2590000000000000.0,
+        "nr": 1499.769090906601,
+        "nracw": 562066.0296393145,
+        "qr": 0.0007153571063200324,
+        "rslope3_r": 2.7899719957116484e-11,
+        "rslopec3": 4.145569739785257e-15
+      },
+      "producer_branches": {
+        "big_drop": true,
+        "nracw_cap_active": false,
+        "qsum_active": true,
+        "rain_active": true
+      }
+    }
+  },
+  "physical_unit_status": "INCONCLUSIVE",
+  "producer_branch_levels_by_call": {
+    "baseline": {
+      "big_drop": 9,
+      "qsum_active": 9,
+      "rain_active": 16
+    },
+    "qg_bg17_rel_1e-03_minus": {
+      "big_drop": 9,
+      "qsum_active": 9,
+      "rain_active": 16
+    },
+    "qg_bg17_rel_1e-03_plus": {
+      "big_drop": 9,
+      "qsum_active": 9,
+      "rain_active": 16
+    }
+  },
+  "schema": "kdm6.native_nc_rate_producer_results.v1",
+  "scientific_status": "INCONCLUSIVE"
+}

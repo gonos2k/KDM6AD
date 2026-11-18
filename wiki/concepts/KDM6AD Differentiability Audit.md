@@ -113,3 +113,7 @@ tags. This remains compile evidence only: no executable link/run or six-row
 native capture has occurred, and `sc_tend` has not been numerically attributed
 against the producer. See the
 [preprocess/syntax report](../../harness/evidence/REPORT_S15_face_fortran_compile_only_2026-09-27.md).
+
+## East ice-radius floor evidence
+
+[[kdm6ad-east-ice-radius-floor-2026-10-31]] records a bounded offline source-form estimate for saved east profiles. All 84 selected guard/pilot cloudy ice rows are below the bridge radius floor; the estimate is not an executed branch trace and raw number physical units remain uncertified.
