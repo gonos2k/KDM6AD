@@ -47,9 +47,13 @@ for the distinction between library/evidence validation and deployment acceptanc
   active branch's partial through jumps (full evaporation → number move, reclassification,
   threshold cleanup) and one subgradient at kinks; neither is a sensitivity *through* the switch.
   `mstep`/subcycle counts are chosen no-grad, so tangents fix the current substep topology.
-- **Forcing is fixed.** Only the **12 prognostic state** fields are differentiated; the **4
-  forcing** fields (ρ, Π, p, Δz) are inputs with no VJP. There is no `M_f` (forcing) or host
-  metric/pressure adjoint here.
+- **The fp64 port supports joint step derivatives.** The joint C ABI accepts
+  directions and returns adjoints for the **12 prognostic fields** and the
+  **4 independent forcing inputs** (ρ, Π, p, Δz). The state-only entry and the
+  prescribed-forcing DA window keep these inputs fixed. Differentiating their
+  construction from native host state requires a separate host-side map.
+  See [state and forcing AD](docs/STATE_FORCING_AD.md) for the ABI and
+  build-specific evidence.
 - **Output space is the 12 states.** Surface precip increments, graupel density, reflectivity,
   and effective radii are **diagnostic-only** — not seedable in the packed AD ABI yet.
 - **The current DA window is prescribed-forcing microphysics-only.** Each step applies
@@ -86,7 +90,8 @@ compiler is present, ISO_C smoke and normalized-fp64 AD tests are added.
 > or these ctest-claim docs (README / ENVIRONMENT / HOST_INTEGRATION) — its branch + path
 > filters. (A side-branch commit is exercised once it's opened as a PR to `main`; changes to
 > unrelated files don't trigger it.)
-> Current CMake registers 17 C++ tests plus two optional Fortran tests. The
+> See [CMake test registration](libtorch/CMakeLists.txt) for this checkout's tests
+> and the conditions that enable the budget CLI and Fortran tests. The
 > [source-only research candidate](docs/RESEARCH_CANDIDATE.md) gives a fresh
 > environment, native-column acceptance and explicit dependency/asset boundaries.
 > Its [execution report](harness/evidence/REPORT_research_candidate_revision_2026-10-07.md)

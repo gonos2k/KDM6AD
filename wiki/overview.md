@@ -32,6 +32,12 @@ stage, no regional KDM execution was claimed; later four-arm execution is
 separately recorded in [[sources/native-domain-ice-factorial-2026-10-23]]. Physical
 kernel closure and operational map selection are distinct from these comparisons.
 
+The [current number-producer evidence](../docs/STATUS.md#native-producer-and-restart-evidence)
+links the native density preparation, the raw mp137 number slots and the
+special first-step QNCCN initializer. The selected-column mp37 QNR ledger
+provides measured applied transfers. The original field-specific payload
+basis and the same-call producer/restart binding remain open.
+
 [[sources/native-ice-boundary-2026-10-23]] fixes diagnostic summation and
 attributes the same-call QI sedimentation loss to measured internal
 departure/arrival gaps. It preserves the legacy physical map and local

@@ -1,9 +1,10 @@
 # Ice-only 2x2 comparison and full-domain preparation
 
-The four-arm native-column experiment is complete. The full-domain input
-packet, batch executable and dry-run plan are prepared; **the full-domain
-KDM experiment has not started**. This is an offline split-physics study,
-not host integration, data assimilation, RTTOV evaluation or map adoption.
+This document describes the four-arm native-column experiment and the original
+domain preparation. The subsequent [domain execution report](../harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md)
+records 516 fp64 KDM calls from the saved MP137 endpoint. Both experiments are
+offline split-physics studies. Their reports record their inputs, builds and
+budget limits.
 
 ## Independent factors
 
