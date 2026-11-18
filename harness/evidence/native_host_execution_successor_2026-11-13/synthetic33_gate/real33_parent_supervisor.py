@@ -10,6 +10,7 @@ is explicitly reported as uncertain and must not be treated as success.
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import tempfile
@@ -33,6 +34,42 @@ def _sha_bytes(data):
 
 def _canonical(value):
     return (json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)+'\n').encode('ascii')
+
+
+def _claim_attempt(manifest_path,approved_sha,out,started):
+    """Permanently claim one attempt; incomplete writes still block retries.
+
+    This is a trusted-code workflow guard, not security authentication or a
+    defense against deliberate modification by the same OS user.
+    """
+    manifest=Path(manifest_path)
+    if type(approved_sha) is not str or re.fullmatch('[0-9a-f]{64}',approved_sha) is None:
+        raise ValueError('invalid approved manifest SHA')
+    if not manifest.is_absolute() or manifest.is_symlink() or str(manifest.resolve(strict=True))!=str(manifest) or not manifest.is_file():
+        raise ValueError('manifest canonical path or SHA mismatch')
+    raw=manifest.read_bytes()
+    if _sha_bytes(raw)!=approved_sha:raise ValueError('manifest canonical path or SHA mismatch')
+    document=json.loads(raw)
+    if type(document) is not dict or document.get('schema')!='kdm6.synthetic33.private.v1' or document.get('status')!='REVIEWED_PINNED':raise ValueError('unreviewed manifest')
+    root_name=document.get('attempt_registry_root')
+    if type(root_name) is not str:raise ValueError('missing pinned attempt registry root')
+    root=Path(root_name)
+    if not root.is_absolute() or root.is_symlink() or str(root.resolve(strict=True))!=str(root) or not root.is_dir():raise ValueError('invalid canonical attempt registry root')
+    if not out.is_absolute() or out.is_symlink() or str(out.resolve(strict=True))!=str(out) or not out.is_dir() or manifest.parent==out or root==out:
+        raise ValueError('invalid canonical output directory')
+    registry=root / ('.synthetic33-attempt-'+approved_sha+'.json')
+    record={'schema':'kdm6.synthetic33.attempt.v1','status':'ATTEMPT_CLAIMED_UNVERIFIED','manifest_path':str(manifest),'manifest_sha256':approved_sha,'registry_root':str(root),'output_dir':str(out),'started_monotonic':started,'parent_source_sha256':witness33.sha(__file__)}
+    data=_canonical(record)
+    fd=os.open(registry,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,'O_NOFOLLOW',0),0o600)
+    try:
+        with os.fdopen(fd,'wb') as stream:
+            fd=-1;stream.write(data);stream.flush();os.fsync(stream.fileno())
+    finally:
+        if fd>=0:os.close(fd)
+    directory_fd=os.open(root,os.O_RDONLY)
+    try:os.fsync(directory_fd)
+    finally:os.close(directory_fd)
+    return registry
 
 
 def _stop_child(pid):
@@ -60,12 +97,15 @@ def _stop_child(pid):
 def run(outdir,manifest_path,approved_sha):
     if not REAL_PARENT_ENABLED:raise RuntimeError('parent real execution disabled pending containment review')
     started=time.monotonic();_CANCELLED.clear()
-    out=Path(outdir).resolve(strict=True)
-    if not out.is_dir() or any(out.iterdir()):raise ValueError('fresh empty output directory required')
+    out=Path(outdir)
+    if not out.is_absolute() or out.is_symlink() or str(out.resolve(strict=True))!=str(out) or not out.is_dir() or any(out.iterdir()):raise ValueError('fresh canonical empty output directory required')
     config=child.reviewed_configuration(manifest_path,approved_sha)
     total_deadline=started+config['policy']['wall_seconds']
     execution_deadline=total_deadline-config['policy']['cleanup_reserve_seconds']
     if time.monotonic()>=execution_deadline:raise RuntimeError('parent preflight deadline')
+    attempt_path=_claim_attempt(manifest_path,approved_sha,out,started)
+    attempt_sha=witness33.sha(attempt_path)
+    if time.monotonic()>=execution_deadline:raise RuntimeError('parent attempt registration deadline')
     readfd,writefd=os.pipe();pid=None;reaped=False
     handlers={sig:signal.signal(sig,_cancel) for sig in (signal.SIGTERM,signal.SIGINT)}
     try:
@@ -127,7 +167,7 @@ def run(outdir,manifest_path,approved_sha):
         if child.reviewed_configuration(manifest_path,approved_sha)!=config:raise RuntimeError('manifest configuration changed')
         if any(witness33.sha(path)!=digest for path,digest in {**before['asset_sha256'],**receipts}.items()):raise RuntimeError('asset changed after validation')
         if _CANCELLED or (out/'cleanup_unresolved.json').exists() or time.monotonic()>=total_deadline:raise RuntimeError('cancelled or parent wall exceeded')
-        payload={'schema':'kdm6.synthetic33.parent_witness.v1','status':'PARENT_OBSERVED_ASSETS_ONLY','scientific_status':'INCONCLUSIVE','manifest_sha256':approved_sha,'run_nonce':token['run_nonce'],'child_pid':pid,'child_exit_code':0,'candidate_sha256':token['candidate_sha256'],'receipt_sha256':receipts,'asset_sha256':before['asset_sha256'],'worker_pid':candidate['worker_pid'],'worker_start':candidate['worker_start'],'watchdog_pid':candidate['watchdog_pid'],'watchdog_start':candidate['watchdog_start'],'parent_source_sha256':witness33.sha(__file__),'postcheck_elapsed_seconds':time.monotonic()-started,'observed_wall_limit_seconds':config['policy']['wall_seconds'],'publication_scope':'publication is separate from observed model wall; same-UID trust and escaped groups remain limitations'}
+        payload={'schema':'kdm6.synthetic33.parent_witness.v1','status':'PARENT_OBSERVED_ASSETS_ONLY','scientific_status':'INCONCLUSIVE','manifest_sha256':approved_sha,'run_nonce':token['run_nonce'],'child_pid':pid,'child_exit_code':0,'candidate_sha256':token['candidate_sha256'],'attempt_registry_path':str(attempt_path),'attempt_registry_sha256':attempt_sha,'receipt_sha256':receipts,'asset_sha256':before['asset_sha256'],'worker_pid':candidate['worker_pid'],'worker_start':candidate['worker_start'],'watchdog_pid':candidate['watchdog_pid'],'watchdog_start':candidate['watchdog_start'],'parent_source_sha256':witness33.sha(__file__),'postcheck_elapsed_seconds':time.monotonic()-started,'observed_wall_limit_seconds':config['policy']['wall_seconds'],'publication_scope':'publication is separate from observed model wall; same-UID trust and escaped groups remain limitations'}
         raw=_canonical(payload)
         fd,tmp=tempfile.mkstemp(prefix='.parent-witness.',dir=out)
         temp_removed=False
@@ -136,7 +176,7 @@ def run(outdir,manifest_path,approved_sha):
             old=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGINT,signal.SIGTERM})
             try:
                 if _CANCELLED or signal.sigpending() & {signal.SIGINT,signal.SIGTERM} or time.monotonic()>=total_deadline:raise RuntimeError('cancelled or parent wall exceeded')
-                if child.reviewed_configuration(manifest_path,approved_sha)!=config or any(witness33.sha(path)!=digest for path,digest in {**before['asset_sha256'],**receipts}.items()) or witness33.sha(out/'completion_candidate.json')!=token['candidate_sha256']:raise RuntimeError('publication inputs changed')
+                if child.reviewed_configuration(manifest_path,approved_sha)!=config or any(witness33.sha(path)!=digest for path,digest in {**before['asset_sha256'],**receipts}.items()) or witness33.sha(out/'completion_candidate.json')!=token['candidate_sha256'] or witness33.sha(attempt_path)!=attempt_sha:raise RuntimeError('publication inputs changed')
                 if _CANCELLED or signal.sigpending() & {signal.SIGINT,signal.SIGTERM} or time.monotonic()>=total_deadline:raise RuntimeError('cancelled or parent wall exceeded')
                 publication_started=time.monotonic();linked=False;target=out/'parent_witness.json'
                 try:
