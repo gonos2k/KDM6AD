@@ -6,9 +6,11 @@
 
 - 고정 계획은 합성 fixture 3개, forward 33회, 최대 graph primal 9회·JVP 18회·VJP 9회다. 전체 wall 한도 900초에는 정리 예약 28초가 포함되고, 4 GiB는 표본 RSS 중단 기준이다.
 - 부모 감독자는 성공 후보의 자산·종료·replay를 독립적으로 재검사하고, 성공한 경우에만 자산 완료 witness를 발급하도록 구현돼 있다. 실제 실행 플래그는 여전히 꺼져 있다.
-- 이 후속 패킷의 Darwin 무모델 시험은 worker와 자손이 생성되고 release를 받은 뒤 orchestrator가 비정상 종료하면, 살아 있는 watchdog이 동일 그룹의 종료·정리를 관측하고 결과를 `INCOMPLETE`로 남기는 한 경로를 확인한다. watchdog 자체가 종료되는 경로와 실제 A7 계산은 검증하지 않았다.
+- Darwin 무모델 시험에서 release 뒤 orchestrator가 비정상 종료하면, 살아 있는 watchdog은 worker 그룹의 종료·정리를 관측하고 결과를 `INCOMPLETE`로 남긴다.
 - 부모의 단일 시도 기록은 승인 manifest에 명시한 정규 경로의 기존 디렉터리에 `O_EXCL`로 만든다. 같은 바이트의 manifest를 다른 위치에 복사해도 같은 기록 파일에 충돌한다. 등록이 중단된 경우에도 기록을 지우지 않고 재시도를 막는다. 이는 trusted-code 절차이며, 동일 사용자의 기록 삭제·디렉터리 교체를 막는 OS 인증 장치로 해석하지 않는다.
 - 후속 Draft PR의 fake CI는 `research/atomic-consumer-contract`를 병합 대상 브랜치에 추가한다. 기존 synthetic33 경로 필터와 macOS 무모델 시험만 사용하며, A7 빌드나 실제 33회 호출을 이 workflow에 넣지 않는다.
+- watchdog 사망을 주입한 Darwin 무모델 시험은 release 뒤 부모가 `UNWITNESSED`와 `cleanup=UNVERIFIED`를 반환한 후에도 시험용 worker가 응답할 수 있음을 확인한다. 이 worker는 시험용 채널을 통해 자체 종료한다. 실제 경로에서 watchdog이 사라지면 worker가 남을 수 있어 실행 전 정리 조건은 여전히 미충족이다.
+- `worker_result.json`의 fixture별 미분 행은 `PRELIMINARY`로 표시한다. 계측 보고의 판정은 부모가 대조한 `completion_candidate.json`의 `validated_assets.offline_replay.rows`에서 읽는다.
 
 ## 첫 A7 호출 전 필요한 근거
 

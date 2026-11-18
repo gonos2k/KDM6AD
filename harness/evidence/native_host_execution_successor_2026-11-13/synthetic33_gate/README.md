@@ -51,6 +51,13 @@ recomputes the fake gradient dots and represented-step finite differences;
 one good step cannot certify a two-step pair. Overall status stays
 `INCONCLUSIVE`.
 
+`worker_result.json` labels each fixture's derivative rows
+`diagnostic_stage: PRELIMINARY`. For the measurement report, read
+`completion_candidate.json` at `validated_assets.offline_replay.rows`
+after the parent verifies the candidate. The replay can classify a stable,
+resolved FD against zero AD as `NUMERIC_MISMATCH` even when the preliminary
+row says `UNRESOLVED`.
+
 Required source pins include the selector manifest and census helper/provider.
 A valid helper sample may span the same leader's `alive` to `exited_reserved`
 transition; the Darwin provider uses a fresh PID start-time observation after

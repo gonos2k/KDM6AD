@@ -96,6 +96,19 @@ def run(release_fd,outdir):
                 if len(direction_results)==2 and all(v['fd_signal']=='RESOLVED' and v['recorded_branch_schedule']=='STABLE' for v in direction_results):
                     stability='STABLE' if near(direction_results[0]['fd'],direction_results[1]['fd']) else 'UNSTABLE'
                     for v in direction_results:v['two_step_stability']=stability
-        results.append({'fixture':case,'status':'INCONCLUSIVE','scope':'partial recorded conditions; graph masks and complete census unverified','derivatives':per})
+        results.append({
+            'fixture': case,
+            'status': 'INCONCLUSIVE',
+            'diagnostic_stage': 'PRELIMINARY',
+            'scope': 'partial recorded conditions; graph masks and complete census unverified',
+            'derivatives': per,
+        })
     if seq!=len(plan):raise RuntimeError('incomplete schedule')
-    return {'status':'INCONCLUSIVE','calls':seq,'asset_bytes':total,'results':results,'scope':'synthetic only; no native, physical conservation or execution-readiness claim'}
+    return {
+        'status': 'INCONCLUSIVE',
+        'calls': seq,
+        'asset_bytes': total,
+        'results': results,
+        'derivative_report_source': 'offline_replay',
+        'scope': 'synthetic only; no native, physical conservation or execution-readiness claim',
+    }
