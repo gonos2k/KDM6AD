@@ -4,6 +4,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import select
+import signal
+import socket
 import sys
 import tempfile
 import unittest
@@ -11,6 +14,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import real33_orchestrate as x
+import real33_parent_supervisor as parent
 
 
 def fake_manifest(root):
@@ -222,6 +226,57 @@ class TestOrchestrate(unittest.TestCase):
             self.assertEqual(failure["status"], "INCOMPLETE")
             self.assertIn("injected supervisor failure", failure["error"])
             self.assertFalse((out / "witness.json").exists())
+
+    def test_watchdog_loss_after_release_denies_witness_with_live_worker(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d).resolve()
+            out, manifest, _ = fake_manifest(root)
+            registry = root / "registry"
+            registry.mkdir()
+            config = json.loads(manifest.read_text())
+            config["attempt_registry_root"] = str(registry)
+            config["budgets"]["wall_seconds"] = 34
+            manifest.write_text(json.dumps(config, sort_keys=True))
+            digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+            observer, child_endpoint = socket.socketpair()
+            with observer, child_endpoint:
+                observer.settimeout(2)
+
+                def lose_watchdog(_supervisor, _identity, _life, release, ready,
+                                  _receipt, _scenario, **_kwargs):
+                    observer.close()
+                    os.write(ready, b"R")
+                    if not select.select([release], [], [], 4)[0] or os.read(release, 1) != b"G":
+                        raise RuntimeError("test watchdog did not receive release")
+                    if os.fork() == 0:
+                        try:
+                            signal.signal(signal.SIGALRM, signal.SIG_DFL)
+                            signal.alarm(10)  # fixture self-terminates even if the test fails
+                            os.setsid()
+                            child_endpoint.settimeout(8)
+                            if child_endpoint.recv(1) == b"?":
+                                child_endpoint.sendall(b"W")
+                        finally:
+                            os._exit(0)
+                    os.kill(os.getpid(), signal.SIGKILL)
+
+                with (
+                    patch.object(parent, "REAL_PARENT_ENABLED", True),
+                    patch.object(x, "REAL33_RELEASE_ENABLED", True),
+                    patch.object(x.freeze33, "validate_frozen"),
+                    patch.object(x.watchdog, "supervise", side_effect=lose_watchdog),
+                ):
+                    result = parent.run(out, manifest, digest)
+                child_endpoint.close()
+                self.assertEqual(result["status"], "UNWITNESSED")
+                self.assertEqual(result["reason"], "child nonzero exit or cancellation")
+                self.assertEqual(result["cleanup"], "UNVERIFIED")
+                # The worker answers only after parent.run has denied completion.
+                observer.sendall(b"?")
+                self.assertEqual(observer.recv(1), b"W")
+                self.assertEqual(observer.recv(1), b"")
+                self.assertFalse((out / "completion_candidate.json").exists())
+                self.assertFalse((out / "parent_witness.json").exists())
 
 
 if __name__ == "__main__":

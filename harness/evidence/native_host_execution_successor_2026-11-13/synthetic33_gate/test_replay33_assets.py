@@ -17,6 +17,7 @@ class Replay33Tests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name)
+
         r, w = os.pipe()
         os.write(w, b"G")
         os.close(w)
@@ -24,7 +25,7 @@ class Replay33Tests(unittest.TestCase):
             patch.object(worker, "preflight", return_value={"dso_path": "fake"}),
             patch.object(worker, "Runner", FakeRunner),
         ):
-            worker.run(r, self.path)
+            self.worker_result = worker.run(r, self.path)
 
     def mutate(self, index, fn):
         path = self.path / f"call_{index:02}.json"
@@ -47,6 +48,11 @@ class Replay33Tests(unittest.TestCase):
 
     def test_complete_replay(self):
         result = replay.replay(self.path)
+        self.assertEqual(self.worker_result["derivative_report_source"], "offline_replay")
+        self.assertEqual(
+            [row["diagnostic_stage"] for row in self.worker_result["results"]],
+            ["PRELIMINARY"] * 3,
+        )
         self.assertEqual(
             (result["calls"], len(result["rows"]), result["status"]),
             (33, 18, "INCONCLUSIVE"),
